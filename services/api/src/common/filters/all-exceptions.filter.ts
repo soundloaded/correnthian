@@ -68,6 +68,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
       if (exception.code === 'P2025') {
         return { status: 404, code: 'not_found', message: 'Resource not found' };
       }
+      if (exception.code === 'P2003') {
+        return {
+          status: 422,
+          code: 'validation_failed',
+          message: 'A referenced record does not exist',
+        };
+      }
     }
 
     return {

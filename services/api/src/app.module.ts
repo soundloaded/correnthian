@@ -19,7 +19,19 @@ import { UsersModule } from './users/users.module.js';
 @Module({
   imports: [
     AppConfigModule,
-    LoggerModule.forRootAsync({ inject: [AppConfigModule], useFactory: () => ({}) }),
+    // Pino reads LOG_LEVEL directly. Injecting a module here is not
+    // possible — AppConfigModule is a module, not a provider.
+    LoggerModule.forRoot({
+      pinoHttp: {
+        level: process.env['LOG_LEVEL'] ?? 'info',
+        // Redaction at the transport layer is a second line of defence;
+        // @correnthian/security is still the primary control.
+        redact: {
+          paths: ['req.headers.authorization', 'req.headers.cookie', 'password', '*.password'],
+          censor: '[REDACTED]',
+        },
+      },
+    }),
     PrismaModule,
     RedisModule,
     CoreModule,

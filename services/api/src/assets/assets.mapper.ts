@@ -54,7 +54,8 @@ export function toDomainAsset(row: Prisma.AssetGetPayload<{ include: { issuer: t
   return {
     assetId: row.assetId,
     chainId: row.chainId,
-    contractAddress: row.contractAddress,
+    // '' is the storage sentinel for a native asset; the domain uses null.
+    contractAddress: row.contractAddress || null,
     tokenStandard: TOKEN_STANDARD[row.tokenStandard],
     symbol: row.symbol,
     name: row.name,

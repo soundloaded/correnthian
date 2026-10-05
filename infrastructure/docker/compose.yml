@@ -1,0 +1,65 @@
+# Local development dependencies.
+#
+# Production is Neon for Postgres (see docs/operations/overview.md). Redis is
+# managed separately in production — it is a cache and a queue, not a source of
+# truth, so its loss must never corrupt state.
+
+name: correnthian
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: correnthian-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: correnthian
+      POSTGRES_PASSWORD: correnthian_dev
+      POSTGRES_DB: correnthian
+      # C collation keeps index behaviour predictable across developer machines
+      # and CI. Deterministic ordering matters for the asset registry.
+      POSTGRES_INITDB_ARGS: "--locale=C --encoding=UTF8"
+    ports:
+      # Host port 5432 is taken by another project's container, so Correnthian
+      # binds 5433. The container port stays 5432.
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U correnthian -d correnthian"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    command:
+      - postgres
+      - -c
+      - max_connections=200
+      - -c
+      - log_min_duration_statement=500
+
+  redis:
+    image: redis:7-alpine
+    container_name: correnthian-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-data:/data
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - 256mb
+      # Cache entries are disposable; evict the least recently used rather
+      # than fail writes when memory is tight.
+      - --maxmemory-policy
+      - allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+volumes:
+  postgres-data:
+  redis-data:

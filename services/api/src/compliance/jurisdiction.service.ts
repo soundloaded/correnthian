@@ -33,15 +33,15 @@ export class JurisdictionService {
     }
     const cc = country.toUpperCase();
 
-    // Most specific match wins: region rule, else country-wide rule.
+    // Most specific match wins: region rule, else country-wide rule ("").
     const rule =
       (region
         ? await this.prisma.jurisdictionRule.findUnique({
             where: { country_region: { country: cc, region } },
           })
         : null) ??
-      (await this.prisma.jurisdictionRule.findFirst({
-        where: { country: cc, region: null },
+      (await this.prisma.jurisdictionRule.findUnique({
+        where: { country_region: { country: cc, region: '' } },
       }));
 
     if (!rule || !rule.active) return this.deny(cc, region, 'unmatched');

@@ -15,7 +15,16 @@
     "test": "turbo run test",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "clean": "turbo run clean && rm -rf node_modules",
+    "db:up": "docker compose -f infrastructure/docker/compose.yml up -d",
+    "db:down": "docker compose -f infrastructure/docker/compose.yml down",
+    "db:logs": "docker compose -f infrastructure/docker/compose.yml logs -f",
+    "db:reset": "docker compose -f infrastructure/docker/compose.yml down -v && pnpm db:up",
+    "migrate": "pnpm --filter @correnthian/api exec prisma migrate dev",
+    "migrate:deploy": "pnpm --filter @correnthian/api exec prisma migrate deploy",
+    "seed": "pnpm --filter @correnthian/api exec prisma db seed",
+    "db:studio": "pnpm --filter @correnthian/api exec prisma studio",
+    "key-boundary": "node scripts/check-key-boundary.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

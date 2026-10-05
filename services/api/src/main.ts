@@ -1,3 +1,6 @@
+// Must come first: ConfigService validates process.env during module init,
+// and `node dist/main.js` has no env loader of its own.
+import 'dotenv/config';
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { Logger as PinoLogger } from 'nestjs-pino';

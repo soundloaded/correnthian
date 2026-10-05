@@ -59,17 +59,23 @@ export class AssetsService {
     const existing = await this.prisma.asset.findUnique({ where: { assetId } });
     if (existing) throw AppError.conflict(`Asset already registered: ${assetId}`);
 
+    // The caller supplies the issuer *slug* (that is what humans know), but
+    // the foreign key references the surrogate id. Resolve rather than write
+    // the slug straight into the FK, which silently violates the constraint.
+    const issuer = await this.prisma.issuer.findUnique({ where: { slug: dto.issuerId } });
+    if (!issuer) throw AppError.notFound(`Unknown issuer: ${dto.issuerId}`);
+
     const created = await this.prisma.asset.create({
       data: {
         assetId,
         chainId: dto.chainId,
-        contractAddress: dto.contractAddress?.toLowerCase() ?? null,
+        contractAddress: dto.contractAddress?.toLowerCase() ?? '',
         tokenStandard: dto.tokenStandard,
         symbol: dto.symbol.toUpperCase(),
         name: dto.name,
         decimals: dto.decimals,
         category: dto.category,
-        issuerId: dto.issuerId,
+        issuerId: issuer.id,
 
         custodyModel: dto.custodyModel,
         custodian: dto.custodian,

@@ -1,0 +1,52 @@
+import {
+  CallHandler, ExecutionContext, Injectable, NestInterceptor,
+} from '@nestjs/common';
+import type { Request } from 'express';
+import { Observable, tap } from 'rxjs';
+import { AuditService } from '../../audit/audit.service.js';
+
+const MUTATING = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
+
+/**
+ * Records an audit line for every state-changing request.
+ *
+ * A hand-written `audit.record()` inside each service method is the obvious
+ * alternative, and it is worse: it gets forgotten the first time someone adds
+ * an endpoint, and a silently unaudited admin mutation is exactly the failure
+ * an audit trail exists to catch. The admin console states that changes are
+ * audited, so it needs to be true by construction rather than by discipline.
+ *
+ * Guards run before interceptors, so `request.user` is already resolved.
+ */
+@Injectable()
+export class AuditInterceptor implements NestInterceptor {
+  constructor(private readonly audit: AuditService) {}
+
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    if (context.getType() !== 'http') return next.handle();
+
+    const req = context.switchToHttp().getRequest<Request & { user?: { id: string; role: string } }>();
+    if (!MUTATING.has(req.method)) return next.handle();
+
+    // AuthService records sign-in attempts itself, where it knows whether the
+    // attempt succeeded. Recording them here would log a failure for every
+    // successful sign-in, which trains operators to ignore the audit trail.
+    if (req.originalUrl?.startsWith('/auth/')) return next.handle();
+
+    const controller = context.getClass().name;
+    const action = `${req.method} ${controller}.${context.getHandler().name}`;
+
+    const write = (outcome: 'success' | 'failure') =>
+      void this.audit.record({
+        actorId: req.user?.id ?? null,
+        actorRole: req.user?.role ?? null,
+        action,
+        targetType: controller,
+        outcome,
+        ipAddress: req.ip,
+        metadata: { method: req.method, path: req.originalUrl },
+      });
+
+    return next.handle().pipe(tap({ next: () => write('success'), error: () => write('failure') }));
+  }
+}

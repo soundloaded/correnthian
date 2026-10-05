@@ -1,7 +1,9 @@
 import { Global, Module } from '@nestjs/common';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthModule } from '../auth/auth.module.js';
+import { AuditModule } from '../audit/audit.module.js';
 import { RolesGuard } from './guards/roles.guard.js';
+import { AuditInterceptor } from './interceptors/audit.interceptor.js';
 import { SessionGuard } from './guards/session.guard.js';
 import { AllExceptionsFilter } from './filters/all-exceptions.filter.js';
 
@@ -12,11 +14,12 @@ import { AllExceptionsFilter } from './filters/all-exceptions.filter.js';
  */
 @Global()
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, AuditModule],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_GUARD, useClass: SessionGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
   ],
   exports: [AuthModule],
 })

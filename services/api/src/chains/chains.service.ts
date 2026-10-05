@@ -13,7 +13,6 @@ export class ChainsService {
       select: {
         id: true, name: true, family: true, nativeSymbol: true, decimals: true,
         explorerUrl: true, enabled: true, isTestnet: true,
-        rpcCount: { select: false },
         _count: { select: { assets: true, wallets: true } },
       },
     });

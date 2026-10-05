@@ -1,6 +1,6 @@
 # Correnthian — Task Tracker
 
-**Last updated:** 2026-10-05 (API domain modules)
+**Last updated:** 2026-10-05 (database live, API verified end-to-end)
 **Current focus:** API foundation, then admin.
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -39,13 +39,14 @@ work happen that is not tracked here.
 
 ### P1.1 Data layer
 - [x] PostgreSQL via Prisma — schema (18 models, 15 enums), validated, client generated
-- [~] Migrations + seed — schema written; cannot run locally (no Postgres/Docker)
+- [x] Migrations applied against real Postgres; two hand-written drift corrections
+- [x] Dev seed — chains, disabled provider shells, dev jurisdiction rule, first admin
 - [x] Redis client with ping-based health check
 - [x] Config module — typed, validated env (`@correnthian/config`), 6 tests
 - [x] Structured logging via nestjs-pino
 - [x] Graceful shutdown hooks
 - [x] Liveness `/health/live` and readiness `/health/ready` probes
-- [ ] Integration test harness that skips cleanly without a database
+- [ ] Integration test harness against the Docker Postgres (now possible)
 
 ### P1.2 Identity & access
 - [x] Auth module — argon2id passwords, SHA-256 session digests, 7 tests
