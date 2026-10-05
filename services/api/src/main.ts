@@ -1,8 +1,52 @@
+import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
+import { Logger as PinoLogger } from 'nestjs-pino';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
+import { Logger } from '@nestjs/common';
 import { AppModule } from './app.module.js';
+import { ConfigService } from './config/config.service.js';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  await app.listen(process.env.PORT ?? 3000);
+async function bootstrap(): Promise<void> {
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const config = app.get(ConfigService);
+
+  // Structured logging. Anything reaching a log must already be redacted.
+  app.useLogger(app.get(PinoLogger));
+
+  app.use(
+    helmet({
+      // The API serves JSON to first-party clients; a restrictive CSP here
+      // would only break Swagger UI, which is disabled outside development.
+      contentSecurityPolicy: config.isProduction ? undefined : false,
+    }),
+  );
+
+  app.enableCors({
+    origin: config.http.corsOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+  });
+
+  if (config.http.trustProxy) app.getHttpAdapter().getInstance().set('trust proxy', 1);
+
+  const swagger = new DocumentBuilder()
+    .setTitle('Correnthian API')
+    .setDescription(
+      'Backend for the Correnthian self-custodial platform. ' +
+        'This API holds no user key material and must never be able to move user funds.',
+    )
+    .setVersion('0.1.0')
+    .addBearerAuth()
+    .build();
+  SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, swagger));
+
+  // Close connections before the process exits, so in-flight requests are
+  // not severed and pooled connections are drained.
+  app.enableShutdownHooks();
+
+  await app.listen(config.http.port, config.http.host);
+  Logger.log(`Correnthian API listening on ${config.http.host}:${config.http.port}`, 'Bootstrap');
 }
-await bootstrap();
+
+void bootstrap();

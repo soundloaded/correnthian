@@ -1,6 +1,6 @@
 # Correnthian — Task Tracker
 
-**Last updated:** 2026-10-05
+**Last updated:** 2026-10-05 (API foundation)
 **Current focus:** API foundation, then admin.
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -38,21 +38,26 @@ work happen that is not tracked here.
 > Heaviest investment. Modular monolith; do **not** split into microservices.
 
 ### P1.1 Data layer
-- [~] PostgreSQL via Prisma — schema, migrations, seed
-- [ ] Redis client + health checks
-- [ ] Config module — typed, validated env (`@correnthian/config`)
-- [ ] Structured logging with redaction wired in
-- [ ] Graceful shutdown
+- [x] PostgreSQL via Prisma — schema (18 models, 15 enums), validated, client generated
+- [~] Migrations + seed — schema written; cannot run locally (no Postgres/Docker)
+- [x] Redis client with ping-based health check
+- [x] Config module — typed, validated env (`@correnthian/config`), 6 tests
+- [x] Structured logging via nestjs-pino
+- [x] Graceful shutdown hooks
+- [x] Liveness `/health/live` and readiness `/health/ready` probes
+- [ ] Integration test harness that skips cleanly without a database
 
 ### P1.2 Identity & access
-- [ ] Auth module — session strategy, passwordless
-- [ ] Users, devices, sessions
-- [ ] Device registration and trust
-- [ ] Rate limiting (Redis-backed)
-- [ ] Admin role / RBAC guard
+- [x] Auth module — argon2id passwords, SHA-256 session digests, 7 tests
+- [x] Users module — keyset pagination, role/status mutation, dashboard counters
+- [x] Devices module — register, list, soft-revoke
+- [x] RBAC guards — role hierarchy, deny-by-default session guard
+- [ ] Magic-link / passwordless auth (target UX for the beachhead user)
+- [ ] Redis-backed rate limiting
 
 ### P1.3 Domain modules
-- [ ] `assets` — registry CRUD, issuer management, backing disclosure
+- [x] `assets` — registry CRUD, derived identity, disclosure, attestation, stats
+- [ ] Issuers module — issuer onboarding and due-diligence record
 - [ ] `chains` — chain configuration, per-chain enablement
 - [ ] `providers` — provider registry, health, credentials
 - [ ] `swaps` — quote requests, `SwapRail` resolution
@@ -65,7 +70,8 @@ work happen that is not tracked here.
 - [ ] `notifications`
 
 ### P1.4 Hardening
-- [ ] Input validation (Zod) on every route
+- [x] Input validation (Zod) on every route, with env-var-named config errors
+- [x] Error taxonomy + global exception filter, no internal detail leaked
 - [ ] OpenAPI docs
 - [ ] Integration test harness against real Postgres/Redis
 - [ ] Error taxonomy and mapping

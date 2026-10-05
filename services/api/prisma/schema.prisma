@@ -1,0 +1,707 @@
+// Correnthian data model.
+//
+// ---------------------------------------------------------------------------
+// SECURITY INVARIANT — read before adding a field.
+//
+// This schema MUST NOT acquire a column capable of holding a seed phrase,
+// private key, signing share, or any other material that could move user
+// funds. Correnthian's security model is that the user's keys never reach our
+// infrastructure. That property is only as strong as this file.
+//
+// A `Wallet` here is a *registered public address*. It is a watch-list entry
+// that lets us index a portfolio and attribute activity. It is not a custody
+// record. If you find yourself wanting to add a key field, you are about to
+// convert Correnthian from a non-custodial wallet into a custodian, with the
+// licensing, insurance and breach consequences that follow.
+//
+// Security baseline: OWASP MASVS / MASTG.
+// ---------------------------------------------------------------------------
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum ChainFamily {
+  evm
+  bitcoin
+  solana
+}
+
+enum AccountKind {
+  smart
+  seed
+}
+
+enum UserRole {
+  user
+  support
+  compliance
+  admin
+  owner
+}
+
+enum DevicePlatform {
+  ios
+  android
+  web
+}
+
+enum KycStatus {
+  not_started
+  pending
+  approved
+  rejected
+  expired
+}
+
+enum AssetCategory {
+  crypto
+  stablecoin
+  metal
+  treasury
+  fund
+  other
+}
+
+enum TokenStandard {
+  native
+  erc20
+  bep20
+  btrc20
+  spl
+  other
+}
+
+/// How the issuer holds the underlying on its side.
+enum CustodyModel {
+  /// One-for-one against identified, serialised physical metal.
+  allocated
+  /// Backed in aggregate. No specific asset is reserved for the holder.
+  unallocated
+  /// No backing at all. Price exposure only.
+  synthetic
+}
+
+enum VerifiedTier {
+  issuer_verified
+  community_verified
+  unverified
+}
+
+enum AttestationCadence {
+  monthly
+  quarterly
+  annual
+  none
+}
+
+enum RailKind {
+  /// Licensed metals / RWA provider. Primary rail.
+  provider
+  /// DEX aggregator. Secondary rail, carries a size cap.
+  dex
+  /// Reserved. Weakens the key boundary; unlikely to ship.
+  cex
+  otc
+}
+
+enum ProviderStatus {
+  active
+  degraded
+  disabled
+}
+
+enum ProviderCategory {
+  metals
+  onramp
+  offramp
+  rpc
+  pricing
+  kyc
+  sanctions
+  indexer
+}
+
+enum QuoteState {
+  quoted
+  awaiting_payment
+  broadcast
+  settled
+  failed
+  expired
+}
+
+enum ExecutionQuality {
+  deep
+  thin
+  none
+}
+
+enum TxState {
+  pending
+  confirmed
+  failed
+  dropped
+}
+
+enum TxDirection {
+  in
+  out
+  internal
+}
+
+enum RedemptionState {
+  requested
+  kyc_pending
+  approved
+  in_production
+  shipped
+  delivered
+  rejected
+  cancelled
+}
+
+enum AuditOutcome {
+  success
+  failure
+  denied
+}
+
+// ---------------------------------------------------------------------------
+// Identity
+// ---------------------------------------------------------------------------
+
+model User {
+  id     String   @id @default(cuid())
+  email  String   @unique
+  role   UserRole @default(user)
+  status String   @default("active")
+
+  displayName String?
+  country     String? @db.Char(2)
+  /// Free-form subdivision, e.g. "US-CA". Jurisdiction engine reads this.
+  region      String?
+
+  /// Argon2id digest of the account password. Nullable: accounts
+  /// authenticated by magic link have none, which is the target UX for the
+  /// beachhead user who should never have to choose a password.
+  passwordDigest String?
+
+  emailVerifiedAt DateTime?
+  lastLoginAt     DateTime?
+
+  kycStatus KycStatus   @default(not_started)
+  kyc       KycProfile?
+
+  sessions Session[]
+  devices  Device[]
+  wallets  Wallet[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role])
+  @@index([kycStatus])
+  @@index([country, region])
+}
+
+model Session {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// SHA-256 of the session token. The token itself is never stored.
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Device {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  platform  DevicePlatform
+  label     String
+  /// Device-bound public key for a smart-account passkey signer.
+  /// Public key only — never a private key.
+  publicKey String?
+  pushToken String?
+
+  trustedAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+  revokedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model KycProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status       KycStatus @default(not_started)
+  /// Opaque reference to the KYC vendor's record. We store a pointer,
+  /// never identity documents or biometric data.
+  providerRef  String?
+  provider     String?
+  jurisdiction String?
+
+  reviewedBy String?
+  reviewedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Wallets — public addresses only. See the invariant at the top of this file.
+// ---------------------------------------------------------------------------
+
+model Wallet {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Registered public address. Lower-cased for EVM. Never a secret.
+  address  String
+  chainId  String
+  chain    Chain       @relation(fields: [chainId], references: [id])
+  kind     AccountKind
+  label    String?
+  /// ERC-4337 smart accounts are not on-chain until first funded.
+  deployed Boolean     @default(false)
+
+  /// Guardian addresses for social recovery. Public addresses.
+  guardians String[] @default([])
+
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts     WalletAccount[]
+  transactions Transaction[]
+  snapshots    PortfolioSnapshot[]
+
+  @@unique([chainId, address])
+  @@index([userId])
+  @@index([chainId])
+}
+
+model WalletAccount {
+  id       String @id @default(cuid())
+  walletId String
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  assetId      String
+  asset        Asset     @relation(fields: [assetId], references: [id])
+  /// Balance in the asset's base units, as a string. Never a float.
+  balanceRaw   String    @default("0")
+  /// Denormalised USD value for fast portfolio reads.
+  balanceUsd   Decimal?  @db.Decimal(36, 18)
+  lastSyncedAt DateTime?
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([walletId, assetId])
+  @@index([assetId])
+}
+
+// ---------------------------------------------------------------------------
+// Registry — assets, issuers, chains
+// ---------------------------------------------------------------------------
+
+model Issuer {
+  id           String @id @default(cuid())
+  slug         String @unique
+  name         String
+  jurisdiction String
+
+  /// e.g. ["trust-company", "bank", "fintech", "unknown"]
+  licenseTypes String[] @default([])
+  licenseRefs  String[] @default([])
+  website      String?
+
+  /// Operational trust assessment, maintained by the compliance team.
+  verifiedTier VerifiedTier @default(unverified)
+  riskFlags    String[]     @default([])
+  notes        String?
+
+  assets Asset[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([verifiedTier])
+}
+
+model Asset {
+  id String @id @default(cuid())
+
+  /// Derived identity: `${chainId}:${contract|lower|native}:${issuerId}`.
+  /// Enforced in application code by `deriveAssetId()`.
+  assetId String @unique
+
+  chainId         String
+  chain           Chain         @relation(fields: [chainId], references: [id])
+  contractAddress String?
+  tokenStandard   TokenStandard @default(erc20)
+  symbol          String
+  name            String
+  decimals        Int
+  category        AssetCategory
+
+  issuerId String
+  issuer   Issuer @relation(fields: [issuerId], references: [id])
+
+  // --- Backing: the provenance payload. This is the product. ---
+  custodyModel       CustodyModel       @default(synthetic)
+  custodian          String?
+  vaultLocations     String[]           @default([])
+  proofOfReserveUrl  String?
+  attestationCadence AttestationCadence @default(none)
+  lastAttestedAt     DateTime?
+  gramsPerToken      Decimal?           @db.Decimal(18, 6)
+  ouncesPerToken     Decimal?           @db.Decimal(18, 8)
+
+  // --- Trading ---
+  transferSupported Boolean    @default(true)
+  swapSupported     Boolean    @default(false)
+  redeemSupported   Boolean    @default(false)
+  rails             RailKind[] @default([])
+
+  // --- Trust ---
+  verifiedTier VerifiedTier @default(unverified)
+  riskFlags    String[]     @default([])
+
+  // --- Display ---
+  iconUrl     String?
+  accentColor String?
+
+  enabled Boolean @default(true)
+
+  accounts     WalletAccount[]
+  quotesAsFrom SwapQuote[]         @relation("QuoteFromAsset")
+  quotesAsTo   SwapQuote[]         @relation("QuoteToAsset")
+  transactions Transaction[]
+  prices       AssetPrice[]
+  redemptions  RedemptionRequest[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([chainId, contractAddress, issuerId])
+  @@index([category, enabled])
+  @@index([symbol])
+}
+
+model Chain {
+  id           String      @id
+  name         String
+  family       ChainFamily
+  nativeSymbol String
+  decimals     Int         @default(18)
+
+  rpcUrls     String[] @default([])
+  explorerUrl String?
+  /// Base units of native currency per USD, kept current by the pricing job.
+  /// Nullable because a newly configured chain has no price yet.
+  gasPriceUsd Decimal? @db.Decimal(36, 18)
+
+  enabled   Boolean @default(false)
+  /// EVM only. Non-EVM chains use a distinct adapter.
+  isTestnet Boolean @default(false)
+
+  assets       Asset[]
+  wallets      Wallet[]
+  transactions Transaction[]
+  quotes       SwapQuote[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([family])
+  @@index([enabled])
+}
+
+// ---------------------------------------------------------------------------
+// Providers and rails
+// ---------------------------------------------------------------------------
+
+model Provider {
+  id       String           @id @default(cuid())
+  slug     String           @unique
+  name     String
+  category ProviderCategory
+
+  status        ProviderStatus @default(disabled)
+  /// Arbitrary health payload from the last probe. Never credentials.
+  lastHealth    Json?
+  lastCheckedAt DateTime?
+
+  /// Capabilities this provider advertises, e.g. ["buy","sell","quote"].
+  capabilities String[] @default([])
+
+  notes String?
+
+  quotes      SwapQuote[]
+  redemptions RedemptionRequest[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category, status])
+}
+
+model SwapQuote {
+  id String @id @default(cuid())
+
+  userId   String?
+  walletId String?
+
+  railKind RailKind
+  /// SwapRail implementation id, e.g. "provider-rails" or "dex-aggregator".
+  railId   String
+
+  fromAssetId String
+  fromAsset   Asset     @relation("QuoteFromAsset", fields: [fromAssetId], references: [id])
+  toAssetId   String
+  toAsset     Asset     @relation("QuoteToAsset", fields: [toAssetId], references: [id])
+  chainId     String
+  chain       Chain     @relation(fields: [chainId], references: [id])
+  providerId  String?
+  provider    Provider? @relation(fields: [providerId], references: [id])
+
+  fromAmountRaw String
+  toAmountRaw   String
+  notionalUsd   Decimal? @db.Decimal(36, 8)
+
+  priceImpactBps Int
+  slippageBps    Int
+  minReceivedRaw String
+
+  /// Itemised and shown to the user before signing. Correnthian never
+  /// earns by mispricing an asset — the fee is always a visible line.
+  fees Json @default("[]")
+
+  /// How honestly this quote can be filled. Forces the UI to disclose.
+  executionQuality ExecutionQuality @default(thin)
+  /// Largest notional fillable at this price, in USD. Null = uncapped.
+  sizeCapUsd       Decimal?         @db.Decimal(36, 2)
+
+  state  QuoteState @default(quoted)
+  txHash String?
+
+  expiresAt DateTime
+  settledAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, state])
+  @@index([state, expiresAt])
+  @@index([fromAssetId, toAssetId])
+}
+
+// ---------------------------------------------------------------------------
+// Activity
+// ---------------------------------------------------------------------------
+
+model Transaction {
+  id String @id @default(cuid())
+
+  walletId String
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  assetId String
+  asset   Asset  @relation(fields: [assetId], references: [id])
+  chainId String
+  chain   Chain  @relation(fields: [chainId], references: [id])
+
+  txHash    String
+  direction TxDirection
+  state     TxState     @default(pending)
+
+  amountRaw     String
+  amountUsd     Decimal? @db.Decimal(36, 8)
+  blockNumber   BigInt?
+  confirmations Int      @default(0)
+
+  /// Only populated for a quote Correnthian executed. Arbitrary chain data.
+  metadata Json?
+
+  blockTime DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([chainId, txHash])
+  @@index([walletId, createdAt])
+  @@index([state])
+}
+
+model PortfolioSnapshot {
+  id String @id @default(cuid())
+
+  walletId String
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  totalUsd  Decimal @db.Decimal(36, 8)
+  breakdown Json    @default("{}")
+
+  capturedAt DateTime @default(now())
+
+  @@index([walletId, capturedAt])
+}
+
+model AssetPrice {
+  id String @id @default(cuid())
+
+  assetId String
+  asset   Asset  @relation(fields: [assetId], references: [id])
+
+  priceUsd Decimal @db.Decimal(36, 8)
+  source   String
+
+  capturedAt DateTime @default(now())
+
+  @@index([assetId, capturedAt])
+  @@index([source, capturedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Metals-specific
+// ---------------------------------------------------------------------------
+
+model RedemptionRequest {
+  id String @id @default(cuid())
+
+  userId     String
+  assetId    String
+  asset      Asset    @relation(fields: [assetId], references: [id])
+  providerId String
+  provider   Provider @relation(fields: [providerId], references: [id])
+
+  state RedemptionState @default(requested)
+
+  amountRaw   String
+  notionalUsd Decimal? @db.Decimal(36, 8)
+  feesUsd     Decimal? @db.Decimal(36, 8)
+
+  /// Serialised units where the provider supports per-bar redemption.
+  serialNumbers String[] @default([])
+
+  destination Json?
+
+  providerRef     String?
+  rejectionReason String?
+
+  requestedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, state])
+  @@index([providerId, state])
+}
+
+// ---------------------------------------------------------------------------
+// Compliance and operations
+// ---------------------------------------------------------------------------
+
+model JurisdictionRule {
+  id String @id @default(cuid())
+
+  country String  @db.Char(2)
+  /// Null means "applies to the whole country".
+  region  String?
+
+  canBuyCrypto  Boolean @default(false)
+  canSellCrypto Boolean @default(false)
+  canUseMetals  Boolean @default(false)
+  canRedeem     Boolean @default(false)
+  kycRequired   Boolean @default(true)
+
+  /// Provider slugs explicitly blocked in this jurisdiction.
+  blockedProviders String[] @default([])
+  notes            String?
+
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([country, region])
+  @@index([active])
+}
+
+model AuditLog {
+  id String @id @default(cuid())
+
+  actorId    String?
+  actorRole  String?
+  action     String
+  targetType String?
+  targetId   String?
+  outcome    AuditOutcome @default(success)
+
+  ipAddress String?
+  /// Metadata only. Redacted before write; must never contain secrets.
+  metadata  Json    @default("{}")
+
+  createdAt DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@index([targetType, targetId])
+}
+
+model Notification {
+  id String @id @default(cuid())
+
+  userId   String
+  channel  String
+  template String
+
+  /// Rendered content, or null for a templated notification.
+  payload Json @default("{}")
+
+  sentAt   DateTime?
+  failedAt DateTime?
+  error    String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([channel, sentAt])
+}
+
+model FeatureFlag {
+  key         String  @id
+  enabled     Boolean @default(false)
+  /// Percentage 0-100 for gradual rollout.
+  rollout     Int     @default(100)
+  description String?
+
+  updatedAt DateTime @updatedAt
+}
