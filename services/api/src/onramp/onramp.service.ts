@@ -46,30 +46,42 @@ export class OnRampService {
   }
 
   /**
-   * Why the feature is unavailable, in words a support agent can relay.
-   * Returns null when it is available.
+   * Whether the feature is available here, and if not, why — in words a
+   * support agent can relay. Returned as an object rather than a bare string
+   * or null so the response stays self-describing and versionable.
    */
   async unavailability(
     kind: 'buy' | 'sell',
     country: string | null,
     region: string | null,
-  ): Promise<string | null> {
+  ): Promise<{ available: boolean; reason: string | null }> {
     const category = kind === 'buy' ? 'onramp' : 'offramp';
+    const available = { available: true, reason: null };
+
     const provider = await this.activeProvider(category, country, region);
     if (!provider) {
-      return `No ${category} provider is available. Correnthian has not contracted one yet.`;
+      return {
+        available: false,
+        reason: `No ${category} provider is available. Correnthian has not contracted one yet.`,
+      };
     }
+
     const eligibility = await this.jurisdiction.evaluate(country, region);
     if (!eligibility.allowed) {
-      return 'Fiat conversion is not available in your jurisdiction.';
+      return { available: false, reason: 'Fiat conversion is not available in your jurisdiction.' };
     }
+
     const permitted = kind === 'buy' ? eligibility.canBuyCrypto : eligibility.canSellCrypto;
     if (!permitted) {
-      return kind === 'buy'
-        ? 'Buying crypto with fiat is not permitted in your jurisdiction.'
-        : 'Selling crypto for fiat is not permitted in your jurisdiction.';
+      return {
+        available: false,
+        reason:
+          kind === 'buy'
+            ? 'Buying crypto with fiat is not permitted in your jurisdiction.'
+            : 'Selling crypto for fiat is not permitted in your jurisdiction.',
+      };
     }
-    return null;
+    return available;
   }
 
   async quote(
@@ -80,8 +92,8 @@ export class OnRampService {
       throw AppError.badRequest('amountUsd must be a positive number');
     }
 
-    const reason = await this.unavailability(kind, params.country, params.region);
-    if (reason) throw AppError.providerUnavailable(reason);
+    const { available, reason } = await this.unavailability(kind, params.country, params.region);
+    if (!available) throw AppError.providerUnavailable(reason ?? 'Fiat conversion unavailable');
 
     const provider = await this.activeProvider(
       kind === 'buy' ? 'onramp' : 'offramp', params.country, params.region,

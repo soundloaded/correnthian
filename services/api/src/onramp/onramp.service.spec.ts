@@ -25,7 +25,8 @@ describe('OnRampService', () => {
 
   it('refuses rather than inventing a rate when no provider is contracted', async () => {
     const reason = await svc.unavailability('buy', 'US', null);
-    expect(reason).toMatch(/has not contracted one yet/);
+    expect(reason.reason).toMatch(/has not contracted one yet/);
+    expect(reason.available).toBe(false);
   });
 
   it('rejects a non-positive amount before touching the provider', async () => {
@@ -36,14 +37,14 @@ describe('OnRampService', () => {
   it('distinguishes buying from selling permission', async () => {
     prisma.provider.findMany.mockResolvedValue([{ slug: 'p', name: 'P', status: 'active' }]);
     const reason = await svc.unavailability('sell', 'US', null);
-    expect(reason).toMatch(/not permitted in your jurisdiction/);
+    expect(reason.reason).toMatch(/not permitted in your jurisdiction/);
   });
 
   it('reports unavailable in an unmatched jurisdiction', async () => {
     jurisdiction.evaluate.mockResolvedValue({ allowed: false, canBuyCrypto: false, canSellCrypto: false });
     prisma.provider.findMany.mockResolvedValue([{ slug: 'p', name: 'P', status: 'active' }]);
     const reason = await svc.unavailability('buy', 'ZZ', null);
-    expect(reason).toMatch(/not available in your jurisdiction/);
+    expect(reason.reason).toMatch(/not available in your jurisdiction/);
   });
 
   it('skips a provider blocked in the user jurisdiction', async () => {
@@ -52,11 +53,11 @@ describe('OnRampService', () => {
       { slug: 'ok', name: 'O', status: 'active' },
     ]);
     jurisdiction.isProviderBlocked.mockImplementation(async (_c, _r, slug) => slug === 'blocked');
-    await expect(svc.unavailability('buy', 'US', null)).resolves.toBeNull();
+    await expect(svc.unavailability('buy', 'US', null)).resolves.toEqual({ available: true, reason: null });
   });
 
   it('returns null when a provider can serve the request', async () => {
     prisma.provider.findMany.mockResolvedValue([{ slug: 'p', name: 'P', status: 'active' }]);
-    await expect(svc.unavailability('buy', 'US', null)).resolves.toBeNull();
+    await expect(svc.unavailability('buy', 'US', null)).resolves.toEqual({ available: true, reason: null });
   });
 });
