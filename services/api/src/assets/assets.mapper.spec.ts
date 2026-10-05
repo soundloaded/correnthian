@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Prisma } from './generated/prisma/client.js';
+import type { Prisma } from '../generated/prisma/client.js';
 import { toDomainAsset } from './assets.mapper.js';
 
 const row = {

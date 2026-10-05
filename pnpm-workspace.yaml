@@ -4,6 +4,7 @@ packages:
   - "packages/*"
 
 onlyBuiltDependencies:
+  - prisma
   - "@nestjs/core"
   - "@swc/core"
   - "esbuild"
