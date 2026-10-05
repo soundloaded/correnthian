@@ -74,10 +74,12 @@ work happen that is not tracked here.
 
 ## P2 — Admin (shadcn/ui) 🟠 NEXT
 
-- [ ] Next.js admin app in the monorepo
-- [ ] shadcn/ui init with a preset — **use `-d` / `--preset`, never bare `init`**
-- [ ] `npx shadcn@latest add dashboard-01`
-- [ ] **Examine every stubbed file** and record what is mock data
+- [x] Next.js admin app in the monorepo
+- [x] shadcn/ui init with a preset — **use `-d` / `--preset`, never bare `init`**
+      (CLI 4.21.1; presets are `nova vega maia lyra mira luma sera rhea`; used `nova`)
+- [x] `npx shadcn@latest add dashboard-01`
+- [x] **Examine every stubbed file** and record what is mock data
+      → [`apps/admin/STUB-AUDIT.md`](apps/admin/STUB-AUDIT.md)
 - [ ] Rewire to real API data
 - [ ] Auth + RBAC gate
 - [ ] Pages: users, devices, assets, issuers, providers, chains,
@@ -90,6 +92,16 @@ work happen that is not tracked here.
 - After `init`, replace `--font-sans: var(--font-sans)` in `@theme inline` with
   **literal** font names, or Tailwind v4 will resolve to nothing.
 - `Avatar` has no `size` prop — use Tailwind classes.
+  *(Superseded: as of CLI 4.21.1 `Avatar` does accept `size?: "default" | "sm" | "lg"`.)*
+
+**Gotchas the block shipped that the list above did not cover:**
+- `dashboard-01` never mounts `TooltipProvider`, so `next build` fails prerendering
+  `/dashboard` with "`Tooltip` must be used within `TooltipProvider`". It also never
+  mounts `<Toaster />`, which makes every `toast.promise(...)` a silent no-op.
+- The block ships two `react-hooks/set-state-in-effect` lint **errors**
+  (`use-mobile.ts`, `chart-area-interactive.tsx`) that turn root `pnpm lint` red.
+- The block leaves **no `TODO`/stub comments** — every mock is undiscoverable without
+  reading the values. That is why `STUB-AUDIT.md` is per-file rather than a summary.
 
 ---
 
@@ -113,6 +125,12 @@ work happen that is not tracked here.
 
 ## Done log
 
+- **2026-10-05** — `apps/admin` created, shadcn `nova` preset initialised,
+  `dashboard-01` installed, every stubbed file audited.
+  Fixed three defects the block shipped on arrival: the missing `TooltipProvider`
+  (which broke `next build` outright), the unmounted `<Toaster />`, and two
+  `react-hooks/set-state-in-effect` lint errors. Full mock inventory in
+  [`apps/admin/STUB-AUDIT.md`](apps/admin/STUB-AUDIT.md).
 - **2026-10-05** — Monorepo foundation complete and committed.
   Fixed two upstream defects: Nest's scaffolded test was broken on arrival
   (vitest/esbuild omits decorator metadata → DI silently fails), and Nest 12
