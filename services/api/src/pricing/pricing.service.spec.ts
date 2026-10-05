@@ -53,6 +53,14 @@ describe('PricingService', () => {
     expect(q.notionalUsd).toBe(500);
   });
 
+  it('keys the valuation map by the surrogate id it was given', async () => {
+    price.findMany.mockResolvedValue([
+      { assetId: 'a1', priceUsd: 2000, capturedAt: new Date() },
+    ]);
+    const map = await svc.latestMap(['a1']);
+    expect(map).toEqual({ a1: 2000 });
+  });
+
   it('omits stale prices from valuation rather than valuing on them', async () => {
     price.findMany.mockResolvedValue([
       { assetId: 'a1', priceUsd: 2000, capturedAt: new Date(Date.now() - 3_600_000) },

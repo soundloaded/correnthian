@@ -54,11 +54,11 @@ work happen that is not tracked here.
 - [x] Devices module — register, list, soft-revoke
 - [x] RBAC guards — role hierarchy, deny-by-default session guard
 - [ ] Magic-link / passwordless auth (target UX for the beachhead user)
-- [ ] Redis-backed rate limiting
+- [x] Redis-backed rate limiting — fails closed on Redis outage
 
 ### P1.3 Domain modules
 - [x] `assets` — registry CRUD, derived identity, disclosure, attestation, stats
-- [ ] Issuers module — **blocking asset registration through the API**; currently seeded directly
+- [x] Issuers module — verification gated on evidence, unblocked asset registration
 - [x] `chains` — configuration, enablement; RPC URLs never exposed over the API
 - [x] `providers` — registry, status, health probe payload (never credentials)
 - [~] `swaps` — quote lifecycle and disclosure done; rail binding awaits a contracted provider

@@ -106,7 +106,17 @@ export class PricingService {
     };
   }
 
-  /** Latest price for every asset, for portfolio valuation. */
+  /**
+   * Latest fresh price for several assets, for valuation.
+   *
+   * Takes **surrogate** asset ids (the `AssetPrice.assetId` foreign key), not
+   * the domain `assetId`. The portfolio has those on the account row already,
+   * so resolving domain ids here would be a wasted round trip. Mixing the two
+   * is easy and fails silently — the map just comes back empty and every
+   * holding reads as unpriced.
+   *
+   * Returns a map keyed by the same surrogate id it was given.
+   */
   async latestMap(assetIds: string[]): Promise<Record<string, number>> {
     if (assetIds.length === 0) return {};
     const rows = await this.prisma.assetPrice.findMany({

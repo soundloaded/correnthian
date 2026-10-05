@@ -59,11 +59,12 @@ export class PortfolioService {
     });
     if (!wallet) throw new Error('Wallet not found');
 
-    const assetIds = wallet.accounts.map((a) => a.asset.assetId);
+    // Surrogate FK, not the domain assetId — see PricingService.latestMap.
+    const assetIds = wallet.accounts.map((a) => a.assetId);
     const prices = await this.pricing.latestMap(assetIds);
 
     const holdings: Holding[] = wallet.accounts.map((a) => {
-      const price = prices[a.asset.assetId] ?? null;
+      const price = prices[a.assetId] ?? null;
       // Base units to a human number, via string arithmetic — never a float
       // multiply on a 18-decimal balance.
       const units = Number(a.balanceRaw) / 10 ** a.asset.decimals;
