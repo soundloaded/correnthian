@@ -1,6 +1,7 @@
 import { Controller, Get, HttpCode, Inject } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../common/decorators/public.decorator.js';
+import { SkipRateLimit } from '../common/guards/rate-limit.guard.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RedisService } from '../redis/redis.service.js';
 
@@ -10,6 +11,7 @@ interface DependencyStatus {
 }
 
 @ApiTags('health')
+@SkipRateLimit()
 @Controller('health')
 export class HealthController {
   constructor(

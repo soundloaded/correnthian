@@ -115,9 +115,27 @@ pnpm --filter @correnthian/admin dev
 
 ## Conventions
 
-**`packages/*` are source-only.** They export TypeScript directly from `src/`
-and have **no `build` script**. Only `apps/*` and `services/*` compile. Do not
-add a build step to a package without a stated reason.
+**`packages/*` build to `dist/`.** They compile with
+`tsc -p tsconfig.package.json` and expose `dist/index.js` + `dist/index.d.ts`
+through `exports`.
+
+This is not incidental. A package whose `main` points at `src/index.ts` works
+under a bundler (Vite, Next) but **not** when Node loads the `.ts` directly —
+`services/api` is a tsc-emitting Node service, so it hits this. The failure is
+deferred and confusing: single-file packages load fine, so the problem only
+appears once a package gains a second file with a relative `.js` specifier.
+Everything is built for that reason, not for consistency alone.
+
+**`packages/*` build to `dist/`.** They compile with
+`tsc -p tsconfig.package.json` and expose `dist/index.js` + `dist/index.d.ts`
+through `exports`.
+
+This is not incidental. A package whose `main` points at `src/index.ts` works
+under a bundler (Vite, Next) but **not** when Node loads the `.ts` directly —
+`services/api` is a tsc-emitting Node service, so it hits this. The failure is
+deferred and confusing: single-file packages load fine, so the problem only
+appears once a package gains a second file with a relative `.js` specifier.
+Everything is built for that reason, not for consistency alone.
 
 **Explicit DI in Nest.** Use `@Inject(Service)`, never constructor
 parameter types alone. Nest's CLI uses `tsc`, which emits decorator metadata;

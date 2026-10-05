@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@correnthian/assets": "workspace:*",
+    "@correnthian/blockchain": "workspace:*",
     "@correnthian/config": "workspace:*",
     "@correnthian/integrations": "workspace:*",
     "@correnthian/security": "workspace:*",

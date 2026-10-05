@@ -6,6 +6,7 @@ import { AuditModule } from './audit/audit.module.js';
 import { ChainsModule } from './chains/chains.module.js';
 import { ComplianceModule } from './compliance/compliance.module.js';
 import { MetalsModule } from './metals/metals.module.js';
+import { IssuersModule } from './issuers/issuers.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { OnRampModule } from './onramp/onramp.module.js';
 import { AuthModule } from './auth/auth.module.js';
@@ -14,10 +15,13 @@ import { AppConfigModule } from './config/config.module.js';
 import { DevicesModule } from './devices/devices.module.js';
 import { HealthModule } from './health/health.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
+import { PortfolioModule } from './portfolio/portfolio.module.js';
+import { PricingModule } from './pricing/pricing.module.js';
 import { ProvidersModule } from './providers/providers.module.js';
 import { RedisModule } from './redis/redis.module.js';
 import { SwapsModule } from './swaps/swaps.module.js';
 import { UsersModule } from './users/users.module.js';
+import { WalletsModule } from './wallets/wallets.module.js';
 
 @Module({
   imports: [
@@ -49,6 +53,10 @@ import { UsersModule } from './users/users.module.js';
     ProvidersModule,
     SwapsModule,
     MetalsModule,
+    IssuersModule,
+    PricingModule,
+    PortfolioModule,
+    WalletsModule,
     NotificationsModule,
     OnRampModule,
   ],

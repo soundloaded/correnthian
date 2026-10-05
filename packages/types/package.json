@@ -4,14 +4,19 @@
   "private": true,
   "description": "Shared domain types for Correnthian",
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+    "typecheck": "tsc -p tsconfig.package.json --noEmit",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo",
+    "build": "tsc -p tsconfig.package.json"
   },
   "dependencies": {}
 }
