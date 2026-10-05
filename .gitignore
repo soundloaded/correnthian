@@ -15,3 +15,6 @@ coverage/
 .expo-shared/
 ios/
 android/
+
+# Agent worktrees — transient, never committed
+.claude/worktrees/
