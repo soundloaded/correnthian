@@ -1,6 +1,6 @@
 # Correnthian — Task Tracker
 
-**Last updated:** 2026-10-05 (API foundation)
+**Last updated:** 2026-10-05 (API domain modules)
 **Current focus:** API foundation, then admin.
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -58,15 +58,15 @@ work happen that is not tracked here.
 ### P1.3 Domain modules
 - [x] `assets` — registry CRUD, derived identity, disclosure, attestation, stats
 - [ ] Issuers module — issuer onboarding and due-diligence record
-- [ ] `chains` — chain configuration, per-chain enablement
-- [ ] `providers` — provider registry, health, credentials
-- [ ] `swaps` — quote requests, `SwapRail` resolution
+- [x] `chains` — configuration, enablement; RPC URLs never exposed over the API
+- [x] `providers` — registry, status, health probe payload (never credentials)
+- [~] `swaps` — quote lifecycle and disclosure done; rail binding awaits a contracted provider
 - [ ] `metals` — instruments, serialisation, redemption states
 - [ ] `pricing` — metal spot + reference vs executable price
 - [ ] `onramp` / `offramp` — provider adapters
-- [ ] `compliance` — jurisdiction engine, sanctions screening hooks
+- [x] `compliance` — jurisdiction engine, deny-by-default, 7 tests. Sanctions hooks pending
 - [ ] `admin` — internal operations surface
-- [ ] `audit` — immutable audit log
+- [x] `audit` — append-only trail, metadata redacted on write
 - [ ] `notifications`
 
 ### P1.4 Hardening
@@ -88,7 +88,7 @@ work happen that is not tracked here.
 - [x] `npx shadcn@latest add dashboard-01`
 - [x] **Examine every stubbed file** and record what is mock data
       → [`apps/admin/STUB-AUDIT.md`](apps/admin/STUB-AUDIT.md)
-- [ ] Rewire to real API data
+- [ ] Rewire to real API data — agent attempt hit a plan rate limit and died at its first tool call; no work was lost and the next attempt will be inline
 - [ ] Auth + RBAC gate
 - [ ] Pages: users, devices, assets, issuers, providers, chains,
       transactions, quotes, compliance, audit
