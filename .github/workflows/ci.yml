@@ -36,8 +36,24 @@ jobs:
       - name: Test
         run: pnpm test
 
-  secret-scan:
-    name: Key-boundary guard
+  key-boundary:
+    name: Key boundary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: wallet-core must have no transport, UI or provider dependencies
+        run: node scripts/check-key-boundary.mjs
+
+  credential-scan:
+    name: No credentials in env files
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -72,6 +72,8 @@ work happen that is not tracked here.
 ### P1.4 Hardening
 - [x] Input validation (Zod) on every route, with env-var-named config errors
 - [x] Error taxonomy + global exception filter, no internal detail leaked
+- [x] Key-boundary CI guard — proves wallet-core has no transport/UI/provider dep
+- [x] API held to the same strictness bar as the packages it depends on
 - [ ] OpenAPI docs
 - [ ] Integration test harness against real Postgres/Redis
 - [ ] Error taxonomy and mapping
@@ -125,6 +127,9 @@ work happen that is not tracked here.
 |---|---|---|
 | **Metals issuer / LP partnership** | **Critical path.** Multi-month lead time. Metals cannot ship without it. | [!] Not started — start immediately |
 | Legal counsel | Entity, money-transmitter analysis, CFTC vs SEC for metals. Required **before design freeze**, not before launch. | [!] Not engaged |
+| Seed account recovery | Guardians live in a smart account; BTC/SOL have no equivalent, so those accounts currently have no recovery path at all | [ ] Decide before wallet work |
+| Design freeze date | Undated in the plan, but counsel questions change how the buy flow is built | [ ] Set a date |
+| `verifiedTier` verification | The registry can currently assert `issuer_verified` about itself with no workflow behind it | [ ] Needs a process |
 | Provider due diligence | Verify Kinesis/PAXG/XAUT specifics independently — research was degraded and unverified | [ ] |
 
 ---

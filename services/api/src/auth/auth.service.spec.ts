@@ -24,7 +24,9 @@ describe('AuthService', () => {
 
   it('never persists the raw session token — only its digest', async () => {
     const { token } = await auth.issueSession('user-1');
-    const stored = prisma.session.create.mock.calls[0][0].data;
+    const call = prisma.session.create.mock.calls[0];
+    expect(call).toBeDefined();
+    const stored = call?.[0]?.data;
 
     expect(stored.tokenHash).not.toBe(token);
     expect(stored.tokenHash).toMatch(/^[0-9a-f]{64}$/);
