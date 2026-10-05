@@ -1,0 +1,33 @@
+{
+  "name": "@correnthian/mobile",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "@correnthian/api-client": "workspace:*",
+    "@correnthian/assets": "workspace:*",
+    "@correnthian/design-tokens": "workspace:*",
+    "@correnthian/security": "workspace:*",
+    "@correnthian/swaps": "workspace:*",
+    "@correnthian/types": "workspace:*",
+    "@correnthian/ui": "workspace:*",
+    "@correnthian/wallet-core": "workspace:*",
+    "expo": "~57.0.26",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf .expo dist .turbo",
+    "build": "echo 'Expo bundles at runtime; no build step'"
+  },
+  "private": true
+}

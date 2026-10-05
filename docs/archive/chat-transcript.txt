@@ -1,0 +1,2762 @@
+I need prompt to tell my claude that I would like to build wallets app just like trust wallets “It will be a normal crypto wallet like every other wallet,  but it will have options for clients to hold precious metals.  Client can his USDT holdings to precious metal to purchase.  Like a self custodian wallet.
+
+Yes. The idea is because all this precious metals are about to be tokenized. So I want a wallet to hold crypto and digital precious metals”
+
+So first analyse this do not write prompt now, we have to chat more, so you can details me roadmap, plans, architecture, stacks, because we will have it web+android+iOS so I will need it one code deploy android and iOS.
+
+Yes — this is a much bigger project than simply cloning Trust Wallet, and the precious-metals/tokenization layer changes the architecture significantly.
+
+I understand the concept as:
+
+A self-custodial multi-chain crypto wallet where users can hold normal cryptocurrencies such as BTC/ETH/USDT, while also holding tokenized precious metals (e.g. tokenized gold/silver). Users can convert/swap their USDT or other supported assets into those metal-backed tokens and hold them inside the same wallet.
+
+And you want it as:
+
+🌐 Web wallet
+📱 Android
+🍎 iOS
+Ideally one shared codebase for mobile
+Self-custody — your platform shouldn't hold users' private keys
+Crypto + tokenized precious metals in one portfolio
+The first important distinction
+
+There are actually three systems we need to think about separately:
+
+1. Wallet infrastructure
+
+Private keys, seed phrases, wallet creation/import, signing, addresses, transactions, chain RPCs, gas estimation, token balances, etc.
+
+2. Asset/token infrastructure
+
+BTC, ETH, USDT, stablecoins, ERC-20/SPL/etc., and eventually tokenized gold/silver/other commodities.
+
+3. Trading/on-ramp layer
+
+The functionality that lets:
+
+USDT → Tokenized Gold
+
+or
+
+Tokenized Gold → USDT
+
+This third part is where things get interesting. The wallet itself doesn't necessarily need to "create" the precious-metal token. It could integrate with tokenized-asset issuers/exchanges/liquidity providers.
+
+For example, conceptually:
+
+                 YOUR WALLET
+                      │
+       ┌──────────────┼──────────────┐
+       │              │              │
+     Crypto       Precious       Swap Engine
+     Wallet        Metals             │
+       │              │          USDT → GOLD
+       │              │          GOLD → USDT
+       │              │
+ BTC / ETH / USDT   Gold Token
+                    Silver Token
+                    etc.
+The architecture I'd investigate
+
+For the mobile apps, I'd strongly consider React Native + Expo or Flutter rather than building Android and iOS separately.
+
+Given your existing experience with React/Next.js/Node/NestJS, I'd initially lean toward:
+
+React Native + Expo
+
+with:
+
+                    ┌─────────────────┐
+                    │   Web Wallet    │
+                    │ Next.js         │
+                    └────────┬────────┘
+                             │
+                    ┌────────▼────────┐
+                    │ Shared Services │
+                    │ TypeScript      │
+                    └────────┬────────┘
+                             │
+          ┌──────────────────┼──────────────────┐
+          │                  │                  │
+    React Native          Backend          Blockchain
+    iOS + Android         NestJS            Networks
+          │                  │                  │
+          │             PostgreSQL          RPCs
+          │             Redis               Indexers
+          │             APIs
+          │
+    Secure Key Storage
+    Secure Enclave/
+    Android Keystore
+
+The key point is that your backend should NOT receive users' private keys or seed phrases in a true self-custodial architecture.
+
+But there is a major design decision we should make early
+
+We need to decide whether you're building:
+
+A. A wallet that supports existing tokenized metals
+
+For example:
+
+User
+ ↓
+USDT
+ ↓
+Swap provider / liquidity provider
+ ↓
+Tokenized Gold
+ ↓
+User's wallet
+
+This is relatively straightforward architecturally.
+
+B. Your own tokenized precious metals
+
+For example:
+
+Physical Gold
+       ↓
+Custodian/Vault
+       ↓
+Your Gold Token
+       ↓
+Blockchain
+       ↓
+Your Wallet
+
+This becomes a completely different business.
+
+Now you're dealing with things such as:
+
+physical asset custody
+audits
+token issuance/redemption
+reserves
+legal structure
+KYC/AML
+jurisdiction
+securities/commodities regulations
+proof of reserves
+redemption mechanisms
+smart-contract design
+
+So I would not start by assuming we need to issue our own gold token.
+
+We should first design the wallet so that it can support multiple tokenized-asset providers.
+
+That gives you:
+
+Wallet
+   │
+   ├── BTC
+   ├── ETH
+   ├── USDT
+   ├── USDC
+   │
+   └── Tokenized Assets
+          ├── Gold provider A
+          ├── Gold provider B
+          ├── Silver provider A
+          └── Future assets
+
+That makes the architecture much more future-proof.
+
+I would also avoid thinking of it as "Trust Wallet + gold"
+
+The better conceptual product is:
+
+A self-custodial digital asset wallet with a tokenized real-world asset layer.
+
+That opens the door later to:
+
+🪙 Gold
+🥈 Silver
+Platinum
+Other commodity-backed tokens
+Tokenized funds
+Potentially tokenized real-world assets
+
+without rebuilding the wallet.
+
+One-codebase strategy
+
+For mobile:
+
+              TypeScript
+                  │
+          React Native / Expo
+             /          \
+          iOS          Android
+
+For web:
+
+Next.js
+   │
+   └── Shared TypeScript packages
+          │
+          ├── Wallet logic
+          ├── Blockchain logic
+          ├── Asset models
+          ├── API client
+          ├── Validation
+          └── Transaction logic
+
+So we'd have a monorepo approximately like:
+
+wallet/
+│
+├── apps/
+│   ├── web/
+│   │   └── Next.js
+│   │
+│   └── mobile/
+│       └── React Native / Expo
+│
+├── packages/
+│   ├── wallet-core/
+│   ├── blockchain/
+│   ├── assets/
+│   ├── transactions/
+│   ├── swaps/
+│   ├── api-client/
+│   ├── ui/
+│   └── types/
+│
+├── backend/
+│   └── NestJS
+│
+└── infrastructure/
+
+That is the direction I'd investigate before we start writing the actual master prompt.
+
+There are several things we should discuss before the prompt
+
+I'd like us to nail down these decisions:
+
+Which blockchains do we support initially?
+Ethereum
+BNB Chain
+Polygon
+Solana
+Bitcoin
+Tron
+etc.
+Which tokenized precious metals are we talking about?
+Existing tokens
+Or eventually your own gold/silver tokens?
+How should the USDT → Gold process work?
+DEX
+aggregator
+centralized liquidity provider
+direct issuer integration
+How much custody do you want?
+Completely non-custodial
+optional social recovery
+hardware-wallet support
+MPC
+standard seed phrase
+
+What should the backend actually know?
+
+Ideally:
+
+Private key → user's device only
+
+while:
+
+Backend → public addresses + portfolio/indexing data
+How do we handle transaction history and blockchain indexing?
+How do we handle fiat pricing and precious-metal pricing?
+Security architecture
+secure enclave
+Android Keystore
+biometric unlock
+encrypted local storage
+seed backup
+transaction simulation
+malicious-token detection
+phishing protection
+
+Compliance/business model
+
+Especially because the moment you facilitate conversion between crypto and tokenized commodities, the regulatory requirements can become materially different from a simple wallet.
+
+Revenue
+
+For example:
+
+Swap fee
+│
+├── 0.1%
+├── 0.25%
+└── provider spread
+
+without compromising the self-custodial nature of the wallet.
+
+The most important thing I would do now is not write the prompt yet. We should first design the product properly, because the final prompt should essentially tell claude to act as your CTO + blockchain architect + security architect + product architect, then produce the implementation roadmap and eventually the codebase.
+
+We can go through the architecture piece by piece, starting with exactly how the wallet, private keys, blockchains, USDT, and tokenized gold would interact.
+
+Yes — that's exactly why React Native is a strong choice for Correnthian.
+
+We can build the mobile app once and deploy the same application codebase to both Android and iOS.
+
+                 CORRENTHIAN MOBILE
+                        │
+               React Native + Expo
+                        │
+             ┌──────────┴──────────┐
+             │                     │
+          Android                  iOS
+             │                     │
+        Google Play             App Store
+Same interface?
+
+Yes. We control the design ourselves, so Correnthian can have essentially the same visual interface and UX on both platforms.
+
+For example:
+
+┌─────────────────────────┐
+│  Correnthian       ⚙️   │
+│                         │
+│  Total Balance           │
+│  $12,482.39             │
+│                         │
+│  ┌────────┐ ┌────────┐  │
+│  │ BTC    │ │ USDT   │  │
+│  │ $4,200 │ │ $3,000 │  │
+│  └────────┘ └────────┘  │
+│                         │
+│  🥇 Gold                │
+│  $5,282.39              │
+│                         │
+│  Send  Receive  Swap    │
+│                         │
+│ Home  Markets  Wallet  │
+└─────────────────────────┘
+
+That same design can appear on Android and iPhone.
+
+But there is one important distinction
+
+Same design doesn't mean absolutely identical platform behavior.
+
+React Native will use some native components/features where necessary.
+
+For example:
+
+Feature	Android	iOS
+Correnthian UI	Same	Same
+Portfolio	Same	Same
+Send/Receive	Same	Same
+Swap	Same	Same
+Gold	Same	Same
+Navigation	Same design	Same design
+Biometrics	Android biometric APIs	Face ID/Touch ID
+Secure key storage	Android Keystore	iOS Keychain/Secure Enclave
+Push notifications	FCM	APNs
+App permissions	Android system	iOS system
+App Store	Google Play	Apple App Store
+
+So the user experience remains Correnthian, while the underlying security/system APIs adapt to the platform.
+
+And this is why we should design the UI ourselves
+
+I wouldn't build Correnthian around Android Material Design and then try to make it look like iOS.
+
+Instead:
+
+Correnthian Design System
+
+Correnthian UI
+     │
+     ├── Colors
+     ├── Typography
+     ├── Buttons
+     ├── Cards
+     ├── Bottom sheets
+     ├── Charts
+     ├── Asset components
+     ├── Navigation
+     └── Animations
+
+Then React Native renders that system on both platforms.
+
+That gives us what you're asking for:
+
+Build once → Android first → later enable/build iOS → same Correnthian interface, same features, same UX.
+
+And importantly, we don't need to rewrite the wallet when iOS launches. We build the architecture with iOS compatibility from day one, even if Android is the first platform we release.
+
+Now iPhone now have some ui redesign like some app I use I see like the glassmophism and some apple design they introduced which many apps now uses that styling so do our own work like that 
+
+Exactly. We should not make Correnthian look like a generic React Native app or simply copy Apple's interface.
+
+We can create a Correnthian design language that takes advantage of modern iOS visual capabilities—glass, translucency, depth, fluid animations—while maintaining the same Correnthian identity on Android.
+
+The direction I'd recommend
+
+Think:
+
+Apple-level polish + fintech seriousness + Correnthian identity.
+
+For example:
+
+6
+Correnthian visual language
+
+1. Glass surfaces
+
+Cards could have:
+
+translucent surfaces
+subtle background blur
+soft borders
+layered depth
+controlled reflections
+
+Rather than excessive "glass everywhere."
+
+┌─────────────────────────────┐
+│                             │
+│  Total Portfolio            │
+│                             │
+│  $24,842.91                 │
+│                             │
+│  +4.82%                     │
+│                             │
+│  ◌ ◌ ◌ ◌ ◌                 │
+└─────────────────────────────┘
+
+2. Dark-first interface
+
+I'd make Correnthian primarily dark, with a sophisticated neutral palette and a distinctive accent.
+
+Something like:
+
+Obsidian + silver + subtle gold accent
+
+That would work particularly well because we're dealing with precious metals.
+
+But we shouldn't make everything gold. Gold should communicate the metal asset, not become the entire brand color.
+
+3. Liquid animations
+
+The wallet should feel alive.
+
+For example:
+
+Tap Gold
+
+Portfolio
+   ↓
+Gold card expands
+   ↓
+Price/chart smoothly transitions
+   ↓
+Metal details appear
+
+Swap
+
+USDT
+ ↓
+[ ⇅ ]
+ ↓
+Gold
+
+The assets can visually transition between one another.
+
+4. Floating navigation
+
+Rather than an old-fashioned fixed Android tab bar:
+
+Home | Markets | Wallet | Settings
+
+we could create a modern floating navigation surface:
+
+       ┌──────────────────────────────┐
+       │  ◉       ◇       ⇅       ☰  │
+       └──────────────────────────────┘
+
+with subtle translucency and depth.
+
+But we'd still ensure accessibility and platform conventions are respected.
+
+And here's the important part
+
+We should not make Android look like Android and iPhone look like iPhone.
+
+You specifically want:
+
+Correnthian should look like Correnthian.
+
+So:
+
+                 CORRENTHIAN DESIGN SYSTEM
+                           │
+                ┌──────────┴──────────┐
+                │                     │
+             Android                 iOS
+                │                     │
+        Same visual language   Same visual language
+        Same components        Same components
+        Same navigation        Same navigation
+        Same animations*       Same animations*
+
+*Where platform capabilities allow.
+
+The underlying implementation may use different native APIs for things like biometrics, secure storage, notifications, etc., but the user shouldn't feel like they're using two different products.
+
+One thing I'd add to our architecture now
+
+Let's make the design system a first-class Correnthian package:
+
+packages/
+├── ui/
+├── design-tokens/
+│   ├── colors
+│   ├── typography
+│   ├── spacing
+│   ├── radius
+│   ├── shadows
+│   ├── glass
+│   ├── animation
+│   └── motion
+└── icons/
+
+Then we can define things like:
+
+Correnthian Glass
+Correnthian Card
+Correnthian Sheet
+Correnthian Button
+Correnthian Asset Card
+Correnthian Balance
+Correnthian Swap
+Correnthian Chart
+Correnthian Navigation
+
+That way, when we eventually launch iOS, we don't redesign the application.
+
+We simply compile the same Correnthian experience for iOS.
+
+And I would actually make this one of our explicit requirements in the master architecture:
+
+No platform-specific redesign unless required by security, accessibility, or native OS functionality. Correnthian maintains a unified visual identity and UX across Web/PWA, Android and iOS.
+
+That gives us room to use modern glass/translucent visual effects without turning Correnthian into an imitation of Apple's UI.
+
+Uploaded an image
+Look at this image footer nav and see what I mean by example 
+
+For Correnthian, if the goal is to build a serious U.S.-based fintech/crypto startup that can eventually raise institutional/VC funding, I would lean toward a Delaware C-Corporation (Inc.) rather than an LLC.
+
+Why I would choose a C-Corp for Correnthian
+	Delaware C-Corp	LLC
+VC/investor funding	⭐⭐⭐⭐⭐	⭐⭐
+Selling shares/equity	Excellent	More complicated
+Stock options/employee equity	Excellent	Less standard
+Institutional investors	Very common	Less common
+Startup acquisition	Straightforward	Can be more complicated
+Corporate structure	Very standardized	Flexible
+Tax flexibility	Standard corporate taxation	Pass-through by default
+Crypto/fintech startup	Strong fit	Possible
+Long-term scale	Excellent	Excellent, but less standard for VC
+Administrative complexity	Higher	Lower
+The structure I'd consider
+
+Something like:
+
+Correnthian Technologies, Inc.
+
+A Delaware C-Corporation.
+
+Then:
+
+Correnthian Technologies, Inc.
+│
+├── Correnthian®
+├── correnthian.com
+├── Correnthian Wallet
+├── Correnthian Web
+├── Correnthian Mobile
+└── Correnthian technology/IP
+
+The corporation owns the intellectual property and the Correnthian trademark.
+
+Why Delaware?
+
+Delaware is particularly common for venture-backed U.S. startups because of its established corporate law and investor familiarity.
+
+For example, if Correnthian eventually raises:
+
+$2M Seed
+$10M Series A
+$30M Series B
+
+a Delaware C-Corp structure is much more familiar to institutional investors than trying to convert an LLC later.
+
+But there's an important distinction
+
+"Inc." doesn't automatically mean Delaware C-Corp.
+
+You could incorporate in another state and still have a corporation.
+
+When I say:
+
+Delaware C-Corp
+
+I mean:
+
+State: Delaware
+Entity: Corporation
+Tax structure: C-Corporation
+Name: Correnthian Technologies, Inc.
+
+For this particular project
+
+Because Correnthian is planned as:
+
+Self-custodial wallet + crypto on-ramp + swaps + tokenized precious metals + potentially institutional investment
+
+I'd structure the startup with the expectation that it may eventually need:
+
+Investors
+Board of directors
+Employee equity
+Institutional partnerships
+Regulatory relationships
+Multiple subsidiaries/entities
+Significant IP ownership
+Potential acquisition
+
+That makes a Delaware C-Corp a strong starting structure.
+
+One caveat: the corporate entity choice and the crypto regulatory/licensing structure are separate decisions. C-Corp doesn't itself authorize Correnthian to operate regulated financial activities. Before filing, have a U.S. startup/crypto attorney and CPA confirm the entity, ownership, tax treatment, and regulatory structure.
+
+If you want, I can next lay out exactly how Correnthian Technologies, Inc. should be structured from founder → shareholders → board → IP → trademark → banking → crypto regulatory entities, because that's the part I'd get right before we start building the platform.
+
+Today 6:04 AM
+now summarize everything we have chatted about this work, also there are several places we held conversations so make sure you listed out what we are building, stacks, architectures and many more, so that we can go over to the vscode to start work
+
+Absolutely. I’ve consolidated the Correnthian discussions across the different conversations into one master project brief. This is the document we should use as the source of truth before opening VS Code and writing production code.
+
+CORRENTHIAN — MASTER PROJECT SPECIFICATION
+
+Brand: Correnthian
+Primary domain: correnthian.com
+Business: U.S.-based fintech/crypto startup
+Proposed entity: Delaware C-Corporation, e.g. Correnthian Technologies, Inc.
+Product: Self-custodial digital wealth wallet combining cryptocurrency, tokenized precious metals and eventually other tokenized real-world assets.
+
+1. What are we building?
+
+Correnthian is a self-custodial digital asset and wealth platform.
+
+The core idea is:
+
+One wallet for crypto + tokenized precious metals + future tokenized real-world assets.
+
+Users should be able to:
+
+Create a wallet
+Import an existing wallet
+Hold crypto
+Hold tokenized gold/silver
+Buy crypto with fiat
+Sell crypto
+Swap crypto
+Buy tokenized gold/silver using crypto such as USDT
+Sell tokenized metals back into crypto
+Send crypto
+Receive crypto
+View portfolio value
+Track transactions
+Connect to supported DApps
+Manage token approvals
+Eventually redeem eligible tokenized metals for physical metal where the provider supports it
+
+The key principle is:
+
+Correnthian is self-custodial. The user's private keys remain under the user's control.
+
+Correnthian's backend must never receive or store user seed phrases or private keys.
+
+2. The product ecosystem
+
+We're effectively building several products under one brand.
+
+A. Correnthian Marketing Website
+
+Public-facing website:
+
+Home
+About
+How It Works
+Crypto Wallet
+Precious Metals
+Tokenized Assets
+Security
+Supported Assets
+Supported Networks
+Fees
+FAQ
+Contact
+Blog/news
+Documentation
+Terms
+Privacy
+Risk disclosures
+Download app
+Sign in
+Create wallet
+B. Correnthian Web Wallet
+
+A full browser-based wallet/PWA.
+
+Users can:
+
+Create/import wallet
+View balances
+Send
+Receive
+Swap
+Buy
+Sell
+View portfolio
+Manage assets
+View transactions
+Connect DApps
+Manage security
+Manage settings
+C. Correnthian Mobile
+
+One shared React Native codebase:
+
+React Native + Expo
+       │
+       ├── Android
+       └── iOS
+
+Android comes first if necessary, but the architecture must support iOS from the beginning.
+
+The UX/design should remain essentially the same across:
+
+Web
+PWA
+Android
+iOS
+3. Correnthian's biggest differentiator
+
+The interesting part isn't simply "another crypto wallet."
+
+It's:
+
+Crypto + tokenized precious metals.
+
+Example:
+
+USDT
+ ↓
+Correnthian Swap
+ ↓
+Tokenized Gold
+ ↓
+User's self-custodial wallet
+
+And:
+
+Tokenized Gold
+ ↓
+Correnthian Swap
+ ↓
+USDT
+ ↓
+User's wallet
+
+Potentially:
+
+Fiat
+ ↓
+Buy Crypto
+ ↓
+USDT
+ ↓
+Buy Gold
+ ↓
+Tokenized Gold
+
+This is why the asset engine and provider architecture are extremely important.
+
+4. Precious metals architecture
+
+We do not initially want to create our own gold token.
+
+Instead, Correnthian should integrate established tokenized-metal issuers/providers.
+
+Potential providers we researched/discussed include:
+
+Kinesis
+Matrixdock
+Meld Gold
+Other regulated/tokenized-metal providers
+
+These are examples to investigate—not final selections.
+
+The final provider must be selected after due diligence on:
+
+Legal structure
+Physical backing
+Custodian
+Proof of reserves
+Token contract
+Blockchain
+Liquidity
+Redemption
+Jurisdictions
+KYC requirements
+Fees
+Settlement
+API availability
+Institutional reliability
+5. Provider-agnostic architecture
+
+This is one of the most important architectural decisions.
+
+We should never hard-code Correnthian around one provider.
+
+For example:
+
+Correnthian Asset/Swap Engine
+            │
+     Provider Adapter
+            │
+     ┌──────┼──────┐
+     ↓      ↓      ↓
+ Provider A B      C
+
+Potential structure:
+
+packages/integrations/
+
+├── swaps/
+│   ├── provider-a/
+│   ├── provider-b/
+│   └── provider-c/
+│
+├── metals/
+│   ├── provider-a/
+│   ├── provider-b/
+│   └── provider-c/
+│
+├── onramp/
+├── offramp/
+├── kyc/
+└── market-data/
+
+This lets us replace providers without rewriting the application.
+
+6. Buy Crypto
+
+The client specifically asked about this.
+
+Correnthian should have a Buy Crypto function similar to Trust Wallet.
+
+Example:
+
+BUY CRYPTO
+
+Asset: USDT
+Network: Base
+Amount: $500
+
+Payment:
+Credit/Debit Card
+Bank Transfer
+Apple Pay
+Google Pay
+...
+
+Provider:
+On-ramp Provider
+
+Fee: $X
+You receive: XXX USDT
+
+[ Buy ]
+
+The provider handles the relevant fiat/payment/KYC flow.
+
+The crypto should ultimately arrive at the user's Correnthian wallet.
+
+Architecture:
+
+User
+ ↓
+Correnthian Buy
+ ↓
+On-Ramp Provider
+ ↓
+Fiat payment / KYC
+ ↓
+Crypto
+ ↓
+User's Correnthian address
+
+Again:
+
+Do not hard-code one on-ramp provider.
+
+7. Sell Crypto
+
+Similarly:
+
+Correnthian Wallet
+       ↓
+     Sell
+       ↓
+Off-ramp Provider
+       ↓
+Fiat
+       ↓
+User
+
+Availability will depend on:
+
+Country
+Asset
+Payment method
+Provider
+Regulatory requirements
+8. Crypto Swap
+
+Users should eventually be able to:
+
+USDT → ETH
+ETH → USDC
+BTC → USDT
+USDC → Gold token
+Gold token → USDT
+
+The swap engine should compare:
+
+Price
+Liquidity
+Spread
+Provider fee
+Network fee
+Slippage
+Price impact
+Settlement
+Supported jurisdiction
+Provider availability
+Quote expiry
+
+The UI should show the user exactly what they're getting before signing.
+
+9. Tokenized metals
+
+Initial focus:
+
+Gold
+Silver
+
+Potential future:
+
+Platinum
+Palladium
+Other tokenized RWAs
+
+Each metal should have metadata such as:
+
+assetId
+symbol
+name
+type
+chain
+contractAddress
+decimals
+priceSource
+issuer
+provider
+custodyModel
+transferSupported
+swapSupported
+redemptionSupported
+status
+
+A gold token must not simply be treated as "gold."
+
+Correnthian needs to know:
+
+Which issuer?
+Which contract?
+Which blockchain?
+What exactly does one token represent?
+Where is the underlying metal?
+Who holds it?
+Can it be redeemed?
+Who provides liquidity?
+
+10. Physical gold redemption
+
+This remains a product decision.
+
+If supported:
+
+User's Gold Token
+       ↓
+Redemption Request
+       ↓
+Metal Provider
+       ↓
+Physical Gold
+       ↓
+Delivery / Pickup
+
+Questions still requiring final provider/business decisions:
+
+Minimum redemption
+Eligible countries
+Delivery
+Fees
+KYC
+Custodian
+Insurance
+Settlement
+Provider responsible for physical delivery
+
+Correnthian shouldn't promise physical redemption unless the underlying provider actually supports it.
+
+11. Blockchain strategy
+
+The blockchain architecture must be modular.
+
+Initial EVM engine
+
+Potential initial networks:
+
+Ethereum
+BNB Chain
+Polygon
+Base
+
+Potential V1/V1.1:
+
+Arbitrum
+Tron
+Solana
+
+Later:
+
+Avalanche
+Optimism
+TON
+XRP
+Sui
+Aptos
+etc.
+
+But we should not support every chain just because it exists.
+
+The exact launch networks depend partly on:
+
+USDT availability
+Tokenized-metal provider
+Liquidity
+On-ramp providers
+User demand
+Gas costs
+Regulatory considerations
+Important distinction
+
+USDT isn't one universal asset.
+
+For example:
+
+USDT Ethereum = ERC-20
+USDT BNB = BEP-20
+USDT Polygon = Polygon token
+USDT Tron = TRC-20
+USDT Solana = SPL
+
+Therefore the asset registry must distinguish:
+
+Asset + Network + Contract
+
+12. EVM architecture
+
+EVM means Ethereum Virtual Machine.
+
+Our architecture can share wallet technology across EVM networks:
+
+Correnthian Blockchain Core
+
+        EVM Engine
+        ├── Ethereum
+        ├── BNB Chain
+        ├── Polygon
+        ├── Base
+        ├── Arbitrum
+        ├── Avalanche
+        └── Optimism
+
+        Bitcoin Engine
+        └── Bitcoin
+
+        Solana Engine
+        └── Solana
+
+Bitcoin and Solana require separate blockchain implementations because they're not EVM chains.
+
+13. RPC infrastructure
+
+RPC is how Correnthian communicates with blockchains.
+
+Potential providers discussed:
+
+Alchemy
+Infura
+QuickNode
+Ankr
+Chainstack
+
+We shouldn't depend on one RPC provider.
+
+Architecture:
+
+Correnthian
+     ↓
+RPC Manager
+ ┌───┼────┐
+ ↓   ↓    ↓
+RPC1 RPC2 RPC3
+
+If one provider fails, another can be used.
+
+RPC can:
+
+Read balances
+Estimate gas
+Read contracts
+Submit signed transactions
+Check transaction status
+Read blockchain state
+
+RPC should never require the user's private key.
+
+14. Wallet security architecture
+
+This is one of the most important parts of the entire project.
+
+Golden rule
+PRIVATE KEY
+     ↓
+USER DEVICE
+     ↓
+NEVER SENT TO BACKEND
+
+The backend gets things such as:
+
+Public address
+Transaction hash
+Portfolio information
+Public blockchain data
+
+Not:
+
+Seed phrase
+Private key
+Unencrypted wallet secrets
+15. Mobile key protection
+Android
+
+Use:
+
+Android Keystore
+Hardware-backed protection where available
+Biometric authentication
+Secure encrypted storage
+iOS
+
+Use:
+
+Keychain
+Appropriate Secure Enclave-backed capabilities
+Face ID/Touch ID
+
+We should not simply put wallet secrets into:
+
+AsyncStorage
+Plain SQLite
+LocalStorage
+Plain files
+Logs
+16. Wallet authentication
+
+User should have:
+
+PIN
+Biometrics
+Auto-lock
+Re-authentication
+Secure wallet unlock
+Recovery phrase confirmation
+Sensitive-action protection
+
+For example:
+
+Open app
+ ↓
+Biometric
+ ↓
+View wallet
+
+Press SEND
+ ↓
+Biometric/PIN again
+ ↓
+Review transaction
+ ↓
+Risk checks
+ ↓
+Local signing
+ ↓
+Broadcast
+17. Transaction security
+
+Before signing:
+
+Validate address
+Validate network
+Validate token contract
+Estimate gas
+Simulate transaction where possible
+Detect suspicious addresses
+Detect dangerous contract interactions
+Detect unlimited approvals
+Show slippage
+Show price impact
+Show fees
+Show minimum received
+Show destination clearly
+
+Example:
+
+⚠️ This transaction gives this contract permission to spend your USDT.
+
+Users should understand what they're signing.
+
+18. Anti-phishing/scam protection
+
+Include:
+
+Malicious DApp detection
+Phishing URL detection
+Suspicious-token warnings
+Verified asset registry
+Contract verification
+Address risk checks
+DApp connection management
+WalletConnect permissions
+Approval management
+Approval revocation
+Transaction simulation
+19. Backend security
+
+Backend security should include:
+
+WAF
+DDoS protection
+API gateway
+Rate limiting
+Strong authentication
+Authorization
+Encryption
+Database security
+Secure backups
+Secrets management
+Audit logs
+Monitoring
+Vulnerability scanning
+Dependency scanning
+Incident response
+
+The API must never trust the client.
+
+20. Correnthian infrastructure secrets
+
+For Correnthian's own server-side secrets, use proper KMS/HSM/secrets-management architecture.
+
+Examples:
+
+Provider API keys
+Encryption keys
+Infrastructure secrets
+Service credentials
+
+This is separate from user wallet keys.
+
+21. Device integrity
+
+Where practical:
+
+Root detection
+Jailbreak detection
+App integrity
+Tamper detection
+Debugging detection
+Emulator/risk signals
+
+Android can use mechanisms such as Play Integrity.
+
+But these are additional layers—not the foundation of wallet security.
+
+22. Security testing
+
+Before production:
+
+Development
+ ↓
+Automated security tests
+ ↓
+Code review
+ ↓
+Dependency scanning
+ ↓
+Mobile security testing
+ ↓
+API security testing
+ ↓
+Smart-contract audit
+ ↓
+Penetration testing
+ ↓
+Security review
+ ↓
+Production
+
+Use OWASP MASVS/MASTG as a major mobile security baseline.
+
+A professional independent penetration test should be considered mandatory before handling real user assets.
+
+23. Design system
+
+Correnthian should not look like a generic React Native crypto wallet.
+
+The desired direction is:
+
+Premium
+Modern
+Dark-first
+Financial
+Minimal
+High-trust
+Obsidian/dark surfaces
+Silver/neutral UI
+Subtle gold accent
+Translucent glass
+Depth
+Rounded surfaces
+Fluid animations
+
+The user specifically liked the modern iOS-style floating translucent navigation / Liquid Glass aesthetic.
+
+But:
+
+Correnthian's identity comes first.
+
+We're not copying Apple's UI.
+
+We create:
+
+CorrenthianGlass
+CorrenthianFloatingNav
+CorrenthianFloatingAction
+CorrenthianCard
+CorrenthianSheet
+CorrenthianButton
+CorrenthianModal
+
+And a shared design-token system.
+
+24. Floating navigation
+
+Conceptually:
+
+Home
+Assets
+Swap
+Activity
+More
+
+with a floating glass navigation surface.
+
+Potential floating action button for:
+
+Send
+Receive
+Buy
+Scan
+
+The exact navigation can be finalized during design.
+
+25. Technology stack
+Web
+
+Next.js + TypeScript
+
+For:
+
+Marketing
+Web wallet
+PWA
+Mobile
+
+React Native + Expo + TypeScript
+
+One codebase:
+
+apps/mobile
+   ↓
+Android
+iOS
+
+Native APIs can differ where required for:
+
+Keychain
+Keystore
+Biometrics
+Push notifications
+Device security
+
+But the product design remains unified.
+
+Backend
+
+NestJS + TypeScript
+
+Services/modules for:
+
+Authentication
+Users
+Devices
+Wallet metadata
+Portfolio
+Assets
+Blockchain
+Transactions
+Swaps
+Metals
+Pricing
+On-ramp
+Off-ramp
+Notifications
+Admin
+Compliance
+Database
+
+PostgreSQL
+
+For:
+
+Users
+Devices
+Public wallet addresses
+Assets
+Providers
+Quotes
+Transactions
+Portfolio snapshots
+Settings
+Notifications
+Audit records
+
+Never store private keys/seed phrases.
+
+Cache/queues
+
+Redis
+
+For:
+
+Caching
+Rate limiting
+Temporary quotes
+Jobs
+Queues
+Provider requests
+Notifications
+Blockchain indexing tasks
+Monorepo
+
+Turborepo + pnpm
+
+26. Proposed repository
+correnthian/
+│
+├── apps/
+│   ├── marketing/
+│   │   └── Next.js
+│   │
+│   ├── web/
+│   │   └── Next.js + PWA
+│   │
+│   └── mobile/
+│       └── React Native + Expo
+│
+├── services/
+│   └── api/
+│       └── NestJS
+│
+├── packages/
+│   ├── ui/
+│   ├── design-tokens/
+│   ├── wallet-core/
+│   ├── blockchain/
+│   ├── assets/
+│   ├── transactions/
+│   ├── swaps/
+│   ├── security/
+│   ├── api-client/
+│   ├── types/
+│   ├── config/
+│   └── integrations/
+│
+├── infrastructure/
+│
+├── docs/
+│
+├── package.json
+├── pnpm-workspace.yaml
+├── turbo.json
+└── README.md
+27. Shared packages
+packages/wallet-core
+
+Responsible for:
+
+Wallet generation
+Import
+Derivation
+Account management
+Signing interface
+Recovery
+Wallet state
+packages/blockchain
+
+Responsible for:
+
+EVM
+Bitcoin
+Solana
+RPC
+Gas
+Transactions
+Chain configuration
+packages/assets
+
+Asset registry.
+
+packages/transactions
+
+Transaction models and state.
+
+packages/swaps
+
+Quote and swap abstraction.
+
+packages/security
+
+Security utilities and policies.
+
+packages/api-client
+
+Typed communication with NestJS.
+
+packages/ui
+
+Shared design system.
+
+packages/design-tokens
+
+Colors, spacing, typography, radius, shadows, motion.
+
+28. Backend architecture
+
+Conceptually:
+
+                 Correnthian Apps
+                       │
+                       ↓
+                 API Gateway
+                       │
+        ┌──────────────┼───────────────┐
+        ↓              ↓               ↓
+   Auth/User       Wallet Data      Portfolio
+        ↓              ↓               ↓
+   Transactions     Assets           Pricing
+        ↓              ↓               ↓
+      Swaps          Metals         Providers
+        │              │               │
+        └──────────────┼───────────────┘
+                       ↓
+              Blockchain Layer
+                       ↓
+              External Providers
+29. Core backend modules
+
+We should eventually have modules such as:
+
+auth
+users
+devices
+sessions
+wallets
+assets
+chains
+blockchain
+transactions
+portfolio
+prices
+swaps
+metals
+onramp
+offramp
+providers
+notifications
+kyc
+compliance
+fees
+referrals
+admin
+audit
+support
+
+Some can start as simpler modules and become services only when scale requires it.
+
+Do not prematurely turn everything into microservices.
+
+Start with a well-modularized backend.
+
+30. Admin dashboard
+
+Internal Correnthian administration should include:
+
+Users
+User search
+Account status
+Devices
+KYC status where applicable
+Country
+Risk status
+Assets
+Supported assets
+Contracts
+Chains
+Issuers
+Providers
+Status
+Providers
+On-ramp
+Off-ramp
+Swap
+Metals
+Market data
+Provider health
+Transactions
+Status
+Hash
+Chain
+Provider
+Fees
+Errors
+Compliance
+KYC
+AML
+Sanctions screening
+Jurisdiction restrictions
+Risk flags
+System
+Feature flags
+Fees
+Maintenance
+Provider configuration
+Network configuration
+31. Jurisdiction engine
+
+Because this is a U.S.-based financial product, features shouldn't simply be globally available.
+
+We need a jurisdiction layer:
+
+Country
+   ↓
+State
+   ↓
+User eligibility
+   ↓
+Available features
+
+For example:
+
+Country/state
+   ↓
+Can buy crypto?
+Can sell?
+Can use metals?
+Can redeem?
+Can use provider X?
+KYC required?
+
+The exact regulatory rules need to be defined with U.S. crypto/fintech counsel.
+
+32. U.S. company structure
+
+Current direction:
+
+Delaware C-Corporation
+
+Potential name:
+
+Correnthian Technologies, Inc.
+
+The company should own:
+
+Correnthian trademark
+Domain
+Source code
+IP
+Contracts
+Product
+Brand assets
+
+The reason for preferring a C-Corp is the intended startup trajectory:
+
+VC funding
+Institutional investors
+Equity issuance
+Employee stock/options
+Board structure
+Future acquisition
+Larger financing rounds
+33. Trademark
+
+For the brand:
+
+Priority
+
+Search and potentially file:
+
+CORRENTHIAN
+
+as a USPTO federal word mark.
+
+Then potentially separately protect:
+
+Correnthian logo/device mark
+
+Trademark classes need to be selected carefully because Correnthian covers software, financial services, crypto/digital assets and potentially precious-metal-related services.
+
+A trademark attorney should perform the clearance and determine the appropriate classes.
+
+34. Regulatory model
+
+This is crucial.
+
+We are not initially planning for Correnthian to become a giant custodial exchange.
+
+The preferred initial model is:
+
+Self-custodial wallet + regulated third-party providers.
+
+For example:
+
+Correnthian
+    │
+    ├── Self-custodial wallet
+    │
+    ├── On-ramp provider
+    │
+    ├── Off-ramp provider
+    │
+    ├── Swap/liquidity provider
+    │
+    └── Tokenized-metal provider
+
+Correnthian's exact regulatory obligations depend on the actual services, contracts, money flows, custody arrangements and jurisdictions.
+
+Therefore crypto/fintech counsel should review the business model before launch.
+
+35. Main third-party categories
+
+Correnthian will potentially need:
+
+Blockchain
+RPC
+Indexing
+Transaction infrastructure
+Crypto
+Swap/liquidity
+On-ramp
+Off-ramp
+Precious metals
+Token issuer
+Liquidity
+Custodian
+Redemption provider
+Compliance
+KYC
+AML
+Sanctions
+Risk screening
+Infrastructure
+Cloud
+Database
+Redis
+Monitoring
+Security
+Email
+Push notifications
+
+The architecture should use adapters so we're not locked into one provider.
+
+36. Features inventory
+
+The eventual platform should cover:
+
+Wallet
+Create
+Import
+Recovery
+Multiple accounts
+Watch-only
+Address book
+QR
+Assets
+Crypto
+Stablecoins
+Gold
+Silver
+Future RWAs
+Transactions
+Send
+Receive
+Swap
+Buy
+Sell
+Transaction history
+Portfolio
+Total value
+Asset allocation
+P/L
+Charts
+Historical values
+Local currency
+Security
+Biometrics
+PIN
+Devices
+DApps
+Approvals
+Security alerts
+DApps
+WalletConnect
+Connection management
+Permissions
+Market data
+Crypto prices
+Metal prices
+Historical data
+Reference vs executable price
+Notifications
+Incoming transaction
+Confirmation
+Swap
+Buy
+Sell
+Security
+KYC
+Provider issues
+Support
+Help center
+Documentation
+Tickets
+Status page
+Business
+Fees
+Referral system
+Potential future payments
+37. Things we have NOT finalized
+
+These must remain explicit decisions instead of us guessing.
+
+Blockchain
+
+Exactly which networks are V1.
+
+USDT
+
+Whether Tron/TRC-20 USDT must be supported at launch.
+
+Metals
+
+Exact gold/silver providers.
+
+Liquidity
+
+Who executes:
+
+USDT → Gold
+
+and:
+
+Gold → USDT
+
+Physical backing
+
+Who owns/custodies the physical gold.
+
+Redemption
+
+Whether Correnthian offers physical redemption or simply links users to the provider.
+
+Pricing
+
+Which provider gives executable gold prices.
+
+Fees
+Correnthian fee
+Provider fee
+Network fee
+Spread
+Redemption fee
+On-ramp fee
+Off-ramp fee
+Gas
+
+Whether users always pay gas or whether we eventually support:
+
+Gas sponsorship
+Relayers
+Account abstraction
+Paymasters
+Jurisdictions
+
+Which countries/states launch first.
+
+KYC
+
+Which providers handle KYC/AML and which Correnthian services require it.
+
+These decisions should be made before finalizing the production financial flows.
+
+38. Development roadmap
+
+We shouldn't ask AI to generate the entire platform in one giant prompt.
+
+We'll build it incrementally.
+
+Phase 0 — Product architecture
+
+Finalize:
+
+Business model
+Regulatory model
+Chains
+Providers
+Metals
+Security model
+User flows
+Fee model
+Phase 1 — Foundation
+
+Create:
+
+Git repository
+pnpm
+Turborepo
+TypeScript
+Next.js
+Expo
+NestJS
+PostgreSQL
+Redis
+Environment configuration
+ESLint
+Prettier
+Testing
+CI/CD
+Documentation
+Phase 2 — Design system
+
+Build:
+
+Typography
+Colors
+Spacing
+Buttons
+Cards
+Inputs
+Modals
+Sheets
+Glass components
+Navigation
+Charts
+Toasts
+Skeletons
+Animations
+
+Then implement the Correnthian visual language across Web + Mobile.
+
+Phase 3 — Wallet core
+
+Implement:
+
+Wallet generation
+Import
+Recovery
+Accounts
+Local encryption
+Secure storage
+Signing
+Biometrics
+PIN
+Locking
+
+This phase must receive exceptional security attention.
+
+Phase 4 — Blockchain
+
+Implement:
+
+EVM
+Ethereum
+BNB
+Polygon
+Base
+
+Then add additional chains according to the finalized requirements.
+
+Implement:
+
+RPC
+balances
+gas
+transaction building
+signing
+broadcasting
+confirmation tracking
+Phase 5 — Portfolio
+
+Implement:
+
+Asset registry
+Balances
+Prices
+Portfolio
+Allocation
+Charts
+Transaction history
+Phase 6 — Buy/Sell
+
+Integrate:
+
+On-ramp
+Off-ramp
+
+using provider adapters.
+
+Phase 7 — Swap
+
+Implement:
+
+Quote engine
+Provider comparison
+Slippage
+Price impact
+Fees
+Transaction simulation
+Execution
+Status
+Phase 8 — Precious metals
+
+Implement:
+
+Metal asset registry
+Gold
+Silver
+Provider integration
+Pricing
+Buy
+Sell
+Reserve/backing information
+Redemption where supported
+Phase 9 — Web/PWA
+
+Finish:
+
+Marketing
+Web wallet
+PWA
+Responsive UI
+SEO
+Documentation
+Phase 10 — Android
+
+Release Android app using the shared React Native/Expo codebase.
+
+Phase 11 — iOS
+
+Release iOS using the same codebase.
+
+Phase 12 — Security audit
+
+Before real production assets:
+
+Code audit
+Dependency audit
+API penetration test
+Mobile penetration test
+Smart-contract audit where applicable
+Infrastructure audit
+Threat modeling
+Incident-response planning
+39. The architecture principle we should never violate
+
+The most important architectural principle is:
+
+The frontend should own the user's keys; the backend should coordinate services, not own the user's money.
+
+In simplified form:
+
+             USER
+               │
+        ┌──────┴──────┐
+        ↓             ↓
+     Web/PWA        Mobile
+        │             │
+        └──────┬──────┘
+               ↓
+          Wallet Core
+               │
+       PRIVATE KEY HERE
+               │
+        Local Signing
+               │
+         Signed TX
+               ↓
+       Correnthian API
+               │
+      ┌────────┼─────────┐
+      ↓        ↓         ↓
+ Blockchain  Providers  Database
+40. What we should do in VS Code now
+
+We should not start by building Buy Crypto, gold trading, admin and every screen simultaneously.
+
+The correct first step is to create the Correnthian monorepo foundation and documentation.
+
+Then:
+
+1. Repository
+2. Monorepo
+3. Shared TypeScript configuration
+4. Design tokens
+5. UI foundation
+6. NestJS API
+7. PostgreSQL
+8. Redis
+9. Environment/secrets structure
+10. Wallet-core architecture
+11. Blockchain abstraction
+12. Authentication foundation
+13. CI/CD
+14. Testing
+
+After that we build the wallet itself.
+
+The first repository should therefore look approximately like:
+correnthian/
+├── apps/
+│   ├── marketing/
+│   ├── web/
+│   └── mobile/
+│
+├── services/
+│   └── api/
+│
+├── packages/
+│   ├── ui/
+│   ├── design-tokens/
+│   ├── wallet-core/
+│   ├── blockchain/
+│   ├── assets/
+│   ├── transactions/
+│   ├── swaps/
+│   ├── security/
+│   ├── integrations/
+│   ├── api-client/
+│   ├── types/
+│   └── config/
+│
+├── infrastructure/
+│
+├── docs/
+│
+├── .github/
+│   └── workflows/
+│
+├── package.json
+├── pnpm-workspace.yaml
+├── turbo.json
+├── tsconfig.json
+└── README.md
+Bottom line
+
+Correnthian is not just a website or a crypto wallet.
+
+We're designing a self-custodial digital wealth platform with:
+
+Crypto + Buy/Sell + Swaps + Tokenized Gold/Silver + Future RWAs
+
+running across:
+
+Web + PWA + Android + iOS
+
+with:
+
+Next.js + React Native/Expo + NestJS + PostgreSQL + Redis + TypeScript + Turborepo/pnpm
+
+and a security model centered around:
+
+User-controlled private keys + hardware-backed device security + local transaction signing + transaction-risk controls + secure backend infrastructure + independent security testing.
+
+And the architecture must remain provider-agnostic, so Correnthian can change its on-ramp, swap, RPC, KYC, market-data or precious-metal providers without rebuilding the platform.
+
+That is the master baseline I would carry into VS Code.
+
+Based on the master project specification for Correnthian, can you outline the very first development tasks or user stories we should tackle to start writing production code in VS Code?
+
+Yes. I would not start by building the screens. For Correnthian, the first production work should establish the foundation that everything else depends on—especially the wallet/security architecture.
+
+I’d structure the first sprint into 10 epics, with the first 3 being the immediate priority.
+
+Sprint 0 — Foundation & architecture
+1. Create the monorepo
+
+Set up:
+
+correnthian/
+├── apps/
+│   ├── marketing/
+│   ├── web/
+│   └── mobile/
+├── services/
+│   └── api/
+├── packages/
+│   ├── ui/
+│   ├── design-tokens/
+│   ├── wallet-core/
+│   ├── blockchain/
+│   ├── assets/
+│   ├── transactions/
+│   ├── swaps/
+│   ├── security/
+│   ├── integrations/
+│   ├── api-client/
+│   ├── types/
+│   └── config/
+├── infrastructure/
+└── docs/
+
+Use pnpm + Turborepo. Turborepo is specifically designed for TypeScript/JavaScript monorepos and can incrementally run tasks across workspaces.
+
+User stories
+
+DEV-001 — Repository bootstrap
+
+As a developer, I want a standardized Correnthian monorepo so all applications and shared packages can be developed together.
+
+Acceptance criteria:
+
+pnpm workspace works
+Turborepo configured
+TypeScript configured
+linting works
+formatting works
+build works
+test runner works
+Git repository initialized
+.env.example created
+README created
+
+DEV-002 — Application shells
+
+Create minimal working:
+
+Marketing Next.js app
+Web Next.js app
+Expo mobile app
+NestJS API
+
+Each should boot successfully.
+
+At this stage don't build the actual wallet.
+
+2. Establish the security architecture
+
+This should happen before wallet implementation.
+
+OWASP's current MASVS covers storage, cryptography, authentication, networking, platform interaction, code quality, resilience and privacy. For Correnthian, I'd use the security standard as an engineering baseline from day one rather than waiting for an audit.
+
+Create:
+
+docs/security/
+├── threat-model.md
+├── wallet-security.md
+├── key-management.md
+├── mobile-security.md
+├── api-security.md
+├── transaction-security.md
+└── incident-response.md
+User stories
+
+SEC-001 — Threat model
+
+As the Correnthian security team, we need to identify the ways a user's wallet could be compromised before implementing wallet functionality.
+
+Threats should include:
+
+Stolen device
+Malware
+Phishing
+Fake Correnthian app
+Fake DApp
+Malicious smart contract
+Address poisoning
+SIM/account takeover
+API compromise
+Database compromise
+Backend insider
+Rooted/jailbroken device
+Reverse engineering
+Supply-chain attack
+Compromised third-party SDK
+Malicious token
+Unlimited token approval
+
+SEC-002 — Define key boundary
+
+Document this as an architectural invariant:
+
+PRIVATE KEY / SEED
+        │
+        ▼
+USER DEVICE
+        │
+        X
+        │
+        X NEVER SENT TO API
+        │
+        ▼
+LOCAL SIGNING
+        │
+        ▼
+SIGNED TRANSACTION
+        │
+        ▼
+BACKEND / RPC
+
+This becomes one of the project's non-negotiable rules.
+
+3. Build packages/wallet-core
+
+This is arguably our most important package.
+
+But don't immediately connect it to real funds.
+
+First build a clean abstraction.
+
+Something conceptually like:
+
+wallet-core/
+
+Wallet
+ ├── create()
+ ├── import()
+ ├── restore()
+ ├── accounts()
+ ├── addresses()
+ ├── sign()
+ └── lock()
+
+The actual implementation should be chain-aware but not coupled to React Native or Next.js.
+
+User stories
+
+WALLET-001 — Wallet generation
+
+As a user, I can create a new self-custodial wallet locally.
+
+Acceptance:
+
+Cryptographically secure randomness
+Mnemonic generation
+No network request
+No API call
+No logging of secrets
+Deterministic test coverage
+
+WALLET-002 — Wallet import
+
+As a user, I can restore an existing wallet using my recovery phrase.
+
+WALLET-003 — Account derivation
+
+As a user, I can derive blockchain accounts from my wallet according to the supported chain standards.
+
+WALLET-004 — Signing abstraction
+
+As a user, my transaction is signed locally without exposing my private key to the backend.
+
+This is where we need to be particularly disciplined.
+
+4. Secure storage
+
+Once wallet-core is defined, implement platform-specific secure storage.
+
+Android
+
+Android Keystore / secure storage.
+
+iOS
+
+Keychain + appropriate hardware-backed capabilities.
+
+Web
+
+This requires a separate security design from mobile; don't pretend browser storage provides the same guarantees as native secure hardware.
+
+This is important enough that I'd make web-wallet key storage its own design task.
+
+User stories
+
+SEC-003 — Secure mobile wallet storage
+
+As a mobile user, my encrypted wallet material is stored using platform security facilities rather than ordinary application storage.
+
+SEC-004 — No-secret logging
+
+As a developer, I must be unable to accidentally send seed phrases/private keys into logs, analytics, crash reports or API requests.
+
+5. Build the authentication boundary
+
+Don't confuse:
+
+Correnthian account
+
+with:
+
+wallet ownership.
+
+We want:
+
+Correnthian Account
+       │
+       ├── Profile
+       ├── Devices
+       ├── Preferences
+       └── Notifications
+
+Wallet
+       │
+       ├── Keys
+       ├── Accounts
+       └── Addresses
+
+An attacker compromising an email/account should not automatically receive the user's wallet keys.
+
+User stories
+
+AUTH-001
+
+As a user, I can create a Correnthian account.
+
+AUTH-002
+
+As a user, I can authenticate securely.
+
+AUTH-003
+
+As a user, I can register/manage trusted devices.
+
+AUTH-004
+
+As a user, I can lock my wallet independently from my account session.
+
+Passkeys/MFA can be introduced here, but we shouldn't let account authentication become a substitute for local wallet authorization.
+
+6. Build the design system
+
+Only after the foundation is stable should we start making the UI.
+
+Create:
+
+packages/design-tokens
+packages/ui
+
+First components:
+
+Button
+Input
+Card
+GlassCard
+Modal
+BottomSheet
+Toast
+Avatar
+Badge
+Tabs
+Navigation
+FloatingNavigation
+FloatingAction
+AmountInput
+AssetRow
+TransactionRow
+Chart
+
+And:
+
+CorrenthianGlass
+CorrenthianFloatingNav
+CorrenthianFloatingAction
+
+The design system should work across the web and mobile applications.
+
+7. Build the asset registry
+
+Before supporting "crypto," we need to know exactly what an asset is.
+
+For example:
+
+Asset
+├── Bitcoin
+├── Ethereum
+├── USDT / Ethereum
+├── USDT / BNB
+├── USDT / Polygon
+├── USDT / Base
+├── Gold Token / Provider X
+└── Silver Token / Provider Y
+
+Not:
+
+USDT
+
+as one ambiguous object.
+
+User stories
+
+ASSET-001
+
+As the platform, I can uniquely identify an asset by chain, contract and issuer/provider.
+
+ASSET-002
+
+As an administrator, I can enable/disable supported assets.
+
+ASSET-003
+
+As a user, I only see verified/supported assets rather than arbitrary scam tokens by default.
+
+8. Build the blockchain abstraction
+
+Create interfaces before connecting every chain.
+
+Something conceptually like:
+
+BlockchainAdapter
+
+getBalance()
+getTokenBalance()
+estimateFee()
+buildTransaction()
+broadcastTransaction()
+getTransaction()
+getBlock()
+
+Then:
+
+EVMAdapter
+BitcoinAdapter
+SolanaAdapter
+
+And network configuration:
+
+Ethereum
+BNB
+Polygon
+Base
+
+Initially, I'd get one EVM chain working end-to-end before implementing seven networks.
+
+For example:
+
+Ethereum testnet → wallet → balance → transaction → confirmation.
+
+Then generalize the abstraction.
+
+9. Build the API foundation
+
+NestJS should initially provide only the infrastructure we actually need.
+
+Start with:
+
+/api
+├── auth
+├── users
+├── devices
+├── wallets
+├── assets
+├── chains
+└── health
+
+Not 30 microservices.
+
+Use a modular monolith initially.
+
+Database
+
+PostgreSQL models initially:
+
+User
+Device
+Session
+Wallet
+WalletAccount
+Chain
+Asset
+
+Remember:
+
+No seed phrases.
+No private keys.
+
+10. Build the first real vertical slice
+
+This is where I want us to move from "architecture" into actual usable software.
+
+The first complete flow should be:
+
+Create Wallet
+      ↓
+Securely store wallet
+      ↓
+Unlock wallet
+      ↓
+Display address
+      ↓
+Connect to blockchain
+      ↓
+Read balance
+      ↓
+Display balance
+
+That's our first Definition of Done.
+
+Not Buy Crypto.
+
+Not Gold.
+
+Not Swap.
+
+Not Admin.
+
+If we can make this flow work securely, we have established the foundation for everything else.
+
+Recommended first backlog
+
+I'd put this into GitHub/Jira as:
+
+ID	Story	Priority
+DEV-001	Bootstrap monorepo	🔴 P0
+DEV-002	Create app shells	🔴 P0
+DEV-003	CI/build/test pipeline	🔴 P0
+SEC-001	Threat model	🔴 P0
+SEC-002	Define key boundary	🔴 P0
+WALLET-001	Wallet generation	🔴 P0
+WALLET-002	Wallet import/recovery	🔴 P0
+WALLET-003	Account derivation	🔴 P0
+WALLET-004	Local signing abstraction	🔴 P0
+SEC-003	Secure mobile storage	🔴 P0
+AUTH-001	Account authentication	🟠 P1
+AUTH-002	Device management	🟠 P1
+UI-001	Design tokens	🟠 P1
+UI-002	Core components	🟠 P1
+ASSET-001	Asset registry	🟠 P1
+CHAIN-001	Blockchain abstraction	🟠 P1
+CHAIN-002	First EVM integration	🟠 P1
+API-001	NestJS foundation	🟠 P1
+API-002	PostgreSQL schema	🟠 P1
+WALLET-005	Display blockchain balance	🟠 P1
+WALLET-006	First test transaction	🟠 P1
+What I would not build yet
+
+Don't start with:
+
+❌ Gold trading
+❌ Physical redemption
+❌ Multi-provider swap routing
+❌ Fiat on-ramp
+❌ Off-ramp
+❌ Referral system
+❌ DApp browser
+❌ Admin dashboard
+❌ 10 blockchains
+❌ Complex microservices
+❌ Production smart-contract integrations
+
+Those depend on decisions we haven't finalized yet.
+
+The first milestone
+
+Our first milestone should be called:
+
+Correnthian Foundation v0.1
+
+And its definition of done is:
+
+✓ Monorepo works
+✓ Web boots
+✓ Mobile boots
+✓ API boots
+✓ PostgreSQL connects
+✓ Redis connects
+✓ CI passes
+✓ Shared UI package works
+✓ Security architecture documented
+✓ Threat model documented
+✓ Wallet-core exists
+✓ Wallet can be generated locally
+✓ Wallet can be restored
+✓ Wallet secrets never leave device
+✓ First blockchain adapter works
+✓ Address displayed
+✓ Test balance displayed
+✓ Tests cover critical wallet operations
+
+Only after that milestone should we start the next vertical slice:
+
+Send / Receive → Transaction signing → Transaction history
+
+Then:
+
+Buy Crypto → Swap → Precious Metals
+
+That sequence gives us a much safer path than generating a giant Correnthian codebase in one shot. It also aligns with OWASP's recommendation that security architecture, design and threat modeling be foundational rather than something added after the mobile app is built.
+
+So if we're opening VS Code now, our first actual coding session should be DEV-001: bootstrap the Correnthian monorepo and get the four application shells running.
+
+fetch full conversation here:
+https://chatgpt.com/share/6ac32fec-8148-83e9-b828-c583a5903325?no_universal_links=1
