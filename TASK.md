@@ -1,6 +1,6 @@
 # Correnthian — Task Tracker
 
-**Last updated:** 2026-10-05 (database live, API verified end-to-end)
+**Last updated:** 2026-10-05 (all planned API modules built)
 **Current focus:** API foundation, then admin.
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -58,17 +58,17 @@ work happen that is not tracked here.
 
 ### P1.3 Domain modules
 - [x] `assets` — registry CRUD, derived identity, disclosure, attestation, stats
-- [ ] Issuers module — issuer onboarding and due-diligence record
+- [ ] Issuers module — **blocking asset registration through the API**; currently seeded directly
 - [x] `chains` — configuration, enablement; RPC URLs never exposed over the API
 - [x] `providers` — registry, status, health probe payload (never credentials)
 - [~] `swaps` — quote lifecycle and disclosure done; rail binding awaits a contracted provider
-- [ ] `metals` — instruments, serialisation, redemption states
+- [x] `metals` — redemption request, explicit state machine, 10 tests
 - [ ] `pricing` — metal spot + reference vs executable price
-- [ ] `onramp` / `offramp` — provider adapters
+- [x] `onramp` / `offramp` — availability + quote; refuses rather than fabricating a rate, 6 tests
 - [x] `compliance` — jurisdiction engine, deny-by-default, 7 tests. Sanctions hooks pending
 - [ ] `admin` — internal operations surface
 - [x] `audit` — append-only trail, metadata redacted on write
-- [ ] `notifications`
+- [x] `notifications` — queue, claim, stats. No transport yet, deliberately
 
 ### P1.4 Hardening
 - [x] Input validation (Zod) on every route, with env-var-named config errors

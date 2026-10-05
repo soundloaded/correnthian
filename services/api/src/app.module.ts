@@ -5,6 +5,9 @@ import { AssetsModule } from './assets/assets.module.js';
 import { AuditModule } from './audit/audit.module.js';
 import { ChainsModule } from './chains/chains.module.js';
 import { ComplianceModule } from './compliance/compliance.module.js';
+import { MetalsModule } from './metals/metals.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
+import { OnRampModule } from './onramp/onramp.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { CoreModule } from './common/core.module.js';
 import { AppConfigModule } from './config/config.module.js';
@@ -45,6 +48,9 @@ import { UsersModule } from './users/users.module.js';
     ComplianceModule,
     ProvidersModule,
     SwapsModule,
+    MetalsModule,
+    NotificationsModule,
+    OnRampModule,
   ],
 })
 export class AppModule {}
