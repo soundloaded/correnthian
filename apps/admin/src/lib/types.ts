@@ -24,22 +24,25 @@ export interface UserStats {
 }
 
 export interface AssetSummary {
-  assetId: string;
-  chainId: string;
-  contractAddress: string | null;
-  symbol: string;
-  name: string;
-  decimals: number;
-  category: string;
-  custodyModel: 'allocated' | 'unallocated' | 'synthetic';
-  custodian: string | null;
-  vaultLocations: string[];
-  attestationCadence: string;
-  lastAttestation: string | null;
-  verifiedTier: 'issuer-verified' | 'community-verified' | 'unverified';
-  riskFlags: string[];
-  enabled: boolean;
-  issuer: { issuerId: string; issuerName: string; jurisdiction: string };
+  asset: {
+    assetId: string;
+    chainId: string;
+    contractAddress: string | null;
+    symbol: string;
+    name: string;
+    decimals: number;
+    category: string;
+    issuer: { issuerId: string; issuerName: string; jurisdiction: string };
+    backing: {
+      custodyModel: 'allocated' | 'unallocated' | 'synthetic';
+      custodian: string | null;
+      vaultLocation: string[];
+      lastAttestation: string | null;
+    };
+    trust: { verifiedTier: string; riskFlags: string[] };
+    enabled: boolean;
+    trading: { redeemSupported: boolean };
+  };
   /** The product's core promise: never render a token as metal without this. */
   disclosure: string;
 }
@@ -63,4 +66,51 @@ export interface Chain {
   decimals: number; explorerUrl: string | null;
   enabled: boolean; isTestnet: boolean;
   _count: { assets: number; wallets: number };
+}
+
+export interface DeviceRow {
+  id: string;
+  platform: 'ios' | 'android' | 'web';
+  label: string;
+  trustedAt: string;
+  lastSeenAt: string;
+  revokedAt: string | null;
+  user: { id: string; email: string; role: string; kycStatus: KycStatus };
+}
+
+export interface DeviceListResponse { items: DeviceRow[]; nextCursor: string | null }
+
+export interface DeviceStats {
+  total: number;
+  revoked: number;
+  stale: number;
+  byPlatform: Record<string, number>;
+}
+
+export interface Issuer {
+  id: string;
+  slug: string;
+  name: string;
+  jurisdiction: string;
+  licenseTypes: string[];
+  licenseRefs: string[];
+  website: string | null;
+  verifiedTier: 'issuer_verified' | 'community_verified' | 'unverified';
+  riskFlags: string[];
+  notes: string | null;
+  createdAt: string;
+  _count: { assets: number };
+}
+
+
+export interface Provider {
+  id: string;
+  slug: string;
+  name: string;
+  category: string;
+  status: 'active' | 'degraded' | 'disabled';
+  capabilities: string[];
+  lastCheckedAt: string | null;
+  notes: string | null;
+  _count: { quotes: number; redemptions: number };
 }

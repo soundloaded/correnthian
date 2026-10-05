@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Boxes, Coins, Database, FileClock, LayoutDashboard,
+  Boxes, Coins, Database, FileClock, Landmark, LayoutDashboard, Network, Smartphone,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -17,6 +17,10 @@ export const MAIN_NAV: Array<{
   { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
   { title: 'Users', url: '/users', icon: Database },
   { title: 'Assets', url: '/assets', icon: Boxes },
+  { title: 'Issuers', url: '/issuers', icon: Landmark },
+  { title: 'Devices', url: '/devices', icon: Smartphone },
+  { title: 'Chains', url: '/chains', icon: Network },
+  { title: 'Providers', url: '/providers', icon: Coins },
   { title: 'Quotes', url: '/quotes', icon: Coins },
   { title: 'Audit log', url: '/audit', icon: FileClock, badge: 'compliance' },
 ];

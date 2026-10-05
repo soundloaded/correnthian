@@ -1,9 +1,13 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Inject, Param, Post } from '@nestjs/common';
+import {
+  Body, Controller, Delete, Get, HttpCode, HttpStatus, Inject, Param, Post, Query,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, type AuthenticatedUser } from '../common/decorators/current-user.decorator.js';
+import { Roles } from '../common/guards/roles.guard.js';
 import { zodPipe } from '../common/pipes/zod-validation.pipe.js';
 import { DevicesService } from './devices.service.js';
 import { registerDeviceSchema, type RegisterDeviceDto } from './dto/register-device.dto.js';
+import { listAllDevicesSchema, type ListAllDevicesDto } from './dto/list-all-devices.dto.js';
 
 @ApiTags('devices')
 @ApiBearerAuth()
@@ -15,6 +19,20 @@ export class DevicesController {
   @ApiOperation({ summary: 'List trusted devices' })
   list(@CurrentUser() user: AuthenticatedUser) {
     return this.devices.list(user.id);
+  }
+
+  @Get('all')
+  @Roles('support')
+  @ApiOperation({ summary: 'Cross-account device list (operator view)' })
+  listAll(@Query(zodPipe(listAllDevicesSchema)) query: ListAllDevicesDto) {
+    return this.devices.listAll(query);
+  }
+
+  @Get('stats')
+  @Roles('support')
+  @ApiOperation({ summary: 'Device counters' })
+  stats() {
+    return this.devices.stats();
   }
 
   @Post()
