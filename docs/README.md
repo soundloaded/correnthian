@@ -6,12 +6,18 @@
 |---|---|
 | Understand what this product is and why | [product/vision.md](product/vision.md) |
 | Know who we're building for | [product/beachhead.md](product/beachhead.md) |
-| See the full decision record | [specs/2026-10-05-correnthian-v1-architecture-design.md](superpowers/specs/2026-10-05-correnthian-v1-architecture-design.md) |
+| See the full decision record | [superpowers/specs/2026-10-05-correnthian-v1-architecture-design.md](superpowers/specs/2026-10-05-correnthian-v1-architecture-design.md) |
 | Understand the key boundary | [architecture/key-boundary.md](architecture/key-boundary.md) |
+| Know what an asset is and what backs it | [architecture/asset-registry.md](architecture/asset-registry.md) |
+| Know how a conversion actually executes | [architecture/rails.md](architecture/rails.md) |
 | Work on the API | [engineering/api.md](engineering/api.md) |
 | Work on the admin | [engineering/admin.md](engineering/admin.md) |
 | Write code at all | [engineering/standards.md](engineering/standards.md) |
 | Understand the regulatory position | [compliance/overview.md](compliance/overview.md) |
+| Run, monitor and support the platform | [operations/overview.md](operations/overview.md) |
+
+*Last reviewed 2026-10-05. `product/beachhead.md` and `docs/runbooks/` are
+listed but not yet written.*
 
 ## Layout
 
