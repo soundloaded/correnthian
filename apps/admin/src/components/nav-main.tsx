@@ -1,59 +1,54 @@
-"use client"
+'use client';
 
-import { Button } from "@/components/ui/button"
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar"
-import { CirclePlusIcon, MailIcon } from "lucide-react"
+  Boxes, Coins, Database, FileClock, LayoutDashboard,
+  type LucideIcon,
+} from 'lucide-react';
+import {
+  SidebarGroup, SidebarGroupLabel, SidebarGroupContent,
+  SidebarMenu, SidebarMenuButton, SidebarMenuItem,
+} from '@/components/ui/sidebar';
 
-export function NavMain({
-  items,
-}: {
-  items: {
-    title: string
-    url: string
-    icon?: React.ReactNode
-  }[]
-}) {
+export const MAIN_NAV: Array<{
+  title: string; url: string; icon: LucideIcon; badge?: string;
+}> = [
+  { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
+  { title: 'Users', url: '/users', icon: Database },
+  { title: 'Assets', url: '/assets', icon: Boxes },
+  { title: 'Quotes', url: '/quotes', icon: Coins },
+  { title: 'Audit log', url: '/audit', icon: FileClock, badge: 'compliance' },
+];
+
+export function NavMain() {
+  const pathname = usePathname();
+
   return (
     <SidebarGroup>
-      <SidebarGroupContent className="flex flex-col gap-2">
+      <SidebarGroupLabel>Operations</SidebarGroupLabel>
+      <SidebarGroupContent>
         <SidebarMenu>
-          <SidebarMenuItem className="flex items-center gap-2">
-            <SidebarMenuButton
-              tooltip="Quick Create"
-              className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
-            >
-              <CirclePlusIcon
-              />
-              <span>Quick Create</span>
-            </SidebarMenuButton>
-            <Button
-              size="icon"
-              className="size-8 group-data-[collapsible=icon]:opacity-0"
-              variant="outline"
-            >
-              <MailIcon
-              />
-              <span className="sr-only">Inbox</span>
-            </Button>
-          </SidebarMenuItem>
-        </SidebarMenu>
-        <SidebarMenu>
-          {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={item.title}>
-                {item.icon}
-                <span>{item.title}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+          {MAIN_NAV.map((item) => {
+            const active = pathname === item.url || pathname.startsWith(`${item.url}/`);
+            return (
+              <SidebarMenuItem key={item.url}>
+                <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
+                  <Link href={item.url}>
+                    <item.icon aria-hidden />
+                    <span>{item.title}</span>
+                    {item.badge ? (
+                      <span className="ml-auto font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {item.badge}
+                      </span>
+                    ) : null}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  )
+  );
 }

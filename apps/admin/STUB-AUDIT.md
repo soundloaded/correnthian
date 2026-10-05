@@ -383,3 +383,44 @@ Runtime: `@dnd-kit/core`, `@dnd-kit/modifiers`, `@dnd-kit/sortable`, `@dnd-kit/u
 
 If the rewiring task replaces the table with a server-driven one, `@dnd-kit/*` (drag-to-
 reorder of mock rows) is the most likely candidate for removal.
+---
+
+## Resolution — what replaced each mock
+
+Rewired against the live API. **No mock data remains in shipped code**; the only
+placeholders are loading skeletons and empty states.
+
+| Was | Now |
+|---|---|
+| `data.json` (68 rows) + `data-table.tsx` | Deleted. Replaced by real pages reading `/users`, `/assets`, `/swaps/quotes/stats`, `/audit` |
+| `chart-area-interactive.tsx` (91 frozen rows) | Deleted. No equivalent metric series exists in the API yet, and fabricating one would be the same defect in a new file |
+| `section-cards.tsx` (4 hardcoded metrics) | Rewritten to read `/users/stats` and `/assets/stats` |
+| 21 dead `url: "#"` sidebar links | Replaced with 5 real routes; entries with no page were deleted rather than stubbed |
+| `user.name = "shadcn"` / `/avatars/shadcn.jpg` (404) | Reads the signed-in session email; avatar is initials derived from it, so no missing file |
+| Brand `"Acme Inc."` | Correnthian Admin |
+| `nav-user.tsx` (4 handlers with no behaviour) | Logout wired to a server action that revokes server-side then clears the cookie |
+| 3 of 4 empty dashed tabs | Removed; there is one real table per route rather than four mock views |
+
+### Auth
+
+`POST /auth/login` through a server action. The bearer token is stored in an
+**httpOnly cookie**, never in `localStorage` and never returned to the browser —
+an XSS in this admin would otherwise exfiltrate a token that grants access to
+every account, KYC record and audit entry.
+
+### Failure states are designed, not defaulted
+
+`apiFetch` distinguishes five outcomes — `ok`, `unauthorised`, `forbidden`,
+`unavailable`, `error` — because collapsing them into one "failed" state is how
+an admin ends up being shown a login screen during an outage and locking
+everyone out. Every page routes through `<ApiState>`: skeleton while loading,
+empty state, a forbidden state that explains the role, and an API-down state
+with a working retry.
+
+### Not verified
+
+There is **no Postgres or Docker in this environment**, so the API cannot start
+and the admin was never exercised against live data. Verified: `build`
+(7 routes), `typecheck`, `eslint` — all clean. Unverified: every data path, the
+login round-trip, and the role gate. The failure states are built and typed but
+have not been seen rendering.
