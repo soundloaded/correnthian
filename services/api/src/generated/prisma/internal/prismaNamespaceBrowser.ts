@@ -69,7 +69,8 @@ export const ModelName = {
   JurisdictionRule: 'JurisdictionRule',
   AuditLog: 'AuditLog',
   Notification: 'Notification',
-  FeatureFlag: 'FeatureFlag'
+  FeatureFlag: 'FeatureFlag',
+  IdempotencyRecord: 'IdempotencyRecord'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -445,6 +446,24 @@ export const FeatureFlagScalarFieldEnum = {
 } as const
 
 export type FeatureFlagScalarFieldEnum = (typeof FeatureFlagScalarFieldEnum)[keyof typeof FeatureFlagScalarFieldEnum]
+
+
+export const IdempotencyRecordScalarFieldEnum = {
+  id: 'id',
+  keyHash: 'keyHash',
+  requestHash: 'requestHash',
+  method: 'method',
+  path: 'path',
+  state: 'state',
+  responseStatus: 'responseStatus',
+  responseBody: 'responseBody',
+  lockedUntil: 'lockedUntil',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  completedAt: 'completedAt'
+} as const
+
+export type IdempotencyRecordScalarFieldEnum = (typeof IdempotencyRecordScalarFieldEnum)[keyof typeof IdempotencyRecordScalarFieldEnum]
 
 
 export const SortOrder = {

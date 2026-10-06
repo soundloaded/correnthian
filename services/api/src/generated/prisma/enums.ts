@@ -207,3 +207,11 @@ export const AuditOutcome = {
 } as const
 
 export type AuditOutcome = (typeof AuditOutcome)[keyof typeof AuditOutcome]
+
+
+export const IdempotencyState = {
+  in_progress: 'in_progress',
+  completed: 'completed'
+} as const
+
+export type IdempotencyState = (typeof IdempotencyState)[keyof typeof IdempotencyState]

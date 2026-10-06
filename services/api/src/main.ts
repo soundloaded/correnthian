@@ -34,6 +34,12 @@ async function bootstrap(): Promise<void> {
     origin: config.http.corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    // A client is allowed to send this on every request and gets a distinct
+    // replayed response back, so a browser must be able to read it. Without
+    // this the header is stripped and a retrying client cannot tell a replay
+    // from a fresh execution.
+    allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
+    exposedHeaders: ['Idempotency-Replayed', 'X-API-Version', 'Deprecation', 'Sunset', 'Link', 'Warning'],
   });
 
   if (config.http.trustProxy) app.getHttpAdapter().getInstance().set('trust proxy', 1);

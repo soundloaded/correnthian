@@ -490,6 +490,34 @@ export const routeNotFoundSchema = errorSchema.extend({
   }),
 });
 
+// --- idempotency -----------------------------------------------------------
+
+/**
+ * A 409 from a financial POST carrying an `Idempotency-Key`.
+ *
+ * Every branch is a refusal to execute, and each has a different remedy, so
+ * `reason` is required rather than a nicety:
+ *
+ *   fingerprint_mismatch — the key was used for a different request. Replaying
+ *      would answer a request that was never made. Send a new key.
+ *   in_progress          — an identical request is running. Wait.
+ *   outcome_unknown      — a request started and never finished, so whether it
+ *      committed is unknowable. Check before retrying with a new key.
+ *
+ * The first and third are the ones that matter. A client that reads "conflict"
+ * and blindly retries has been told nothing.
+ */
+export const idempotencyConflictSchema = errorSchema.extend({
+  error: errorSchema.shape.error.extend({
+    code: z.literal('conflict'),
+    detail: z.object({
+      reason: z.enum(['fingerprint_mismatch', 'in_progress', 'outcome_unknown']),
+      recorded: z.object({ method: z.string(), path: z.string() }).optional(),
+      submitted: z.object({ method: z.string(), path: z.string() }).optional(),
+    }),
+  }),
+});
+
 /**
  * The wire contract registry.
  *
@@ -523,4 +551,7 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/meta/versions': apiVersionsDocumentSchema,
   'ERROR GET /api/v2/*': apiVersionErrorSchema,
   'ERROR GET /api/v1/does-not-exist': routeNotFoundSchema,
+  'ERROR POST /api/v1/swaps/quotes': idempotencyConflictSchema,
+  'ERROR POST /api/v1/redemptions': idempotencyConflictSchema,
+  'ERROR POST /api/v1/onramp/quote': idempotencyConflictSchema,
 } as const;

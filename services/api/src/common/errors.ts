@@ -50,7 +50,7 @@ export class AppError extends Error {
   static unauthorized(m = 'Authentication required') { return new AppError('unauthorized', m); }
   static forbidden(m = 'Not permitted') { return new AppError('forbidden', m); }
   static notFound(m = 'Not found') { return new AppError('not_found', m); }
-  static conflict(m: string) { return new AppError('conflict', m); }
+  static conflict(m: string, d?: unknown) { return new AppError('conflict', m, d); }
   static rateLimited(m = 'Too many requests') { return new AppError('rate_limited', m); }
   static jurisdictionBlocked(m: string, d?: unknown) { return new AppError('jurisdiction_blocked', m, d); }
   static providerUnavailable(m = 'Provider unavailable') { return new AppError('provider_unavailable', m); }

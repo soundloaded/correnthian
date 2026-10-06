@@ -199,6 +199,15 @@ enum AuditOutcome {
   denied
 }
 
+/// Lifecycle of an idempotency claim. See src/common/idempotency.
+enum IdempotencyState {
+  /// The claim is held and the handler is running. Exactly one request can be
+  /// in this state per key.
+  in_progress
+  /// The handler returned; the response is stored and will be replayed.
+  completed
+}
+
 // ---------------------------------------------------------------------------
 // Identity
 // ---------------------------------------------------------------------------
@@ -829,4 +838,68 @@ model FeatureFlag {
   description String?
 
   updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Idempotency
+// ---------------------------------------------------------------------------
+
+/// A claim on an `Idempotency-Key`, and the response that claim produced.
+///
+/// This table is the answer to "the user pressed Buy twice because the network
+/// is slow". It is in Postgres, not Redis, on purpose: Redis is a cache, it is
+/// routinely flushed or evicted under memory pressure, and an idempotency
+/// store that forgets is worse than none at all — the retry it was supposed to
+/// absorb re-executes, and the user gets two purchases. Losing this table must
+/// never be possible by losing a cache entry.
+///
+/// The unique constraint on `keyHash` is what serialises concurrent duplicates
+/// across API instances. `INSERT ... ON CONFLICT DO NOTHING` against a unique
+/// index takes a row lock, so exactly one of N simultaneous requests wins the
+/// insert and the rest are told to wait. An in-process mutex cannot do this:
+/// with two API replicas the second replica's mutex is a different mutex, and
+/// both requests execute.
+model IdempotencyRecord {
+  id String @id @default(cuid())
+
+  /// SHA-256 of "<actor id>" + newline + "<the client's key>".
+  ///
+  /// The key itself is never persisted, not even in a reversible form. A key
+  /// is client-supplied and opaque, and "we only keep the hash" is the same
+  /// argument that lets someone paste a live key into a log: the safest place
+  /// for a value nobody needs in plaintext is nowhere at all. Hashing also
+  /// makes a database dump useless for replaying a request against this API.
+  keyHash String @unique
+
+  /// SHA-256 of "<METHOD>" + newline + "<path>" + newline + "<canonical body>".
+  /// The body is hashed, not stored: the fingerprint has to prove "same
+  /// request", and it has no reason to hold a copy of the request.
+  requestHash String
+
+  method String
+  path   String
+
+  state IdempotencyState @default(in_progress)
+
+  /// The response to replay, and the status to replay it with. Both are
+  /// required for a replay to be indistinguishable from the original.
+  responseStatus Int?
+  responseBody   Json?
+
+  /// How long the executing instance holds the claim.
+  ///
+  /// A lease, not a timeout for the key. It distinguishes "another instance is
+  /// running this right now" (wait for it) from "the instance that was running
+  /// it died" (do not re-execute — the outcome is unknown, and a blind retry
+  /// could be the second purchase this mechanism exists to prevent).
+  lockedUntil DateTime
+
+  /// When a completed record stops being replayable and the key becomes free.
+  expiresAt DateTime
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([expiresAt])
+  @@index([state, expiresAt])
 }

@@ -147,3 +147,22 @@ export type Notification = Prisma.NotificationModel
  * 
  */
 export type FeatureFlag = Prisma.FeatureFlagModel
+/**
+ * Model IdempotencyRecord
+ * A claim on an `Idempotency-Key`, and the response that claim produced.
+ * 
+ * This table is the answer to "the user pressed Buy twice because the network
+ * is slow". It is in Postgres, not Redis, on purpose: Redis is a cache, it is
+ * routinely flushed or evicted under memory pressure, and an idempotency
+ * store that forgets is worse than none at all — the retry it was supposed to
+ * absorb re-executes, and the user gets two purchases. Losing this table must
+ * never be possible by losing a cache entry.
+ * 
+ * The unique constraint on `keyHash` is what serialises concurrent duplicates
+ * across API instances. `INSERT ... ON CONFLICT DO NOTHING` against a unique
+ * index takes a row lock, so exactly one of N simultaneous requests wins the
+ * insert and the rest are told to wait. An in-process mutex cannot do this:
+ * with two API replicas the second replica's mutex is a different mutex, and
+ * both requests execute.
+ */
+export type IdempotencyRecord = Prisma.IdempotencyRecordModel
