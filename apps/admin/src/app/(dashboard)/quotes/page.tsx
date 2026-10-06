@@ -15,8 +15,8 @@ import { QuoteFilters } from './filters';
  * matters: when the API changes shape, `Contract<>` changes with it and this
  * file stops compiling.
  */
-type QuoteStats = Contract<'GET /swaps/quotes/stats'>;
-type QuoteList = Contract<'GET /swaps/quotes'>;
+type QuoteStats = Contract<'GET /api/v1/swaps/quotes/stats'>;
+type QuoteList = Contract<'GET /api/v1/swaps/quotes'>;
 type QuoteRow = QuoteList['items'][number];
 type QuoteState = QuoteRow['state'];
 

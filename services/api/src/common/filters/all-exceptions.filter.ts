@@ -1,6 +1,5 @@
 import {
-  Catch,
-  HttpException,
+  Catch, HttpException, NotFoundException,
   type ArgumentsHost,
   type ExceptionFilter,
   Logger,
@@ -8,7 +7,8 @@ import {
 import type { Request, Response } from 'express';
 import { Prisma } from '../../generated/prisma/client.js';
 import { redactDeep } from '@correnthian/security';
-import { AppError } from '../errors.js';
+import { versionNotFoundDetail } from '../../versioning/api-version.middleware.js';
+import { AppError, errorEnvelope } from '../errors.js';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -23,16 +23,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (status >= 500) {
       this.logger.error(
-        `${req.method} ${req.url} -> ${status}`,
+        `${req.method} ${req.originalUrl} -> ${status}`,
         redactDeep(exception instanceof Error ? exception.stack : exception),
       );
     }
 
-    res.status(status).json({
-      error: { code, message, detail },
-      path: req.url,
-      timestamp: new Date().toISOString(),
-    });
+    // `originalUrl`, not `url`: the version middleware rewrites `url` when it
+    // serves the transitional unversioned alias, and the path echoed back to
+    // a client — and written to an audit line — should be what they actually
+    // asked for.
+    res.status(status).json(errorEnvelope({ code, message, detail, path: req.originalUrl }));
   }
 
   private classify(exception: unknown): {
@@ -52,9 +52,23 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
+
+      // Only the router's own not-found. A service that raises
+      // `AppError.notFound('Asset not found')` is reporting a missing
+      // resource, and attaching "here are the API versions" to that would be
+      // noise on the one 404 a caller can actually act on.
+      if (exception instanceof NotFoundException) {
+        return {
+          status,
+          code: 'not_found',
+          message: exception.message,
+          detail: versionNotFoundDetail(),
+        };
+      }
+
       return {
         status,
-        code: status === 404 ? 'not_found' : status === 401 ? 'unauthorized' : 'bad_request',
+        code: status === 401 ? 'unauthorized' : 'bad_request',
         message: exception.message,
       };
     }

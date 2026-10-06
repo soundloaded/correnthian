@@ -13,18 +13,18 @@ import type { Contract } from '@correnthian/contracts';
  * schemas. If either side drifts, that test fails instead of a page.
  */
 
-export type AssetSummary = Contract<'GET /assets'>[number];
-export type AssetStats = Contract<'GET /assets/stats'>;
-export type UserSummary = Contract<'GET /users'>['items'][number];
-export type UserListResponse = Contract<'GET /users'>;
-export type UserStats = Contract<'GET /users/stats'>;
-export type UserDetail = Contract<'GET /users/:id'>;
-export type DeviceRow = Contract<'GET /devices/all'>['items'][number];
-export type DeviceListResponse = Contract<'GET /devices/all'>;
-export type DeviceStats = Contract<'GET /devices/stats'>;
-export type Issuer = Contract<'GET /issuers'>[number];
-export type Chain = Contract<'GET /chains'>[number];
-export type Provider = Contract<'GET /providers'>[number];
+export type AssetSummary = Contract<'GET /api/v1/assets'>[number];
+export type AssetStats = Contract<'GET /api/v1/assets/stats'>;
+export type UserSummary = Contract<'GET /api/v1/users'>['items'][number];
+export type UserListResponse = Contract<'GET /api/v1/users'>;
+export type UserStats = Contract<'GET /api/v1/users/stats'>;
+export type UserDetail = Contract<'GET /api/v1/users/:id'>;
+export type DeviceRow = Contract<'GET /api/v1/devices/all'>['items'][number];
+export type DeviceListResponse = Contract<'GET /api/v1/devices/all'>;
+export type DeviceStats = Contract<'GET /api/v1/devices/stats'>;
+export type Issuer = Contract<'GET /api/v1/issuers'>[number];
+export type Chain = Contract<'GET /api/v1/chains'>[number];
+export type Provider = Contract<'GET /api/v1/providers'>[number];
 
 export type KycStatus = UserSummary['kycStatus'];
 export type UserRole = UserSummary['role'];

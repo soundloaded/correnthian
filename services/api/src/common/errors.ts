@@ -62,3 +62,42 @@ export class ValidationError extends AppError {
     this.name = 'ValidationError';
   }
 }
+
+/**
+ * The one builder for the wire error shape.
+ *
+ * Three places produce this envelope — the exception filter, the API-version
+ * middleware and the not-found handler — and the middle two run outside Nest's
+ * exception zone, so they cannot rely on the filter to shape their output.
+ * Two hand-written literals would drift the first time a field was added, and
+ * the drift would only show up in a client that parses `error.code`.
+ */
+export interface ErrorEnvelope {
+  error: { code: string; message: string; detail?: unknown };
+  path: string;
+  timestamp: string;
+}
+
+export function errorEnvelope(params: {
+  code: string;
+  message: string;
+  detail?: unknown;
+  path: string;
+  timestamp?: string;
+}): ErrorEnvelope {
+  return {
+    error: {
+      code: params.code,
+      message: params.message,
+      detail: params.detail,
+    },
+    path: params.path,
+    timestamp: params.timestamp ?? new Date().toISOString(),
+  };
+}
+
+/** The path without its query string, for messages that are read aloud. */
+export function pathOnly(url: string): string {
+  const cut = url.indexOf('?');
+  return cut === -1 ? url : url.slice(0, cut);
+}

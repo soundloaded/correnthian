@@ -424,24 +424,103 @@ export const errorSchema = z.object({
 /** The standard error envelope every failure path must produce. */
 export const apiErrorSchema = errorSchema;
 
+// --- API versioning --------------------------------------------------------
+
+/**
+ * `GET /api/v1/meta/versions`.
+ *
+ * The registry, on the wire. A client that has to guess which version to call
+ * — or that has to hardcode a sunset date someone told it about in a meeting —
+ * will get one of them wrong, and a client that gets the version wrong is the
+ * failure this whole scheme exists to prevent.
+ */
+export const apiVersionSchema = z.object({
+  id: z.string().min(1),
+  status: z.enum(['current', 'deprecated', 'retired']),
+  releasedAt: z.string().min(1),
+  sunsetAt: z.string().nullable(),
+  path: z.string().min(1),
+});
+
+export const apiVersionsDocumentSchema = z.object({
+  currentVersion: z.string().min(1),
+  versionedPrefix: z.string().min(1),
+  versions: z.array(apiVersionSchema),
+  /** Served outside any version on purpose. `/health` is the important one. */
+  unversionedPaths: z.array(z.string()),
+  legacyUnversionedAlias: z.object({
+    enabled: z.boolean(),
+    sunsetAt: z.string().nullable(),
+    successorPrefix: z.string().min(1),
+  }),
+  errorCodes: z.object({
+    unsupportedApiVersion: z.string(),
+    apiVersionRequired: z.string(),
+    apiVersionRetired: z.string(),
+    notFound: z.string(),
+  }),
+});
+
+/**
+ * A 404 for a version nobody has shipped.
+ *
+ * Distinct from `not_found` on purpose. "This asset does not exist" and "this
+ * API version does not exist" send the caller in opposite directions — one to
+ * look at what is registered, the other to look at the URL it built — and
+ * collapsing them into one code is how a client spends an afternoon looking for
+ * a typo in the wrong place.
+ */
+export const apiVersionErrorSchema = errorSchema.extend({
+  error: errorSchema.shape.error.extend({
+    code: z.enum(['unsupported_api_version', 'api_version_required', 'api_version_retired']),
+  }),
+});
+
+/** A 404 for a path that does not exist inside a version we do serve. */
+export const routeNotFoundSchema = errorSchema.extend({
+  error: errorSchema.shape.error.extend({
+    detail: z
+      .object({
+        currentVersion: z.string(),
+        supportedVersions: z.array(z.string()),
+        versionedPrefix: z.string(),
+        unversionedPaths: z.array(z.string()),
+      })
+      .optional(),
+  }),
+});
+
+/**
+ * The wire contract registry.
+ *
+ * Keys are `METHOD /path` for a success response and `ERROR METHOD /path` for
+ * the error envelope that route produces, so a client can declare what it
+ * expects to *not* get as precisely as what it expects to get.
+ *
+ * Paths are the real, prefixed ones. A registry that said `/assets` while the
+ * API served `/api/v1/assets` would describe an API nobody has.
+ */
 export const CONTRACT_REGISTRY = {
-  'GET /assets': assetListSchema,
-  'GET /assets/stats': assetStatsSchema,
-  'GET /users': userListSchema,
-  'GET /users/stats': userStatsSchema,
-  'GET /users/:id': userDetailSchema,
-  'GET /devices/all': deviceListSchema,
-  'GET /devices/stats': deviceStatsSchema,
-  'GET /issuers': issuerListSchema,
-  'GET /chains': chainListSchema,
-  'GET /providers': providerListSchema,
-  'GET /swaps/quotes/stats': quoteStatsSchema,
-  'GET /swaps/quotes': quoteListSchema,
-  'GET /swaps/quotes/:id': quoteDetailSchema,
-  'GET /audit': auditListSchema,
-  'GET /audit/:id': auditDetailSchema,
-  'GET /transactions': transactionListSchema,
-  'GET /transactions/stats': transactionStatsSchema,
-  'GET /transactions/mine': myTransactionsSchema,
-  'GET /transactions/:id': transactionDetailSchema,
+  'GET /api/v1/assets': assetListSchema,
+  'GET /api/v1/assets/stats': assetStatsSchema,
+  'GET /api/v1/users': userListSchema,
+  'GET /api/v1/users/stats': userStatsSchema,
+  'GET /api/v1/users/:id': userDetailSchema,
+  'GET /api/v1/devices/all': deviceListSchema,
+  'GET /api/v1/devices/stats': deviceStatsSchema,
+  'GET /api/v1/issuers': issuerListSchema,
+  'GET /api/v1/chains': chainListSchema,
+  'GET /api/v1/providers': providerListSchema,
+  'GET /api/v1/swaps/quotes/stats': quoteStatsSchema,
+  'GET /api/v1/swaps/quotes': quoteListSchema,
+  'GET /api/v1/swaps/quotes/:id': quoteDetailSchema,
+  'GET /api/v1/audit': auditListSchema,
+  'GET /api/v1/audit/:id': auditDetailSchema,
+  'GET /api/v1/transactions': transactionListSchema,
+  'GET /api/v1/transactions/stats': transactionStatsSchema,
+  'GET /api/v1/transactions/mine': myTransactionsSchema,
+  'GET /api/v1/transactions/:id': transactionDetailSchema,
+  'GET /api/v1/meta/versions': apiVersionsDocumentSchema,
+  'ERROR GET /api/v2/*': apiVersionErrorSchema,
+  'ERROR GET /api/v1/does-not-exist': routeNotFoundSchema,
 } as const;

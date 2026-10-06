@@ -23,6 +23,7 @@ import { RedisModule } from './redis/redis.module.js';
 import { SwapsModule } from './swaps/swaps.module.js';
 import { TransactionsModule } from './transactions/transactions.module.js';
 import { UsersModule } from './users/users.module.js';
+import { VersioningModule } from './versioning/versioning.module.js';
 import { WalletsModule } from './wallets/wallets.module.js';
 
 @Module({
@@ -45,6 +46,7 @@ import { WalletsModule } from './wallets/wallets.module.js';
     RedisModule,
     CoreModule,
     HealthModule,
+    VersioningModule,
     AuthModule,
     UsersModule,
     DevicesModule,
