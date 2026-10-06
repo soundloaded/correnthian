@@ -755,7 +755,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
 
     const audit = await get(`/audit?requestId=${requestId}`);
     expect(audit.status).toBe(200);
-    const rows = CONTRACT_REGISTRY['GET /audit'].parse(audit.body);
+    const rows = CONTRACT_REGISTRY['GET /api/v1/audit'].parse(audit.body);
 
     // The global interceptor's line and the domain module's line, both under
     // the same id — which is what makes a support ticket actionable.
@@ -768,7 +768,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     // §55's before/after, on a real state-change attempt.
     const detail = await get(`/audit/${refused?.id}`);
     expect(detail.status).toBe(200);
-    const parsed = CONTRACT_REGISTRY['GET /audit/:id'].parse(detail.body);
+    const parsed = CONTRACT_REGISTRY['GET /api/v1/audit/:id'].parse(detail.body);
     expect(parsed.before).toEqual({ state: 'created' });
     expect(parsed.after).toEqual({ state: 'confirmed' });
     expect(parsed.outcome).toBe('failure');
@@ -785,7 +785,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     const res = await get(`/transactions?walletId=${fixtureWalletId}&limit=100`);
     expect(res.status).toBe(200);
 
-    const parsed = CONTRACT_REGISTRY['GET /transactions'].parse(res.body);
+    const parsed = CONTRACT_REGISTRY['GET /api/v1/transactions'].parse(res.body);
     expect(parsed.items.length).toBeGreaterThanOrEqual(fixtureTxIds.length);
 
     for (const row of parsed.items) {
@@ -808,7 +808,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
   it('GET /transactions filters by state, and the filter is applied', async () => {
     const res = await get(`/transactions?walletId=${fixtureWalletId}&state=signed&limit=100`);
     expect(res.status).toBe(200);
-    const rows = CONTRACT_REGISTRY['GET /transactions'].parse(res.body).items;
+    const rows = CONTRACT_REGISTRY['GET /api/v1/transactions'].parse(res.body).items;
     expect(rows.length).toBeGreaterThan(0);
     expect(rows.every((r) => r.state === 'signed')).toBe(true);
     expect(rows.map((r) => r.id)).toContain(fixtureTxIds[0]);
@@ -817,7 +817,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
 
   it('GET /transactions paginates by keyset without repeating a row', async () => {
     const first = await get(`/transactions?walletId=${fixtureWalletId}&limit=1`);
-    const page = CONTRACT_REGISTRY['GET /transactions'].parse(first.body);
+    const page = CONTRACT_REGISTRY['GET /api/v1/transactions'].parse(first.body);
     expect(page.items).toHaveLength(1);
     expect(page.nextCursor).toBeTruthy();
 
@@ -825,7 +825,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
       `/transactions?walletId=${fixtureWalletId}&limit=1&cursor=${page.nextCursor}`,
     );
     expect(second.status).toBe(200);
-    const next = CONTRACT_REGISTRY['GET /transactions'].parse(second.body);
+    const next = CONTRACT_REGISTRY['GET /api/v1/transactions'].parse(second.body);
     expect(next.items[0]?.id).not.toBe(page.items[0]?.id);
   });
 
@@ -833,7 +833,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     const res = await get(`/transactions/${fixtureTxIds[0]}`);
     expect(res.status, `${res.status}: ${JSON.stringify(res.body)}`).toBe(200);
 
-    const parsed = CONTRACT_REGISTRY['GET /transactions/:id'].safeParse(res.body);
+    const parsed = CONTRACT_REGISTRY['GET /api/v1/transactions/:id'].safeParse(res.body);
     if (!parsed.success) {
       const detail = parsed.error.issues.map((i) => `  ${i.path.join('.') || '(root)'}: ${i.message}`).join('\n');
       throw new Error(`/transactions/:id does not match its contract:\n${detail}`);

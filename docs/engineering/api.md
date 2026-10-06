@@ -39,9 +39,9 @@ it returns each asset together with `describeBacking()`'s sentence, so the
 "synthetic tokens are never shown as metal" property is observable from outside
 the process rather than only in a unit test.
 
-**Not yet in place, and visible in `main.ts`:** no global route prefix, no
-validation pipe, no CORS, no helmet, no graceful shutdown hooks, no structured
-logger, no OpenAPI. All are P1.1/P1.4 work.
+**In place, and visible in `main.ts`:** the `/api/v1` prefix, CORS, helmet,
+graceful shutdown hooks and a structured logger. **Not yet in place:** OpenAPI
+response schemas (see `BE-102`).
 
 ---
 
@@ -270,8 +270,12 @@ inverts the dependency and makes both sides worse.
    admin and `@correnthian/api-client`.
 2. **Is the error taxonomy above accepted?** It is a proposal. It should be
    agreed before the admin rewiring begins.
-3. **Global route prefix.** None today. `/assets` and `/health` are at the root.
-   Decide before the surface grows; changing it later breaks the admin.
+3. ~~**Global route prefix.**~~ **Resolved** by `BE-101`: `/api/v1` on every
+   route, with `/health` and `/docs` deliberately outside it. A version is
+   `current`, `deprecated` or `retired`; the registry is
+   `services/api/src/versioning/api-versions.ts` and it is data, not prose. The
+   unversioned form still answers until 2026-12-01 so the admin integration in
+   flight is not broken, and every response on it announces its own removal.
 4. **Multi-tenancy / environment separation.** Nothing in the design describes
    how `dev`, `staging` and `production` are kept apart — separate databases,
    separate provider sandboxes, or a tenancy column. Needed for

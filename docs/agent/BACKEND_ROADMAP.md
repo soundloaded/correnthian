@@ -151,7 +151,9 @@ it is fixed will silently reintroduce the asset-registry uniqueness hole.
   contract suite, and `DEF-001` exists **because** of that gap.
 - `BE-102` — generate OpenAPI from `CONTRACT_REGISTRY`. The shipped document
   describes no request or response schemas at all.
-- `BE-101` — the global route prefix decision, before a public client exists.
+- `BE-101` — **done**. The version lifecycle itself is now the thing to keep
+  honest: the first `deprecated` version is the test of whether the
+  announcement path works, and there is not one yet.
 - `DEF-012` / contract coverage for `GET /portfolio*` and `POST /redemptions`.
 
 ### Phase C — Finish what needs no provider
