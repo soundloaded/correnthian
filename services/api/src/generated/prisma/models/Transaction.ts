@@ -14,7 +14,18 @@ import type * as Prisma from "../internal/prismaNamespace.js"
 
 /**
  * Model Transaction
+ * A record of intended or completed chain activity.
  * 
+ * TWO INVARIANTS, both enforced by `TransactionService` and asserted in
+ * `transactions/key-boundary.spec.ts`:
+ * 
+ * 1. This row is never a custody record and must never gain a column that
+ * could hold key material. See the schema header and
+ * `docs/architecture/key-boundary.md`.
+ * 2. There is deliberately NO column for a signed payload. A signed
+ * transaction is a replayable authorisation while its nonce is unspent,
+ * and `redactDeep()` cannot catch one — it is not shaped like a secret.
+ * Storing it here would make this table the best target in the system.
  */
 export type TransactionModel = runtime.Types.Result.DefaultSelection<Prisma.$TransactionPayload>
 
@@ -28,28 +39,50 @@ export type AggregateTransaction = {
 
 export type TransactionAvgAggregateOutputType = {
   amountUsd: runtime.Decimal | null
+  feeUsd: runtime.Decimal | null
   blockNumber: number | null
   confirmations: number | null
+  requiredConfirmations: number | null
+  dropCount: number | null
 }
 
 export type TransactionSumAggregateOutputType = {
   amountUsd: runtime.Decimal | null
+  feeUsd: runtime.Decimal | null
   blockNumber: bigint | null
   confirmations: number | null
+  requiredConfirmations: number | null
+  dropCount: number | null
 }
 
 export type TransactionMinAggregateOutputType = {
   id: string | null
+  userId: string | null
   walletId: string | null
   assetId: string | null
   chainId: string | null
+  providerId: string | null
+  destination: string | null
   txHash: string | null
   direction: $Enums.TxDirection | null
-  state: $Enums.TxState | null
+  state: $Enums.TxLifecycle | null
   amountRaw: string | null
   amountUsd: runtime.Decimal | null
+  feeRaw: string | null
+  feeUsd: runtime.Decimal | null
   blockNumber: bigint | null
   confirmations: number | null
+  requiredConfirmations: number | null
+  droppedAt: Date | null
+  dropCount: number | null
+  lastSeenAt: Date | null
+  errorCode: string | null
+  errorMessage: string | null
+  expiresAt: Date | null
+  signedAt: Date | null
+  broadcastAt: Date | null
+  confirmedAt: Date | null
+  failedAt: Date | null
   blockTime: Date | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -57,16 +90,32 @@ export type TransactionMinAggregateOutputType = {
 
 export type TransactionMaxAggregateOutputType = {
   id: string | null
+  userId: string | null
   walletId: string | null
   assetId: string | null
   chainId: string | null
+  providerId: string | null
+  destination: string | null
   txHash: string | null
   direction: $Enums.TxDirection | null
-  state: $Enums.TxState | null
+  state: $Enums.TxLifecycle | null
   amountRaw: string | null
   amountUsd: runtime.Decimal | null
+  feeRaw: string | null
+  feeUsd: runtime.Decimal | null
   blockNumber: bigint | null
   confirmations: number | null
+  requiredConfirmations: number | null
+  droppedAt: Date | null
+  dropCount: number | null
+  lastSeenAt: Date | null
+  errorCode: string | null
+  errorMessage: string | null
+  expiresAt: Date | null
+  signedAt: Date | null
+  broadcastAt: Date | null
+  confirmedAt: Date | null
+  failedAt: Date | null
   blockTime: Date | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -74,17 +123,33 @@ export type TransactionMaxAggregateOutputType = {
 
 export type TransactionCountAggregateOutputType = {
   id: number
+  userId: number
   walletId: number
   assetId: number
   chainId: number
+  providerId: number
+  destination: number
   txHash: number
   direction: number
   state: number
   amountRaw: number
   amountUsd: number
+  feeRaw: number
+  feeUsd: number
   blockNumber: number
   confirmations: number
+  requiredConfirmations: number
+  droppedAt: number
+  dropCount: number
+  lastSeenAt: number
   metadata: number
+  errorCode: number
+  errorMessage: number
+  expiresAt: number
+  signedAt: number
+  broadcastAt: number
+  confirmedAt: number
+  failedAt: number
   blockTime: number
   createdAt: number
   updatedAt: number
@@ -94,28 +159,50 @@ export type TransactionCountAggregateOutputType = {
 
 export type TransactionAvgAggregateInputType = {
   amountUsd?: true
+  feeUsd?: true
   blockNumber?: true
   confirmations?: true
+  requiredConfirmations?: true
+  dropCount?: true
 }
 
 export type TransactionSumAggregateInputType = {
   amountUsd?: true
+  feeUsd?: true
   blockNumber?: true
   confirmations?: true
+  requiredConfirmations?: true
+  dropCount?: true
 }
 
 export type TransactionMinAggregateInputType = {
   id?: true
+  userId?: true
   walletId?: true
   assetId?: true
   chainId?: true
+  providerId?: true
+  destination?: true
   txHash?: true
   direction?: true
   state?: true
   amountRaw?: true
   amountUsd?: true
+  feeRaw?: true
+  feeUsd?: true
   blockNumber?: true
   confirmations?: true
+  requiredConfirmations?: true
+  droppedAt?: true
+  dropCount?: true
+  lastSeenAt?: true
+  errorCode?: true
+  errorMessage?: true
+  expiresAt?: true
+  signedAt?: true
+  broadcastAt?: true
+  confirmedAt?: true
+  failedAt?: true
   blockTime?: true
   createdAt?: true
   updatedAt?: true
@@ -123,16 +210,32 @@ export type TransactionMinAggregateInputType = {
 
 export type TransactionMaxAggregateInputType = {
   id?: true
+  userId?: true
   walletId?: true
   assetId?: true
   chainId?: true
+  providerId?: true
+  destination?: true
   txHash?: true
   direction?: true
   state?: true
   amountRaw?: true
   amountUsd?: true
+  feeRaw?: true
+  feeUsd?: true
   blockNumber?: true
   confirmations?: true
+  requiredConfirmations?: true
+  droppedAt?: true
+  dropCount?: true
+  lastSeenAt?: true
+  errorCode?: true
+  errorMessage?: true
+  expiresAt?: true
+  signedAt?: true
+  broadcastAt?: true
+  confirmedAt?: true
+  failedAt?: true
   blockTime?: true
   createdAt?: true
   updatedAt?: true
@@ -140,17 +243,33 @@ export type TransactionMaxAggregateInputType = {
 
 export type TransactionCountAggregateInputType = {
   id?: true
+  userId?: true
   walletId?: true
   assetId?: true
   chainId?: true
+  providerId?: true
+  destination?: true
   txHash?: true
   direction?: true
   state?: true
   amountRaw?: true
   amountUsd?: true
+  feeRaw?: true
+  feeUsd?: true
   blockNumber?: true
   confirmations?: true
+  requiredConfirmations?: true
+  droppedAt?: true
+  dropCount?: true
+  lastSeenAt?: true
   metadata?: true
+  errorCode?: true
+  errorMessage?: true
+  expiresAt?: true
+  signedAt?: true
+  broadcastAt?: true
+  confirmedAt?: true
+  failedAt?: true
   blockTime?: true
   createdAt?: true
   updatedAt?: true
@@ -245,17 +364,33 @@ export type TransactionGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inte
 
 export type TransactionGroupByOutputType = {
   id: string
+  userId: string
   walletId: string
   assetId: string
   chainId: string
-  txHash: string
+  providerId: string | null
+  destination: string | null
+  txHash: string | null
   direction: $Enums.TxDirection
-  state: $Enums.TxState
+  state: $Enums.TxLifecycle
   amountRaw: string
   amountUsd: runtime.Decimal | null
+  feeRaw: string | null
+  feeUsd: runtime.Decimal | null
   blockNumber: bigint | null
   confirmations: number
+  requiredConfirmations: number
+  droppedAt: Date | null
+  dropCount: number
+  lastSeenAt: Date | null
   metadata: runtime.JsonValue | null
+  errorCode: string | null
+  errorMessage: string | null
+  expiresAt: Date | null
+  signedAt: Date | null
+  broadcastAt: Date | null
+  confirmedAt: Date | null
+  failedAt: Date | null
   blockTime: Date | null
   createdAt: Date
   updatedAt: Date
@@ -286,44 +421,80 @@ export type TransactionWhereInput = {
   OR?: Prisma.TransactionWhereInput[]
   NOT?: Prisma.TransactionWhereInput | Prisma.TransactionWhereInput[]
   id?: Prisma.StringFilter<"Transaction"> | string
+  userId?: Prisma.StringFilter<"Transaction"> | string
   walletId?: Prisma.StringFilter<"Transaction"> | string
   assetId?: Prisma.StringFilter<"Transaction"> | string
   chainId?: Prisma.StringFilter<"Transaction"> | string
-  txHash?: Prisma.StringFilter<"Transaction"> | string
+  providerId?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  destination?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  txHash?: Prisma.StringNullableFilter<"Transaction"> | string | null
   direction?: Prisma.EnumTxDirectionFilter<"Transaction"> | $Enums.TxDirection
-  state?: Prisma.EnumTxStateFilter<"Transaction"> | $Enums.TxState
+  state?: Prisma.EnumTxLifecycleFilter<"Transaction"> | $Enums.TxLifecycle
   amountRaw?: Prisma.StringFilter<"Transaction"> | string
   amountUsd?: Prisma.DecimalNullableFilter<"Transaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  feeUsd?: Prisma.DecimalNullableFilter<"Transaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: Prisma.BigIntNullableFilter<"Transaction"> | bigint | number | null
   confirmations?: Prisma.IntFilter<"Transaction"> | number
+  requiredConfirmations?: Prisma.IntFilter<"Transaction"> | number
+  droppedAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  dropCount?: Prisma.IntFilter<"Transaction"> | number
+  lastSeenAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
   metadata?: Prisma.JsonNullableFilter<"Transaction">
+  errorCode?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  errorMessage?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  expiresAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  signedAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  broadcastAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  confirmedAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  failedAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
   blockTime?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Transaction"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Transaction"> | Date | string
+  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   wallet?: Prisma.XOR<Prisma.WalletScalarRelationFilter, Prisma.WalletWhereInput>
   asset?: Prisma.XOR<Prisma.AssetScalarRelationFilter, Prisma.AssetWhereInput>
   chain?: Prisma.XOR<Prisma.ChainScalarRelationFilter, Prisma.ChainWhereInput>
+  provider?: Prisma.XOR<Prisma.ProviderNullableScalarRelationFilter, Prisma.ProviderWhereInput> | null
 }
 
 export type TransactionOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  userId?: Prisma.SortOrder
   walletId?: Prisma.SortOrder
   assetId?: Prisma.SortOrder
   chainId?: Prisma.SortOrder
-  txHash?: Prisma.SortOrder
+  providerId?: Prisma.SortOrderInput | Prisma.SortOrder
+  destination?: Prisma.SortOrderInput | Prisma.SortOrder
+  txHash?: Prisma.SortOrderInput | Prisma.SortOrder
   direction?: Prisma.SortOrder
   state?: Prisma.SortOrder
   amountRaw?: Prisma.SortOrder
   amountUsd?: Prisma.SortOrderInput | Prisma.SortOrder
+  feeRaw?: Prisma.SortOrderInput | Prisma.SortOrder
+  feeUsd?: Prisma.SortOrderInput | Prisma.SortOrder
   blockNumber?: Prisma.SortOrderInput | Prisma.SortOrder
   confirmations?: Prisma.SortOrder
+  requiredConfirmations?: Prisma.SortOrder
+  droppedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  dropCount?: Prisma.SortOrder
+  lastSeenAt?: Prisma.SortOrderInput | Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
+  errorCode?: Prisma.SortOrderInput | Prisma.SortOrder
+  errorMessage?: Prisma.SortOrderInput | Prisma.SortOrder
+  expiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  signedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  broadcastAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  confirmedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  failedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   blockTime?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  user?: Prisma.UserOrderByWithRelationInput
   wallet?: Prisma.WalletOrderByWithRelationInput
   asset?: Prisma.AssetOrderByWithRelationInput
   chain?: Prisma.ChainOrderByWithRelationInput
+  provider?: Prisma.ProviderOrderByWithRelationInput
 }
 
 export type TransactionWhereUniqueInput = Prisma.AtLeast<{
@@ -332,38 +503,72 @@ export type TransactionWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.TransactionWhereInput | Prisma.TransactionWhereInput[]
   OR?: Prisma.TransactionWhereInput[]
   NOT?: Prisma.TransactionWhereInput | Prisma.TransactionWhereInput[]
+  userId?: Prisma.StringFilter<"Transaction"> | string
   walletId?: Prisma.StringFilter<"Transaction"> | string
   assetId?: Prisma.StringFilter<"Transaction"> | string
   chainId?: Prisma.StringFilter<"Transaction"> | string
-  txHash?: Prisma.StringFilter<"Transaction"> | string
+  providerId?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  destination?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  txHash?: Prisma.StringNullableFilter<"Transaction"> | string | null
   direction?: Prisma.EnumTxDirectionFilter<"Transaction"> | $Enums.TxDirection
-  state?: Prisma.EnumTxStateFilter<"Transaction"> | $Enums.TxState
+  state?: Prisma.EnumTxLifecycleFilter<"Transaction"> | $Enums.TxLifecycle
   amountRaw?: Prisma.StringFilter<"Transaction"> | string
   amountUsd?: Prisma.DecimalNullableFilter<"Transaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  feeUsd?: Prisma.DecimalNullableFilter<"Transaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: Prisma.BigIntNullableFilter<"Transaction"> | bigint | number | null
   confirmations?: Prisma.IntFilter<"Transaction"> | number
+  requiredConfirmations?: Prisma.IntFilter<"Transaction"> | number
+  droppedAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  dropCount?: Prisma.IntFilter<"Transaction"> | number
+  lastSeenAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
   metadata?: Prisma.JsonNullableFilter<"Transaction">
+  errorCode?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  errorMessage?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  expiresAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  signedAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  broadcastAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  confirmedAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  failedAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
   blockTime?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Transaction"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Transaction"> | Date | string
+  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   wallet?: Prisma.XOR<Prisma.WalletScalarRelationFilter, Prisma.WalletWhereInput>
   asset?: Prisma.XOR<Prisma.AssetScalarRelationFilter, Prisma.AssetWhereInput>
   chain?: Prisma.XOR<Prisma.ChainScalarRelationFilter, Prisma.ChainWhereInput>
+  provider?: Prisma.XOR<Prisma.ProviderNullableScalarRelationFilter, Prisma.ProviderWhereInput> | null
 }, "id" | "chainId_txHash">
 
 export type TransactionOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  userId?: Prisma.SortOrder
   walletId?: Prisma.SortOrder
   assetId?: Prisma.SortOrder
   chainId?: Prisma.SortOrder
-  txHash?: Prisma.SortOrder
+  providerId?: Prisma.SortOrderInput | Prisma.SortOrder
+  destination?: Prisma.SortOrderInput | Prisma.SortOrder
+  txHash?: Prisma.SortOrderInput | Prisma.SortOrder
   direction?: Prisma.SortOrder
   state?: Prisma.SortOrder
   amountRaw?: Prisma.SortOrder
   amountUsd?: Prisma.SortOrderInput | Prisma.SortOrder
+  feeRaw?: Prisma.SortOrderInput | Prisma.SortOrder
+  feeUsd?: Prisma.SortOrderInput | Prisma.SortOrder
   blockNumber?: Prisma.SortOrderInput | Prisma.SortOrder
   confirmations?: Prisma.SortOrder
+  requiredConfirmations?: Prisma.SortOrder
+  droppedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  dropCount?: Prisma.SortOrder
+  lastSeenAt?: Prisma.SortOrderInput | Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
+  errorCode?: Prisma.SortOrderInput | Prisma.SortOrder
+  errorMessage?: Prisma.SortOrderInput | Prisma.SortOrder
+  expiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  signedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  broadcastAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  confirmedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  failedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   blockTime?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -379,17 +584,33 @@ export type TransactionScalarWhereWithAggregatesInput = {
   OR?: Prisma.TransactionScalarWhereWithAggregatesInput[]
   NOT?: Prisma.TransactionScalarWhereWithAggregatesInput | Prisma.TransactionScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Transaction"> | string
+  userId?: Prisma.StringWithAggregatesFilter<"Transaction"> | string
   walletId?: Prisma.StringWithAggregatesFilter<"Transaction"> | string
   assetId?: Prisma.StringWithAggregatesFilter<"Transaction"> | string
   chainId?: Prisma.StringWithAggregatesFilter<"Transaction"> | string
-  txHash?: Prisma.StringWithAggregatesFilter<"Transaction"> | string
+  providerId?: Prisma.StringNullableWithAggregatesFilter<"Transaction"> | string | null
+  destination?: Prisma.StringNullableWithAggregatesFilter<"Transaction"> | string | null
+  txHash?: Prisma.StringNullableWithAggregatesFilter<"Transaction"> | string | null
   direction?: Prisma.EnumTxDirectionWithAggregatesFilter<"Transaction"> | $Enums.TxDirection
-  state?: Prisma.EnumTxStateWithAggregatesFilter<"Transaction"> | $Enums.TxState
+  state?: Prisma.EnumTxLifecycleWithAggregatesFilter<"Transaction"> | $Enums.TxLifecycle
   amountRaw?: Prisma.StringWithAggregatesFilter<"Transaction"> | string
   amountUsd?: Prisma.DecimalNullableWithAggregatesFilter<"Transaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.StringNullableWithAggregatesFilter<"Transaction"> | string | null
+  feeUsd?: Prisma.DecimalNullableWithAggregatesFilter<"Transaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: Prisma.BigIntNullableWithAggregatesFilter<"Transaction"> | bigint | number | null
   confirmations?: Prisma.IntWithAggregatesFilter<"Transaction"> | number
+  requiredConfirmations?: Prisma.IntWithAggregatesFilter<"Transaction"> | number
+  droppedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Transaction"> | Date | string | null
+  dropCount?: Prisma.IntWithAggregatesFilter<"Transaction"> | number
+  lastSeenAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Transaction"> | Date | string | null
   metadata?: Prisma.JsonNullableWithAggregatesFilter<"Transaction">
+  errorCode?: Prisma.StringNullableWithAggregatesFilter<"Transaction"> | string | null
+  errorMessage?: Prisma.StringNullableWithAggregatesFilter<"Transaction"> | string | null
+  expiresAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Transaction"> | Date | string | null
+  signedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Transaction"> | Date | string | null
+  broadcastAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Transaction"> | Date | string | null
+  confirmedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Transaction"> | Date | string | null
+  failedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Transaction"> | Date | string | null
   blockTime?: Prisma.DateTimeNullableWithAggregatesFilter<"Transaction"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Transaction"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Transaction"> | Date | string
@@ -397,35 +618,67 @@ export type TransactionScalarWhereWithAggregatesInput = {
 
 export type TransactionCreateInput = {
   id?: string
-  txHash: string
-  direction: $Enums.TxDirection
-  state?: $Enums.TxState
+  destination?: string | null
+  txHash?: string | null
+  direction?: $Enums.TxDirection
+  state?: $Enums.TxLifecycle
   amountRaw: string
   amountUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: string | null
+  feeUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: bigint | number | null
   confirmations?: number
+  requiredConfirmations?: number
+  droppedAt?: Date | string | null
+  dropCount?: number
+  lastSeenAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: string | null
+  errorMessage?: string | null
+  expiresAt?: Date | string | null
+  signedAt?: Date | string | null
+  broadcastAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failedAt?: Date | string | null
   blockTime?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutTransactionsInput
   wallet: Prisma.WalletCreateNestedOneWithoutTransactionsInput
   asset: Prisma.AssetCreateNestedOneWithoutTransactionsInput
   chain: Prisma.ChainCreateNestedOneWithoutTransactionsInput
+  provider?: Prisma.ProviderCreateNestedOneWithoutTransactionsInput
 }
 
 export type TransactionUncheckedCreateInput = {
   id?: string
+  userId: string
   walletId: string
   assetId: string
   chainId: string
-  txHash: string
-  direction: $Enums.TxDirection
-  state?: $Enums.TxState
+  providerId?: string | null
+  destination?: string | null
+  txHash?: string | null
+  direction?: $Enums.TxDirection
+  state?: $Enums.TxLifecycle
   amountRaw: string
   amountUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: string | null
+  feeUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: bigint | number | null
   confirmations?: number
+  requiredConfirmations?: number
+  droppedAt?: Date | string | null
+  dropCount?: number
+  lastSeenAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: string | null
+  errorMessage?: string | null
+  expiresAt?: Date | string | null
+  signedAt?: Date | string | null
+  broadcastAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failedAt?: Date | string | null
   blockTime?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -433,35 +686,67 @@ export type TransactionUncheckedCreateInput = {
 
 export type TransactionUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  txHash?: Prisma.StringFieldUpdateOperationsInput | string
+  destination?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direction?: Prisma.EnumTxDirectionFieldUpdateOperationsInput | $Enums.TxDirection
-  state?: Prisma.EnumTxStateFieldUpdateOperationsInput | $Enums.TxState
+  state?: Prisma.EnumTxLifecycleFieldUpdateOperationsInput | $Enums.TxLifecycle
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   amountUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feeUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   confirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  requiredConfirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  droppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dropCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  signedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  broadcastAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   blockTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutTransactionsNestedInput
   wallet?: Prisma.WalletUpdateOneRequiredWithoutTransactionsNestedInput
   asset?: Prisma.AssetUpdateOneRequiredWithoutTransactionsNestedInput
   chain?: Prisma.ChainUpdateOneRequiredWithoutTransactionsNestedInput
+  provider?: Prisma.ProviderUpdateOneWithoutTransactionsNestedInput
 }
 
 export type TransactionUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
   walletId?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.StringFieldUpdateOperationsInput | string
-  txHash?: Prisma.StringFieldUpdateOperationsInput | string
+  providerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destination?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direction?: Prisma.EnumTxDirectionFieldUpdateOperationsInput | $Enums.TxDirection
-  state?: Prisma.EnumTxStateFieldUpdateOperationsInput | $Enums.TxState
+  state?: Prisma.EnumTxLifecycleFieldUpdateOperationsInput | $Enums.TxLifecycle
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   amountUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feeUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   confirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  requiredConfirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  droppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dropCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  signedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  broadcastAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   blockTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -469,17 +754,33 @@ export type TransactionUncheckedUpdateInput = {
 
 export type TransactionCreateManyInput = {
   id?: string
+  userId: string
   walletId: string
   assetId: string
   chainId: string
-  txHash: string
-  direction: $Enums.TxDirection
-  state?: $Enums.TxState
+  providerId?: string | null
+  destination?: string | null
+  txHash?: string | null
+  direction?: $Enums.TxDirection
+  state?: $Enums.TxLifecycle
   amountRaw: string
   amountUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: string | null
+  feeUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: bigint | number | null
   confirmations?: number
+  requiredConfirmations?: number
+  droppedAt?: Date | string | null
+  dropCount?: number
+  lastSeenAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: string | null
+  errorMessage?: string | null
+  expiresAt?: Date | string | null
+  signedAt?: Date | string | null
+  broadcastAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failedAt?: Date | string | null
   blockTime?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -487,14 +788,28 @@ export type TransactionCreateManyInput = {
 
 export type TransactionUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  txHash?: Prisma.StringFieldUpdateOperationsInput | string
+  destination?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direction?: Prisma.EnumTxDirectionFieldUpdateOperationsInput | $Enums.TxDirection
-  state?: Prisma.EnumTxStateFieldUpdateOperationsInput | $Enums.TxState
+  state?: Prisma.EnumTxLifecycleFieldUpdateOperationsInput | $Enums.TxLifecycle
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   amountUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feeUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   confirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  requiredConfirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  droppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dropCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  signedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  broadcastAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   blockTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -502,17 +817,33 @@ export type TransactionUpdateManyMutationInput = {
 
 export type TransactionUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
   walletId?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.StringFieldUpdateOperationsInput | string
-  txHash?: Prisma.StringFieldUpdateOperationsInput | string
+  providerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destination?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direction?: Prisma.EnumTxDirectionFieldUpdateOperationsInput | $Enums.TxDirection
-  state?: Prisma.EnumTxStateFieldUpdateOperationsInput | $Enums.TxState
+  state?: Prisma.EnumTxLifecycleFieldUpdateOperationsInput | $Enums.TxLifecycle
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   amountUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feeUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   confirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  requiredConfirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  droppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dropCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  signedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  broadcastAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   blockTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -535,17 +866,33 @@ export type TransactionChainIdTxHashCompoundUniqueInput = {
 
 export type TransactionCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  userId?: Prisma.SortOrder
   walletId?: Prisma.SortOrder
   assetId?: Prisma.SortOrder
   chainId?: Prisma.SortOrder
+  providerId?: Prisma.SortOrder
+  destination?: Prisma.SortOrder
   txHash?: Prisma.SortOrder
   direction?: Prisma.SortOrder
   state?: Prisma.SortOrder
   amountRaw?: Prisma.SortOrder
   amountUsd?: Prisma.SortOrder
+  feeRaw?: Prisma.SortOrder
+  feeUsd?: Prisma.SortOrder
   blockNumber?: Prisma.SortOrder
   confirmations?: Prisma.SortOrder
+  requiredConfirmations?: Prisma.SortOrder
+  droppedAt?: Prisma.SortOrder
+  dropCount?: Prisma.SortOrder
+  lastSeenAt?: Prisma.SortOrder
   metadata?: Prisma.SortOrder
+  errorCode?: Prisma.SortOrder
+  errorMessage?: Prisma.SortOrder
+  expiresAt?: Prisma.SortOrder
+  signedAt?: Prisma.SortOrder
+  broadcastAt?: Prisma.SortOrder
+  confirmedAt?: Prisma.SortOrder
+  failedAt?: Prisma.SortOrder
   blockTime?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -553,22 +900,41 @@ export type TransactionCountOrderByAggregateInput = {
 
 export type TransactionAvgOrderByAggregateInput = {
   amountUsd?: Prisma.SortOrder
+  feeUsd?: Prisma.SortOrder
   blockNumber?: Prisma.SortOrder
   confirmations?: Prisma.SortOrder
+  requiredConfirmations?: Prisma.SortOrder
+  dropCount?: Prisma.SortOrder
 }
 
 export type TransactionMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  userId?: Prisma.SortOrder
   walletId?: Prisma.SortOrder
   assetId?: Prisma.SortOrder
   chainId?: Prisma.SortOrder
+  providerId?: Prisma.SortOrder
+  destination?: Prisma.SortOrder
   txHash?: Prisma.SortOrder
   direction?: Prisma.SortOrder
   state?: Prisma.SortOrder
   amountRaw?: Prisma.SortOrder
   amountUsd?: Prisma.SortOrder
+  feeRaw?: Prisma.SortOrder
+  feeUsd?: Prisma.SortOrder
   blockNumber?: Prisma.SortOrder
   confirmations?: Prisma.SortOrder
+  requiredConfirmations?: Prisma.SortOrder
+  droppedAt?: Prisma.SortOrder
+  dropCount?: Prisma.SortOrder
+  lastSeenAt?: Prisma.SortOrder
+  errorCode?: Prisma.SortOrder
+  errorMessage?: Prisma.SortOrder
+  expiresAt?: Prisma.SortOrder
+  signedAt?: Prisma.SortOrder
+  broadcastAt?: Prisma.SortOrder
+  confirmedAt?: Prisma.SortOrder
+  failedAt?: Prisma.SortOrder
   blockTime?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -576,16 +942,32 @@ export type TransactionMaxOrderByAggregateInput = {
 
 export type TransactionMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  userId?: Prisma.SortOrder
   walletId?: Prisma.SortOrder
   assetId?: Prisma.SortOrder
   chainId?: Prisma.SortOrder
+  providerId?: Prisma.SortOrder
+  destination?: Prisma.SortOrder
   txHash?: Prisma.SortOrder
   direction?: Prisma.SortOrder
   state?: Prisma.SortOrder
   amountRaw?: Prisma.SortOrder
   amountUsd?: Prisma.SortOrder
+  feeRaw?: Prisma.SortOrder
+  feeUsd?: Prisma.SortOrder
   blockNumber?: Prisma.SortOrder
   confirmations?: Prisma.SortOrder
+  requiredConfirmations?: Prisma.SortOrder
+  droppedAt?: Prisma.SortOrder
+  dropCount?: Prisma.SortOrder
+  lastSeenAt?: Prisma.SortOrder
+  errorCode?: Prisma.SortOrder
+  errorMessage?: Prisma.SortOrder
+  expiresAt?: Prisma.SortOrder
+  signedAt?: Prisma.SortOrder
+  broadcastAt?: Prisma.SortOrder
+  confirmedAt?: Prisma.SortOrder
+  failedAt?: Prisma.SortOrder
   blockTime?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -593,8 +975,53 @@ export type TransactionMinOrderByAggregateInput = {
 
 export type TransactionSumOrderByAggregateInput = {
   amountUsd?: Prisma.SortOrder
+  feeUsd?: Prisma.SortOrder
   blockNumber?: Prisma.SortOrder
   confirmations?: Prisma.SortOrder
+  requiredConfirmations?: Prisma.SortOrder
+  dropCount?: Prisma.SortOrder
+}
+
+export type TransactionCreateNestedManyWithoutUserInput = {
+  create?: Prisma.XOR<Prisma.TransactionCreateWithoutUserInput, Prisma.TransactionUncheckedCreateWithoutUserInput> | Prisma.TransactionCreateWithoutUserInput[] | Prisma.TransactionUncheckedCreateWithoutUserInput[]
+  connectOrCreate?: Prisma.TransactionCreateOrConnectWithoutUserInput | Prisma.TransactionCreateOrConnectWithoutUserInput[]
+  createMany?: Prisma.TransactionCreateManyUserInputEnvelope
+  connect?: Prisma.TransactionWhereUniqueInput | Prisma.TransactionWhereUniqueInput[]
+}
+
+export type TransactionUncheckedCreateNestedManyWithoutUserInput = {
+  create?: Prisma.XOR<Prisma.TransactionCreateWithoutUserInput, Prisma.TransactionUncheckedCreateWithoutUserInput> | Prisma.TransactionCreateWithoutUserInput[] | Prisma.TransactionUncheckedCreateWithoutUserInput[]
+  connectOrCreate?: Prisma.TransactionCreateOrConnectWithoutUserInput | Prisma.TransactionCreateOrConnectWithoutUserInput[]
+  createMany?: Prisma.TransactionCreateManyUserInputEnvelope
+  connect?: Prisma.TransactionWhereUniqueInput | Prisma.TransactionWhereUniqueInput[]
+}
+
+export type TransactionUpdateManyWithoutUserNestedInput = {
+  create?: Prisma.XOR<Prisma.TransactionCreateWithoutUserInput, Prisma.TransactionUncheckedCreateWithoutUserInput> | Prisma.TransactionCreateWithoutUserInput[] | Prisma.TransactionUncheckedCreateWithoutUserInput[]
+  connectOrCreate?: Prisma.TransactionCreateOrConnectWithoutUserInput | Prisma.TransactionCreateOrConnectWithoutUserInput[]
+  upsert?: Prisma.TransactionUpsertWithWhereUniqueWithoutUserInput | Prisma.TransactionUpsertWithWhereUniqueWithoutUserInput[]
+  createMany?: Prisma.TransactionCreateManyUserInputEnvelope
+  set?: Prisma.TransactionWhereUniqueInput | Prisma.TransactionWhereUniqueInput[]
+  disconnect?: Prisma.TransactionWhereUniqueInput | Prisma.TransactionWhereUniqueInput[]
+  delete?: Prisma.TransactionWhereUniqueInput | Prisma.TransactionWhereUniqueInput[]
+  connect?: Prisma.TransactionWhereUniqueInput | Prisma.TransactionWhereUniqueInput[]
+  update?: Prisma.TransactionUpdateWithWhereUniqueWithoutUserInput | Prisma.TransactionUpdateWithWhereUniqueWithoutUserInput[]
+  updateMany?: Prisma.TransactionUpdateManyWithWhereWithoutUserInput | Prisma.TransactionUpdateManyWithWhereWithoutUserInput[]
+  deleteMany?: Prisma.TransactionScalarWhereInput | Prisma.TransactionScalarWhereInput[]
+}
+
+export type TransactionUncheckedUpdateManyWithoutUserNestedInput = {
+  create?: Prisma.XOR<Prisma.TransactionCreateWithoutUserInput, Prisma.TransactionUncheckedCreateWithoutUserInput> | Prisma.TransactionCreateWithoutUserInput[] | Prisma.TransactionUncheckedCreateWithoutUserInput[]
+  connectOrCreate?: Prisma.TransactionCreateOrConnectWithoutUserInput | Prisma.TransactionCreateOrConnectWithoutUserInput[]
+  upsert?: Prisma.TransactionUpsertWithWhereUniqueWithoutUserInput | Prisma.TransactionUpsertWithWhereUniqueWithoutUserInput[]
+  createMany?: Prisma.TransactionCreateManyUserInputEnvelope
+  set?: Prisma.TransactionWhereUniqueInput | Prisma.TransactionWhereUniqueInput[]
+  disconnect?: Prisma.TransactionWhereUniqueInput | Prisma.TransactionWhereUniqueInput[]
+  delete?: Prisma.TransactionWhereUniqueInput | Prisma.TransactionWhereUniqueInput[]
+  connect?: Prisma.TransactionWhereUniqueInput | Prisma.TransactionWhereUniqueInput[]
+  update?: Prisma.TransactionUpdateWithWhereUniqueWithoutUserInput | Prisma.TransactionUpdateWithWhereUniqueWithoutUserInput[]
+  updateMany?: Prisma.TransactionUpdateManyWithWhereWithoutUserInput | Prisma.TransactionUpdateManyWithWhereWithoutUserInput[]
+  deleteMany?: Prisma.TransactionScalarWhereInput | Prisma.TransactionScalarWhereInput[]
 }
 
 export type TransactionCreateNestedManyWithoutWalletInput = {
@@ -723,12 +1150,54 @@ export type TransactionUncheckedUpdateManyWithoutChainNestedInput = {
   deleteMany?: Prisma.TransactionScalarWhereInput | Prisma.TransactionScalarWhereInput[]
 }
 
+export type TransactionCreateNestedManyWithoutProviderInput = {
+  create?: Prisma.XOR<Prisma.TransactionCreateWithoutProviderInput, Prisma.TransactionUncheckedCreateWithoutProviderInput> | Prisma.TransactionCreateWithoutProviderInput[] | Prisma.TransactionUncheckedCreateWithoutProviderInput[]
+  connectOrCreate?: Prisma.TransactionCreateOrConnectWithoutProviderInput | Prisma.TransactionCreateOrConnectWithoutProviderInput[]
+  createMany?: Prisma.TransactionCreateManyProviderInputEnvelope
+  connect?: Prisma.TransactionWhereUniqueInput | Prisma.TransactionWhereUniqueInput[]
+}
+
+export type TransactionUncheckedCreateNestedManyWithoutProviderInput = {
+  create?: Prisma.XOR<Prisma.TransactionCreateWithoutProviderInput, Prisma.TransactionUncheckedCreateWithoutProviderInput> | Prisma.TransactionCreateWithoutProviderInput[] | Prisma.TransactionUncheckedCreateWithoutProviderInput[]
+  connectOrCreate?: Prisma.TransactionCreateOrConnectWithoutProviderInput | Prisma.TransactionCreateOrConnectWithoutProviderInput[]
+  createMany?: Prisma.TransactionCreateManyProviderInputEnvelope
+  connect?: Prisma.TransactionWhereUniqueInput | Prisma.TransactionWhereUniqueInput[]
+}
+
+export type TransactionUpdateManyWithoutProviderNestedInput = {
+  create?: Prisma.XOR<Prisma.TransactionCreateWithoutProviderInput, Prisma.TransactionUncheckedCreateWithoutProviderInput> | Prisma.TransactionCreateWithoutProviderInput[] | Prisma.TransactionUncheckedCreateWithoutProviderInput[]
+  connectOrCreate?: Prisma.TransactionCreateOrConnectWithoutProviderInput | Prisma.TransactionCreateOrConnectWithoutProviderInput[]
+  upsert?: Prisma.TransactionUpsertWithWhereUniqueWithoutProviderInput | Prisma.TransactionUpsertWithWhereUniqueWithoutProviderInput[]
+  createMany?: Prisma.TransactionCreateManyProviderInputEnvelope
+  set?: Prisma.TransactionWhereUniqueInput | Prisma.TransactionWhereUniqueInput[]
+  disconnect?: Prisma.TransactionWhereUniqueInput | Prisma.TransactionWhereUniqueInput[]
+  delete?: Prisma.TransactionWhereUniqueInput | Prisma.TransactionWhereUniqueInput[]
+  connect?: Prisma.TransactionWhereUniqueInput | Prisma.TransactionWhereUniqueInput[]
+  update?: Prisma.TransactionUpdateWithWhereUniqueWithoutProviderInput | Prisma.TransactionUpdateWithWhereUniqueWithoutProviderInput[]
+  updateMany?: Prisma.TransactionUpdateManyWithWhereWithoutProviderInput | Prisma.TransactionUpdateManyWithWhereWithoutProviderInput[]
+  deleteMany?: Prisma.TransactionScalarWhereInput | Prisma.TransactionScalarWhereInput[]
+}
+
+export type TransactionUncheckedUpdateManyWithoutProviderNestedInput = {
+  create?: Prisma.XOR<Prisma.TransactionCreateWithoutProviderInput, Prisma.TransactionUncheckedCreateWithoutProviderInput> | Prisma.TransactionCreateWithoutProviderInput[] | Prisma.TransactionUncheckedCreateWithoutProviderInput[]
+  connectOrCreate?: Prisma.TransactionCreateOrConnectWithoutProviderInput | Prisma.TransactionCreateOrConnectWithoutProviderInput[]
+  upsert?: Prisma.TransactionUpsertWithWhereUniqueWithoutProviderInput | Prisma.TransactionUpsertWithWhereUniqueWithoutProviderInput[]
+  createMany?: Prisma.TransactionCreateManyProviderInputEnvelope
+  set?: Prisma.TransactionWhereUniqueInput | Prisma.TransactionWhereUniqueInput[]
+  disconnect?: Prisma.TransactionWhereUniqueInput | Prisma.TransactionWhereUniqueInput[]
+  delete?: Prisma.TransactionWhereUniqueInput | Prisma.TransactionWhereUniqueInput[]
+  connect?: Prisma.TransactionWhereUniqueInput | Prisma.TransactionWhereUniqueInput[]
+  update?: Prisma.TransactionUpdateWithWhereUniqueWithoutProviderInput | Prisma.TransactionUpdateWithWhereUniqueWithoutProviderInput[]
+  updateMany?: Prisma.TransactionUpdateManyWithWhereWithoutProviderInput | Prisma.TransactionUpdateManyWithWhereWithoutProviderInput[]
+  deleteMany?: Prisma.TransactionScalarWhereInput | Prisma.TransactionScalarWhereInput[]
+}
+
 export type EnumTxDirectionFieldUpdateOperationsInput = {
   set?: $Enums.TxDirection
 }
 
-export type EnumTxStateFieldUpdateOperationsInput = {
-  set?: $Enums.TxState
+export type EnumTxLifecycleFieldUpdateOperationsInput = {
+  set?: $Enums.TxLifecycle
 }
 
 export type NullableBigIntFieldUpdateOperationsInput = {
@@ -739,35 +1208,196 @@ export type NullableBigIntFieldUpdateOperationsInput = {
   divide?: bigint | number
 }
 
-export type TransactionCreateWithoutWalletInput = {
+export type TransactionCreateWithoutUserInput = {
   id?: string
-  txHash: string
-  direction: $Enums.TxDirection
-  state?: $Enums.TxState
+  destination?: string | null
+  txHash?: string | null
+  direction?: $Enums.TxDirection
+  state?: $Enums.TxLifecycle
   amountRaw: string
   amountUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: string | null
+  feeUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: bigint | number | null
   confirmations?: number
+  requiredConfirmations?: number
+  droppedAt?: Date | string | null
+  dropCount?: number
+  lastSeenAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: string | null
+  errorMessage?: string | null
+  expiresAt?: Date | string | null
+  signedAt?: Date | string | null
+  broadcastAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failedAt?: Date | string | null
   blockTime?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  wallet: Prisma.WalletCreateNestedOneWithoutTransactionsInput
   asset: Prisma.AssetCreateNestedOneWithoutTransactionsInput
   chain: Prisma.ChainCreateNestedOneWithoutTransactionsInput
+  provider?: Prisma.ProviderCreateNestedOneWithoutTransactionsInput
+}
+
+export type TransactionUncheckedCreateWithoutUserInput = {
+  id?: string
+  walletId: string
+  assetId: string
+  chainId: string
+  providerId?: string | null
+  destination?: string | null
+  txHash?: string | null
+  direction?: $Enums.TxDirection
+  state?: $Enums.TxLifecycle
+  amountRaw: string
+  amountUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: string | null
+  feeUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  blockNumber?: bigint | number | null
+  confirmations?: number
+  requiredConfirmations?: number
+  droppedAt?: Date | string | null
+  dropCount?: number
+  lastSeenAt?: Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: string | null
+  errorMessage?: string | null
+  expiresAt?: Date | string | null
+  signedAt?: Date | string | null
+  broadcastAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failedAt?: Date | string | null
+  blockTime?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type TransactionCreateOrConnectWithoutUserInput = {
+  where: Prisma.TransactionWhereUniqueInput
+  create: Prisma.XOR<Prisma.TransactionCreateWithoutUserInput, Prisma.TransactionUncheckedCreateWithoutUserInput>
+}
+
+export type TransactionCreateManyUserInputEnvelope = {
+  data: Prisma.TransactionCreateManyUserInput | Prisma.TransactionCreateManyUserInput[]
+  skipDuplicates?: boolean
+}
+
+export type TransactionUpsertWithWhereUniqueWithoutUserInput = {
+  where: Prisma.TransactionWhereUniqueInput
+  update: Prisma.XOR<Prisma.TransactionUpdateWithoutUserInput, Prisma.TransactionUncheckedUpdateWithoutUserInput>
+  create: Prisma.XOR<Prisma.TransactionCreateWithoutUserInput, Prisma.TransactionUncheckedCreateWithoutUserInput>
+}
+
+export type TransactionUpdateWithWhereUniqueWithoutUserInput = {
+  where: Prisma.TransactionWhereUniqueInput
+  data: Prisma.XOR<Prisma.TransactionUpdateWithoutUserInput, Prisma.TransactionUncheckedUpdateWithoutUserInput>
+}
+
+export type TransactionUpdateManyWithWhereWithoutUserInput = {
+  where: Prisma.TransactionScalarWhereInput
+  data: Prisma.XOR<Prisma.TransactionUpdateManyMutationInput, Prisma.TransactionUncheckedUpdateManyWithoutUserInput>
+}
+
+export type TransactionScalarWhereInput = {
+  AND?: Prisma.TransactionScalarWhereInput | Prisma.TransactionScalarWhereInput[]
+  OR?: Prisma.TransactionScalarWhereInput[]
+  NOT?: Prisma.TransactionScalarWhereInput | Prisma.TransactionScalarWhereInput[]
+  id?: Prisma.StringFilter<"Transaction"> | string
+  userId?: Prisma.StringFilter<"Transaction"> | string
+  walletId?: Prisma.StringFilter<"Transaction"> | string
+  assetId?: Prisma.StringFilter<"Transaction"> | string
+  chainId?: Prisma.StringFilter<"Transaction"> | string
+  providerId?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  destination?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  txHash?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  direction?: Prisma.EnumTxDirectionFilter<"Transaction"> | $Enums.TxDirection
+  state?: Prisma.EnumTxLifecycleFilter<"Transaction"> | $Enums.TxLifecycle
+  amountRaw?: Prisma.StringFilter<"Transaction"> | string
+  amountUsd?: Prisma.DecimalNullableFilter<"Transaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  feeUsd?: Prisma.DecimalNullableFilter<"Transaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  blockNumber?: Prisma.BigIntNullableFilter<"Transaction"> | bigint | number | null
+  confirmations?: Prisma.IntFilter<"Transaction"> | number
+  requiredConfirmations?: Prisma.IntFilter<"Transaction"> | number
+  droppedAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  dropCount?: Prisma.IntFilter<"Transaction"> | number
+  lastSeenAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  metadata?: Prisma.JsonNullableFilter<"Transaction">
+  errorCode?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  errorMessage?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  expiresAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  signedAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  broadcastAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  confirmedAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  failedAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  blockTime?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  createdAt?: Prisma.DateTimeFilter<"Transaction"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Transaction"> | Date | string
+}
+
+export type TransactionCreateWithoutWalletInput = {
+  id?: string
+  destination?: string | null
+  txHash?: string | null
+  direction?: $Enums.TxDirection
+  state?: $Enums.TxLifecycle
+  amountRaw: string
+  amountUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: string | null
+  feeUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  blockNumber?: bigint | number | null
+  confirmations?: number
+  requiredConfirmations?: number
+  droppedAt?: Date | string | null
+  dropCount?: number
+  lastSeenAt?: Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: string | null
+  errorMessage?: string | null
+  expiresAt?: Date | string | null
+  signedAt?: Date | string | null
+  broadcastAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failedAt?: Date | string | null
+  blockTime?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutTransactionsInput
+  asset: Prisma.AssetCreateNestedOneWithoutTransactionsInput
+  chain: Prisma.ChainCreateNestedOneWithoutTransactionsInput
+  provider?: Prisma.ProviderCreateNestedOneWithoutTransactionsInput
 }
 
 export type TransactionUncheckedCreateWithoutWalletInput = {
   id?: string
+  userId: string
   assetId: string
   chainId: string
-  txHash: string
-  direction: $Enums.TxDirection
-  state?: $Enums.TxState
+  providerId?: string | null
+  destination?: string | null
+  txHash?: string | null
+  direction?: $Enums.TxDirection
+  state?: $Enums.TxLifecycle
   amountRaw: string
   amountUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: string | null
+  feeUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: bigint | number | null
   confirmations?: number
+  requiredConfirmations?: number
+  droppedAt?: Date | string | null
+  dropCount?: number
+  lastSeenAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: string | null
+  errorMessage?: string | null
+  expiresAt?: Date | string | null
+  signedAt?: Date | string | null
+  broadcastAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failedAt?: Date | string | null
   blockTime?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -799,56 +1429,67 @@ export type TransactionUpdateManyWithWhereWithoutWalletInput = {
   data: Prisma.XOR<Prisma.TransactionUpdateManyMutationInput, Prisma.TransactionUncheckedUpdateManyWithoutWalletInput>
 }
 
-export type TransactionScalarWhereInput = {
-  AND?: Prisma.TransactionScalarWhereInput | Prisma.TransactionScalarWhereInput[]
-  OR?: Prisma.TransactionScalarWhereInput[]
-  NOT?: Prisma.TransactionScalarWhereInput | Prisma.TransactionScalarWhereInput[]
-  id?: Prisma.StringFilter<"Transaction"> | string
-  walletId?: Prisma.StringFilter<"Transaction"> | string
-  assetId?: Prisma.StringFilter<"Transaction"> | string
-  chainId?: Prisma.StringFilter<"Transaction"> | string
-  txHash?: Prisma.StringFilter<"Transaction"> | string
-  direction?: Prisma.EnumTxDirectionFilter<"Transaction"> | $Enums.TxDirection
-  state?: Prisma.EnumTxStateFilter<"Transaction"> | $Enums.TxState
-  amountRaw?: Prisma.StringFilter<"Transaction"> | string
-  amountUsd?: Prisma.DecimalNullableFilter<"Transaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  blockNumber?: Prisma.BigIntNullableFilter<"Transaction"> | bigint | number | null
-  confirmations?: Prisma.IntFilter<"Transaction"> | number
-  metadata?: Prisma.JsonNullableFilter<"Transaction">
-  blockTime?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
-  createdAt?: Prisma.DateTimeFilter<"Transaction"> | Date | string
-  updatedAt?: Prisma.DateTimeFilter<"Transaction"> | Date | string
-}
-
 export type TransactionCreateWithoutAssetInput = {
   id?: string
-  txHash: string
-  direction: $Enums.TxDirection
-  state?: $Enums.TxState
+  destination?: string | null
+  txHash?: string | null
+  direction?: $Enums.TxDirection
+  state?: $Enums.TxLifecycle
   amountRaw: string
   amountUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: string | null
+  feeUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: bigint | number | null
   confirmations?: number
+  requiredConfirmations?: number
+  droppedAt?: Date | string | null
+  dropCount?: number
+  lastSeenAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: string | null
+  errorMessage?: string | null
+  expiresAt?: Date | string | null
+  signedAt?: Date | string | null
+  broadcastAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failedAt?: Date | string | null
   blockTime?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutTransactionsInput
   wallet: Prisma.WalletCreateNestedOneWithoutTransactionsInput
   chain: Prisma.ChainCreateNestedOneWithoutTransactionsInput
+  provider?: Prisma.ProviderCreateNestedOneWithoutTransactionsInput
 }
 
 export type TransactionUncheckedCreateWithoutAssetInput = {
   id?: string
+  userId: string
   walletId: string
   chainId: string
-  txHash: string
-  direction: $Enums.TxDirection
-  state?: $Enums.TxState
+  providerId?: string | null
+  destination?: string | null
+  txHash?: string | null
+  direction?: $Enums.TxDirection
+  state?: $Enums.TxLifecycle
   amountRaw: string
   amountUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: string | null
+  feeUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: bigint | number | null
   confirmations?: number
+  requiredConfirmations?: number
+  droppedAt?: Date | string | null
+  dropCount?: number
+  lastSeenAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: string | null
+  errorMessage?: string | null
+  expiresAt?: Date | string | null
+  signedAt?: Date | string | null
+  broadcastAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failedAt?: Date | string | null
   blockTime?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -882,33 +1523,65 @@ export type TransactionUpdateManyWithWhereWithoutAssetInput = {
 
 export type TransactionCreateWithoutChainInput = {
   id?: string
-  txHash: string
-  direction: $Enums.TxDirection
-  state?: $Enums.TxState
+  destination?: string | null
+  txHash?: string | null
+  direction?: $Enums.TxDirection
+  state?: $Enums.TxLifecycle
   amountRaw: string
   amountUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: string | null
+  feeUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: bigint | number | null
   confirmations?: number
+  requiredConfirmations?: number
+  droppedAt?: Date | string | null
+  dropCount?: number
+  lastSeenAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: string | null
+  errorMessage?: string | null
+  expiresAt?: Date | string | null
+  signedAt?: Date | string | null
+  broadcastAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failedAt?: Date | string | null
   blockTime?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutTransactionsInput
   wallet: Prisma.WalletCreateNestedOneWithoutTransactionsInput
   asset: Prisma.AssetCreateNestedOneWithoutTransactionsInput
+  provider?: Prisma.ProviderCreateNestedOneWithoutTransactionsInput
 }
 
 export type TransactionUncheckedCreateWithoutChainInput = {
   id?: string
+  userId: string
   walletId: string
   assetId: string
-  txHash: string
-  direction: $Enums.TxDirection
-  state?: $Enums.TxState
+  providerId?: string | null
+  destination?: string | null
+  txHash?: string | null
+  direction?: $Enums.TxDirection
+  state?: $Enums.TxLifecycle
   amountRaw: string
   amountUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: string | null
+  feeUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: bigint | number | null
   confirmations?: number
+  requiredConfirmations?: number
+  droppedAt?: Date | string | null
+  dropCount?: number
+  lastSeenAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: string | null
+  errorMessage?: string | null
+  expiresAt?: Date | string | null
+  signedAt?: Date | string | null
+  broadcastAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failedAt?: Date | string | null
   blockTime?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -940,18 +1613,258 @@ export type TransactionUpdateManyWithWhereWithoutChainInput = {
   data: Prisma.XOR<Prisma.TransactionUpdateManyMutationInput, Prisma.TransactionUncheckedUpdateManyWithoutChainInput>
 }
 
-export type TransactionCreateManyWalletInput = {
+export type TransactionCreateWithoutProviderInput = {
   id?: string
-  assetId: string
-  chainId: string
-  txHash: string
-  direction: $Enums.TxDirection
-  state?: $Enums.TxState
+  destination?: string | null
+  txHash?: string | null
+  direction?: $Enums.TxDirection
+  state?: $Enums.TxLifecycle
   amountRaw: string
   amountUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: string | null
+  feeUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: bigint | number | null
   confirmations?: number
+  requiredConfirmations?: number
+  droppedAt?: Date | string | null
+  dropCount?: number
+  lastSeenAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: string | null
+  errorMessage?: string | null
+  expiresAt?: Date | string | null
+  signedAt?: Date | string | null
+  broadcastAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failedAt?: Date | string | null
+  blockTime?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutTransactionsInput
+  wallet: Prisma.WalletCreateNestedOneWithoutTransactionsInput
+  asset: Prisma.AssetCreateNestedOneWithoutTransactionsInput
+  chain: Prisma.ChainCreateNestedOneWithoutTransactionsInput
+}
+
+export type TransactionUncheckedCreateWithoutProviderInput = {
+  id?: string
+  userId: string
+  walletId: string
+  assetId: string
+  chainId: string
+  destination?: string | null
+  txHash?: string | null
+  direction?: $Enums.TxDirection
+  state?: $Enums.TxLifecycle
+  amountRaw: string
+  amountUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: string | null
+  feeUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  blockNumber?: bigint | number | null
+  confirmations?: number
+  requiredConfirmations?: number
+  droppedAt?: Date | string | null
+  dropCount?: number
+  lastSeenAt?: Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: string | null
+  errorMessage?: string | null
+  expiresAt?: Date | string | null
+  signedAt?: Date | string | null
+  broadcastAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failedAt?: Date | string | null
+  blockTime?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type TransactionCreateOrConnectWithoutProviderInput = {
+  where: Prisma.TransactionWhereUniqueInput
+  create: Prisma.XOR<Prisma.TransactionCreateWithoutProviderInput, Prisma.TransactionUncheckedCreateWithoutProviderInput>
+}
+
+export type TransactionCreateManyProviderInputEnvelope = {
+  data: Prisma.TransactionCreateManyProviderInput | Prisma.TransactionCreateManyProviderInput[]
+  skipDuplicates?: boolean
+}
+
+export type TransactionUpsertWithWhereUniqueWithoutProviderInput = {
+  where: Prisma.TransactionWhereUniqueInput
+  update: Prisma.XOR<Prisma.TransactionUpdateWithoutProviderInput, Prisma.TransactionUncheckedUpdateWithoutProviderInput>
+  create: Prisma.XOR<Prisma.TransactionCreateWithoutProviderInput, Prisma.TransactionUncheckedCreateWithoutProviderInput>
+}
+
+export type TransactionUpdateWithWhereUniqueWithoutProviderInput = {
+  where: Prisma.TransactionWhereUniqueInput
+  data: Prisma.XOR<Prisma.TransactionUpdateWithoutProviderInput, Prisma.TransactionUncheckedUpdateWithoutProviderInput>
+}
+
+export type TransactionUpdateManyWithWhereWithoutProviderInput = {
+  where: Prisma.TransactionScalarWhereInput
+  data: Prisma.XOR<Prisma.TransactionUpdateManyMutationInput, Prisma.TransactionUncheckedUpdateManyWithoutProviderInput>
+}
+
+export type TransactionCreateManyUserInput = {
+  id?: string
+  walletId: string
+  assetId: string
+  chainId: string
+  providerId?: string | null
+  destination?: string | null
+  txHash?: string | null
+  direction?: $Enums.TxDirection
+  state?: $Enums.TxLifecycle
+  amountRaw: string
+  amountUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: string | null
+  feeUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  blockNumber?: bigint | number | null
+  confirmations?: number
+  requiredConfirmations?: number
+  droppedAt?: Date | string | null
+  dropCount?: number
+  lastSeenAt?: Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: string | null
+  errorMessage?: string | null
+  expiresAt?: Date | string | null
+  signedAt?: Date | string | null
+  broadcastAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failedAt?: Date | string | null
+  blockTime?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type TransactionUpdateWithoutUserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  destination?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  direction?: Prisma.EnumTxDirectionFieldUpdateOperationsInput | $Enums.TxDirection
+  state?: Prisma.EnumTxLifecycleFieldUpdateOperationsInput | $Enums.TxLifecycle
+  amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
+  amountUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feeUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  blockNumber?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  confirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  requiredConfirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  droppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dropCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  signedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  broadcastAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  blockTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  wallet?: Prisma.WalletUpdateOneRequiredWithoutTransactionsNestedInput
+  asset?: Prisma.AssetUpdateOneRequiredWithoutTransactionsNestedInput
+  chain?: Prisma.ChainUpdateOneRequiredWithoutTransactionsNestedInput
+  provider?: Prisma.ProviderUpdateOneWithoutTransactionsNestedInput
+}
+
+export type TransactionUncheckedUpdateWithoutUserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  walletId?: Prisma.StringFieldUpdateOperationsInput | string
+  assetId?: Prisma.StringFieldUpdateOperationsInput | string
+  chainId?: Prisma.StringFieldUpdateOperationsInput | string
+  providerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destination?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  direction?: Prisma.EnumTxDirectionFieldUpdateOperationsInput | $Enums.TxDirection
+  state?: Prisma.EnumTxLifecycleFieldUpdateOperationsInput | $Enums.TxLifecycle
+  amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
+  amountUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feeUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  blockNumber?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  confirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  requiredConfirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  droppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dropCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  signedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  broadcastAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  blockTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type TransactionUncheckedUpdateManyWithoutUserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  walletId?: Prisma.StringFieldUpdateOperationsInput | string
+  assetId?: Prisma.StringFieldUpdateOperationsInput | string
+  chainId?: Prisma.StringFieldUpdateOperationsInput | string
+  providerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destination?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  direction?: Prisma.EnumTxDirectionFieldUpdateOperationsInput | $Enums.TxDirection
+  state?: Prisma.EnumTxLifecycleFieldUpdateOperationsInput | $Enums.TxLifecycle
+  amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
+  amountUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feeUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  blockNumber?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  confirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  requiredConfirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  droppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dropCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  signedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  broadcastAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  blockTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type TransactionCreateManyWalletInput = {
+  id?: string
+  userId: string
+  assetId: string
+  chainId: string
+  providerId?: string | null
+  destination?: string | null
+  txHash?: string | null
+  direction?: $Enums.TxDirection
+  state?: $Enums.TxLifecycle
+  amountRaw: string
+  amountUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: string | null
+  feeUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  blockNumber?: bigint | number | null
+  confirmations?: number
+  requiredConfirmations?: number
+  droppedAt?: Date | string | null
+  dropCount?: number
+  lastSeenAt?: Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: string | null
+  errorMessage?: string | null
+  expiresAt?: Date | string | null
+  signedAt?: Date | string | null
+  broadcastAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failedAt?: Date | string | null
   blockTime?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -959,33 +1872,65 @@ export type TransactionCreateManyWalletInput = {
 
 export type TransactionUpdateWithoutWalletInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  txHash?: Prisma.StringFieldUpdateOperationsInput | string
+  destination?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direction?: Prisma.EnumTxDirectionFieldUpdateOperationsInput | $Enums.TxDirection
-  state?: Prisma.EnumTxStateFieldUpdateOperationsInput | $Enums.TxState
+  state?: Prisma.EnumTxLifecycleFieldUpdateOperationsInput | $Enums.TxLifecycle
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   amountUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feeUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   confirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  requiredConfirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  droppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dropCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  signedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  broadcastAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   blockTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutTransactionsNestedInput
   asset?: Prisma.AssetUpdateOneRequiredWithoutTransactionsNestedInput
   chain?: Prisma.ChainUpdateOneRequiredWithoutTransactionsNestedInput
+  provider?: Prisma.ProviderUpdateOneWithoutTransactionsNestedInput
 }
 
 export type TransactionUncheckedUpdateWithoutWalletInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.StringFieldUpdateOperationsInput | string
-  txHash?: Prisma.StringFieldUpdateOperationsInput | string
+  providerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destination?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direction?: Prisma.EnumTxDirectionFieldUpdateOperationsInput | $Enums.TxDirection
-  state?: Prisma.EnumTxStateFieldUpdateOperationsInput | $Enums.TxState
+  state?: Prisma.EnumTxLifecycleFieldUpdateOperationsInput | $Enums.TxLifecycle
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   amountUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feeUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   confirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  requiredConfirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  droppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dropCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  signedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  broadcastAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   blockTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -993,16 +1938,32 @@ export type TransactionUncheckedUpdateWithoutWalletInput = {
 
 export type TransactionUncheckedUpdateManyWithoutWalletInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.StringFieldUpdateOperationsInput | string
-  txHash?: Prisma.StringFieldUpdateOperationsInput | string
+  providerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destination?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direction?: Prisma.EnumTxDirectionFieldUpdateOperationsInput | $Enums.TxDirection
-  state?: Prisma.EnumTxStateFieldUpdateOperationsInput | $Enums.TxState
+  state?: Prisma.EnumTxLifecycleFieldUpdateOperationsInput | $Enums.TxLifecycle
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   amountUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feeUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   confirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  requiredConfirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  droppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dropCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  signedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  broadcastAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   blockTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1010,16 +1971,32 @@ export type TransactionUncheckedUpdateManyWithoutWalletInput = {
 
 export type TransactionCreateManyAssetInput = {
   id?: string
+  userId: string
   walletId: string
   chainId: string
-  txHash: string
-  direction: $Enums.TxDirection
-  state?: $Enums.TxState
+  providerId?: string | null
+  destination?: string | null
+  txHash?: string | null
+  direction?: $Enums.TxDirection
+  state?: $Enums.TxLifecycle
   amountRaw: string
   amountUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: string | null
+  feeUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: bigint | number | null
   confirmations?: number
+  requiredConfirmations?: number
+  droppedAt?: Date | string | null
+  dropCount?: number
+  lastSeenAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: string | null
+  errorMessage?: string | null
+  expiresAt?: Date | string | null
+  signedAt?: Date | string | null
+  broadcastAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failedAt?: Date | string | null
   blockTime?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1027,33 +2004,65 @@ export type TransactionCreateManyAssetInput = {
 
 export type TransactionUpdateWithoutAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  txHash?: Prisma.StringFieldUpdateOperationsInput | string
+  destination?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direction?: Prisma.EnumTxDirectionFieldUpdateOperationsInput | $Enums.TxDirection
-  state?: Prisma.EnumTxStateFieldUpdateOperationsInput | $Enums.TxState
+  state?: Prisma.EnumTxLifecycleFieldUpdateOperationsInput | $Enums.TxLifecycle
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   amountUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feeUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   confirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  requiredConfirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  droppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dropCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  signedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  broadcastAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   blockTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutTransactionsNestedInput
   wallet?: Prisma.WalletUpdateOneRequiredWithoutTransactionsNestedInput
   chain?: Prisma.ChainUpdateOneRequiredWithoutTransactionsNestedInput
+  provider?: Prisma.ProviderUpdateOneWithoutTransactionsNestedInput
 }
 
 export type TransactionUncheckedUpdateWithoutAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
   walletId?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.StringFieldUpdateOperationsInput | string
-  txHash?: Prisma.StringFieldUpdateOperationsInput | string
+  providerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destination?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direction?: Prisma.EnumTxDirectionFieldUpdateOperationsInput | $Enums.TxDirection
-  state?: Prisma.EnumTxStateFieldUpdateOperationsInput | $Enums.TxState
+  state?: Prisma.EnumTxLifecycleFieldUpdateOperationsInput | $Enums.TxLifecycle
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   amountUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feeUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   confirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  requiredConfirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  droppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dropCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  signedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  broadcastAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   blockTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1061,16 +2070,32 @@ export type TransactionUncheckedUpdateWithoutAssetInput = {
 
 export type TransactionUncheckedUpdateManyWithoutAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
   walletId?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.StringFieldUpdateOperationsInput | string
-  txHash?: Prisma.StringFieldUpdateOperationsInput | string
+  providerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destination?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direction?: Prisma.EnumTxDirectionFieldUpdateOperationsInput | $Enums.TxDirection
-  state?: Prisma.EnumTxStateFieldUpdateOperationsInput | $Enums.TxState
+  state?: Prisma.EnumTxLifecycleFieldUpdateOperationsInput | $Enums.TxLifecycle
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   amountUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feeUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   confirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  requiredConfirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  droppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dropCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  signedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  broadcastAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   blockTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1078,16 +2103,32 @@ export type TransactionUncheckedUpdateManyWithoutAssetInput = {
 
 export type TransactionCreateManyChainInput = {
   id?: string
+  userId: string
   walletId: string
   assetId: string
-  txHash: string
-  direction: $Enums.TxDirection
-  state?: $Enums.TxState
+  providerId?: string | null
+  destination?: string | null
+  txHash?: string | null
+  direction?: $Enums.TxDirection
+  state?: $Enums.TxLifecycle
   amountRaw: string
   amountUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: string | null
+  feeUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: bigint | number | null
   confirmations?: number
+  requiredConfirmations?: number
+  droppedAt?: Date | string | null
+  dropCount?: number
+  lastSeenAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: string | null
+  errorMessage?: string | null
+  expiresAt?: Date | string | null
+  signedAt?: Date | string | null
+  broadcastAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failedAt?: Date | string | null
   blockTime?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1095,33 +2136,65 @@ export type TransactionCreateManyChainInput = {
 
 export type TransactionUpdateWithoutChainInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  txHash?: Prisma.StringFieldUpdateOperationsInput | string
+  destination?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direction?: Prisma.EnumTxDirectionFieldUpdateOperationsInput | $Enums.TxDirection
-  state?: Prisma.EnumTxStateFieldUpdateOperationsInput | $Enums.TxState
+  state?: Prisma.EnumTxLifecycleFieldUpdateOperationsInput | $Enums.TxLifecycle
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   amountUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feeUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   confirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  requiredConfirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  droppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dropCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  signedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  broadcastAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   blockTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutTransactionsNestedInput
   wallet?: Prisma.WalletUpdateOneRequiredWithoutTransactionsNestedInput
   asset?: Prisma.AssetUpdateOneRequiredWithoutTransactionsNestedInput
+  provider?: Prisma.ProviderUpdateOneWithoutTransactionsNestedInput
 }
 
 export type TransactionUncheckedUpdateWithoutChainInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
   walletId?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
-  txHash?: Prisma.StringFieldUpdateOperationsInput | string
+  providerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destination?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direction?: Prisma.EnumTxDirectionFieldUpdateOperationsInput | $Enums.TxDirection
-  state?: Prisma.EnumTxStateFieldUpdateOperationsInput | $Enums.TxState
+  state?: Prisma.EnumTxLifecycleFieldUpdateOperationsInput | $Enums.TxLifecycle
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   amountUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feeUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   confirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  requiredConfirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  droppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dropCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  signedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  broadcastAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   blockTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1129,16 +2202,164 @@ export type TransactionUncheckedUpdateWithoutChainInput = {
 
 export type TransactionUncheckedUpdateManyWithoutChainInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
   walletId?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
-  txHash?: Prisma.StringFieldUpdateOperationsInput | string
+  providerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destination?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direction?: Prisma.EnumTxDirectionFieldUpdateOperationsInput | $Enums.TxDirection
-  state?: Prisma.EnumTxStateFieldUpdateOperationsInput | $Enums.TxState
+  state?: Prisma.EnumTxLifecycleFieldUpdateOperationsInput | $Enums.TxLifecycle
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   amountUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feeUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   blockNumber?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   confirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  requiredConfirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  droppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dropCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  signedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  broadcastAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  blockTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type TransactionCreateManyProviderInput = {
+  id?: string
+  userId: string
+  walletId: string
+  assetId: string
+  chainId: string
+  destination?: string | null
+  txHash?: string | null
+  direction?: $Enums.TxDirection
+  state?: $Enums.TxLifecycle
+  amountRaw: string
+  amountUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: string | null
+  feeUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  blockNumber?: bigint | number | null
+  confirmations?: number
+  requiredConfirmations?: number
+  droppedAt?: Date | string | null
+  dropCount?: number
+  lastSeenAt?: Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: string | null
+  errorMessage?: string | null
+  expiresAt?: Date | string | null
+  signedAt?: Date | string | null
+  broadcastAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failedAt?: Date | string | null
+  blockTime?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type TransactionUpdateWithoutProviderInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  destination?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  direction?: Prisma.EnumTxDirectionFieldUpdateOperationsInput | $Enums.TxDirection
+  state?: Prisma.EnumTxLifecycleFieldUpdateOperationsInput | $Enums.TxLifecycle
+  amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
+  amountUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feeUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  blockNumber?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  confirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  requiredConfirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  droppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dropCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  signedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  broadcastAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  blockTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutTransactionsNestedInput
+  wallet?: Prisma.WalletUpdateOneRequiredWithoutTransactionsNestedInput
+  asset?: Prisma.AssetUpdateOneRequiredWithoutTransactionsNestedInput
+  chain?: Prisma.ChainUpdateOneRequiredWithoutTransactionsNestedInput
+}
+
+export type TransactionUncheckedUpdateWithoutProviderInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  walletId?: Prisma.StringFieldUpdateOperationsInput | string
+  assetId?: Prisma.StringFieldUpdateOperationsInput | string
+  chainId?: Prisma.StringFieldUpdateOperationsInput | string
+  destination?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  direction?: Prisma.EnumTxDirectionFieldUpdateOperationsInput | $Enums.TxDirection
+  state?: Prisma.EnumTxLifecycleFieldUpdateOperationsInput | $Enums.TxLifecycle
+  amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
+  amountUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feeUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  blockNumber?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  confirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  requiredConfirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  droppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dropCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  signedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  broadcastAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  blockTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type TransactionUncheckedUpdateManyWithoutProviderInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  walletId?: Prisma.StringFieldUpdateOperationsInput | string
+  assetId?: Prisma.StringFieldUpdateOperationsInput | string
+  chainId?: Prisma.StringFieldUpdateOperationsInput | string
+  destination?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  direction?: Prisma.EnumTxDirectionFieldUpdateOperationsInput | $Enums.TxDirection
+  state?: Prisma.EnumTxLifecycleFieldUpdateOperationsInput | $Enums.TxLifecycle
+  amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
+  amountUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  feeRaw?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feeUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  blockNumber?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  confirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  requiredConfirmations?: Prisma.IntFieldUpdateOperationsInput | number
+  droppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dropCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  signedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  broadcastAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   blockTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1148,125 +2369,267 @@ export type TransactionUncheckedUpdateManyWithoutChainInput = {
 
 export type TransactionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  userId?: boolean
   walletId?: boolean
   assetId?: boolean
   chainId?: boolean
+  providerId?: boolean
+  destination?: boolean
   txHash?: boolean
   direction?: boolean
   state?: boolean
   amountRaw?: boolean
   amountUsd?: boolean
+  feeRaw?: boolean
+  feeUsd?: boolean
   blockNumber?: boolean
   confirmations?: boolean
+  requiredConfirmations?: boolean
+  droppedAt?: boolean
+  dropCount?: boolean
+  lastSeenAt?: boolean
   metadata?: boolean
+  errorCode?: boolean
+  errorMessage?: boolean
+  expiresAt?: boolean
+  signedAt?: boolean
+  broadcastAt?: boolean
+  confirmedAt?: boolean
+  failedAt?: boolean
   blockTime?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
   asset?: boolean | Prisma.AssetDefaultArgs<ExtArgs>
   chain?: boolean | Prisma.ChainDefaultArgs<ExtArgs>
+  provider?: boolean | Prisma.Transaction$providerArgs<ExtArgs>
 }, ExtArgs["result"]["transaction"]>
 
 export type TransactionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  userId?: boolean
   walletId?: boolean
   assetId?: boolean
   chainId?: boolean
+  providerId?: boolean
+  destination?: boolean
   txHash?: boolean
   direction?: boolean
   state?: boolean
   amountRaw?: boolean
   amountUsd?: boolean
+  feeRaw?: boolean
+  feeUsd?: boolean
   blockNumber?: boolean
   confirmations?: boolean
+  requiredConfirmations?: boolean
+  droppedAt?: boolean
+  dropCount?: boolean
+  lastSeenAt?: boolean
   metadata?: boolean
+  errorCode?: boolean
+  errorMessage?: boolean
+  expiresAt?: boolean
+  signedAt?: boolean
+  broadcastAt?: boolean
+  confirmedAt?: boolean
+  failedAt?: boolean
   blockTime?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
   asset?: boolean | Prisma.AssetDefaultArgs<ExtArgs>
   chain?: boolean | Prisma.ChainDefaultArgs<ExtArgs>
+  provider?: boolean | Prisma.Transaction$providerArgs<ExtArgs>
 }, ExtArgs["result"]["transaction"]>
 
 export type TransactionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  userId?: boolean
   walletId?: boolean
   assetId?: boolean
   chainId?: boolean
+  providerId?: boolean
+  destination?: boolean
   txHash?: boolean
   direction?: boolean
   state?: boolean
   amountRaw?: boolean
   amountUsd?: boolean
+  feeRaw?: boolean
+  feeUsd?: boolean
   blockNumber?: boolean
   confirmations?: boolean
+  requiredConfirmations?: boolean
+  droppedAt?: boolean
+  dropCount?: boolean
+  lastSeenAt?: boolean
   metadata?: boolean
+  errorCode?: boolean
+  errorMessage?: boolean
+  expiresAt?: boolean
+  signedAt?: boolean
+  broadcastAt?: boolean
+  confirmedAt?: boolean
+  failedAt?: boolean
   blockTime?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
   asset?: boolean | Prisma.AssetDefaultArgs<ExtArgs>
   chain?: boolean | Prisma.ChainDefaultArgs<ExtArgs>
+  provider?: boolean | Prisma.Transaction$providerArgs<ExtArgs>
 }, ExtArgs["result"]["transaction"]>
 
 export type TransactionSelectScalar = {
   id?: boolean
+  userId?: boolean
   walletId?: boolean
   assetId?: boolean
   chainId?: boolean
+  providerId?: boolean
+  destination?: boolean
   txHash?: boolean
   direction?: boolean
   state?: boolean
   amountRaw?: boolean
   amountUsd?: boolean
+  feeRaw?: boolean
+  feeUsd?: boolean
   blockNumber?: boolean
   confirmations?: boolean
+  requiredConfirmations?: boolean
+  droppedAt?: boolean
+  dropCount?: boolean
+  lastSeenAt?: boolean
   metadata?: boolean
+  errorCode?: boolean
+  errorMessage?: boolean
+  expiresAt?: boolean
+  signedAt?: boolean
+  broadcastAt?: boolean
+  confirmedAt?: boolean
+  failedAt?: boolean
   blockTime?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type TransactionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "walletId" | "assetId" | "chainId" | "txHash" | "direction" | "state" | "amountRaw" | "amountUsd" | "blockNumber" | "confirmations" | "metadata" | "blockTime" | "createdAt" | "updatedAt", ExtArgs["result"]["transaction"]>
+export type TransactionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "walletId" | "assetId" | "chainId" | "providerId" | "destination" | "txHash" | "direction" | "state" | "amountRaw" | "amountUsd" | "feeRaw" | "feeUsd" | "blockNumber" | "confirmations" | "requiredConfirmations" | "droppedAt" | "dropCount" | "lastSeenAt" | "metadata" | "errorCode" | "errorMessage" | "expiresAt" | "signedAt" | "broadcastAt" | "confirmedAt" | "failedAt" | "blockTime" | "createdAt" | "updatedAt", ExtArgs["result"]["transaction"]>
 export type TransactionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
   asset?: boolean | Prisma.AssetDefaultArgs<ExtArgs>
   chain?: boolean | Prisma.ChainDefaultArgs<ExtArgs>
+  provider?: boolean | Prisma.Transaction$providerArgs<ExtArgs>
 }
 export type TransactionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
   asset?: boolean | Prisma.AssetDefaultArgs<ExtArgs>
   chain?: boolean | Prisma.ChainDefaultArgs<ExtArgs>
+  provider?: boolean | Prisma.Transaction$providerArgs<ExtArgs>
 }
 export type TransactionIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
   asset?: boolean | Prisma.AssetDefaultArgs<ExtArgs>
   chain?: boolean | Prisma.ChainDefaultArgs<ExtArgs>
+  provider?: boolean | Prisma.Transaction$providerArgs<ExtArgs>
 }
 
 export type $TransactionPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Transaction"
   objects: {
+    user: Prisma.$UserPayload<ExtArgs>
     wallet: Prisma.$WalletPayload<ExtArgs>
     asset: Prisma.$AssetPayload<ExtArgs>
     chain: Prisma.$ChainPayload<ExtArgs>
+    provider: Prisma.$ProviderPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
+    /**
+     * Denormalised from `Wallet` on create and never accepted from a request.
+     * A caller must not be able to file activity against another account.
+     */
+    userId: string
     walletId: string
     assetId: string
     chainId: string
-    txHash: string
+    /**
+     * §21 "Provider". Null for a self-custodial send — nobody at Correnthian
+     * is in the middle of it, and inventing a provider would misrepresent one.
+     */
+    providerId: string | null
+    /**
+     * Public address the value is going to. A mistyped destination is an
+     * irreversible loss, so it is validated against the chain family before
+     * the row is written. Never a key.
+     */
+    destination: string | null
+    /**
+     * Null until BROADCAST — an unsigned intent has no hash. Postgres treats
+     * NULLs as distinct in a unique index, so many intents per chain coexist
+     * while at most one row per chain can ever claim a given hash.
+     */
+    txHash: string | null
     direction: $Enums.TxDirection
-    state: $Enums.TxState
+    /**
+     * The lifecycle. See `TxLifecycle` and `src/transactions/transaction-lifecycle.ts`
+     * for the transitions that are allowed. The table there is the only place
+     * that knows them.
+     */
+    state: $Enums.TxLifecycle
     amountRaw: string
     amountUsd: runtime.Decimal | null
+    /**
+     * §21 "Fee". Base units, as a string — never a float.
+     */
+    feeRaw: string | null
+    feeUsd: runtime.Decimal | null
     blockNumber: bigint | null
     confirmations: number
     /**
-     * Only populated for a quote Correnthian executed. Arbitrary chain data.
+     * Depth at which this is treated as final. Set at creation from the chain
+     * family; a caller may raise it for a large value.
+     */
+    requiredConfirmations: number
+    /**
+     * A drop is a fact about the network, not a lifecycle state: the
+     * transaction was broadcast and has not been mined. Tracking it as columns
+     * means the row can still move forward when the network accepts it again.
+     */
+    droppedAt: Date | null
+    dropCount: number
+    /**
+     * When the chain was last observed to hold this transaction. A stale value
+     * is how a drop gets noticed.
+     */
+    lastSeenAt: Date | null
+    /**
+     * Arbitrary chain data.
      */
     metadata: runtime.JsonValue | null
+    /**
+     * §21 "Error information". Set when `state = failed`.
+     */
+    errorCode: string | null
+    errorMessage: string | null
+    /**
+     * An unsigned intent expires rather than sitting in `created` forever.
+     */
+    expiresAt: Date | null
+    signedAt: Date | null
+    /**
+     * Broadcast time, or the last re-broadcast after a drop.
+     */
+    broadcastAt: Date | null
+    confirmedAt: Date | null
+    failedAt: Date | null
     blockTime: Date | null
     createdAt: Date
     updatedAt: Date
@@ -1664,9 +3027,11 @@ readonly fields: TransactionFieldRefs;
  */
 export interface Prisma__TransactionClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   wallet<T extends Prisma.WalletDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.WalletDefaultArgs<ExtArgs>>): Prisma.Prisma__WalletClient<runtime.Types.Result.GetResult<Prisma.$WalletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   asset<T extends Prisma.AssetDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AssetDefaultArgs<ExtArgs>>): Prisma.Prisma__AssetClient<runtime.Types.Result.GetResult<Prisma.$AssetPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   chain<T extends Prisma.ChainDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ChainDefaultArgs<ExtArgs>>): Prisma.Prisma__ChainClient<runtime.Types.Result.GetResult<Prisma.$ChainPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  provider<T extends Prisma.Transaction$providerArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Transaction$providerArgs<ExtArgs>>): Prisma.Prisma__ProviderClient<runtime.Types.Result.GetResult<Prisma.$ProviderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1697,17 +3062,33 @@ export interface Prisma__TransactionClient<T, Null = never, ExtArgs extends runt
  */
 export interface TransactionFieldRefs {
   readonly id: Prisma.FieldRef<"Transaction", 'String'>
+  readonly userId: Prisma.FieldRef<"Transaction", 'String'>
   readonly walletId: Prisma.FieldRef<"Transaction", 'String'>
   readonly assetId: Prisma.FieldRef<"Transaction", 'String'>
   readonly chainId: Prisma.FieldRef<"Transaction", 'String'>
+  readonly providerId: Prisma.FieldRef<"Transaction", 'String'>
+  readonly destination: Prisma.FieldRef<"Transaction", 'String'>
   readonly txHash: Prisma.FieldRef<"Transaction", 'String'>
   readonly direction: Prisma.FieldRef<"Transaction", 'TxDirection'>
-  readonly state: Prisma.FieldRef<"Transaction", 'TxState'>
+  readonly state: Prisma.FieldRef<"Transaction", 'TxLifecycle'>
   readonly amountRaw: Prisma.FieldRef<"Transaction", 'String'>
   readonly amountUsd: Prisma.FieldRef<"Transaction", 'Decimal'>
+  readonly feeRaw: Prisma.FieldRef<"Transaction", 'String'>
+  readonly feeUsd: Prisma.FieldRef<"Transaction", 'Decimal'>
   readonly blockNumber: Prisma.FieldRef<"Transaction", 'BigInt'>
   readonly confirmations: Prisma.FieldRef<"Transaction", 'Int'>
+  readonly requiredConfirmations: Prisma.FieldRef<"Transaction", 'Int'>
+  readonly droppedAt: Prisma.FieldRef<"Transaction", 'DateTime'>
+  readonly dropCount: Prisma.FieldRef<"Transaction", 'Int'>
+  readonly lastSeenAt: Prisma.FieldRef<"Transaction", 'DateTime'>
   readonly metadata: Prisma.FieldRef<"Transaction", 'Json'>
+  readonly errorCode: Prisma.FieldRef<"Transaction", 'String'>
+  readonly errorMessage: Prisma.FieldRef<"Transaction", 'String'>
+  readonly expiresAt: Prisma.FieldRef<"Transaction", 'DateTime'>
+  readonly signedAt: Prisma.FieldRef<"Transaction", 'DateTime'>
+  readonly broadcastAt: Prisma.FieldRef<"Transaction", 'DateTime'>
+  readonly confirmedAt: Prisma.FieldRef<"Transaction", 'DateTime'>
+  readonly failedAt: Prisma.FieldRef<"Transaction", 'DateTime'>
   readonly blockTime: Prisma.FieldRef<"Transaction", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Transaction", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Transaction", 'DateTime'>
@@ -2109,6 +3490,25 @@ export type TransactionDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.I
    * Limit how many Transactions to delete.
    */
   limit?: number
+}
+
+/**
+ * Transaction.provider
+ */
+export type Transaction$providerArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Provider
+   */
+  select?: Prisma.ProviderSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Provider
+   */
+  omit?: Prisma.ProviderOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProviderInclude<ExtArgs> | null
+  where?: Prisma.ProviderWhereInput
 }
 
 /**

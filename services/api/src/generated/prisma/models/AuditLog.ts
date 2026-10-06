@@ -14,7 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.js"
 
 /**
  * Model AuditLog
- * 
+ * Append-only. Nothing in the application updates or deletes a row here.
  */
 export type AuditLogModel = runtime.Types.Result.DefaultSelection<Prisma.$AuditLogPayload>
 
@@ -32,7 +32,10 @@ export type AuditLogMinAggregateOutputType = {
   targetType: string | null
   targetId: string | null
   outcome: $Enums.AuditOutcome | null
+  reason: string | null
   ipAddress: string | null
+  deviceId: string | null
+  requestId: string | null
   createdAt: Date | null
 }
 
@@ -44,7 +47,10 @@ export type AuditLogMaxAggregateOutputType = {
   targetType: string | null
   targetId: string | null
   outcome: $Enums.AuditOutcome | null
+  reason: string | null
   ipAddress: string | null
+  deviceId: string | null
+  requestId: string | null
   createdAt: Date | null
 }
 
@@ -56,7 +62,12 @@ export type AuditLogCountAggregateOutputType = {
   targetType: number
   targetId: number
   outcome: number
+  before: number
+  after: number
+  reason: number
   ipAddress: number
+  deviceId: number
+  requestId: number
   metadata: number
   createdAt: number
   _all: number
@@ -71,7 +82,10 @@ export type AuditLogMinAggregateInputType = {
   targetType?: true
   targetId?: true
   outcome?: true
+  reason?: true
   ipAddress?: true
+  deviceId?: true
+  requestId?: true
   createdAt?: true
 }
 
@@ -83,7 +97,10 @@ export type AuditLogMaxAggregateInputType = {
   targetType?: true
   targetId?: true
   outcome?: true
+  reason?: true
   ipAddress?: true
+  deviceId?: true
+  requestId?: true
   createdAt?: true
 }
 
@@ -95,7 +112,12 @@ export type AuditLogCountAggregateInputType = {
   targetType?: true
   targetId?: true
   outcome?: true
+  before?: true
+  after?: true
+  reason?: true
   ipAddress?: true
+  deviceId?: true
+  requestId?: true
   metadata?: true
   createdAt?: true
   _all?: true
@@ -181,7 +203,12 @@ export type AuditLogGroupByOutputType = {
   targetType: string | null
   targetId: string | null
   outcome: $Enums.AuditOutcome
+  before: runtime.JsonValue | null
+  after: runtime.JsonValue | null
+  reason: string | null
   ipAddress: string | null
+  deviceId: string | null
+  requestId: string | null
   metadata: runtime.JsonValue
   createdAt: Date
   _count: AuditLogCountAggregateOutputType | null
@@ -215,7 +242,12 @@ export type AuditLogWhereInput = {
   targetType?: Prisma.StringNullableFilter<"AuditLog"> | string | null
   targetId?: Prisma.StringNullableFilter<"AuditLog"> | string | null
   outcome?: Prisma.EnumAuditOutcomeFilter<"AuditLog"> | $Enums.AuditOutcome
+  before?: Prisma.JsonNullableFilter<"AuditLog">
+  after?: Prisma.JsonNullableFilter<"AuditLog">
+  reason?: Prisma.StringNullableFilter<"AuditLog"> | string | null
   ipAddress?: Prisma.StringNullableFilter<"AuditLog"> | string | null
+  deviceId?: Prisma.StringNullableFilter<"AuditLog"> | string | null
+  requestId?: Prisma.StringNullableFilter<"AuditLog"> | string | null
   metadata?: Prisma.JsonFilter<"AuditLog">
   createdAt?: Prisma.DateTimeFilter<"AuditLog"> | Date | string
 }
@@ -228,7 +260,12 @@ export type AuditLogOrderByWithRelationInput = {
   targetType?: Prisma.SortOrderInput | Prisma.SortOrder
   targetId?: Prisma.SortOrderInput | Prisma.SortOrder
   outcome?: Prisma.SortOrder
+  before?: Prisma.SortOrderInput | Prisma.SortOrder
+  after?: Prisma.SortOrderInput | Prisma.SortOrder
+  reason?: Prisma.SortOrderInput | Prisma.SortOrder
   ipAddress?: Prisma.SortOrderInput | Prisma.SortOrder
+  deviceId?: Prisma.SortOrderInput | Prisma.SortOrder
+  requestId?: Prisma.SortOrderInput | Prisma.SortOrder
   metadata?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -244,7 +281,12 @@ export type AuditLogWhereUniqueInput = Prisma.AtLeast<{
   targetType?: Prisma.StringNullableFilter<"AuditLog"> | string | null
   targetId?: Prisma.StringNullableFilter<"AuditLog"> | string | null
   outcome?: Prisma.EnumAuditOutcomeFilter<"AuditLog"> | $Enums.AuditOutcome
+  before?: Prisma.JsonNullableFilter<"AuditLog">
+  after?: Prisma.JsonNullableFilter<"AuditLog">
+  reason?: Prisma.StringNullableFilter<"AuditLog"> | string | null
   ipAddress?: Prisma.StringNullableFilter<"AuditLog"> | string | null
+  deviceId?: Prisma.StringNullableFilter<"AuditLog"> | string | null
+  requestId?: Prisma.StringNullableFilter<"AuditLog"> | string | null
   metadata?: Prisma.JsonFilter<"AuditLog">
   createdAt?: Prisma.DateTimeFilter<"AuditLog"> | Date | string
 }, "id">
@@ -257,7 +299,12 @@ export type AuditLogOrderByWithAggregationInput = {
   targetType?: Prisma.SortOrderInput | Prisma.SortOrder
   targetId?: Prisma.SortOrderInput | Prisma.SortOrder
   outcome?: Prisma.SortOrder
+  before?: Prisma.SortOrderInput | Prisma.SortOrder
+  after?: Prisma.SortOrderInput | Prisma.SortOrder
+  reason?: Prisma.SortOrderInput | Prisma.SortOrder
   ipAddress?: Prisma.SortOrderInput | Prisma.SortOrder
+  deviceId?: Prisma.SortOrderInput | Prisma.SortOrder
+  requestId?: Prisma.SortOrderInput | Prisma.SortOrder
   metadata?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.AuditLogCountOrderByAggregateInput
@@ -276,7 +323,12 @@ export type AuditLogScalarWhereWithAggregatesInput = {
   targetType?: Prisma.StringNullableWithAggregatesFilter<"AuditLog"> | string | null
   targetId?: Prisma.StringNullableWithAggregatesFilter<"AuditLog"> | string | null
   outcome?: Prisma.EnumAuditOutcomeWithAggregatesFilter<"AuditLog"> | $Enums.AuditOutcome
+  before?: Prisma.JsonNullableWithAggregatesFilter<"AuditLog">
+  after?: Prisma.JsonNullableWithAggregatesFilter<"AuditLog">
+  reason?: Prisma.StringNullableWithAggregatesFilter<"AuditLog"> | string | null
   ipAddress?: Prisma.StringNullableWithAggregatesFilter<"AuditLog"> | string | null
+  deviceId?: Prisma.StringNullableWithAggregatesFilter<"AuditLog"> | string | null
+  requestId?: Prisma.StringNullableWithAggregatesFilter<"AuditLog"> | string | null
   metadata?: Prisma.JsonWithAggregatesFilter<"AuditLog">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"AuditLog"> | Date | string
 }
@@ -289,7 +341,12 @@ export type AuditLogCreateInput = {
   targetType?: string | null
   targetId?: string | null
   outcome?: $Enums.AuditOutcome
+  before?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  after?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  reason?: string | null
   ipAddress?: string | null
+  deviceId?: string | null
+  requestId?: string | null
   metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
 }
@@ -302,7 +359,12 @@ export type AuditLogUncheckedCreateInput = {
   targetType?: string | null
   targetId?: string | null
   outcome?: $Enums.AuditOutcome
+  before?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  after?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  reason?: string | null
   ipAddress?: string | null
+  deviceId?: string | null
+  requestId?: string | null
   metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
 }
@@ -315,7 +377,12 @@ export type AuditLogUpdateInput = {
   targetType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   targetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   outcome?: Prisma.EnumAuditOutcomeFieldUpdateOperationsInput | $Enums.AuditOutcome
+  before?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  after?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ipAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requestId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -328,7 +395,12 @@ export type AuditLogUncheckedUpdateInput = {
   targetType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   targetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   outcome?: Prisma.EnumAuditOutcomeFieldUpdateOperationsInput | $Enums.AuditOutcome
+  before?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  after?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ipAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requestId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -341,7 +413,12 @@ export type AuditLogCreateManyInput = {
   targetType?: string | null
   targetId?: string | null
   outcome?: $Enums.AuditOutcome
+  before?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  after?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  reason?: string | null
   ipAddress?: string | null
+  deviceId?: string | null
+  requestId?: string | null
   metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
 }
@@ -354,7 +431,12 @@ export type AuditLogUpdateManyMutationInput = {
   targetType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   targetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   outcome?: Prisma.EnumAuditOutcomeFieldUpdateOperationsInput | $Enums.AuditOutcome
+  before?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  after?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ipAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requestId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -367,7 +449,12 @@ export type AuditLogUncheckedUpdateManyInput = {
   targetType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   targetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   outcome?: Prisma.EnumAuditOutcomeFieldUpdateOperationsInput | $Enums.AuditOutcome
+  before?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  after?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ipAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requestId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -380,7 +467,12 @@ export type AuditLogCountOrderByAggregateInput = {
   targetType?: Prisma.SortOrder
   targetId?: Prisma.SortOrder
   outcome?: Prisma.SortOrder
+  before?: Prisma.SortOrder
+  after?: Prisma.SortOrder
+  reason?: Prisma.SortOrder
   ipAddress?: Prisma.SortOrder
+  deviceId?: Prisma.SortOrder
+  requestId?: Prisma.SortOrder
   metadata?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -393,7 +485,10 @@ export type AuditLogMaxOrderByAggregateInput = {
   targetType?: Prisma.SortOrder
   targetId?: Prisma.SortOrder
   outcome?: Prisma.SortOrder
+  reason?: Prisma.SortOrder
   ipAddress?: Prisma.SortOrder
+  deviceId?: Prisma.SortOrder
+  requestId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -405,7 +500,10 @@ export type AuditLogMinOrderByAggregateInput = {
   targetType?: Prisma.SortOrder
   targetId?: Prisma.SortOrder
   outcome?: Prisma.SortOrder
+  reason?: Prisma.SortOrder
   ipAddress?: Prisma.SortOrder
+  deviceId?: Prisma.SortOrder
+  requestId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -423,7 +521,12 @@ export type AuditLogSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   targetType?: boolean
   targetId?: boolean
   outcome?: boolean
+  before?: boolean
+  after?: boolean
+  reason?: boolean
   ipAddress?: boolean
+  deviceId?: boolean
+  requestId?: boolean
   metadata?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["auditLog"]>
@@ -436,7 +539,12 @@ export type AuditLogSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   targetType?: boolean
   targetId?: boolean
   outcome?: boolean
+  before?: boolean
+  after?: boolean
+  reason?: boolean
   ipAddress?: boolean
+  deviceId?: boolean
+  requestId?: boolean
   metadata?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["auditLog"]>
@@ -449,7 +557,12 @@ export type AuditLogSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   targetType?: boolean
   targetId?: boolean
   outcome?: boolean
+  before?: boolean
+  after?: boolean
+  reason?: boolean
   ipAddress?: boolean
+  deviceId?: boolean
+  requestId?: boolean
   metadata?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["auditLog"]>
@@ -462,12 +575,17 @@ export type AuditLogSelectScalar = {
   targetType?: boolean
   targetId?: boolean
   outcome?: boolean
+  before?: boolean
+  after?: boolean
+  reason?: boolean
   ipAddress?: boolean
+  deviceId?: boolean
+  requestId?: boolean
   metadata?: boolean
   createdAt?: boolean
 }
 
-export type AuditLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "actorId" | "actorRole" | "action" | "targetType" | "targetId" | "outcome" | "ipAddress" | "metadata" | "createdAt", ExtArgs["result"]["auditLog"]>
+export type AuditLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "actorId" | "actorRole" | "action" | "targetType" | "targetId" | "outcome" | "before" | "after" | "reason" | "ipAddress" | "deviceId" | "requestId" | "metadata" | "createdAt", ExtArgs["result"]["auditLog"]>
 
 export type $AuditLogPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "AuditLog"
@@ -480,7 +598,38 @@ export type $AuditLogPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     targetType: string | null
     targetId: string | null
     outcome: $Enums.AuditOutcome
+    /**
+     * §55 `before`/`after` — the state of the resource either side of a
+     * state-changing operation, not a free-form blob. Null on a create (there
+     * was nothing before) and on a delete (there is nothing after).
+     * 
+     * Both are redacted on the way in with `redactDeep()`, exactly like
+     * `metadata`: a snapshot of a whole row is the largest surface in the
+     * system for a field nobody meant to copy.
+     */
+    before: runtime.JsonValue | null
+    after: runtime.JsonValue | null
+    /**
+     * §55 `reason` — why the operator did it. "Provider outage" is the whole
+     * value of the record; without it an audit line says what happened and
+     * nothing about why, which is the half an investigation needs.
+     * 
+     * Enforced, not merely documented: `AuditService.recordChange` refuses a
+     * destructive operation that arrives without one, and `DESTRUCTIVE_ACTIONS`
+     * is the list it refuses against.
+     */
+    reason: string | null
     ipAddress: string | null
+    /**
+     * The device the request identified itself with, when it did.
+     */
+    deviceId: string | null
+    /**
+     * Correlates this entry with the log lines of the request that wrote it.
+     * Threaded automatically from the request by `AuditContextMiddleware`, so
+     * a service never has to remember to pass it.
+     */
+    requestId: string | null
     /**
      * Metadata only. Redacted before write; must never contain secrets.
      */
@@ -916,7 +1065,12 @@ export interface AuditLogFieldRefs {
   readonly targetType: Prisma.FieldRef<"AuditLog", 'String'>
   readonly targetId: Prisma.FieldRef<"AuditLog", 'String'>
   readonly outcome: Prisma.FieldRef<"AuditLog", 'AuditOutcome'>
+  readonly before: Prisma.FieldRef<"AuditLog", 'Json'>
+  readonly after: Prisma.FieldRef<"AuditLog", 'Json'>
+  readonly reason: Prisma.FieldRef<"AuditLog", 'String'>
   readonly ipAddress: Prisma.FieldRef<"AuditLog", 'String'>
+  readonly deviceId: Prisma.FieldRef<"AuditLog", 'String'>
+  readonly requestId: Prisma.FieldRef<"AuditLog", 'String'>
   readonly metadata: Prisma.FieldRef<"AuditLog", 'Json'>
   readonly createdAt: Prisma.FieldRef<"AuditLog", 'DateTime'>
 }

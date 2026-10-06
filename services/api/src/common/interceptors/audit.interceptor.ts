@@ -1,5 +1,5 @@
 import {
-  CallHandler, ExecutionContext, Injectable, NestInterceptor,
+  CallHandler, ExecutionContext, Inject, Injectable, NestInterceptor,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { Observable, tap } from 'rxjs';
@@ -20,7 +20,12 @@ const MUTATING = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
  */
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
-  constructor(private readonly audit: AuditService) {}
+  // `@Inject` explicitly: Nest's CLI compiles with tsc, which emits decorator
+  // metadata, but vitest uses esbuild, which does not. Without it `this.audit`
+  // is undefined at runtime and every mutating request 500s — a failure that
+  // only appears once a test makes a POST, which is why it survived until one
+  // did.
+  constructor(@Inject(AuditService) private readonly audit: AuditService) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     if (context.getType() !== 'http') return next.handle();

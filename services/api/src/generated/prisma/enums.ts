@@ -163,14 +163,18 @@ export const ExecutionQuality = {
 export type ExecutionQuality = (typeof ExecutionQuality)[keyof typeof ExecutionQuality]
 
 
-export const TxState = {
+export const TxLifecycle = {
+  created: 'created',
+  signed: 'signed',
+  broadcast: 'broadcast',
   pending: 'pending',
   confirmed: 'confirmed',
   failed: 'failed',
-  dropped: 'dropped'
+  cancelled: 'cancelled',
+  expired: 'expired'
 } as const
 
-export type TxState = (typeof TxState)[keyof typeof TxState]
+export type TxLifecycle = (typeof TxLifecycle)[keyof typeof TxLifecycle]
 
 
 export const TxDirection = {

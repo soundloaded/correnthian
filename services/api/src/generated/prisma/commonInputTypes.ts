@@ -566,11 +566,11 @@ export type EnumTxDirectionFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumTxDirectionFilter<$PrismaModel> | $Enums.TxDirection
 }
 
-export type EnumTxStateFilter<$PrismaModel = never> = {
-  equals?: $Enums.TxState | Prisma.EnumTxStateFieldRefInput<$PrismaModel>
-  in?: $Enums.TxState[] | Prisma.ListEnumTxStateFieldRefInput<$PrismaModel>
-  notIn?: $Enums.TxState[] | Prisma.ListEnumTxStateFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumTxStateFilter<$PrismaModel> | $Enums.TxState
+export type EnumTxLifecycleFilter<$PrismaModel = never> = {
+  equals?: $Enums.TxLifecycle | Prisma.EnumTxLifecycleFieldRefInput<$PrismaModel>
+  in?: $Enums.TxLifecycle[] | Prisma.ListEnumTxLifecycleFieldRefInput<$PrismaModel>
+  notIn?: $Enums.TxLifecycle[] | Prisma.ListEnumTxLifecycleFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumTxLifecycleFilter<$PrismaModel> | $Enums.TxLifecycle
 }
 
 export type BigIntNullableFilter<$PrismaModel = never> = {
@@ -594,14 +594,14 @@ export type EnumTxDirectionWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumTxDirectionFilter<$PrismaModel>
 }
 
-export type EnumTxStateWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.TxState | Prisma.EnumTxStateFieldRefInput<$PrismaModel>
-  in?: $Enums.TxState[] | Prisma.ListEnumTxStateFieldRefInput<$PrismaModel>
-  notIn?: $Enums.TxState[] | Prisma.ListEnumTxStateFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumTxStateWithAggregatesFilter<$PrismaModel> | $Enums.TxState
+export type EnumTxLifecycleWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.TxLifecycle | Prisma.EnumTxLifecycleFieldRefInput<$PrismaModel>
+  in?: $Enums.TxLifecycle[] | Prisma.ListEnumTxLifecycleFieldRefInput<$PrismaModel>
+  notIn?: $Enums.TxLifecycle[] | Prisma.ListEnumTxLifecycleFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumTxLifecycleWithAggregatesFilter<$PrismaModel> | $Enums.TxLifecycle
   _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumTxStateFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumTxStateFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumTxLifecycleFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumTxLifecycleFilter<$PrismaModel>
 }
 
 export type BigIntNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -1192,11 +1192,11 @@ export type NestedEnumTxDirectionFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumTxDirectionFilter<$PrismaModel> | $Enums.TxDirection
 }
 
-export type NestedEnumTxStateFilter<$PrismaModel = never> = {
-  equals?: $Enums.TxState | Prisma.EnumTxStateFieldRefInput<$PrismaModel>
-  in?: $Enums.TxState[] | Prisma.ListEnumTxStateFieldRefInput<$PrismaModel>
-  notIn?: $Enums.TxState[] | Prisma.ListEnumTxStateFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumTxStateFilter<$PrismaModel> | $Enums.TxState
+export type NestedEnumTxLifecycleFilter<$PrismaModel = never> = {
+  equals?: $Enums.TxLifecycle | Prisma.EnumTxLifecycleFieldRefInput<$PrismaModel>
+  in?: $Enums.TxLifecycle[] | Prisma.ListEnumTxLifecycleFieldRefInput<$PrismaModel>
+  notIn?: $Enums.TxLifecycle[] | Prisma.ListEnumTxLifecycleFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumTxLifecycleFilter<$PrismaModel> | $Enums.TxLifecycle
 }
 
 export type NestedBigIntNullableFilter<$PrismaModel = never> = {
@@ -1220,14 +1220,14 @@ export type NestedEnumTxDirectionWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumTxDirectionFilter<$PrismaModel>
 }
 
-export type NestedEnumTxStateWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.TxState | Prisma.EnumTxStateFieldRefInput<$PrismaModel>
-  in?: $Enums.TxState[] | Prisma.ListEnumTxStateFieldRefInput<$PrismaModel>
-  notIn?: $Enums.TxState[] | Prisma.ListEnumTxStateFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumTxStateWithAggregatesFilter<$PrismaModel> | $Enums.TxState
+export type NestedEnumTxLifecycleWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.TxLifecycle | Prisma.EnumTxLifecycleFieldRefInput<$PrismaModel>
+  in?: $Enums.TxLifecycle[] | Prisma.ListEnumTxLifecycleFieldRefInput<$PrismaModel>
+  notIn?: $Enums.TxLifecycle[] | Prisma.ListEnumTxLifecycleFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumTxLifecycleWithAggregatesFilter<$PrismaModel> | $Enums.TxLifecycle
   _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumTxStateFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumTxStateFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumTxLifecycleFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumTxLifecycleFilter<$PrismaModel>
 }
 
 export type NestedBigIntNullableWithAggregatesFilter<$PrismaModel = never> = {

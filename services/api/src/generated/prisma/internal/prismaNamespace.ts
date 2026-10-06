@@ -2096,17 +2096,33 @@ export type SwapQuoteScalarFieldEnum = (typeof SwapQuoteScalarFieldEnum)[keyof t
 
 export const TransactionScalarFieldEnum = {
   id: 'id',
+  userId: 'userId',
   walletId: 'walletId',
   assetId: 'assetId',
   chainId: 'chainId',
+  providerId: 'providerId',
+  destination: 'destination',
   txHash: 'txHash',
   direction: 'direction',
   state: 'state',
   amountRaw: 'amountRaw',
   amountUsd: 'amountUsd',
+  feeRaw: 'feeRaw',
+  feeUsd: 'feeUsd',
   blockNumber: 'blockNumber',
   confirmations: 'confirmations',
+  requiredConfirmations: 'requiredConfirmations',
+  droppedAt: 'droppedAt',
+  dropCount: 'dropCount',
+  lastSeenAt: 'lastSeenAt',
   metadata: 'metadata',
+  errorCode: 'errorCode',
+  errorMessage: 'errorMessage',
+  expiresAt: 'expiresAt',
+  signedAt: 'signedAt',
+  broadcastAt: 'broadcastAt',
+  confirmedAt: 'confirmedAt',
+  failedAt: 'failedAt',
   blockTime: 'blockTime',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -2184,7 +2200,12 @@ export const AuditLogScalarFieldEnum = {
   targetType: 'targetType',
   targetId: 'targetId',
   outcome: 'outcome',
+  before: 'before',
+  after: 'after',
+  reason: 'reason',
   ipAddress: 'ipAddress',
+  deviceId: 'deviceId',
+  requestId: 'requestId',
   metadata: 'metadata',
   createdAt: 'createdAt'
 } as const
@@ -2574,16 +2595,16 @@ export type ListEnumTxDirectionFieldRefInput<$PrismaModel> = FieldRefInputType<$
 
 
 /**
- * Reference to a field of type 'TxState'
+ * Reference to a field of type 'TxLifecycle'
  */
-export type EnumTxStateFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TxState'>
+export type EnumTxLifecycleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TxLifecycle'>
     
 
 
 /**
- * Reference to a field of type 'TxState[]'
+ * Reference to a field of type 'TxLifecycle[]'
  */
-export type ListEnumTxStateFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TxState[]'>
+export type ListEnumTxLifecycleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TxLifecycle[]'>
     
 
 

@@ -146,11 +146,34 @@ enum ExecutionQuality {
   none
 }
 
-enum TxState {
+/// The transaction lifecycle — a state machine, not a status flag.
+///
+/// §62 of the plan: financial operations are not `success: true`. They are
+/// explicit states, because recovery and reconciliation are only safe if the
+/// system can say *where* a record stopped rather than whether it stopped.
+///
+/// `dropped` is deliberately NOT a state. A dropped transaction is a fact
+/// about the network — it was broadcast and has not been mined — so it is
+/// expressed as `droppedAt`/`dropCount` on a row that is still `pending` or
+/// `broadcast`. Encoding it as a state would strand the transaction: it would
+/// have nowhere to go when the network accepts it again.
+enum TxLifecycle {
+  /// Recorded. Nothing has been signed and nothing exists on the network.
+  created
+  /// The account holder's device reports it signed. Correnthian did not sign
+  /// and cannot verify this; see docs/architecture/key-boundary.md.
+  signed
+  /// A hash exists and the transaction is on the network.
+  broadcast
+  /// Seen on the network, not yet at the required confirmation depth.
   pending
+  /// At or past the required confirmation depth.
   confirmed
   failed
-  dropped
+  /// Withdrawn by the owner before anything reached the network.
+  cancelled
+  /// An unsigned intent that was never acted on and timed out.
+  expired
 }
 
 enum TxDirection {
@@ -205,6 +228,9 @@ model User {
   sessions Session[]
   devices  Device[]
   wallets  Wallet[]
+  /// Denormalised from `Wallet`, never taken from a request body. Listed here
+  /// so "everything this account moved" does not need a join through Wallet.
+  transactions Transaction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -471,6 +497,9 @@ model Provider {
 
   quotes      SwapQuote[]
   redemptions RedemptionRequest[]
+  /// Only populated for a transaction a provider actually settled. A
+  /// self-custodial send has no provider, and must not be given one.
+  transactions Transaction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -532,8 +561,25 @@ model SwapQuote {
 // Activity
 // ---------------------------------------------------------------------------
 
+/// A record of intended or completed chain activity.
+///
+/// TWO INVARIANTS, both enforced by `TransactionService` and asserted in
+/// `transactions/key-boundary.spec.ts`:
+///
+///  1. This row is never a custody record and must never gain a column that
+///     could hold key material. See the schema header and
+///     `docs/architecture/key-boundary.md`.
+///  2. There is deliberately NO column for a signed payload. A signed
+///     transaction is a replayable authorisation while its nonce is unspent,
+///     and `redactDeep()` cannot catch one — it is not shaped like a secret.
+///     Storing it here would make this table the best target in the system.
 model Transaction {
   id String @id @default(cuid())
+
+  /// Denormalised from `Wallet` on create and never accepted from a request.
+  /// A caller must not be able to file activity against another account.
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   walletId String
   wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
@@ -543,26 +589,72 @@ model Transaction {
   chainId String
   chain   Chain  @relation(fields: [chainId], references: [id])
 
-  txHash    String
-  direction TxDirection
-  state     TxState     @default(pending)
+  /// §21 "Provider". Null for a self-custodial send — nobody at Correnthian
+  /// is in the middle of it, and inventing a provider would misrepresent one.
+  providerId String?
+  provider   Provider? @relation(fields: [providerId], references: [id])
 
-  amountRaw     String
-  amountUsd     Decimal? @db.Decimal(36, 8)
+  /// Public address the value is going to. A mistyped destination is an
+  /// irreversible loss, so it is validated against the chain family before
+  /// the row is written. Never a key.
+  destination String?
+
+  /// Null until BROADCAST — an unsigned intent has no hash. Postgres treats
+  /// NULLs as distinct in a unique index, so many intents per chain coexist
+  /// while at most one row per chain can ever claim a given hash.
+  txHash    String?
+  direction TxDirection @default(out)
+
+  /// The lifecycle. See `TxLifecycle` and `src/transactions/transaction-lifecycle.ts`
+  /// for the transitions that are allowed. The table there is the only place
+  /// that knows them.
+  state TxLifecycle @default(created)
+
+  amountRaw String
+  amountUsd Decimal? @db.Decimal(36, 8)
+  /// §21 "Fee". Base units, as a string — never a float.
+  feeRaw   String?
+  feeUsd   Decimal? @db.Decimal(36, 8)
+
   blockNumber   BigInt?
   confirmations Int      @default(0)
+  /// Depth at which this is treated as final. Set at creation from the chain
+  /// family; a caller may raise it for a large value.
+  requiredConfirmations Int @default(1)
 
-  /// Only populated for a quote Correnthian executed. Arbitrary chain data.
+  /// A drop is a fact about the network, not a lifecycle state: the
+  /// transaction was broadcast and has not been mined. Tracking it as columns
+  /// means the row can still move forward when the network accepts it again.
+  droppedAt  DateTime?
+  dropCount  Int       @default(0)
+  /// When the chain was last observed to hold this transaction. A stale value
+  /// is how a drop gets noticed.
+  lastSeenAt DateTime?
+
+  /// Arbitrary chain data.
   metadata Json?
 
-  blockTime DateTime?
+  /// §21 "Error information". Set when `state = failed`.
+  errorCode    String?
+  errorMessage String?
+
+  /// An unsigned intent expires rather than sitting in `created` forever.
+  expiresAt DateTime?
+  signedAt  DateTime?
+  /// Broadcast time, or the last re-broadcast after a drop.
+  broadcastAt DateTime?
+  confirmedAt DateTime?
+  failedAt    DateTime?
+  blockTime   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([chainId, txHash])
   @@index([walletId, createdAt])
+  @@index([userId, createdAt])
   @@index([state])
+  @@index([chainId, state])
 }
 
 model PortfolioSnapshot {
@@ -660,6 +752,7 @@ model JurisdictionRule {
   @@index([active])
 }
 
+/// Append-only. Nothing in the application updates or deletes a row here.
 model AuditLog {
   id String @id @default(cuid())
 
@@ -670,7 +763,33 @@ model AuditLog {
   targetId   String?
   outcome    AuditOutcome @default(success)
 
+  /// §55 `before`/`after` — the state of the resource either side of a
+  /// state-changing operation, not a free-form blob. Null on a create (there
+  /// was nothing before) and on a delete (there is nothing after).
+  ///
+  /// Both are redacted on the way in with `redactDeep()`, exactly like
+  /// `metadata`: a snapshot of a whole row is the largest surface in the
+  /// system for a field nobody meant to copy.
+  before Json?
+  after  Json?
+
+  /// §55 `reason` — why the operator did it. "Provider outage" is the whole
+  /// value of the record; without it an audit line says what happened and
+  /// nothing about why, which is the half an investigation needs.
+  ///
+  /// Enforced, not merely documented: `AuditService.recordChange` refuses a
+  /// destructive operation that arrives without one, and `DESTRUCTIVE_ACTIONS`
+  /// is the list it refuses against.
+  reason String?
+
   ipAddress String?
+  /// The device the request identified itself with, when it did.
+  deviceId  String?
+  /// Correlates this entry with the log lines of the request that wrote it.
+  /// Threaded automatically from the request by `AuditContextMiddleware`, so
+  /// a service never has to remember to pass it.
+  requestId String?
+
   /// Metadata only. Redacted before write; must never contain secrets.
   metadata  Json    @default("{}")
 
@@ -679,6 +798,7 @@ model AuditLog {
   @@index([actorId, createdAt])
   @@index([action, createdAt])
   @@index([targetType, targetId])
+  @@index([requestId])
 }
 
 model Notification {
