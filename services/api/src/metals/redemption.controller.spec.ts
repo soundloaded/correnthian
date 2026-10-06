@@ -57,7 +57,7 @@ describe.skipIf(!HAS_DB && !CI)('POST /redemptions through the controller', () =
    * omission. Two letters that are not real ISO codes, so a run of this suite
    * can never be mistaken for a legal position or collide with a real one.
    */
-  const PERMITTED = 'ZZ';
+  const PERMITTED = 'ZY';  // suite-unique, so parallel files cannot collide on (country, region)
   const UNMATCHED = 'YY';
 
   const emails = {
@@ -163,16 +163,27 @@ describe.skipIf(!HAS_DB && !CI)('POST /redemptions through the controller', () =
     providerSlug = provider.slug;
 
     // Redemption permitted, and only here.
-    const rule = await prisma.jurisdictionRule.create({
-      data: {
-        country: PERMITTED,
-        region: '',
-        canBuyCrypto: false,
-        canSellCrypto: false,
-        canUseMetals: true,
-        canRedeem: true,
-        kycRequired: false,
-        notes: 'Created by redemption.controller.spec.ts. Not a legal position.',
+    const rule = await prisma.jurisdictionRule.upsert({
+      where: { country_region: { country: PERMITTED, region: '' } },
+      create: {
+          country: PERMITTED,
+          region: '',
+          canBuyCrypto: false,
+          canSellCrypto: false,
+          canUseMetals: true,
+          canRedeem: true,
+          kycRequired: false,
+          notes: 'Created by redemption.controller.spec.ts. Not a legal position.',
+      },
+      update: {
+          country: PERMITTED,
+          region: '',
+          canBuyCrypto: false,
+          canSellCrypto: false,
+          canUseMetals: true,
+          canRedeem: true,
+          kycRequired: false,
+          notes: 'Created by redemption.controller.spec.ts. Not a legal position.',
       },
     });
     createdIds.rules.push(rule.id);

@@ -15,6 +15,7 @@ import { CoreModule } from './common/core.module.js';
 import { AppConfigModule } from './config/config.module.js';
 import { DevicesModule } from './devices/devices.module.js';
 import { HealthModule } from './health/health.module.js';
+import { JobsModule } from './jobs/jobs.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { PortfolioModule } from './portfolio/portfolio.module.js';
 import { PricingModule } from './pricing/pricing.module.js';
@@ -74,6 +75,7 @@ import { WalletsModule } from './wallets/wallets.module.js';
     PortfolioModule,
     WalletsModule,
     NotificationsModule,
+    JobsModule,
     OnRampModule,
   ],
 })

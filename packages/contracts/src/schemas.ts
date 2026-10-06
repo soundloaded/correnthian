@@ -572,6 +572,76 @@ export const idempotencyConflictSchema = errorSchema.extend({
   }),
 });
 
+// --- scheduled jobs --------------------------------------------------------
+
+/**
+ * How one execution of a scheduled job ended.
+ *
+ * `running` is not a failure: a healthy run passes through it. What matters is
+ * `abandoned`, which exists only because the instance running the job stopped
+ * existing and could not write its own ending.
+ */
+export const jobRunOutcomeSchema = z.enum(['running', 'succeeded', 'failed', 'abandoned']);
+
+/**
+ * One run, as the operations view returns it.
+ *
+ * `detail` is free-form on purpose: it is the job's own account of what it did,
+ * and a registry entry per job would turn every new job into a contract
+ * change. It is still typed as an object, so `null` and a string are refused —
+ * the drift this file exists to catch does not get an exception because a field
+ * is "just details".
+ */
+export const jobRunSchema = z.object({
+  id: z.string(),
+  jobName: z.string(),
+  instanceId: z.string(),
+  trigger: z.string(),
+  startedAt: z.string(),
+  finishedAt: z.string().nullable(),
+  durationMs: z.number().nullable(),
+  outcome: jobRunOutcomeSchema,
+  /** Rows changed, or flagged where the job's job is observation. */
+  affected: z.number(),
+  detail: z.record(z.string(), z.unknown()).nullable(),
+  error: z.string().nullable(),
+});
+
+/**
+ * The verdict an operator reads first.
+ *
+ * `overdue` is the one that matters: a job that has not started within three
+ * intervals looks identical to one that never ran. `disabled` is separate from
+ * `never_run` because the first means this process is not scheduling anything
+ * and the second means it is, and the job has not run.
+ */
+export const jobHealthSchema = z.enum(['ok', 'running', 'failing', 'overdue', 'never_run', 'disabled']);
+
+export const scheduledJobSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  everyMs: z.number(),
+  timeoutMs: z.number(),
+  health: jobHealthSchema,
+  runningNow: z.boolean(),
+  /** Ticks skipped because the previous run was still going. Not a count of runs. */
+  overlapsSkipped: z.number(),
+  lastRun: jobRunSchema.nullable(),
+  recentRuns: z.array(jobRunSchema),
+});
+
+export const jobsStatusSchema = z.object({
+  scheduler: z.object({
+    running: z.boolean(),
+    instanceId: z.string(),
+    tickMs: z.number(),
+    lastTickAt: z.string().nullable(),
+    /** Set when the lease could not be taken at all. Present, not hidden. */
+    lastLeaseError: z.string().nullable(),
+  }),
+  jobs: z.array(scheduledJobSchema),
+});
+
 /**
  * The wire contract registry.
  *
@@ -606,6 +676,8 @@ export const CONTRACT_REGISTRY = {
   'PATCH /api/v1/redemptions/:id/transition': redemptionRequestSchema,
   'GET /api/v1/redemptions/mine': myRedemptionsSchema,
   'GET /api/v1/redemptions/stats': redemptionStatsSchema,
+  'GET /api/v1/jobs': jobsStatusSchema,
+  'POST /api/v1/jobs/:name/run': jobRunSchema,
   'GET /api/v1/meta/versions': apiVersionsDocumentSchema,
   'ERROR GET /api/v2/*': apiVersionErrorSchema,
   'ERROR GET /api/v1/does-not-exist': routeNotFoundSchema,

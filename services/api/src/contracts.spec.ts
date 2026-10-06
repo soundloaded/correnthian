@@ -8,6 +8,7 @@ import { PrismaService } from './prisma/prisma.service.js';
 import { RedisService } from './redis/redis.service.js';
 import { CONTRACT_REGISTRY, type Contract } from '@correnthian/contracts';
 import { applyApiVersioning } from './versioning/apply-versioning.js';
+import { JobScheduler } from './jobs/job-scheduler.service.js';
 
 /**
  * The wire-format contract test.
@@ -147,7 +148,17 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
    * parameter would return the wrong fixture and fail.
    */
   async function seedFixtures() {
-    const assets = await prisma.asset.findMany({ take: 2, orderBy: { symbol: 'asc' } });
+    // Only the seed's own fixtures. Taking any two rows made this suite adopt
+    // assets created by whatever other test file happened to run first, so its
+    // quotes referenced rows another suite's teardown then deleted - a foreign
+    // key failure that looked like a cleanup bug and was really a fixture
+    // leak. `tUSDT`/`tGOLD` are seeded by prisma/seed.ts under the
+    // dev-fixtures issuer and belong to no test file.
+    const assets = await prisma.asset.findMany({
+      where: { issuer: { slug: 'dev-fixtures' } },
+      take: 2,
+      orderBy: { symbol: 'asc' },
+    });
     if (assets.length < 2) {
       throw new Error(
         'The contract suite needs at least two seeded assets to build quote fixtures. ' +
@@ -368,14 +379,23 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     });
     fixtureRedemptionProviderSlug = provider.slug;
 
-    const rule = await prisma.jurisdictionRule.create({
-      data: {
-        country: 'ZZ',
-        region: '',
-        canUseMetals: true,
-        canRedeem: true,
-        kycRequired: false,
-        notes: 'Created by contracts.spec.ts. Not a legal position.',
+    const rule = await prisma.jurisdictionRule.upsert({
+      where: { country_region: { country: 'ZZ', region: '' } },
+      create: {
+          country: 'ZZ',
+          region: '',
+          canUseMetals: true,
+          canRedeem: true,
+          kycRequired: false,
+          notes: 'Created by contracts.spec.ts. Not a legal position.',
+      },
+      update: {
+          country: 'ZZ',
+          region: '',
+          canUseMetals: true,
+          canRedeem: true,
+          kycRequired: false,
+          notes: 'Created by contracts.spec.ts. Not a legal position.',
       },
     });
     fixtureRedemptionRuleId = rule.id;
@@ -518,6 +538,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     ['GET /api/v1/transactions/stats', '/api/v1/transactions/stats'],
     ['GET /api/v1/transactions/mine', '/api/v1/transactions/mine'],
     ['GET /api/v1/redemptions/stats', '/api/v1/redemptions/stats'],
+    ['GET /api/v1/jobs', '/api/v1/jobs'],
   ];
 
   it('authenticates as the seeded admin', () => {
@@ -1096,5 +1117,96 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     expect(at.res.status, JSON.stringify(at.res.body)).toBe(201);
     expect(at.res.body.state).toBe('confirmed');
     expect(at.res.body.confirmedAt).not.toBeNull();
+  });
+
+  // --- scheduled jobs -----------------------------------------------------
+  //
+  // A scheduler nobody can inspect is indistinguishable from one that is
+  // broken: both look identical from outside when the job that would have said
+  // so has stopped running. These cover the two shapes that make it
+  // inspectable, and the one thing that would make a test boot dangerous.
+
+  it('GET /jobs derives health from the run ledger, not from what the process believes', async () => {
+    const res = await get('/api/v1/jobs');
+    expect(res.status, `${res.status}: ${JSON.stringify(res.body)}`).toBe(200);
+
+    const parsed = CONTRACT_REGISTRY['GET /api/v1/jobs'].parse(res.body);
+    // Every job in the registry is named here, so a job added to the module
+    // and forgotten in the operations view is visible as a missing row.
+    const names = parsed.jobs.map((j) => j.name).sort();
+    expect(names).toEqual([
+      'idempotency.purge',
+      'price.flag-stale',
+      'provider.health-probe',
+      'swap-quote.expire',
+      'transaction.expire-intents',
+    ]);
+    for (const job of parsed.jobs) {
+      expect(job.everyMs).toBeGreaterThan(0);
+      expect(job.timeoutMs).toBeGreaterThan(0);
+      // `disabled`, because this boot must not be scheduling anything — the
+      // assertion below says why that matters.
+      expect(job.health).toBe('disabled');
+      expect(job.runningNow).toBe(false);
+    }
+    expect(parsed.scheduler.running).toBe(false);
+    expect(parsed.scheduler.instanceId).not.toBe('');
+  });
+
+  it('does not schedule anything while the suites are running', async () => {
+    // If this fails, every other result in this file is suspect: a sweep
+    // firing mid-suite would expire the fixtures the assertions below depend
+    // on, and would do it on a timer that has nothing to do with the wire
+    // format. The scheduler is off in a test boot by construction; this is the
+    // check that the construction still holds.
+    const scheduler = app.get(JobScheduler);
+    expect(scheduler.enabled).toBe(false);
+    expect(scheduler.isRunning).toBe(false);
+  });
+
+  it('POST /jobs/:name/run runs one now and records it as a manual trigger', async () => {
+    // `price.flag-stale` on purpose: it is the one job that writes nothing, so
+    // exercising the endpoint cannot move a row another assertion reads.
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/jobs/price.flag-stale/run')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status, `${res.status}: ${JSON.stringify(res.body)}`).toBe(201);
+
+    const run = CONTRACT_REGISTRY['POST /api/v1/jobs/:name/run'].parse(res.body);
+    expect(run.jobName).toBe('price.flag-stale');
+    expect(run.trigger).toBe('manual');
+    expect(run.outcome).toBe('succeeded');
+    expect(run.instanceId).not.toBe('');
+    expect(run.finishedAt).not.toBeNull();
+    expect(run.durationMs).not.toBeNull();
+    // Job-specific detail is free-form on the wire, but it is an object and it
+    // is where the sweep says what it saw.
+    expect(run.detail).toBeTypeOf('object');
+  });
+
+  it('POST /jobs/:name/run 404s a job that is not in the registry', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/jobs/idempotency.purge-the-lot/run')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body?.error?.code).toBe('not_found');
+  });
+
+  it('POST /jobs/:name/run refuses a name that is not a job name at all', async () => {
+    // Constrained to the character set a job name is actually written in,
+    // rather than matched only against the registry, so a malformed name is a
+    // validation error and not a mystery 404 from somewhere else in the router.
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/jobs/Not%20A%20Job/run')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(422);
+    expect(res.body?.error?.code).toBe('validation_failed');
+    // The issue is structured, so a client can point at the box rather than
+    // saying "bad request".
+    expect(Array.isArray(res.body?.error?.detail)).toBe(true);
+    expect(res.body).toHaveProperty('timestamp');
   });
 });

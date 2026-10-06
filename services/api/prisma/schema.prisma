@@ -911,3 +911,79 @@ model IdempotencyRecord {
   @@index([expiresAt])
   @@index([state, expiresAt])
 }
+
+// ---------------------------------------------------------------------------
+// Scheduled jobs
+//
+// §7 (queues/events) and §33 (provider health). Nothing in this system ran on
+// a schedule before this, which left several things built but never executed
+// and several that would silently rot.
+//
+// The split this section encodes: **the schedule lives in Redis, the record
+// lives here.** A lease is ephemeral by nature, and losing one costs a single
+// duplicate run of a job that is deliberately re-runnable. The *record* is
+// what an operator reads at 3am to answer "did the purge run last night", and
+// that answer has to survive a Redis flush and a failover.
+// ---------------------------------------------------------------------------
+
+/// How one execution of a scheduled job ended.
+///
+/// `running` is the state a row is left in when the instance holding the job
+/// died mid-run. A healthy run passes through it for as long as it takes, so
+/// the state is not itself a fault — a `running` row older than the job's own
+/// interval is. The next instance to take the job marks it `abandoned`,
+/// because a dead process cannot write its own epitaph.
+enum JobRunOutcome {
+  running
+  succeeded
+  failed
+  abandoned
+}
+
+/// One execution of one scheduled job.
+model JobRun {
+  id String @id @default(cuid())
+
+  /// Stable job identity, e.g. `idempotency.purge`.
+  ///
+  /// A name, not a foreign key. A job deleted from the code must not take its
+  /// history with it: "this job has not run since the deploy that removed it"
+  /// is a thing an operator needs to be able to see.
+  jobName    String
+  /// Which replica ran it. With more than one instance this is the first
+  /// question asked about a run that behaved strangely, and the answer is not
+  /// recoverable from anywhere else.
+  instanceId String
+
+  /// `schedule` or `manual`. An operator-triggered run and an automatic one
+  /// are different events even when they execute identical code.
+  trigger String @default("schedule")
+
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  /// Wall-clock duration of the run. Null while it is still going.
+  durationMs Int?
+
+  outcome JobRunOutcome @default(running)
+
+  /// Rows the run changed — deleted, transitioned, flagged.
+  ///
+  /// The one number that answers "is this job still doing anything", and the
+  /// first sign that a filter has quietly stopped matching. A job reporting
+  /// `succeeded, affected: 0` forever is a job that is running and useless.
+  affected Int @default(0)
+
+  /// Job-specific detail: batch counts, which assets are stale, why a sweep
+  /// stopped early. Redacted before it is written — a job's detail is derived
+  /// from provider and chain state, which is exactly the kind of payload that
+  /// grows an endpoint or a credential by accident.
+  detail Json?
+
+  /// The failure, truncated and redacted. Never a stack, and never anything a
+  /// provider said verbatim.
+  error String?
+
+  @@index([jobName, startedAt])
+  @@index([startedAt])
+  @@index([outcome, startedAt])
+}

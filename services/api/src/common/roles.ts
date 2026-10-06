@@ -19,17 +19,32 @@
  *   quietly letting everyone through.
  */
 
-export const ROLE_RANK: Record<string, number> = {
+/**
+ * `as const` so the known ranks are non-optional at literal keys. A
+ * `Record<string, number>` makes even `ROLE_RANK.support` `number | undefined`
+ * under noUncheckedIndexedAccess, which pushes callers toward `!` or a default
+ * that could silently be wrong for a permission check.
+ */
+export const ROLE_RANK = {
   user: 0,
   support: 1,
   compliance: 2,
   admin: 3,
   owner: 4,
-};
+} as const;
+
+export type RoleName = keyof typeof ROLE_RANK;
+
+/**
+ * The same ranks opened to arbitrary strings, for dynamic lookups. An unknown
+ * key is absent here, and every caller treats absence as a failure rather
+ * than as a default — see `rankOf` and `roleSatisfies`.
+ */
+const RANK_LOOKUP: Record<string, number> = ROLE_RANK;
 
 /** Numeric standing of a role. Unknown or absent roles rank below `user`. */
 export function rankOf(role: string | null | undefined): number {
-  return role ? (ROLE_RANK[role] ?? -1) : -1;
+  return role ? (RANK_LOOKUP[role] ?? -1) : -1;
 }
 
 /**
@@ -38,7 +53,7 @@ export function rankOf(role: string | null | undefined): number {
  * An unknown `required` is unsatisfiable — see the note on `Infinity` above.
  */
 export function roleSatisfies(role: string | null | undefined, required: string): boolean {
-  return rankOf(role) >= (ROLE_RANK[required] ?? Infinity);
+  return rankOf(role) >= (RANK_LOOKUP[required] ?? Infinity);
 }
 
 /**

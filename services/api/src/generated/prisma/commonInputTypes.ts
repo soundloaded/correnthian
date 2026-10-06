@@ -725,6 +725,23 @@ export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedIntNullableFilter<$PrismaModel>
 }
 
+export type EnumJobRunOutcomeFilter<$PrismaModel = never> = {
+  equals?: $Enums.JobRunOutcome | Prisma.EnumJobRunOutcomeFieldRefInput<$PrismaModel>
+  in?: $Enums.JobRunOutcome[] | Prisma.ListEnumJobRunOutcomeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.JobRunOutcome[] | Prisma.ListEnumJobRunOutcomeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumJobRunOutcomeFilter<$PrismaModel> | $Enums.JobRunOutcome
+}
+
+export type EnumJobRunOutcomeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.JobRunOutcome | Prisma.EnumJobRunOutcomeFieldRefInput<$PrismaModel>
+  in?: $Enums.JobRunOutcome[] | Prisma.ListEnumJobRunOutcomeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.JobRunOutcome[] | Prisma.ListEnumJobRunOutcomeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumJobRunOutcomeWithAggregatesFilter<$PrismaModel> | $Enums.JobRunOutcome
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumJobRunOutcomeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumJobRunOutcomeFilter<$PrismaModel>
+}
+
 export type NestedStringFilter<$PrismaModel = never> = {
   equals?: string | Prisma.StringFieldRefInput<$PrismaModel>
   in?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
@@ -1393,6 +1410,23 @@ export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
   _sum?: Prisma.NestedIntNullableFilter<$PrismaModel>
   _min?: Prisma.NestedIntNullableFilter<$PrismaModel>
   _max?: Prisma.NestedIntNullableFilter<$PrismaModel>
+}
+
+export type NestedEnumJobRunOutcomeFilter<$PrismaModel = never> = {
+  equals?: $Enums.JobRunOutcome | Prisma.EnumJobRunOutcomeFieldRefInput<$PrismaModel>
+  in?: $Enums.JobRunOutcome[] | Prisma.ListEnumJobRunOutcomeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.JobRunOutcome[] | Prisma.ListEnumJobRunOutcomeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumJobRunOutcomeFilter<$PrismaModel> | $Enums.JobRunOutcome
+}
+
+export type NestedEnumJobRunOutcomeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.JobRunOutcome | Prisma.EnumJobRunOutcomeFieldRefInput<$PrismaModel>
+  in?: $Enums.JobRunOutcome[] | Prisma.ListEnumJobRunOutcomeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.JobRunOutcome[] | Prisma.ListEnumJobRunOutcomeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumJobRunOutcomeWithAggregatesFilter<$PrismaModel> | $Enums.JobRunOutcome
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumJobRunOutcomeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumJobRunOutcomeFilter<$PrismaModel>
 }
 
 
