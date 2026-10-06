@@ -215,3 +215,13 @@ export const IdempotencyState = {
 } as const
 
 export type IdempotencyState = (typeof IdempotencyState)[keyof typeof IdempotencyState]
+
+
+export const JobRunOutcome = {
+  running: 'running',
+  succeeded: 'succeeded',
+  failed: 'failed',
+  abandoned: 'abandoned'
+} as const
+
+export type JobRunOutcome = (typeof JobRunOutcome)[keyof typeof JobRunOutcome]

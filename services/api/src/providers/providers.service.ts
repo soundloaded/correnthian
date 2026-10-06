@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { AppError } from '../common/errors.js';
-import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 @Injectable()
@@ -34,6 +33,12 @@ export class ProvidersService {
    * Only `lastHealth` — a health probe payload — is stored. Provider API
    * credentials live in the infrastructure secret store and are never written
    * here. This table must never become a place secrets land.
+   *
+   * Status is a manual operator override. The scheduled probe writes `status`,
+   * `lastCheckedAt` and `lastHealth` through `ProviderHealthService`, which is
+   * the single authority for the last two — there is deliberately no second
+   * method here that can write them, because two writers of one field is how a
+   * registry ends up claiming health nothing checked.
    */
   async setStatus(slug: string, status: 'active' | 'degraded' | 'disabled') {
     await this.prisma.provider.update({
@@ -43,13 +48,6 @@ export class ProvidersService {
     return this.findBySlug(slug);
   }
 
-  async recordHealth(slug: string, health: Prisma.InputJsonValue) {
-    await this.prisma.provider.update({
-      where: { slug },
-      data: { lastHealth: health, lastCheckedAt: new Date() },
-    });
-    return this.findBySlug(slug);
-  }
 
   /** Provider health drives whether a rail is offered at all. */
   async healthSummary() {

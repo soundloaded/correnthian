@@ -142,3 +142,8 @@ export type FeatureFlag = Prisma.FeatureFlagModel
  * both requests execute.
  */
 export type IdempotencyRecord = Prisma.IdempotencyRecordModel
+/**
+ * Model JobRun
+ * One execution of one scheduled job.
+ */
+export type JobRun = Prisma.JobRunModel
