@@ -1,0 +1,212 @@
+'use server';
+
+import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
+import { apiSend, roleAtLeast } from '@/lib/api-server';
+import { clearSession, getSession, getToken } from '@/lib/session';
+
+export interface ActionState {
+  ok?: boolean;
+  error?: string;
+}
+
+const API_URL = process.env.API_URL ?? 'http://localhost:3000';
+
+/** Revoke server-side when possible, then drop the cookie regardless. */
+export async function logoutAction(): Promise<void> {
+  const token = await getToken();
+  if (token) {
+    await fetch(`${API_URL}/auth/logout`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store',
+    }).catch(() => null);
+  }
+  await clearSession();
+  redirect('/login');
+}
+
+export async function requireSession() {
+  const session = await getSession();
+  if (!session) redirect('/login');
+  return session;
+}
+
+/**
+ * Shared guard for every mutation.
+ *
+ * The API enforces roles independently — this is the UI half, so a support
+ * agent is not shown a button that will only bounce. Both checks exist on
+ * purpose: the server's is the real one.
+ */
+async function guard(required: string): Promise<ActionState | true> {
+  const session = await requireSession();
+  if (!roleAtLeast(session.role, required)) {
+    return { error: `Your role (${session.role}) does not permit this action.` };
+  }
+  return true;
+}
+
+function toState(r: { status: string; message?: string }): ActionState {
+  if (r.status === 'ok') return { ok: true };
+  if (r.status === 'unauthorised') return { error: 'Your session expired. Sign in again.' };
+  return { error: r.message ?? 'The change was not applied.' };
+}
+
+// --- users -----------------------------------------------------------------
+
+export async function changeUserRoleAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const allowed = await guard('admin');
+  if (allowed !== true) return allowed;
+
+  const userId = String(formData.get('userId') ?? '');
+  const role = String(formData.get('role') ?? '');
+  if (!userId || !role) return { error: 'Missing user or role.' };
+
+  const result = await apiSend(`/users/${encodeURIComponent(userId)}/role`, 'PATCH', { role });
+  const state = toState(result);
+  if (state.ok) revalidatePath('/users');
+  return state;
+}
+
+export async function changeUserStatusAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const allowed = await guard('admin');
+  if (allowed !== true) return allowed;
+
+  const userId = String(formData.get('userId') ?? '');
+  const status = String(formData.get('status') ?? '');
+  if (!userId || !status) return { error: 'Missing user or status.' };
+
+  const result = await apiSend(`/users/${encodeURIComponent(userId)}/status`, 'PATCH', { status });
+  const state = toState(result);
+  if (state.ok) revalidatePath('/users');
+  return state;
+}
+
+// --- assets ----------------------------------------------------------------
+
+export async function setAssetEnabledAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const allowed = await guard('admin');
+  if (allowed !== true) return allowed;
+
+  const assetId = String(formData.get('assetId') ?? '');
+  const enabled = String(formData.get('enabled')) === 'true';
+  if (!assetId) return { error: 'Missing asset.' };
+
+  const result = await apiSend(
+    `/assets/${encodeURIComponent(assetId)}/enabled`, 'PATCH', { enabled },
+  );
+  const state = toState(result);
+  if (state.ok) revalidatePath('/assets');
+  return state;
+}
+
+export async function recordAttestationAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const allowed = await guard('compliance');
+  if (allowed !== true) return allowed;
+
+  const assetId = String(formData.get('assetId') ?? '');
+  const attestedAt = String(formData.get('attestedAt') ?? '');
+  const proofUrl = String(formData.get('proofUrl') ?? '').trim();
+  if (!assetId || !attestedAt) return { error: 'Missing asset or attestation date.' };
+
+  const result = await apiSend(`/assets/${encodeURIComponent(assetId)}/attestation`, 'PATCH', {
+    attestedAt: new Date(attestedAt).toISOString(),
+    ...(proofUrl ? { proofUrl } : {}),
+  });
+  const state = toState(result);
+  if (state.ok) revalidatePath('/assets');
+  return state;
+}
+
+// --- issuers ---------------------------------------------------------------
+
+export async function setIssuerTierAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const allowed = await guard('compliance');
+  if (allowed !== true) return allowed;
+
+  const slug = String(formData.get('slug') ?? '');
+  const tier = String(formData.get('tier') ?? '');
+  const custodian = String(formData.get('custodian') ?? '').trim();
+  const proofOfReserves = String(formData.get('proofOfReserves') ?? '').trim();
+  if (!slug || !tier) return { error: 'Missing issuer or tier.' };
+
+  const result = await apiSend(`/issuers/${encodeURIComponent(slug)}/verification`, 'PATCH', {
+    tier,
+    ...(custodian ? { custodian } : {}),
+    ...(proofOfReserves ? { proofOfReserves } : {}),
+  });
+  const state = toState(result);
+  if (state.ok) revalidatePath('/issuers');
+  return state;
+}
+
+export async function addIssuerRiskFlagAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const allowed = await guard('compliance');
+  if (allowed !== true) return allowed;
+
+  const slug = String(formData.get('slug') ?? '');
+  const flag = String(formData.get('flag') ?? '').trim();
+  if (!slug || !flag) return { error: 'Missing issuer or flag.' };
+
+  const result = await apiSend(
+    `/issuers/${encodeURIComponent(slug)}/risk-flags`, 'PATCH', { flag },
+  );
+  const state = toState(result);
+  if (state.ok) revalidatePath('/issuers');
+  return state;
+}
+
+// --- providers & chains ----------------------------------------------------
+
+export async function setProviderStatusAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const allowed = await guard('admin');
+  if (allowed !== true) return allowed;
+
+  const slug = String(formData.get('slug') ?? '');
+  const status = String(formData.get('status') ?? '');
+  if (!slug || !status) return { error: 'Missing provider or status.' };
+
+  const result = await apiSend(`/providers/${encodeURIComponent(slug)}/status`, 'PATCH', { status });
+  const state = toState(result);
+  if (state.ok) revalidatePath('/providers');
+  return state;
+}
+
+export async function setChainEnabledAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const allowed = await guard('admin');
+  if (allowed !== true) return allowed;
+
+  const chainId = String(formData.get('chainId') ?? '');
+  const enabled = String(formData.get('enabled')) === 'true';
+  if (!chainId) return { error: 'Missing chain.' };
+
+  const result = await apiSend(`/chains/${encodeURIComponent(chainId)}/enabled`, 'PATCH', { enabled });
+  const state = toState(result);
+  if (state.ok) revalidatePath('/chains');
+  return state;
+}
