@@ -1,8 +1,12 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { deriveAssetId } from '@correnthian/assets';
 import { AppError } from '../common/errors.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ProvidersService } from '../providers/providers.service.js';
+import { FeesService } from '../fees/fees.service.js';
+import {
+  isWithinStoreRange, MoneyError, notionalUsd as notionalFromRaw, parseUsd, type Usd,
+} from '../fees/money.js';
 import type { ListQuotesDto } from './dto/list-quotes.dto.js';
 
 export interface QuoteRequestInput {
@@ -10,12 +14,31 @@ export interface QuoteRequestInput {
   fromAssetId: string;
   toAssetId: string;
   fromAmountRaw: string;
+  /**
+   * The caller's own idea of the notional.
+   *
+   * Stored on the quote as a display field and **never** used as a fee base.
+   * A percentage fee computed from a number the payer states is a percentage
+   * the payer sets: `notionalUsd: "0.01"` would cost almost nothing. The fee
+   * base is derived server-side from a recorded reference price — see
+   * `deriveNotionalUsd` — and where it cannot be derived the breakdown says
+   * the fee is unknown rather than trusting this.
+   */
   notionalUsd?: string;
   slippageBps?: number;
 }
 
 /** Reject anything that is not a plain positive decimal string. */
 const DECIMAL = /^\d+(\.\d+)?$/;
+
+/**
+ * A price older than this is not a price.
+ *
+ * Matches `PricingService.MAX_AGE_SECONDS`. Spelled out here rather than
+ * imported because that service hands back a `number`, and this module will
+ * not do arithmetic on one — see `fees/money.ts`.
+ */
+const PRICE_MAX_AGE_SECONDS = 300;
 
 /** The keyset position: both halves of the sort key, because either alone is ambiguous. */
 interface QuoteCursor {
@@ -45,9 +68,12 @@ function decodeCursor(cursor: string): QuoteCursor {
 
 @Injectable()
 export class SwapsService {
+  private readonly logger = new Logger(SwapsService.name);
+
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(ProvidersService) private readonly providers: ProvidersService,
+    @Inject(FeesService) private readonly fees: FeesService,
   ) {}
 
   /**
@@ -82,9 +108,31 @@ export class SwapsService {
     if (!chain?.enabled) throw AppError.badRequest('The source chain is not enabled');
 
     const expiresAt = new Date(Date.now() + 60_000);
-    const fees = [
-      { label: 'Correnthian fee', amountUsd: 0, kind: 'correnthian' },
-    ];
+
+    // The fee is resolved before the quote is written and stored with it.
+    //
+    // Every line is itemised and every line says what it is: a configured zero
+    // is `computed` at "0.00000000", and a fee nobody has configured is
+    // `unknown` with `amountUsd: null` and a reason. The three are always
+    // present — network, provider, Correnthian — because a kind that is
+    // silently absent from a quote is exactly the hardcoded zero this
+    // replaces.
+    //
+    // `throwIfConflicting` rather than a fallback: two rules that both claim
+    // to price this quote cannot be resolved without guessing, and guessing a
+    // fee is the one thing this engine is not allowed to do. The request
+    // fails with a code the operator can act on instead of a quote carrying a
+    // number nobody chose.
+    const breakdown = await this.fees.breakdown({
+      operation: 'swap',
+      // The **from** asset: a fee is levied on what is being converted, not on
+      // what is received. Its category is resolved inside `FeesService`, so a
+      // rule written against `metal` matches a gold token without this module
+      // having to know that `Asset.category` and `FeeAssetCategory` are two
+      // names for the same values.
+      assetId: from.assetId,
+      notionalUsd: (await this.deriveNotionalUsd(from, input.fromAmountRaw)) ?? null,
+    });
 
     const quote = await this.prisma.swapQuote.create({
       data: {
@@ -98,11 +146,14 @@ export class SwapsService {
         // Placeholder until a provider rail is contracted. Never a fabricated
         // executable price — see the design spec: honest failure is the point.
         toAmountRaw: '0',
+        // The caller's stated notional, kept as a display field. The fees
+        // above were computed from `breakdown.notionalUsd`, which is derived
+        // and is not this.
         notionalUsd: input.notionalUsd ?? null,
         priceImpactBps: 0,
         slippageBps: input.slippageBps ?? 50,
         minReceivedRaw: '0',
-        fees,
+        fees: breakdown as object,
         executionQuality: 'none',
         sizeCapUsd: null,
         state: 'quoted',
@@ -230,6 +281,70 @@ export class SwapsService {
     };
   }
 
+  /**
+   * The USD notional the fees will be computed from, derived server-side.
+   *
+   * `amountRaw` is the caller's amount in base units; the price is the most
+   * recent reference price we have on record for the **from** asset. Both are
+   * combined in exact integer arithmetic — `fees/money.ts:notionalUsd` — and
+   * the result is an exact 10^-8 USD amount or `null`.
+   *
+   * `null` is the honest answer whenever this cannot be computed exactly: no
+   * price on record, a price older than `PRICE_MAX_AGE_SECONDS`, or an amount
+   * that is not a plain count of base units. In every one of those cases a
+   * percentage fee resolves as `unknown` with a reason, which is true, rather
+   * than as a number derived from a figure the payer supplied, which would be
+   * whatever the payer wanted it to be.
+   */
+  private async deriveNotionalUsd(
+    from: { id: string; decimals: number },
+    fromAmountRaw: string,
+  ): Promise<Usd | null> {
+    if (!/^\d+$/.test(fromAmountRaw)) {
+      this.logger.warn(
+        `Quote for ${from.id} carries fromAmountRaw "${fromAmountRaw}", which is not a count of ` +
+          `base units, so no notional can be derived and percentage fees will be reported unknown.`,
+      );
+      return null;
+    }
+
+    const row = await this.prisma.assetPrice.findFirst({
+      where: { assetId: from.id },
+      orderBy: { capturedAt: 'desc' },
+      select: { priceUsd: true, capturedAt: true },
+    });
+    if (!row) {
+      this.logger.debug(`No reference price on record for ${from.id}; fees will be reported unknown`);
+      return null;
+    }
+
+    const ageSeconds = Math.round((Date.now() - row.capturedAt.getTime()) / 1000);
+    if (ageSeconds > PRICE_MAX_AGE_SECONDS) {
+      // A stale price is not a current price. Pricing an operation on one is
+      // how a user is charged against a number that no longer exists.
+      this.logger.warn(
+        `Reference price for ${from.id} is ${ageSeconds}s old; fees will be reported unknown ` +
+          `rather than computed from it.`,
+      );
+      return null;
+    }
+
+    try {
+      // `priceUsd` is a Prisma Decimal, exact but trimmed by `toString()`.
+      // Round-tripping through `parseUsd` puts it on the 10^-8 scale the rest
+      // of the engine speaks.
+      const priceUnits = parseUsd(row.priceUsd.toString());
+      const units = notionalFromRaw(fromAmountRaw, from.decimals, priceUnits);
+      return isWithinStoreRange(units) ? units : null;
+    } catch (cause) {
+      if (cause instanceof MoneyError) {
+        this.logger.warn(`Cannot price ${from.id}: ${cause.message}`);
+        return null;
+      }
+      throw cause;
+    }
+  }
+
   /** The shape a client needs to render a quote honestly. */
   private present(quote: {
     id: string; railKind: string; railId: string; fromAmountRaw: string;
@@ -245,6 +360,16 @@ export class SwapsService {
       slippageBps: quote.slippageBps,
       priceImpactBps: quote.priceImpactBps,
       minReceivedRaw: quote.minReceivedRaw,
+      /**
+       * The itemised breakdown: one line per fee, a total only when every line
+       * is real, and `complete: false` whenever any line is unknown.
+       *
+       * Passed through as stored. Quote rows written before the fee engine
+       * landed still hold the old `[{ label, amountUsd, kind }]` array; they
+       * are not rewritten, because a rewritten history is worse than an old
+       * shape. Anything this service writes from now on is a
+       * `PublicFeeBreakdown`.
+       */
       fees: quote.fees,
       executionQuality: quote.executionQuality,
       sizeCapUsd: quote.sizeCapUsd === null ? null : Number(quote.sizeCapUsd),

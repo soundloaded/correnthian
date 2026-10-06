@@ -215,3 +215,45 @@ export const IdempotencyState = {
 } as const
 
 export type IdempotencyState = (typeof IdempotencyState)[keyof typeof IdempotencyState]
+
+
+export const FeeOperation = {
+  swap: 'swap',
+  buy: 'buy',
+  sell: 'sell',
+  redeem: 'redeem',
+  onramp: 'onramp',
+  offramp: 'offramp'
+} as const
+
+export type FeeOperation = (typeof FeeOperation)[keyof typeof FeeOperation]
+
+
+export const FeeKind = {
+  network: 'network',
+  provider: 'provider',
+  correnthian: 'correnthian'
+} as const
+
+export type FeeKind = (typeof FeeKind)[keyof typeof FeeKind]
+
+
+export const FeeBasis = {
+  percent: 'percent',
+  fixed: 'fixed',
+  spread: 'spread'
+} as const
+
+export type FeeBasis = (typeof FeeBasis)[keyof typeof FeeBasis]
+
+
+export const FeeAssetCategory = {
+  crypto: 'crypto',
+  stablecoin: 'stablecoin',
+  metal: 'metal',
+  treasury: 'treasury',
+  fund: 'fund',
+  other: 'other'
+} as const
+
+export type FeeAssetCategory = (typeof FeeAssetCategory)[keyof typeof FeeAssetCategory]

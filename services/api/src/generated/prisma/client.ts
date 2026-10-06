@@ -128,6 +128,19 @@ export type AssetPrice = Prisma.AssetPriceModel
  */
 export type RedemptionRequest = Prisma.RedemptionRequestModel
 /**
+ * Model FeeRule
+ * A fee, as data.
+ * 
+ * Changing a number here must not require a deploy: a fee is a commercial
+ * term, and it changes because counsel read a contract or a promotion ended.
+ * Both are business events.
+ * 
+ * There is deliberately no column for an adjusted price. Correnthian never
+ * earns by mispricing an asset, and a fee is always a named line on a
+ * breakdown — see the security note in the migration.
+ */
+export type FeeRule = Prisma.FeeRuleModel
+/**
  * Model JurisdictionRule
  * 
  */

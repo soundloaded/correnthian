@@ -14,6 +14,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { CoreModule } from './common/core.module.js';
 import { AppConfigModule } from './config/config.module.js';
 import { DevicesModule } from './devices/devices.module.js';
+import { FeesModule } from './fees/fees.module.js';
 import { HealthModule } from './health/health.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { PortfolioModule } from './portfolio/portfolio.module.js';
@@ -66,6 +67,7 @@ import { WalletsModule } from './wallets/wallets.module.js';
     ChainsModule,
     ComplianceModule,
     ProvidersModule,
+    FeesModule,
     SwapsModule,
     TransactionsModule,
     MetalsModule,

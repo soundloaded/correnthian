@@ -412,6 +412,7 @@ export const ModelName = {
   PortfolioSnapshot: 'PortfolioSnapshot',
   AssetPrice: 'AssetPrice',
   RedemptionRequest: 'RedemptionRequest',
+  FeeRule: 'FeeRule',
   JurisdictionRule: 'JurisdictionRule',
   AuditLog: 'AuditLog',
   Notification: 'Notification',
@@ -432,7 +433,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "session" | "device" | "kycProfile" | "wallet" | "walletAccount" | "issuer" | "asset" | "chain" | "provider" | "swapQuote" | "transaction" | "portfolioSnapshot" | "assetPrice" | "redemptionRequest" | "jurisdictionRule" | "auditLog" | "notification" | "featureFlag" | "idempotencyRecord"
+    modelProps: "user" | "session" | "device" | "kycProfile" | "wallet" | "walletAccount" | "issuer" | "asset" | "chain" | "provider" | "swapQuote" | "transaction" | "portfolioSnapshot" | "assetPrice" | "redemptionRequest" | "feeRule" | "jurisdictionRule" | "auditLog" | "notification" | "featureFlag" | "idempotencyRecord"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1546,6 +1547,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    FeeRule: {
+      payload: Prisma.$FeeRulePayload<ExtArgs>
+      fields: Prisma.FeeRuleFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.FeeRuleFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeeRulePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.FeeRuleFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeeRulePayload>
+        }
+        findFirst: {
+          args: Prisma.FeeRuleFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeeRulePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.FeeRuleFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeeRulePayload>
+        }
+        findMany: {
+          args: Prisma.FeeRuleFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeeRulePayload>[]
+        }
+        create: {
+          args: Prisma.FeeRuleCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeeRulePayload>
+        }
+        createMany: {
+          args: Prisma.FeeRuleCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.FeeRuleCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeeRulePayload>[]
+        }
+        delete: {
+          args: Prisma.FeeRuleDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeeRulePayload>
+        }
+        update: {
+          args: Prisma.FeeRuleUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeeRulePayload>
+        }
+        deleteMany: {
+          args: Prisma.FeeRuleDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.FeeRuleUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.FeeRuleUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeeRulePayload>[]
+        }
+        upsert: {
+          args: Prisma.FeeRuleUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeeRulePayload>
+        }
+        aggregate: {
+          args: Prisma.FeeRuleAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateFeeRule>
+        }
+        groupBy: {
+          args: Prisma.FeeRuleGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FeeRuleGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.FeeRuleCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FeeRuleCountAggregateOutputType> | number
+        }
+      }
+    }
     JurisdictionRule: {
       payload: Prisma.$JurisdictionRulePayload<ExtArgs>
       fields: Prisma.JurisdictionRuleFieldRefs
@@ -2248,6 +2323,34 @@ export const RedemptionRequestScalarFieldEnum = {
 export type RedemptionRequestScalarFieldEnum = (typeof RedemptionRequestScalarFieldEnum)[keyof typeof RedemptionRequestScalarFieldEnum]
 
 
+export const FeeRuleScalarFieldEnum = {
+  id: 'id',
+  operation: 'operation',
+  kind: 'kind',
+  basis: 'basis',
+  label: 'label',
+  rateBps: 'rateBps',
+  fixedUsd: 'fixedUsd',
+  assetId: 'assetId',
+  assetCategory: 'assetCategory',
+  providerSlug: 'providerSlug',
+  country: 'country',
+  region: 'region',
+  minNotionalUsd: 'minNotionalUsd',
+  maxNotionalUsd: 'maxNotionalUsd',
+  priority: 'priority',
+  effectiveFrom: 'effectiveFrom',
+  effectiveUntil: 'effectiveUntil',
+  active: 'active',
+  createdById: 'createdById',
+  updatedById: 'updatedById',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type FeeRuleScalarFieldEnum = (typeof FeeRuleScalarFieldEnum)[keyof typeof FeeRuleScalarFieldEnum]
+
+
 export const JurisdictionRuleScalarFieldEnum = {
   id: 'id',
   country: 'country',
@@ -2730,6 +2833,62 @@ export type ListEnumRedemptionStateFieldRefInput<$PrismaModel> = FieldRefInputTy
 
 
 /**
+ * Reference to a field of type 'FeeOperation'
+ */
+export type EnumFeeOperationFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FeeOperation'>
+    
+
+
+/**
+ * Reference to a field of type 'FeeOperation[]'
+ */
+export type ListEnumFeeOperationFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FeeOperation[]'>
+    
+
+
+/**
+ * Reference to a field of type 'FeeKind'
+ */
+export type EnumFeeKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FeeKind'>
+    
+
+
+/**
+ * Reference to a field of type 'FeeKind[]'
+ */
+export type ListEnumFeeKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FeeKind[]'>
+    
+
+
+/**
+ * Reference to a field of type 'FeeBasis'
+ */
+export type EnumFeeBasisFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FeeBasis'>
+    
+
+
+/**
+ * Reference to a field of type 'FeeBasis[]'
+ */
+export type ListEnumFeeBasisFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FeeBasis[]'>
+    
+
+
+/**
+ * Reference to a field of type 'FeeAssetCategory'
+ */
+export type EnumFeeAssetCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FeeAssetCategory'>
+    
+
+
+/**
+ * Reference to a field of type 'FeeAssetCategory[]'
+ */
+export type ListEnumFeeAssetCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FeeAssetCategory[]'>
+    
+
+
+/**
  * Reference to a field of type 'AuditOutcome'
  */
 export type EnumAuditOutcomeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AuditOutcome'>
@@ -2936,6 +3095,7 @@ export type GlobalOmitConfig = {
   portfolioSnapshot?: Prisma.PortfolioSnapshotOmit
   assetPrice?: Prisma.AssetPriceOmit
   redemptionRequest?: Prisma.RedemptionRequestOmit
+  feeRule?: Prisma.FeeRuleOmit
   jurisdictionRule?: Prisma.JurisdictionRuleOmit
   auditLog?: Prisma.AuditLogOmit
   notification?: Prisma.NotificationOmit
