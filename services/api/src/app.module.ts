@@ -21,6 +21,7 @@ import { PricingModule } from './pricing/pricing.module.js';
 import { ProvidersModule } from './providers/providers.module.js';
 import { RedisModule } from './redis/redis.module.js';
 import { SwapsModule } from './swaps/swaps.module.js';
+import { TransactionsModule } from './transactions/transactions.module.js';
 import { UsersModule } from './users/users.module.js';
 import { WalletsModule } from './wallets/wallets.module.js';
 
@@ -54,6 +55,7 @@ import { WalletsModule } from './wallets/wallets.module.js';
     ComplianceModule,
     ProvidersModule,
     SwapsModule,
+    TransactionsModule,
     MetalsModule,
     IssuersModule,
     PricingModule,

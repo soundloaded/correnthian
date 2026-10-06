@@ -74,7 +74,18 @@ export type Provider = Prisma.ProviderModel
 export type SwapQuote = Prisma.SwapQuoteModel
 /**
  * Model Transaction
+ * A record of intended or completed chain activity.
  * 
+ * TWO INVARIANTS, both enforced by `TransactionService` and asserted in
+ * `transactions/key-boundary.spec.ts`:
+ * 
+ * 1. This row is never a custody record and must never gain a column that
+ * could hold key material. See the schema header and
+ * `docs/architecture/key-boundary.md`.
+ * 2. There is deliberately NO column for a signed payload. A signed
+ * transaction is a replayable authorisation while its nonce is unspent,
+ * and `redactDeep()` cannot catch one — it is not shaped like a secret.
+ * Storing it here would make this table the best target in the system.
  */
 export type Transaction = Prisma.TransactionModel
 /**
@@ -99,7 +110,7 @@ export type RedemptionRequest = Prisma.RedemptionRequestModel
 export type JurisdictionRule = Prisma.JurisdictionRuleModel
 /**
  * Model AuditLog
- * 
+ * Append-only. Nothing in the application updates or deletes a row here.
  */
 export type AuditLog = Prisma.AuditLogModel
 /**

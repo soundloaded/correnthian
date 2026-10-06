@@ -224,6 +224,7 @@ export type ProviderWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Provider"> | Date | string
   quotes?: Prisma.SwapQuoteListRelationFilter
   redemptions?: Prisma.RedemptionRequestListRelationFilter
+  transactions?: Prisma.TransactionListRelationFilter
 }
 
 export type ProviderOrderByWithRelationInput = {
@@ -240,6 +241,7 @@ export type ProviderOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   quotes?: Prisma.SwapQuoteOrderByRelationAggregateInput
   redemptions?: Prisma.RedemptionRequestOrderByRelationAggregateInput
+  transactions?: Prisma.TransactionOrderByRelationAggregateInput
 }
 
 export type ProviderWhereUniqueInput = Prisma.AtLeast<{
@@ -259,6 +261,7 @@ export type ProviderWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"Provider"> | Date | string
   quotes?: Prisma.SwapQuoteListRelationFilter
   redemptions?: Prisma.RedemptionRequestListRelationFilter
+  transactions?: Prisma.TransactionListRelationFilter
 }, "id" | "slug">
 
 export type ProviderOrderByWithAggregationInput = {
@@ -309,6 +312,7 @@ export type ProviderCreateInput = {
   updatedAt?: Date | string
   quotes?: Prisma.SwapQuoteCreateNestedManyWithoutProviderInput
   redemptions?: Prisma.RedemptionRequestCreateNestedManyWithoutProviderInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutProviderInput
 }
 
 export type ProviderUncheckedCreateInput = {
@@ -325,6 +329,7 @@ export type ProviderUncheckedCreateInput = {
   updatedAt?: Date | string
   quotes?: Prisma.SwapQuoteUncheckedCreateNestedManyWithoutProviderInput
   redemptions?: Prisma.RedemptionRequestUncheckedCreateNestedManyWithoutProviderInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutProviderInput
 }
 
 export type ProviderUpdateInput = {
@@ -341,6 +346,7 @@ export type ProviderUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   quotes?: Prisma.SwapQuoteUpdateManyWithoutProviderNestedInput
   redemptions?: Prisma.RedemptionRequestUpdateManyWithoutProviderNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutProviderNestedInput
 }
 
 export type ProviderUncheckedUpdateInput = {
@@ -357,6 +363,7 @@ export type ProviderUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   quotes?: Prisma.SwapQuoteUncheckedUpdateManyWithoutProviderNestedInput
   redemptions?: Prisma.RedemptionRequestUncheckedUpdateManyWithoutProviderNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutProviderNestedInput
 }
 
 export type ProviderCreateManyInput = {
@@ -482,6 +489,22 @@ export type ProviderUpdateOneWithoutQuotesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ProviderUpdateToOneWithWhereWithoutQuotesInput, Prisma.ProviderUpdateWithoutQuotesInput>, Prisma.ProviderUncheckedUpdateWithoutQuotesInput>
 }
 
+export type ProviderCreateNestedOneWithoutTransactionsInput = {
+  create?: Prisma.XOR<Prisma.ProviderCreateWithoutTransactionsInput, Prisma.ProviderUncheckedCreateWithoutTransactionsInput>
+  connectOrCreate?: Prisma.ProviderCreateOrConnectWithoutTransactionsInput
+  connect?: Prisma.ProviderWhereUniqueInput
+}
+
+export type ProviderUpdateOneWithoutTransactionsNestedInput = {
+  create?: Prisma.XOR<Prisma.ProviderCreateWithoutTransactionsInput, Prisma.ProviderUncheckedCreateWithoutTransactionsInput>
+  connectOrCreate?: Prisma.ProviderCreateOrConnectWithoutTransactionsInput
+  upsert?: Prisma.ProviderUpsertWithoutTransactionsInput
+  disconnect?: Prisma.ProviderWhereInput | boolean
+  delete?: Prisma.ProviderWhereInput | boolean
+  connect?: Prisma.ProviderWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProviderUpdateToOneWithWhereWithoutTransactionsInput, Prisma.ProviderUpdateWithoutTransactionsInput>, Prisma.ProviderUncheckedUpdateWithoutTransactionsInput>
+}
+
 export type ProviderCreateNestedOneWithoutRedemptionsInput = {
   create?: Prisma.XOR<Prisma.ProviderCreateWithoutRedemptionsInput, Prisma.ProviderUncheckedCreateWithoutRedemptionsInput>
   connectOrCreate?: Prisma.ProviderCreateOrConnectWithoutRedemptionsInput
@@ -509,6 +532,7 @@ export type ProviderCreateWithoutQuotesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   redemptions?: Prisma.RedemptionRequestCreateNestedManyWithoutProviderInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutProviderInput
 }
 
 export type ProviderUncheckedCreateWithoutQuotesInput = {
@@ -524,6 +548,7 @@ export type ProviderUncheckedCreateWithoutQuotesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   redemptions?: Prisma.RedemptionRequestUncheckedCreateNestedManyWithoutProviderInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutProviderInput
 }
 
 export type ProviderCreateOrConnectWithoutQuotesInput = {
@@ -555,6 +580,7 @@ export type ProviderUpdateWithoutQuotesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   redemptions?: Prisma.RedemptionRequestUpdateManyWithoutProviderNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutProviderNestedInput
 }
 
 export type ProviderUncheckedUpdateWithoutQuotesInput = {
@@ -569,6 +595,87 @@ export type ProviderUncheckedUpdateWithoutQuotesInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  redemptions?: Prisma.RedemptionRequestUncheckedUpdateManyWithoutProviderNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutProviderNestedInput
+}
+
+export type ProviderCreateWithoutTransactionsInput = {
+  id?: string
+  slug: string
+  name: string
+  category: $Enums.ProviderCategory
+  status?: $Enums.ProviderStatus
+  lastHealth?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  lastCheckedAt?: Date | string | null
+  capabilities?: Prisma.ProviderCreatecapabilitiesInput | string[]
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  quotes?: Prisma.SwapQuoteCreateNestedManyWithoutProviderInput
+  redemptions?: Prisma.RedemptionRequestCreateNestedManyWithoutProviderInput
+}
+
+export type ProviderUncheckedCreateWithoutTransactionsInput = {
+  id?: string
+  slug: string
+  name: string
+  category: $Enums.ProviderCategory
+  status?: $Enums.ProviderStatus
+  lastHealth?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  lastCheckedAt?: Date | string | null
+  capabilities?: Prisma.ProviderCreatecapabilitiesInput | string[]
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  quotes?: Prisma.SwapQuoteUncheckedCreateNestedManyWithoutProviderInput
+  redemptions?: Prisma.RedemptionRequestUncheckedCreateNestedManyWithoutProviderInput
+}
+
+export type ProviderCreateOrConnectWithoutTransactionsInput = {
+  where: Prisma.ProviderWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProviderCreateWithoutTransactionsInput, Prisma.ProviderUncheckedCreateWithoutTransactionsInput>
+}
+
+export type ProviderUpsertWithoutTransactionsInput = {
+  update: Prisma.XOR<Prisma.ProviderUpdateWithoutTransactionsInput, Prisma.ProviderUncheckedUpdateWithoutTransactionsInput>
+  create: Prisma.XOR<Prisma.ProviderCreateWithoutTransactionsInput, Prisma.ProviderUncheckedCreateWithoutTransactionsInput>
+  where?: Prisma.ProviderWhereInput
+}
+
+export type ProviderUpdateToOneWithWhereWithoutTransactionsInput = {
+  where?: Prisma.ProviderWhereInput
+  data: Prisma.XOR<Prisma.ProviderUpdateWithoutTransactionsInput, Prisma.ProviderUncheckedUpdateWithoutTransactionsInput>
+}
+
+export type ProviderUpdateWithoutTransactionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  category?: Prisma.EnumProviderCategoryFieldUpdateOperationsInput | $Enums.ProviderCategory
+  status?: Prisma.EnumProviderStatusFieldUpdateOperationsInput | $Enums.ProviderStatus
+  lastHealth?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  lastCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  capabilities?: Prisma.ProviderUpdatecapabilitiesInput | string[]
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  quotes?: Prisma.SwapQuoteUpdateManyWithoutProviderNestedInput
+  redemptions?: Prisma.RedemptionRequestUpdateManyWithoutProviderNestedInput
+}
+
+export type ProviderUncheckedUpdateWithoutTransactionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  category?: Prisma.EnumProviderCategoryFieldUpdateOperationsInput | $Enums.ProviderCategory
+  status?: Prisma.EnumProviderStatusFieldUpdateOperationsInput | $Enums.ProviderStatus
+  lastHealth?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  lastCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  capabilities?: Prisma.ProviderUpdatecapabilitiesInput | string[]
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  quotes?: Prisma.SwapQuoteUncheckedUpdateManyWithoutProviderNestedInput
   redemptions?: Prisma.RedemptionRequestUncheckedUpdateManyWithoutProviderNestedInput
 }
 
@@ -585,6 +692,7 @@ export type ProviderCreateWithoutRedemptionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   quotes?: Prisma.SwapQuoteCreateNestedManyWithoutProviderInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutProviderInput
 }
 
 export type ProviderUncheckedCreateWithoutRedemptionsInput = {
@@ -600,6 +708,7 @@ export type ProviderUncheckedCreateWithoutRedemptionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   quotes?: Prisma.SwapQuoteUncheckedCreateNestedManyWithoutProviderInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutProviderInput
 }
 
 export type ProviderCreateOrConnectWithoutRedemptionsInput = {
@@ -631,6 +740,7 @@ export type ProviderUpdateWithoutRedemptionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   quotes?: Prisma.SwapQuoteUpdateManyWithoutProviderNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutProviderNestedInput
 }
 
 export type ProviderUncheckedUpdateWithoutRedemptionsInput = {
@@ -646,6 +756,7 @@ export type ProviderUncheckedUpdateWithoutRedemptionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   quotes?: Prisma.SwapQuoteUncheckedUpdateManyWithoutProviderNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutProviderNestedInput
 }
 
 
@@ -656,11 +767,13 @@ export type ProviderUncheckedUpdateWithoutRedemptionsInput = {
 export type ProviderCountOutputType = {
   quotes: number
   redemptions: number
+  transactions: number
 }
 
 export type ProviderCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   quotes?: boolean | ProviderCountOutputTypeCountQuotesArgs
   redemptions?: boolean | ProviderCountOutputTypeCountRedemptionsArgs
+  transactions?: boolean | ProviderCountOutputTypeCountTransactionsArgs
 }
 
 /**
@@ -687,6 +800,13 @@ export type ProviderCountOutputTypeCountRedemptionsArgs<ExtArgs extends runtime.
   where?: Prisma.RedemptionRequestWhereInput
 }
 
+/**
+ * ProviderCountOutputType without action
+ */
+export type ProviderCountOutputTypeCountTransactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TransactionWhereInput
+}
+
 
 export type ProviderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -702,6 +822,7 @@ export type ProviderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   updatedAt?: boolean
   quotes?: boolean | Prisma.Provider$quotesArgs<ExtArgs>
   redemptions?: boolean | Prisma.Provider$redemptionsArgs<ExtArgs>
+  transactions?: boolean | Prisma.Provider$transactionsArgs<ExtArgs>
   _count?: boolean | Prisma.ProviderCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["provider"]>
 
@@ -751,6 +872,7 @@ export type ProviderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs =
 export type ProviderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   quotes?: boolean | Prisma.Provider$quotesArgs<ExtArgs>
   redemptions?: boolean | Prisma.Provider$redemptionsArgs<ExtArgs>
+  transactions?: boolean | Prisma.Provider$transactionsArgs<ExtArgs>
   _count?: boolean | Prisma.ProviderCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ProviderIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -761,6 +883,11 @@ export type $ProviderPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
   objects: {
     quotes: Prisma.$SwapQuotePayload<ExtArgs>[]
     redemptions: Prisma.$RedemptionRequestPayload<ExtArgs>[]
+    /**
+     * Only populated for a transaction a provider actually settled. A
+     * self-custodial send has no provider, and must not be given one.
+     */
+    transactions: Prisma.$TransactionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1176,6 +1303,7 @@ export interface Prisma__ProviderClient<T, Null = never, ExtArgs extends runtime
   readonly [Symbol.toStringTag]: "PrismaPromise"
   quotes<T extends Prisma.Provider$quotesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Provider$quotesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SwapQuotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   redemptions<T extends Prisma.Provider$redemptionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Provider$redemptionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RedemptionRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  transactions<T extends Prisma.Provider$transactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Provider$transactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1654,6 +1782,30 @@ export type Provider$redemptionsArgs<ExtArgs extends runtime.Types.Extensions.In
   take?: number
   skip?: number
   distinct?: Prisma.RedemptionRequestScalarFieldEnum | Prisma.RedemptionRequestScalarFieldEnum[]
+}
+
+/**
+ * Provider.transactions
+ */
+export type Provider$transactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Transaction
+   */
+  select?: Prisma.TransactionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Transaction
+   */
+  omit?: Prisma.TransactionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TransactionInclude<ExtArgs> | null
+  where?: Prisma.TransactionWhereInput
+  orderBy?: Prisma.TransactionOrderByWithRelationInput | Prisma.TransactionOrderByWithRelationInput[]
+  cursor?: Prisma.TransactionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TransactionScalarFieldEnum | Prisma.TransactionScalarFieldEnum[]
 }
 
 /**

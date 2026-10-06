@@ -26,11 +26,12 @@ export class AuditController {
 
   /**
    * Declared last so it cannot shadow the literal `actor/:actorId` segment
-   * above. It exists because the list withholds `metadata`: reading one entry's
-   * redacted payload is an investigation, not something to put in a table.
+   * above. It exists because the list withholds `before`/`after`/`metadata`:
+   * reading one entry's payload is an investigation, not something to put in a
+   * table.
    */
   @Get(':id')
-  @ApiOperation({ summary: 'One audit entry, including its redacted metadata' })
+  @ApiOperation({ summary: 'One audit entry, including its before/after and redacted metadata' })
   findOne(@Param('id') id: string) {
     return this.audit.findById(id);
   }

@@ -62,6 +62,22 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
   let fixtureActorEmail: string | null = null;
   let fixtureProviderName: string | null = null;
 
+  /**
+   * Transaction fixtures.
+   *
+   * Isolated behind a dedicated wallet so the assertions do not depend on the
+   * transaction table being empty — it is shared with every other run against
+   * this database, and a listing test that assumes page one is a test that
+   * passes until it does not.
+   */
+  const FIXTURE_WALLET_ADDRESS = '0x00000000000000000000000000000000000000fe';
+  const FIXTURE_DESTINATION = '0x00000000000000000000000000000000000000ff';
+  let fixtureWalletId = '';
+  let fixtureAssetRef = '';
+  const fixtureTxIds: string[] = [];
+  /** Every request this suite made that should leave an audit line. */
+  const requestIds: string[] = [];
+
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
@@ -201,6 +217,70 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     fixtureAuditId = entry.id;
     fixtureActorEmail = actor.email;
     fixtureProviderName = provider?.name ?? null;
+
+    await seedTransactionFixtures(actor.id);
+  }
+
+  /**
+   * A wallet of this suite's own, an asset that lives on the same chain, and
+   * two transactions in distinct states.
+   *
+   * The wallet is reassigned to the admin on every run: `POST /transactions`
+   * takes its owner from the wallet, so a fixture left owned by a previous
+   * run's account would be a 404 rather than a contract failure.
+   */
+  async function seedTransactionFixtures(adminId: string) {
+    const chain = await prisma.chain.findFirst({ where: { enabled: true, family: 'evm' } });
+    if (!chain) throw new Error('The contract suite needs an enabled EVM chain.');
+    const asset = await prisma.asset.findFirst({
+      where: { chainId: chain.id, enabled: true, transferSupported: true },
+    });
+    if (!asset) {
+      throw new Error(`The contract suite needs a transferable asset on chain ${chain.id}.`);
+    }
+
+    const wallet = await prisma.wallet.upsert({
+      where: { chainId_address: { chainId: chain.id, address: FIXTURE_WALLET_ADDRESS } },
+      update: { userId: adminId },
+      create: {
+        userId: adminId,
+        chainId: chain.id,
+        address: FIXTURE_WALLET_ADDRESS,
+        kind: 'smart',
+        label: 'contract-spec fixture',
+      },
+    });
+    fixtureWalletId = wallet.id;
+    fixtureAssetRef = asset.assetId;
+
+    // Oldest first, and a second apart, so the keyset ordering is a real
+    // ordering rather than a tie-break on id.
+    const base = Date.now() - 120_000;
+    const states = ['created', 'pending'] as const;
+    for (const [i, state] of states.entries()) {
+      const createdAt = new Date(base + i * 1000);
+      const row = await prisma.transaction.create({
+        data: {
+          userId: adminId,
+          walletId: wallet.id,
+          assetId: asset.id,
+          chainId: chain.id,
+          direction: 'out',
+          state,
+          amountRaw: '100000000',
+          destination: FIXTURE_DESTINATION,
+          txHash: state === 'created' ? null : `0x${String(i + 1).repeat(64)}`,
+          confirmations: state === 'pending' ? 3 : 0,
+          requiredConfirmations: 12,
+          createdAt,
+          expiresAt: new Date(createdAt.getTime() + 900_000),
+        },
+      });
+      fixtureTxIds.push(row.id);
+    }
+    if (fixtureTxIds.length !== states.length) {
+      throw new Error(`Expected ${states.length} transaction fixtures, created ${fixtureTxIds.length}.`);
+    }
   }
 
   afterAll(async () => {
@@ -209,6 +289,22 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     // path, and this row is one the test created minutes ago. Leaving it
     // behind would put `contract.spec.probe` in an operator's audit view.
     if (fixtureAuditId) await prisma.auditLog.deleteMany({ where: { id: fixtureAuditId } });
+
+    // The audit rows this suite caused, found by the request id the API
+    // echoed back. Deleting by request is the only way to catch the ones the
+    // global interceptor wrote, which carry a controller name rather than a
+    // target this suite can name.
+    if (requestIds.length > 0) {
+      await prisma.auditLog.deleteMany({ where: { requestId: { in: requestIds } } });
+    }
+    // By wallet rather than by the ids this run remembered. A run that died
+    // half way through never recorded what it created, and a suite that only
+    // cleans up when it passes is a suite that leaves debris in an operator's
+    // table every time it fails.
+    if (fixtureWalletId) {
+      await prisma.transaction.deleteMany({ where: { walletId: fixtureWalletId } });
+      await prisma.wallet.deleteMany({ where: { id: fixtureWalletId } });
+    }
     if (fixtureQuoteIds.length > 0) {
       await prisma.swapQuote.deleteMany({ where: { id: { in: fixtureQuoteIds } } });
     }
@@ -263,6 +359,9 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     ['GET /swaps/quotes/stats', '/swaps/quotes/stats'],
     ['GET /swaps/quotes', '/swaps/quotes'],
     ['GET /audit', '/audit'],
+    ['GET /transactions', '/transactions'],
+    ['GET /transactions/stats', '/transactions/stats'],
+    ['GET /transactions/mine', '/transactions/mine'],
   ];
 
   it('authenticates as the seeded admin', () => {
@@ -480,5 +579,177 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     const res = await get('/audit/00000000000000000000000000');
     expect(res.status).toBe(404);
     expect(res.body).toHaveProperty('error.code', 'not_found');
+  });
+
+  // --- transactions ---------------------------------------------------------
+
+  /**
+   * A mutating request that this suite will look for in the trail.
+   *
+   * The `X-Request-Id` the API echoes back is the only handle on the audit
+   * rows a request caused, which is the reason the header exists.
+   */
+  async function mutate(path: string, body: unknown) {
+    const res = await request(app.getHttpServer())
+      .post(path)
+      .set('Authorization', `Bearer ${token}`)
+      .send(body as object);
+    const requestId = res.headers['x-request-id'];
+    if (typeof requestId === 'string') requestIds.push(requestId);
+    return { res, requestId };
+  }
+
+  it('POST /transactions records an intent, and starts in `created`', async () => {
+    const { res } = await mutate('/transactions', {
+      walletId: fixtureWalletId,
+      assetId: fixtureAssetRef,
+      direction: 'out',
+      amountRaw: '25000000',
+      destination: FIXTURE_DESTINATION,
+    });
+
+    expect(res.status, `${res.status}: ${JSON.stringify(res.body)}`).toBe(201);
+    expect(res.body.state).toBe('created');
+    // Nothing has been signed and nothing exists on the network.
+    expect(res.body.txHash).toBeNull();
+    expect(res.body.signedAt).toBeNull();
+    expect(res.body.broadcastAt).toBeNull();
+  });
+
+  it('POST /transactions/:id/transitions refuses a transition that skips a control', async () => {
+    const { res } = await mutate(`/transactions/${fixtureTxIds[0]}/transitions`, {
+      to: 'broadcast',
+      txHash: `0x${'a'.repeat(64)}`,
+    });
+
+    // 400, not 200-with-a-flag: an out-of-order update means two operators
+    // disagree about what happened, and that is not a success.
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('bad_request');
+    expect(res.body.error.message).toMatch(/from "created" to "broadcast"/);
+
+    // And the row did not move.
+    const after = await get(`/transactions/${fixtureTxIds[0]}`);
+    expect(after.body.state).toBe('created');
+  });
+
+  it('correlates the whole request through one request id, in the response and the trail', async () => {
+    const { res, requestId } = await mutate(`/transactions/${fixtureTxIds[0]}/transitions`, {
+      to: 'confirmed',
+    });
+    expect(res.status).toBe(400);
+    expect(requestId, 'the API must echo the request id it recorded against').toBeTruthy();
+
+    const audit = await get(`/audit?requestId=${requestId}`);
+    expect(audit.status).toBe(200);
+    const rows = CONTRACT_REGISTRY['GET /audit'].parse(audit.body);
+
+    // The global interceptor's line and the domain module's line, both under
+    // the same id — which is what makes a support ticket actionable.
+    expect(rows.length).toBeGreaterThanOrEqual(2);
+    expect(rows.every((r) => r.requestId === requestId)).toBe(true);
+
+    const refused = rows.find((r) => r.action === 'transaction.transition.rejected.confirmed');
+    expect(refused, 'the refusal must be in the trail').toBeDefined();
+
+    // §55's before/after, on a real state-change attempt.
+    const detail = await get(`/audit/${refused?.id}`);
+    expect(detail.status).toBe(200);
+    const parsed = CONTRACT_REGISTRY['GET /audit/:id'].parse(detail.body);
+    expect(parsed.before).toEqual({ state: 'created' });
+    expect(parsed.after).toEqual({ state: 'confirmed' });
+    expect(parsed.outcome).toBe('failure');
+  });
+
+  it('POST /transactions/:id/transitions advances a legal edge and reports the new state', async () => {
+    const { res } = await mutate(`/transactions/${fixtureTxIds[0]}/transitions`, { to: 'signed' });
+    expect(res.status, `${res.status}: ${JSON.stringify(res.body)}`).toBe(201);
+    expect(res.body.state).toBe('signed');
+    expect(res.body.signedAt).not.toBeNull();
+  });
+
+  it('GET /transactions resolves every relation the console would otherwise join', async () => {
+    const res = await get(`/transactions?walletId=${fixtureWalletId}&limit=100`);
+    expect(res.status).toBe(200);
+
+    const parsed = CONTRACT_REGISTRY['GET /transactions'].parse(res.body);
+    expect(parsed.items.length).toBeGreaterThanOrEqual(fixtureTxIds.length);
+
+    for (const row of parsed.items) {
+      expect(row.asset.symbol).not.toBe('');
+      expect(row.chain.name).not.toBe('');
+      expect(row.user.email).not.toBe('');
+      expect(row.wallet.address).toBe(FIXTURE_WALLET_ADDRESS);
+      // The console offers a button per edge; the edges come from the table,
+      // not from a second copy of it in the client.
+      expect(row.permittedNext.length).toBeGreaterThan(0);
+    }
+
+    // The `pending` fixture reports the depth it is waiting on.
+    const pending = parsed.items.find((r) => r.id === fixtureTxIds[1]);
+    expect(pending?.state).toBe('pending');
+    expect(pending?.requiredConfirmations).toBe(12);
+    expect(pending?.confirmations).toBe(3);
+  });
+
+  it('GET /transactions filters by state, and the filter is applied', async () => {
+    const res = await get(`/transactions?walletId=${fixtureWalletId}&state=signed&limit=100`);
+    expect(res.status).toBe(200);
+    const rows = CONTRACT_REGISTRY['GET /transactions'].parse(res.body).items;
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((r) => r.state === 'signed')).toBe(true);
+    expect(rows.map((r) => r.id)).toContain(fixtureTxIds[0]);
+    expect(rows.map((r) => r.id)).not.toContain(fixtureTxIds[1]);
+  });
+
+  it('GET /transactions paginates by keyset without repeating a row', async () => {
+    const first = await get(`/transactions?walletId=${fixtureWalletId}&limit=1`);
+    const page = CONTRACT_REGISTRY['GET /transactions'].parse(first.body);
+    expect(page.items).toHaveLength(1);
+    expect(page.nextCursor).toBeTruthy();
+
+    const second = await get(
+      `/transactions?walletId=${fixtureWalletId}&limit=1&cursor=${page.nextCursor}`,
+    );
+    expect(second.status).toBe(200);
+    const next = CONTRACT_REGISTRY['GET /transactions'].parse(second.body);
+    expect(next.items[0]?.id).not.toBe(page.items[0]?.id);
+  });
+
+  it('GET /transactions/:id matches its contract and adds the chain data the list withholds', async () => {
+    const res = await get(`/transactions/${fixtureTxIds[0]}`);
+    expect(res.status, `${res.status}: ${JSON.stringify(res.body)}`).toBe(200);
+
+    const parsed = CONTRACT_REGISTRY['GET /transactions/:id'].safeParse(res.body);
+    if (!parsed.success) {
+      const detail = parsed.error.issues.map((i) => `  ${i.path.join('.') || '(root)'}: ${i.message}`).join('\n');
+      throw new Error(`/transactions/:id does not match its contract:\n${detail}`);
+    }
+    expect(parsed.data.id).toBe(fixtureTxIds[0]);
+    // The list projection withholds it; the detail is where an investigation
+    // reads it.
+    expect(parsed.data).toHaveProperty('metadata');
+    expect(parsed.data).not.toHaveProperty('signature');
+  });
+
+  it('POST /transactions/:id/observations is support-only and counts confirmations', async () => {
+    // The fixture is `pending` at depth 3 of 12. Observing it below the
+    // threshold must leave it where it is.
+    const below = await mutate(`/transactions/${fixtureTxIds[1]}/observations`, {
+      txHash: `0x${'2'.repeat(64)}`,
+      confirmations: 11,
+      outcome: 'seen',
+    });
+    expect(below.res.status, JSON.stringify(below.res.body)).toBe(201);
+    expect(below.res.body.state).toBe('pending');
+
+    const at = await mutate(`/transactions/${fixtureTxIds[1]}/observations`, {
+      txHash: `0x${'2'.repeat(64)}`,
+      confirmations: 12,
+      outcome: 'seen',
+    });
+    expect(at.res.status, JSON.stringify(at.res.body)).toBe(201);
+    expect(at.res.body.state).toBe('confirmed');
+    expect(at.res.body.confirmedAt).not.toBeNull();
   });
 });

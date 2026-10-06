@@ -295,15 +295,118 @@ export const auditRowSchema = z.object({
   targetType: z.string().nullable(),
   targetId: z.string().nullable(),
   outcome: auditOutcomeSchema,
+  /**
+   * §55's `reason`. In the list rather than only in the detail because it is a
+   * short string and it is the answer to the question an operator opens the
+   * trail with — "why was this disabled" — which they should not have to click
+   * through a row to find.
+   */
+  reason: z.string().nullable(),
   ipAddress: z.string().nullable(),
+  /** §55's `device`. */
+  deviceId: z.string().nullable(),
+  /** §55's `requestId`. Everything one HTTP request did. */
+  requestId: z.string().nullable(),
   createdAt: z.string(),
 });
 
 export const auditListSchema = z.array(auditRowSchema);
 
-/** The detail view adds the metadata the list deliberately withholds. */
+/**
+ * The detail view adds what the list deliberately withholds.
+ *
+ * `before`/`after` are §55's pair: the state of the resource either side of a
+ * state-changing operation. They are objects rather than strings so a console
+ * can render the change rather than print a blob, and `null` is meaningful —
+ * null `before` is a create, null `after` is a delete.
+ */
 export const auditDetailSchema = auditRowSchema.extend({
+  before: z.record(z.string(), z.unknown()).nullable(),
+  after: z.record(z.string(), z.unknown()).nullable(),
   metadata: z.record(z.string(), z.unknown()),
+});
+
+// --- transactions ----------------------------------------------------------
+
+/** Mirrors the Prisma `TxLifecycle` enum — the §21/§62 lifecycle, not a status flag. */
+export const txStateSchema = z.enum([
+  'created', 'signed', 'broadcast', 'pending', 'confirmed', 'failed', 'cancelled', 'expired',
+]);
+export const txDirectionSchema = z.enum(['in', 'out', 'internal']);
+
+/**
+ * One row of the operator's transaction table.
+ *
+ * Every relation is resolved server-side, for the same reason the quote table
+ * resolves its own: a console that joins four tables to render one row cannot
+ * tell "this transaction has no provider" from "we forgot to look".
+ */
+export const transactionRowSchema = z.object({
+  id: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  state: txStateSchema,
+  direction: txDirectionSchema,
+  user: z.object({ id: z.string(), email: z.string() }),
+  wallet: z.object({ id: z.string(), address: z.string() }),
+  chain: z.object({
+    id: z.string(), name: z.string(), family: z.string(), explorerUrl: z.string().nullable(),
+  }),
+  asset: z.object({ assetId: z.string(), symbol: z.string(), name: z.string() }),
+  provider: z.object({ slug: z.string(), name: z.string() }).nullable(),
+
+  amountRaw: z.string(),
+  amountUsd: z.number().nullable(),
+  destination: z.string().nullable(),
+  txHash: z.string().nullable(),
+  feeRaw: z.string().nullable(),
+
+  confirmations: z.number().int(),
+  /** The depth at which this is treated as final, stored per row. */
+  requiredConfirmations: z.number().int(),
+
+  /**
+   * A drop is a fact, not a state. A transaction that left the mempool and was
+   * accepted again later is one row with `dropCount` > 0, not two rows.
+   */
+  dropCount: z.number().int(),
+  droppedAt: z.string().nullable(),
+  lastSeenAt: z.string().nullable(),
+
+  errorCode: z.string().nullable(),
+  errorMessage: z.string().nullable(),
+
+  expiresAt: z.string().nullable(),
+  signedAt: z.string().nullable(),
+  broadcastAt: z.string().nullable(),
+  confirmedAt: z.string().nullable(),
+  failedAt: z.string().nullable(),
+
+  /**
+   * The edges this row may legally take next, from the lifecycle table. Sent to
+   * the client so the console cannot offer a button the API will refuse — and
+   * so a refusal is visibly the same rule rather than a second opinion.
+   */
+  permittedNext: z.array(txStateSchema),
+});
+
+export const transactionListSchema = z.object({
+  items: z.array(transactionRowSchema),
+  nextCursor: z.string().nullable(),
+});
+
+/** The detail view adds the arbitrary chain data the list withholds. */
+export const transactionDetailSchema = transactionRowSchema.extend({
+  metadata: z.unknown().nullable(),
+});
+
+/** An account's own history. Same row shape; a user and an operator must agree. */
+export const myTransactionsSchema = z.array(transactionRowSchema);
+
+export const transactionStatsSchema = z.object({
+  total: z.number(),
+  byState: z.record(z.string(), z.number()),
+  byDirection: z.record(z.string(), z.number()),
 });
 
 // --- misc ------------------------------------------------------------------
@@ -337,4 +440,8 @@ export const CONTRACT_REGISTRY = {
   'GET /swaps/quotes/:id': quoteDetailSchema,
   'GET /audit': auditListSchema,
   'GET /audit/:id': auditDetailSchema,
+  'GET /transactions': transactionListSchema,
+  'GET /transactions/stats': transactionStatsSchema,
+  'GET /transactions/mine': myTransactionsSchema,
+  'GET /transactions/:id': transactionDetailSchema,
 } as const;
