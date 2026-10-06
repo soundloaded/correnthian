@@ -3,19 +3,30 @@ import { ApiState } from '@/components/feedback/api-state';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { relativeTime } from '@/lib/format';
+import { fmtCount, relativeTime } from '@/lib/format';
 import { ProviderStatusSelect } from '@/components/actions/registry-actions';
 import type { Provider } from '@/lib/types';
 
 export const metadata = { title: 'Providers · Correnthian admin' };
 export const dynamic = 'force-dynamic';
 
+/**
+ * `degraded` gets the destructive tone, not `secondary`.
+ *
+ * A degraded provider is still offered on a rail, so it is the state an operator
+ * must act on; grey would read as merely inactive. The word is in the badge
+ * either way — the colour is a scan aid, never the disclosure.
+ */
 const STATUS_TONE = {
   active: 'default',
-  degraded: 'secondary',
+  degraded: 'destructive',
   disabled: 'outline',
-} as const;
+} as const satisfies Record<Provider['status'], 'default' | 'destructive' | 'outline'>;
 
+/**
+ * Status and health only. API credentials live in the secret store, are never
+ * serialised by the API, and so cannot be rendered here even by accident.
+ */
 export default async function ProvidersPage() {
   const result = await apiFetch<Provider[]>('/providers');
 
@@ -46,12 +57,24 @@ export default async function ProvidersPage() {
                 <TableCell>
                   <Badge variant={STATUS_TONE[p.status]}>{p.status}</Badge>
                 </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
+                <TableCell className="font-mono text-xs text-muted-foreground">
                   {p.capabilities.length ? p.capabilities.join(', ') : '—'}
                 </TableCell>
-                <TableCell className="text-right font-mono tabular-nums">{p._count.quotes}</TableCell>
-                <TableCell className="text-right font-mono tabular-nums">{p._count.redemptions}</TableCell>
-                <TableCell className="text-muted-foreground">{relativeTime(p.lastCheckedAt)}</TableCell>
+                <TableCell className="text-right font-mono tabular-nums">
+                  {fmtCount(p._count.quotes)}
+                </TableCell>
+                <TableCell className="text-right font-mono tabular-nums">
+                  {fmtCount(p._count.redemptions)}
+                </TableCell>
+                <TableCell
+                  className={
+                    p.lastCheckedAt
+                      ? 'font-mono text-xs'
+                      : 'font-mono text-xs text-destructive'
+                  }
+                >
+                  {p.lastCheckedAt ? relativeTime(p.lastCheckedAt) : 'never checked'}
+                </TableCell>
                 <TableCell><ProviderStatusSelect slug={p.slug} /></TableCell>
               </TableRow>
             ))}
@@ -67,7 +90,8 @@ export default async function ProvidersPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Providers</h1>
         <p className="text-sm text-muted-foreground">
           Status and health only. API credentials live in the secret store and are
-          never in this table.
+          never in this table — the admin shows whether a rail is usable, not how to
+          call it.
         </p>
       </header>
       <ApiState
