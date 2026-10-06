@@ -139,6 +139,54 @@ export class IssuersService {
     return updated;
   }
 
+  /**
+   * Record licence evidence against an existing issuer.
+   *
+   * Without this, an issuer created before its licences were known could never
+   * satisfy the verification gate — the only way to set them was at creation.
+   * A downgrade of the tier follows automatically: an issuer that loses its
+   * licence evidence must not keep claiming issuer-verified.
+   */
+  async recordLicences(
+    slug: string,
+    input: { licenseTypes?: string[]; licenseRefs?: string[]; website?: string | null; notes?: string | null },
+    actor: { id: string; role: string },
+  ) {
+    const issuer = await this.prisma.issuer.findUnique({ where: { slug } });
+    if (!issuer) throw AppError.notFound('Issuer not found');
+
+    const licenseTypes = input.licenseTypes ?? issuer.licenseTypes;
+    const licenseRefs = input.licenseRefs ?? issuer.licenseRefs;
+
+    // Verification depends on evidence existing. Remove evidence and the
+    // verification must go with it, or the badge outlives its basis.
+    const evidenceGone = licenseTypes.length === 0 || licenseRefs.length === 0;
+    const tier = evidenceGone && issuer.verifiedTier !== 'unverified' ? 'unverified' : issuer.verifiedTier;
+
+    const updated = await this.prisma.issuer.update({
+      where: { slug },
+      data: {
+        licenseTypes,
+        licenseRefs,
+        ...(input.website !== undefined ? { website: input.website } : {}),
+        ...(input.notes !== undefined ? { notes: input.notes } : {}),
+        verifiedTier: tier,
+      },
+    });
+
+    if (tier !== issuer.verifiedTier) {
+      await this.prisma.asset.updateMany({ where: { issuerId: issuer.id }, data: { verifiedTier: tier } });
+    }
+
+    await this.audit.record({
+      actorId: actor.id, actorRole: actor.role,
+      action: 'issuer.licences.recorded', targetType: 'Issuer', targetId: issuer.id,
+      metadata: { slug, licenseTypes, licenseRefs, tierChanged: tier !== issuer.verifiedTier },
+    });
+
+    return updated;
+  }
+
   async addRiskFlag(slug: string, flag: string, actor: { id: string; role: string }) {
     const issuer = await this.prisma.issuer.findUnique({ where: { slug } });
     if (!issuer) throw AppError.notFound('Issuer not found');

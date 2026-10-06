@@ -91,5 +91,6 @@ export function toDomainAsset(row: Prisma.AssetGetPayload<{ include: { issuer: t
       accentColor: row.accentColor,
       category: CATEGORY[row.category],
     },
+    enabled: row.enabled,
   };
 }

@@ -114,3 +114,28 @@ export interface Provider {
   notes: string | null;
   _count: { quotes: number; redemptions: number };
 }
+
+export interface UserDetail {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+  displayName: string | null;
+  country: string | null;
+  region: string | null;
+  kycStatus: KycStatus;
+  emailVerifiedAt: string | null;
+  lastLoginAt: string | null;
+  createdAt: string;
+  wallets: Array<{
+    id: string; address: string; chainId: string; kind: string;
+    label: string | null; deployed: boolean; isPrimary: boolean; createdAt: string;
+  }>;
+  devices: Array<{
+    id: string; platform: string; label: string; trustedAt: string; lastSeenAt: string;
+  }>;
+  kyc: {
+    status: KycStatus; provider: string | null; providerRef: string | null;
+    jurisdiction: string | null; reviewedAt: string | null;
+  } | null;
+}

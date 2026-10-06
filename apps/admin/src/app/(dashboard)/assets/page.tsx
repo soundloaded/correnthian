@@ -3,6 +3,7 @@ import { ApiState } from '@/components/state';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { shortAddress } from '@/lib/format';
+import { AssetActions } from '@/components/admin/asset-actions';
 import type { AssetSummary } from '@/lib/types';
 
 export const metadata = { title: 'Assets · Correnthian admin' };
@@ -73,6 +74,9 @@ export default async function AssetsPage({ searchParams }: PageProps<'/assets'>)
                   Shown to users
                 </p>
                 <p className="text-sm">{row.disclosure}</p>
+              </div>
+              <div className="lg:col-span-2">
+                <AssetActions assetId={a.assetId} enabled={a.enabled} />
               </div>
             </CardContent>
           </Card>

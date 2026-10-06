@@ -104,6 +104,12 @@ export interface Asset {
   readonly trust: Trust;
   readonly trading: TradingCapabilities;
   readonly display: AssetDisplay;
+  /**
+   * Whether the asset is offered to users at all. Part of the domain type
+   * rather than an admin-only concern: an operator toggling this is changing
+   * what users can see and trade, so it is a property of the asset itself.
+   */
+  readonly enabled: boolean;
 }
 
 /** The minimum a caller needs to name an asset unambiguously. */

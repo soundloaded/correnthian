@@ -3,6 +3,7 @@ import { ApiState } from '@/components/state';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ChainActions } from '@/components/admin/registry-actions';
 import type { Chain } from '@/lib/types';
 
 export const metadata = { title: 'Chains · Correnthian admin' };
@@ -24,6 +25,7 @@ export default async function ChainsPage() {
               <TableHead className="text-right">Assets</TableHead>
               <TableHead className="text-right">Wallets</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -42,6 +44,9 @@ export default async function ChainsPage() {
                     </Badge>
                     {c.isTestnet ? <Badge variant="secondary">testnet</Badge> : null}
                   </div>
+                </TableCell>
+                <TableCell>
+                  <ChainActions chainId={c.id} enabled={c.enabled} name={c.name} />
                 </TableCell>
               </TableRow>
             ))}

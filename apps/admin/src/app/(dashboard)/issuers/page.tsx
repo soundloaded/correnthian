@@ -3,6 +3,7 @@ import { ApiState } from '@/components/state';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { fmtDate } from '@/lib/format';
+import { IssuerActions } from '@/components/admin/issuer-actions';
 import type { Issuer } from '@/lib/types';
 
 export const metadata = { title: 'Issuers · Correnthian admin' };
@@ -46,7 +47,8 @@ export default async function IssuersPage() {
                 ) : null}
               </div>
 
-              <div className="space-y-2 rounded-md bg-muted/40 p-3 text-xs">
+              <div className="space-y-2">
+                <div className="rounded-md bg-muted/40 p-3 text-xs">
                 <p className="font-medium uppercase tracking-wide text-muted-foreground">
                   Evidence on file
                 </p>
@@ -66,6 +68,8 @@ export default async function IssuersPage() {
                 {i.notes ? (
                   <p className="text-muted-foreground">{i.notes}</p>
                 ) : null}
+                </div>
+                <IssuerActions slug={i.slug} />
               </div>
             </CardContent>
           </Card>

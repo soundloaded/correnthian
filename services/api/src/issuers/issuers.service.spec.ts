@@ -57,6 +57,45 @@ describe('IssuersService', () => {
     );
   });
 
+  describe('recordLicences', () => {
+    it('clears evidence when given an explicit empty array', async () => {
+      await svc.recordLicences('paxos', { licenseTypes: [], licenseRefs: [] }, actor);
+      expect(issuer.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ licenseTypes: [], licenseRefs: [] }),
+        }),
+      );
+    });
+
+    it('downgrades the tier when its evidence is removed', async () => {
+      // A verified issuer that loses its licence evidence must not keep the
+      // badge — otherwise "verified" outlives its basis.
+      issuer.findUnique.mockResolvedValue(existing({ verifiedTier: 'issuer_verified' }));
+      await svc.recordLicences('paxos', { licenseTypes: [], licenseRefs: [] }, actor);
+      expect(issuer.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ verifiedTier: 'unverified' }),
+        }),
+      );
+    });
+
+    it('leaves licences alone when the fields are omitted', async () => {
+      issuer.findUnique.mockResolvedValue(existing());
+      await svc.recordLicences('paxos', { notes: 'updated only' }, actor);
+      const data = issuer.update.mock.calls[0][0].data;
+      expect(data.licenseTypes).toEqual(existing().licenseTypes);
+      expect(data.licenseRefs).toEqual(existing().licenseRefs);
+    });
+
+    it('propagates the downgrade to every asset from that issuer', async () => {
+      issuer.findUnique.mockResolvedValue(existing({ verifiedTier: 'issuer_verified' }));
+      await svc.recordLicences('paxos', { licenseTypes: [], licenseRefs: [] }, actor);
+      expect(asset.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { verifiedTier: 'unverified' } }),
+      );
+    });
+  });
+
   it('rejects a malformed slug', async () => {
     await expect(
       svc.create({ slug: 'Not A Slug!', name: 'x', jurisdiction: 'us', licenseTypes: [], licenseRefs: [] }, actor),

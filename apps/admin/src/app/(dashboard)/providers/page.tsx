@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { relativeTime } from '@/lib/format';
+import { ProviderStatusSelect } from '@/components/admin/registry-actions';
 import type { Provider } from '@/lib/types';
 
 export const metadata = { title: 'Providers · Correnthian admin' };
@@ -31,6 +32,7 @@ export default async function ProvidersPage() {
               <TableHead className="text-right">Quotes</TableHead>
               <TableHead className="text-right">Redemptions</TableHead>
               <TableHead>Last checked</TableHead>
+              <TableHead>Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -50,6 +52,7 @@ export default async function ProvidersPage() {
                 <TableCell className="text-right font-mono tabular-nums">{p._count.quotes}</TableCell>
                 <TableCell className="text-right font-mono tabular-nums">{p._count.redemptions}</TableCell>
                 <TableCell className="text-muted-foreground">{relativeTime(p.lastCheckedAt)}</TableCell>
+                <TableCell><ProviderStatusSelect slug={p.slug} /></TableCell>
               </TableRow>
             ))}
           </TableBody>

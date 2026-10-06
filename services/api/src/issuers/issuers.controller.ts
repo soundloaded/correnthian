@@ -28,6 +28,16 @@ const tierSchema = z.object({
 
 const riskFlagSchema = z.object({ flag: z.string().min(2).max(80) });
 
+const licencesSchema = z.object({
+  // Optional, and deliberately without a `[]` default: an omitted field means
+  // "leave alone", an explicit `[]` means "there is none". Collapsing the two
+  // makes clearing evidence a silent no-op.
+  licenseTypes: z.array(z.string().max(80)).max(20).optional(),
+  licenseRefs: z.array(z.string().max(120)).max(40).optional(),
+  website: z.string().url().max(300).nullable().optional(),
+  notes: z.string().max(2000).nullable().optional(),
+});
+
 @ApiTags('issuers')
 @ApiBearerAuth()
 @Controller('issuers')
@@ -67,6 +77,13 @@ export class IssuersController {
   @ApiOperation({ summary: 'Set verification tier. Issuer-verified requires evidence.' })
   setTier(@Param('slug') slug: string, @Body(zodPipe(tierSchema)) dto: z.infer<typeof tierSchema>, @CurrentUser() user: AuthenticatedUser) {
     return this.issuers.setVerifiedTier(slug, dto.tier, dto, { id: user.id, role: user.role });
+  }
+
+  @Patch(':slug/licences')
+  @Roles('compliance')
+  @ApiOperation({ summary: 'Record licence evidence. Removing evidence removes the verified tier with it.' })
+  recordLicences(@Param('slug') slug: string, @Body(zodPipe(licencesSchema)) dto: z.infer<typeof licencesSchema>, @CurrentUser() user: AuthenticatedUser) {
+    return this.issuers.recordLicences(slug, dto, { id: user.id, role: user.role });
   }
 
   @Patch(':slug/risk-flags')

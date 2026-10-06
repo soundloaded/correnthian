@@ -46,7 +46,9 @@ export default async function UsersPage({ searchParams }: PageProps<'/users'>) {
             <TableBody>
               {d.items.map((u) => (
                 <TableRow key={u.id}>
-                  <TableCell className="font-medium">{u.email}</TableCell>
+                  <TableCell className="font-medium">
+                    <Link href={`/users/${u.id}`} className="hover:underline">{u.email}</Link>
+                  </TableCell>
                   <TableCell><Badge variant="outline">{u.role}</Badge></TableCell>
                   <TableCell>
                     <Badge variant={KYC_TONE[u.kycStatus] ?? 'outline'}>

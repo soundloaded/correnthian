@@ -73,3 +73,63 @@ async function safeJson<T>(r: Response): Promise<T | null> {
     return null;
   }
 }
+
+/**
+ * A state-changing call.
+ *
+ * Separate from `apiFetch` so the distinction is impossible to miss at the call
+ * site: reads and writes take the same failure vocabulary but only writes
+ * carry a `detail` explaining what was refused.
+ */
+export async function apiSend<T>(
+  path: string,
+  method: 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+  body?: unknown,
+): Promise<ApiResult<T>> {
+  const token = await getToken();
+  if (!token) return { status: 'unauthorised' };
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      cache: 'no-store',
+    });
+  } catch {
+    return {
+      status: 'unavailable',
+      message: 'Cannot reach the Correnthian API. The change was not applied.',
+    };
+  }
+
+  if (response.status === 401) return { status: 'unauthorised' };
+  if (response.status === 403) {
+    const payload = await safeJson<{ error?: { message?: string } }>(response);
+    return {
+      status: 'forbidden',
+      message: payload?.error?.message ?? 'Your role does not permit this action.',
+    };
+  }
+
+  if (!response.ok) {
+    const payload = await safeJson<{ error?: { message?: string; code?: string; detail?: unknown } }>(response);
+    return {
+      status: response.status >= 500 ? 'unavailable' : 'error',
+      message: payload?.error?.message ?? `Request failed (${response.status})`,
+      code: payload?.error?.code,
+    };
+  }
+
+  if (response.status === 204) return { status: 'ok', data: undefined as T };
+  return { status: 'ok', data: (await response.json()) as T };
+}
+
+/** Role rank, mirroring the API's hierarchy. UI gates mirror the server's. */
+const RANK: Record<string, number> = { user: 0, support: 1, compliance: 2, admin: 3, owner: 4 };
+export const roleAtLeast = (actual: string | undefined, required: string): boolean =>
+  (actual ? (RANK[actual] ?? -1) : -1) >= (RANK[required] ?? Infinity);
