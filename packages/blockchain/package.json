@@ -20,7 +20,8 @@
     "build": "tsc -p tsconfig.package.json"
   },
   "dependencies": {
-    "@correnthian/types": "workspace:*"
+    "@correnthian/types": "workspace:*",
+    "viem": "^2.57.3"
   },
   "devDependencies": {
     "vitest": "^2.1.8"

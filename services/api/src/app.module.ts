@@ -3,6 +3,7 @@ import { APP_FILTER } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
 import { AssetsModule } from './assets/assets.module.js';
 import { AuditModule } from './audit/audit.module.js';
+import { BlockchainModule } from './blockchain/blockchain.module.js';
 import { ChainsModule } from './chains/chains.module.js';
 import { ComplianceModule } from './compliance/compliance.module.js';
 import { MetalsModule } from './metals/metals.module.js';
@@ -48,6 +49,7 @@ import { WalletsModule } from './wallets/wallets.module.js';
     DevicesModule,
     AssetsModule,
     AuditModule,
+    BlockchainModule,
     ChainsModule,
     ComplianceModule,
     ProvidersModule,

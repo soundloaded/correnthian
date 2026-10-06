@@ -24,13 +24,31 @@ describe('EVM address validation', () => {
     expect(validateEvmAddress('0xzzc17f958d2ee523a2206206994597c13d831ec7').valid).toBe(false);
   });
 
-  it('refuses a mixed-case address it cannot verify rather than trusting it', () => {
-    // Claims an EIP-55 checksum. We cannot check it, so trusting it would be
-    // exactly the assumption that loses funds on a transposition typo.
-    const mixed = `0xDAC17F958D2eE523A2206206994597C13D831ec7`;
-    const result = validateEvmAddress(mixed);
+  // Canonical EIP-55 vectors. Verification is now real, so a checksummed
+  // address is checked rather than refused — this is the check that catches a
+  // transposed character.
+  it('accepts a valid EIP-55 checksummed address', () => {
+    expect(validateEvmAddress('0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed').valid).toBe(true);
+  });
+
+  it('accepts the second canonical EIP-55 vector', () => {
+    expect(validateEvmAddress('0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359').valid).toBe(true);
+  });
+
+  it('rejects a transposed address that keeps valid hex casing', () => {
+    // One character moved. Without a checksum check this passes every other
+    // test in this file and funds go to an address nobody controls.
+    const valid = '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed';
+    const typo = valid.slice(0, 34) + '9' + valid.slice(35);
+    const result = validateEvmAddress(typo);
     expect(result.valid).toBe(false);
-    expect(result.reason).toMatch(/EIP-55/);
+    expect(result.reason).toMatch(/EIP-55|mistyped/);
+  });
+
+  it('rejects a mixed-case address with a broken checksum', () => {
+    const result = validateEvmAddress('0xDAC17F958D2eE523A2206206994597C13D831ec7');
+    expect(result.valid).toBe(false);
+    expect(result.reason).toMatch(/EIP-55|mistyped/);
   });
 });
 

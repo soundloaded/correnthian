@@ -1,3 +1,5 @@
+import { getAddress, keccak256, toHex } from 'viem';
+
 /**
  * Address validation.
  *
@@ -61,14 +63,34 @@ export function validateEvmAddress(address: string): AddressValidation {
 
   if (isLower || isUpper) return ok('evm', `0x${body.toLowerCase()}`);
 
-  // A mixed-case address asserts an EIP-55 checksum. With no keccak
-  // implementation we cannot confirm the assertion, so we refuse rather than
-  // trust it — a plausible-looking address that silently passes a
-  // transposition typo is worse than a rejection the user can understand.
-  return bad(
-    'evm',
-    'This address is mixed-case, which asserts an EIP-55 checksum that cannot be verified here. Use an all-lowercase address, or a wallet that can produce a checksummed one.',
-  );
+  const expected = toChecksum(body);
+  return expected === body
+    ? ok('evm', address)
+    : bad('evm', 'EIP-55 checksum mismatch — the address is very likely mistyped');
+}
+
+/** Uppercase the hex digits at positions the keccak hash marks as >= 8. */
+/**
+ * keccak-256, the digest EIP-55 is defined against — not NIST sha3-256, which
+ * is a different algorithm and produces a different hash.
+ *
+ * viem applies the correct one. An earlier version of this file reconstructed
+ * the hash from a checksummed address's casing, which is circular: it agrees
+ * with whatever it is fed. Verification has to come from the hash itself.
+ */
+function keccak256Hex(input: string): string {
+  return keccak256(toHex(input)).slice(2);
+}
+
+function toChecksum(body: string): string {
+  const lower = body.toLowerCase();
+  const hash = keccak256Hex(lower);
+  let out = '';
+  for (let i = 0; i < lower.length; i++) {
+    const nibble = hash[i] ?? '0';
+    out += parseInt(nibble, 16) >= 8 ? lower[i]!.toUpperCase() : lower[i]!;
+  }
+  return out;
 }
 
 // --- Bitcoin --------------------------------------------------------------
