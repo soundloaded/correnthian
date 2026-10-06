@@ -1,14 +1,9 @@
 import { Controller, Get, Inject, Param, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { z } from 'zod';
-import { Roles } from '../common/guards/roles.guard.js';
 import { zodPipe } from '../common/pipes/zod-validation.pipe.js';
+import { Roles } from '../common/guards/roles.guard.js';
+import { listAuditSchema, type ListAuditDto } from './dto/list-audit.dto.js';
 import { AuditService } from './audit.service.js';
-
-const querySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(200).default(50),
-  action: z.string().max(80).optional(),
-});
 
 @ApiTags('audit')
 @ApiBearerAuth()
@@ -19,13 +14,24 @@ export class AuditController {
 
   @Get()
   @ApiOperation({ summary: 'Audit trail' })
-  list(@Query(zodPipe(querySchema)) query: z.infer<typeof querySchema>) {
-    return this.audit.list(query.limit, query.action);
+  list(@Query(zodPipe(listAuditSchema)) query: ListAuditDto) {
+    return this.audit.list(query);
   }
 
   @Get('actor/:actorId')
   @ApiOperation({ summary: 'Everything one actor did' })
   forActor(@Param('actorId') actorId: string) {
     return this.audit.forActor(actorId);
+  }
+
+  /**
+   * Declared last so it cannot shadow the literal `actor/:actorId` segment
+   * above. It exists because the list withholds `metadata`: reading one entry's
+   * redacted payload is an investigation, not something to put in a table.
+   */
+  @Get(':id')
+  @ApiOperation({ summary: 'One audit entry, including its redacted metadata' })
+  findOne(@Param('id') id: string) {
+    return this.audit.findById(id);
   }
 }

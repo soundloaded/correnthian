@@ -3,6 +3,7 @@ import { deriveAssetId } from '@correnthian/assets';
 import { AppError } from '../common/errors.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ProvidersService } from '../providers/providers.service.js';
+import type { ListQuotesDto } from './dto/list-quotes.dto.js';
 
 export interface QuoteRequestInput {
   userId?: string;
@@ -15,6 +16,32 @@ export interface QuoteRequestInput {
 
 /** Reject anything that is not a plain positive decimal string. */
 const DECIMAL = /^\d+(\.\d+)?$/;
+
+/** The keyset position: both halves of the sort key, because either alone is ambiguous. */
+interface QuoteCursor {
+  createdAt: Date;
+  id: string;
+}
+
+function encodeCursor(row: { id: string; createdAt: Date }): string {
+  return Buffer.from(JSON.stringify({ t: row.createdAt.toISOString(), i: row.id }), 'utf8').toString('base64url');
+}
+
+function decodeCursor(cursor: string): QuoteCursor {
+  let parsed: { t?: unknown; i?: unknown };
+  try {
+    parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { t?: unknown; i?: unknown };
+  } catch {
+    throw AppError.badRequest('cursor is not a valid pagination cursor');
+  }
+  const createdAt = new Date(String(parsed?.t));
+  if (typeof parsed?.i !== 'string' || Number.isNaN(createdAt.getTime())) {
+    // Silently restarting at page one would hide a client bug behind a page
+    // that looks fine, so this is an error rather than a default.
+    throw AppError.badRequest('cursor is not a valid pagination cursor');
+  }
+  return { createdAt, id: parsed.i };
+}
 
 @Injectable()
 export class SwapsService {
@@ -106,6 +133,88 @@ export class SwapsService {
         provider: { select: { slug: true, name: true, status: true } },
       },
     });
+  }
+
+  /**
+   * The operator's quote table — every account's quotes, not just the caller's.
+   *
+   * Keyset on `createdAt`, tie-broken by `id`. `createdAt` alone is not unique:
+   * two quotes written in the same millisecond are ordinary, and a bare
+   * `createdAt < cursor` predicate then skips or repeats one at every page
+   * boundary. The cursor carries both halves of the sort key.
+   *
+   * Assets and the provider are resolved here rather than in the console. An
+   * admin that joins three tables to render one table has no way to distinguish
+   * "this quote has no provider" from "we forgot to look one up", and the
+   * difference is exactly what an operator is checking.
+   */
+  async listAll(query: ListQuotesDto) {
+    const limit = Math.min(query.limit, 100);
+    const after = query.cursor ? decodeCursor(query.cursor) : null;
+
+    const rows = await this.prisma.swapQuote.findMany({
+      where: {
+        ...(query.state ? { state: query.state } : {}),
+        ...(query.railKind ? { railKind: query.railKind } : {}),
+        ...(after
+          ? {
+              OR: [
+                { createdAt: { lt: after.createdAt } },
+                { createdAt: after.createdAt, id: { lt: after.id } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      select: {
+        id: true,
+        createdAt: true,
+        state: true,
+        railKind: true,
+        railId: true,
+        provider: { select: { slug: true, name: true } },
+        fromAsset: { select: { assetId: true, symbol: true } },
+        toAsset: { select: { assetId: true, symbol: true } },
+        fromAmountRaw: true,
+        toAmountRaw: true,
+        notionalUsd: true,
+        priceImpactBps: true,
+        slippageBps: true,
+        sizeCapUsd: true,
+        executionQuality: true,
+        expiresAt: true,
+      },
+    });
+
+    const hasMore = rows.length > limit;
+    const page = hasMore ? rows.slice(0, limit) : rows;
+    const last = page.at(-1);
+
+    return {
+      items: page.map((row) => ({
+        id: row.id,
+        createdAt: row.createdAt.toISOString(),
+        state: row.state,
+        railKind: row.railKind,
+        railId: row.railId,
+        provider: row.provider,
+        fromAsset: row.fromAsset,
+        toAsset: row.toAsset,
+        fromAmountRaw: row.fromAmountRaw,
+        toAmountRaw: row.toAmountRaw,
+        // Prisma decimals are Decimal objects; a JSON number is what a client
+        // can format without a decimal library.
+        notionalUsd: row.notionalUsd === null ? null : Number(row.notionalUsd),
+        priceImpactBps: row.priceImpactBps,
+        slippageBps: row.slippageBps,
+        sizeCapUsd: row.sizeCapUsd === null ? null : Number(row.sizeCapUsd),
+        executionQuality: row.executionQuality,
+        executable: row.executionQuality !== 'none' && Number(row.toAmountRaw) > 0,
+        expiresAt: row.expiresAt.toISOString(),
+      })),
+      nextCursor: hasMore && last ? encodeCursor(last) : null,
+    };
   }
 
   async stats() {
