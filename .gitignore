@@ -18,3 +18,9 @@ android/
 
 # Agent worktrees — transient, never committed
 .claude/worktrees/
+
+# Archived work kept for reference, not part of the workspace.
+archive/**/node_modules/
+archive/**/.next/
+archive/**/.turbo/
+archive/**/dist/
