@@ -366,7 +366,10 @@ model Asset {
 
   chainId         String
   chain           Chain         @relation(fields: [chainId], references: [id])
-  contractAddress String?
+  /// Empty string means a native asset, which has no contract. Not nullable:
+  /// Postgres treats NULLs as distinct in a unique index, so a nullable column
+  /// here would let duplicate native assets for one chain and issuer through.
+  contractAddress String        @default("")
   tokenStandard   TokenStandard @default(erc20)
   symbol          String
   name            String
@@ -632,9 +635,11 @@ model RedemptionRequest {
 model JurisdictionRule {
   id String @id @default(cuid())
 
-  country String  @db.Char(2)
-  /// Null means "applies to the whole country".
-  region  String?
+  country String @db.Char(2)
+  /// Empty string means "applies to the whole country". Not nullable: Prisma
+  /// cannot target a nullable column in a compound unique selector, which
+  /// makes (country, region) unusable for upsert and findUnique.
+  region  String @default("")
 
   canBuyCrypto  Boolean @default(false)
   canSellCrypto Boolean @default(false)
