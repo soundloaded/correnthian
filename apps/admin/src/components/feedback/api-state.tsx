@@ -3,8 +3,8 @@ import { AlertTriangle, Inbox, LockKeyhole, PlugZap } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { SkeletonRows } from './retry-skeleton';
-import { RetryButton } from './retry';
+import { SkeletonRows } from './skeletons';
+import { RetryButton } from './retry-button';
 import type { ApiResult } from '@/lib/api-server';
 
 /**
