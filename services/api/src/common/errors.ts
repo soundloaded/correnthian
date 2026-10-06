@@ -16,6 +16,17 @@ export type ErrorCode =
   | 'rate_limited'
   | 'jurisdiction_blocked'
   | 'provider_unavailable'
+  /**
+   * The fee rules cannot state one fee, because two rules claim to govern and
+   * neither is more specific than the other.
+   *
+   * Distinct from `internal` because the remedy is known and the actor is
+   * known: an operator has to set a `priority`. And distinct from
+   * `provider_unavailable`, which means a counterparty could not serve — here
+   * we can serve, we just cannot say what the fee is, and guessing is the one
+   * thing a fee engine must not do.
+   */
+  | 'fee_configuration_invalid'
   | 'internal';
 
 const STATUS: Record<ErrorCode, number> = {
@@ -28,6 +39,10 @@ const STATUS: Record<ErrorCode, number> = {
   rate_limited: 429,
   jurisdiction_blocked: 451,
   provider_unavailable: 503,
+  // 503 and not 500: the fee table is not broken, it is underdetermined, and
+  // it will answer again the moment an operator resolves it. The client cannot
+  // fix it and is told nothing it could not already know.
+  fee_configuration_invalid: 503,
   internal: 500,
 };
 
@@ -54,6 +69,16 @@ export class AppError extends Error {
   static rateLimited(m = 'Too many requests') { return new AppError('rate_limited', m); }
   static jurisdictionBlocked(m: string, d?: unknown) { return new AppError('jurisdiction_blocked', m, d); }
   static providerUnavailable(m = 'Provider unavailable') { return new AppError('provider_unavailable', m); }
+  /**
+   * Refuse rather than pick between two applicable fee rules.
+   *
+   * `detail` carries the conflicting rule ids and is therefore operator-facing:
+   * do not pass it on a customer-facing route. The message is safe for anyone,
+   * and says the one thing true — that the platform will not guess a fee.
+   */
+  static feeConfigurationInvalid(m = 'The fee rules cannot state a fee for this operation.', d?: unknown) {
+    return new AppError('fee_configuration_invalid', m, d);
+  }
 }
 
 export class ValidationError extends AppError {

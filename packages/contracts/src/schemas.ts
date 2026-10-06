@@ -207,6 +207,147 @@ export const providerSchema = z.object({
 
 export const providerListSchema = z.array(providerSchema);
 
+// --- fees ------------------------------------------------------------------
+
+/**
+ * §37's itemisation, in the two shapes the design spec's product claim rests
+ * on: one named line per fee, and an explicit statement of what could not be
+ * determined.
+ *
+ * The distinction that is the whole reason this section exists: **a fee of
+ * zero and a fee nobody knows are different things.** A configured zero is a
+ * line with `status: 'computed'` and `amountUsd: '0.00000000'`. An unconfigured
+ * fee is `status: 'unknown'` with `amountUsd: null` and a sentence saying why.
+ * Before this existed every quote carried `amountUsd: 0`, which asserted to a
+ * customer that we had considered their fee and decided it was nothing.
+ *
+ * `amountUsd` is a fixed-precision decimal **string**, never a number: these
+ * are exact 10^-8 USD amounts and a JSON number is a binary float.
+ *
+ * There is no field here, and no field anywhere on a quote, that holds a
+ * price. `notionalUsd` is echoed back unchanged beside the fees it was
+ * computed from, which is what makes "Correnthian never earns by mispricing an
+ * asset" checkable rather than aspirational. A spread is legal and is exactly
+ * this: a line with `basis: 'spread'`, named and visible. There is nowhere for
+ * a hidden one to live.
+ */
+export const feeKindSchema = z.enum(['network', 'provider', 'correnthian']);
+export const feeBasisSchema = z.enum(['percent', 'fixed', 'spread']);
+export const feeOperationSchema = z.enum(['swap', 'buy', 'sell', 'redeem', 'onramp', 'offramp']);
+export const feeAssetCategorySchema = z.enum([
+  'crypto', 'stablecoin', 'metal', 'treasury', 'fund', 'other',
+]);
+
+/** An exact USD amount at 10^-8, as a fixed-precision string. */
+export const usdAmountSchema = z.string().regex(/^\d+\.\d{8}$/);
+
+export const feeLineSchema = z.object({
+  kind: feeKindSchema,
+  /** The operator's words. Never generated from the rule's selectors. */
+  label: z.string().min(1),
+  basis: feeBasisSchema.nullable(),
+  /** Integer basis points. Null for a fixed amount. */
+  rateBps: z.number().int().nullable(),
+  /** Null exactly when `status` is `unknown`. Never a number. */
+  amountUsd: usdAmountSchema.nullable(),
+  status: z.enum(['computed', 'unknown']),
+  /** Present exactly when `status` is `unknown`. */
+  reason: z.string().nullable(),
+});
+
+export const feeBreakdownSchema = z.object({
+  operation: feeOperationSchema,
+  /**
+   * The notional the fees were computed from, echoed verbatim. Null when no
+   * notional could be derived — in which case every percentage fee is
+   * `unknown` rather than computed against a figure someone made up.
+   */
+  notionalUsd: usdAmountSchema.nullable(),
+  /** Always three lines: network, provider, Correnthian. §37's order. */
+  lines: z.array(feeLineSchema).length(3),
+  /**
+   * The sum of every line, or `null` when any line is unknown. Null rather
+   * than a partial sum, because a partial sum is the number a UI puts in a
+   * headline and a customer reads as the price.
+   */
+  totalUsd: usdAmountSchema.nullable(),
+  /** What is known. Labeled a subtotal so no caller can sell it as a total. */
+  knownSubtotalUsd: usdAmountSchema,
+  complete: z.boolean(),
+  unknown: z.array(z.object({ kind: feeKindSchema, reason: z.string() })),
+  /** A fingerprint of the rule rows that priced this. Not a security control. */
+  rulesetVersion: z.string(),
+});
+
+// --- fee rules (admin) -----------------------------------------------------
+
+/**
+ * One row of the fee table.
+ *
+ * Rule ids and the operator who set the rate travel only on these admin
+ * routes. A customer sees the itemisation above and nothing about how it was
+ * configured.
+ */
+export const feeRuleSchema = z.object({
+  id: z.string(),
+  operation: feeOperationSchema,
+  kind: feeKindSchema,
+  basis: feeBasisSchema,
+  label: z.string().min(1),
+  rateBps: z.number().int().nullable(),
+  fixedUsd: usdAmountSchema.nullable(),
+  assetId: z.string().nullable(),
+  assetCategory: feeAssetCategorySchema.nullable(),
+  providerSlug: z.string().nullable(),
+  country: z.string().nullable(),
+  region: z.string().nullable(),
+  minNotionalUsd: usdAmountSchema.nullable(),
+  maxNotionalUsd: usdAmountSchema.nullable(),
+  /** Higher wins. The explicit tie-break "most specific" cannot provide. */
+  priority: z.number().int(),
+  effectiveFrom: z.string().nullable(),
+  effectiveUntil: z.string().nullable(),
+  active: z.boolean(),
+  specificity: z.object({
+    asset: z.number().int(),
+    provider: z.number().int(),
+    jurisdiction: z.number().int(),
+    notional: z.number().int(),
+  }),
+  createdById: z.string().nullable(),
+  updatedById: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const feeRuleListSchema = z.array(feeRuleSchema);
+
+/**
+ * Rule pairs that can both apply and neither of which wins.
+ *
+ * The resolver refuses those pairs at quote time rather than picking one. This
+ * is the same set, surfaced before a customer trips over it.
+ */
+export const feeDiagnosticsSchema = z.object({
+  ruleCount: z.number().int(),
+  conflicts: z.array(
+    z.object({
+      operation: feeOperationSchema,
+      kind: feeKindSchema,
+      ruleIds: z.array(z.string()),
+      detail: z.string(),
+      specificity: z.record(z.string(), z.object({
+        asset: z.number().int(),
+        provider: z.number().int(),
+        jurisdiction: z.number().int(),
+        notional: z.number().int(),
+      })),
+    }),
+  ),
+  clear: z.boolean(),
+  note: z.string(),
+});
+
 // --- swaps -----------------------------------------------------------------
 
 /** Mirrors the Prisma enums. A quote in a state the UI cannot colour is a bug. */
@@ -270,7 +411,15 @@ export const quoteDetailSchema = z.object({
   slippageBps: z.number().int(),
   priceImpactBps: z.number().int(),
   minReceivedRaw: z.string(),
-  fees: z.unknown(),
+  /**
+   * The itemised breakdown, not a blended number and not a bare list.
+   *
+   * Strictly the engine's shape. Quote rows written before the fee engine
+   * landed hold an older `[{ label, amountUsd, kind }]` array in the same
+   * column and will not parse here — deliberately, because a contract that
+   * accepts both is a contract that cannot fail.
+   */
+  fees: feeBreakdownSchema,
   executionQuality: executionQualitySchema,
   sizeCapUsd: z.number().nullable(),
   state: quoteStateSchema,
@@ -666,6 +815,13 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/swaps/quotes/stats': quoteStatsSchema,
   'GET /api/v1/swaps/quotes': quoteListSchema,
   'GET /api/v1/swaps/quotes/:id': quoteDetailSchema,
+  // Fees. The preview is open to any signed account; the rule table is not.
+  'POST /api/v1/fees/preview': feeBreakdownSchema,
+  'GET /api/v1/fees/rules': feeRuleListSchema,
+  'GET /api/v1/fees/rules/diagnostics': feeDiagnosticsSchema,
+  'GET /api/v1/fees/rules/:id': feeRuleSchema,
+  'POST /api/v1/fees/rules': feeRuleSchema,
+  'PATCH /api/v1/fees/rules/:id': feeRuleSchema,
   'GET /api/v1/audit': auditListSchema,
   'GET /api/v1/audit/:id': auditDetailSchema,
   'GET /api/v1/transactions': transactionListSchema,

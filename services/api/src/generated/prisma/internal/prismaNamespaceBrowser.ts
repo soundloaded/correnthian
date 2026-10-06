@@ -66,6 +66,7 @@ export const ModelName = {
   PortfolioSnapshot: 'PortfolioSnapshot',
   AssetPrice: 'AssetPrice',
   RedemptionRequest: 'RedemptionRequest',
+  FeeRule: 'FeeRule',
   JurisdictionRule: 'JurisdictionRule',
   AuditLog: 'AuditLog',
   Notification: 'Notification',
@@ -382,6 +383,34 @@ export const RedemptionRequestScalarFieldEnum = {
 } as const
 
 export type RedemptionRequestScalarFieldEnum = (typeof RedemptionRequestScalarFieldEnum)[keyof typeof RedemptionRequestScalarFieldEnum]
+
+
+export const FeeRuleScalarFieldEnum = {
+  id: 'id',
+  operation: 'operation',
+  kind: 'kind',
+  basis: 'basis',
+  label: 'label',
+  rateBps: 'rateBps',
+  fixedUsd: 'fixedUsd',
+  assetId: 'assetId',
+  assetCategory: 'assetCategory',
+  providerSlug: 'providerSlug',
+  country: 'country',
+  region: 'region',
+  minNotionalUsd: 'minNotionalUsd',
+  maxNotionalUsd: 'maxNotionalUsd',
+  priority: 'priority',
+  effectiveFrom: 'effectiveFrom',
+  effectiveUntil: 'effectiveUntil',
+  active: 'active',
+  createdById: 'createdById',
+  updatedById: 'updatedById',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type FeeRuleScalarFieldEnum = (typeof FeeRuleScalarFieldEnum)[keyof typeof FeeRuleScalarFieldEnum]
 
 
 export const JurisdictionRuleScalarFieldEnum = {

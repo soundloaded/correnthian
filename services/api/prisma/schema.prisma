@@ -741,6 +741,126 @@ model RedemptionRequest {
 // Compliance and operations
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Fees (§37)
+// ---------------------------------------------------------------------------
+
+/// The operation a fee applies to. §37's redemption / on-ramp / off-ramp
+/// categories live here rather than in `FeeKind`, because they answer "which
+/// operation", not "who is paid".
+enum FeeOperation {
+  swap
+  buy
+  sell
+  redeem
+  onramp
+  offramp
+}
+
+/// Who is paid. Three categories, not seven: the other four in §37's list are
+/// operation-specific, and flattening the two axes would make a redemption fee
+/// inexpressible as a provider fee. See `src/fees/fee-rule.ts`.
+enum FeeKind {
+  network
+  provider
+  correnthian
+}
+
+/// How a rule turns a notional into an amount.
+enum FeeBasis {
+  percent
+  fixed
+  /// A named, visible margin. Never folded into a price — that is the whole
+  /// reason it is modelled as its own basis rather than as a percentage.
+  spread
+}
+
+/// Mirrors `AssetCategory`. Postgres will not let one enum type answer to two
+/// names, so the two must be kept in step when a category is added.
+enum FeeAssetCategory {
+  crypto
+  stablecoin
+  metal
+  treasury
+  fund
+  other
+}
+
+/// A fee, as data.
+///
+/// Changing a number here must not require a deploy: a fee is a commercial
+/// term, and it changes because counsel read a contract or a promotion ended.
+/// Both are business events.
+///
+/// There is deliberately no column for an adjusted price. Correnthian never
+/// earns by mispricing an asset, and a fee is always a named line on a
+/// breakdown — see the security note in the migration.
+model FeeRule {
+  id String @id @default(cuid())
+
+  operation FeeOperation
+  kind      FeeKind
+  basis     FeeBasis
+
+  /// The customer's line item, verbatim. Never generated from the selectors.
+  label String
+
+  /// An INTEGER count of basis points for `percent` and `spread`. 1.49% is
+  /// 149, not `0.0149` — a float rate is not exactly representable, and the
+  /// error compounds across every quote. One basis point is the finest rate
+  /// this model can express, which is deliberate.
+  rateBps Int?
+
+  /// An exact amount for `fixed`, at the same 10^-8 scale as
+  /// `SwapQuote.notionalUsd` so the two round consistently against each other.
+  fixedUsd Decimal? @db.Decimal(36, 8)
+
+  // --- Selectors. Every one optional; NULL means "not restricted to".
+  // A rule that names nothing applies everywhere, which is the normal case.
+
+  assetId       String?
+  assetCategory FeeAssetCategory?
+
+  /// A `Provider.slug`. NULL is "any provider, or none".
+  providerSlug String?
+
+  /// ISO-3166 alpha-2. NULL is any country.
+  country String? @db.Char(2)
+  /// NULL is "the whole country". Nullable unlike `JurisdictionRule.region`,
+  /// which needs a non-null column to target a compound unique for upsert.
+  region String?
+
+  /// Inclusive at both ends.
+  minNotionalUsd Decimal? @db.Decimal(36, 8)
+  maxNotionalUsd Decimal? @db.Decimal(36, 8)
+
+  /// Higher wins among rules of the same operation and kind. The explicit
+  /// operator-set tie-break, and the only way to separate two rules that are
+  /// each more specific in a different direction — "most specific wins" cannot
+  /// rank those, so the resolver refuses them instead of guessing.
+  priority Int @default(0)
+
+  /// Exclusive at the end: a rule stops applying at that instant.
+  effectiveFrom  DateTime?
+  effectiveUntil DateTime?
+
+  /// An inactive rule is not a rule. It is not a fee of zero, and it must not
+  /// become one on the way to resolution.
+  active Boolean @default(true)
+
+  /// Who set the rate. Not a relation: the audit trail already records the
+  /// operator, and a dangling id is better than a cascade that erases the
+  /// attribution when an account is removed.
+  createdById String?
+  updatedById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([operation, kind, active])
+  @@index([active])
+}
+
 model JurisdictionRule {
   id String @id @default(cuid())
 
