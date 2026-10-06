@@ -4,9 +4,7 @@
   "globalPassThroughEnv": [
     "DATABASE_URL",
     "REDIS_URL",
-    "LOG_LEVEL",
-    "CONTRACT_TEST_EMAIL",
-    "CONTRACT_TEST_PASSWORD"
+    "API_URL"
   ],
   "tasks": {
     "build": {

@@ -41,6 +41,11 @@ jobs:
       LOG_LEVEL: error
       # Lets the contract suite refuse to skip rather than pass vacuously.
       CI: 'true'
+      # Read by the contract suite at Test time, not Seed time. Declaring them
+      # only on the Seed step left CI authenticating as an account it never
+      # created, and failing for a reason that looked like a contract bug.
+      CONTRACT_TEST_EMAIL: ci@correnthian.test
+      CONTRACT_TEST_PASSWORD: ci-only-not-a-secret
 
     steps:
       - uses: actions/checkout@v4
@@ -74,8 +79,6 @@ jobs:
           ADMIN_EMAIL: ci@correnthian.test
           ADMIN_PASSWORD: ci-only-not-a-secret
           ADMIN_PASSWORD_MIN_LENGTH: '8'
-          CONTRACT_TEST_EMAIL: ci@correnthian.test
-          CONTRACT_TEST_PASSWORD: ci-only-not-a-secret
 
       - name: Typecheck
         run: pnpm typecheck

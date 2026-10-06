@@ -48,7 +48,9 @@ work happen that is not tracked here.
 - [x] Liveness `/health/live` and readiness `/health/ready` probes
 - [x] Integration test harness — boots the API against Docker Postgres via supertest
 - [x] Wire-format contracts (`@correnthian/contracts`) — admin types inferred, API responses validated
-- [ ] Add the remaining endpoints to the contract registry (audit, quote detail, wallets, portfolio)
+- [x] Quotes list + audit detail endpoints, with contracts registered
+- [x] `GET /swaps/quotes` — filterable, keyset paginated on (createdAt, id)
+- [ ] Add wallets / portfolio / pricing endpoints to the contract registry
 
 ### P1.2 Identity & access
 - [x] Auth module — argon2id passwords, SHA-256 session digests, 7 tests
