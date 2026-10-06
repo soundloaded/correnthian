@@ -1,4 +1,6 @@
-import { CanActivate, type ExecutionContext, Injectable, SetMetadata } from '@nestjs/common';
+import {
+  CanActivate, type ExecutionContext, Inject, Injectable, SetMetadata,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
 import { AppError } from '../errors.js';
@@ -18,7 +20,7 @@ const RANK: Record<string, number> = {
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(@Inject(Reflector) private readonly reflector: Reflector) {}
 
   canActivate(ctx: ExecutionContext): boolean {
     const required = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [

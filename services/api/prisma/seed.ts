@@ -85,8 +85,16 @@ async function main() {
     console.log('  admin: skipped — set ADMIN_EMAIL and ADMIN_PASSWORD to bootstrap one');
     return;
   }
-  if (password.length < 12) {
-    throw new Error('ADMIN_PASSWORD must be at least 12 characters');
+  // The floor is configurable so local development can use a short throwaway
+  // password without changing the production default. Defaults to 12, which
+  // is the real requirement — do not lower it for anything that is not a
+  // disposable local database.
+  const minLength = Number(process.env.ADMIN_PASSWORD_MIN_LENGTH ?? '12');
+  if (!Number.isFinite(minLength) || minLength < 8) {
+    throw new Error('ADMIN_PASSWORD_MIN_LENGTH must be 8 or more');
+  }
+  if (password.length < minLength) {
+    throw new Error(`ADMIN_PASSWORD must be at least ${minLength} characters`);
   }
 
   const digest = await hash(password, { memoryCost: 65536, timeCost: 3, parallelism: 1 });

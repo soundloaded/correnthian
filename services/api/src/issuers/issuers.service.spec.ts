@@ -82,7 +82,9 @@ describe('IssuersService', () => {
     it('leaves licences alone when the fields are omitted', async () => {
       issuer.findUnique.mockResolvedValue(existing());
       await svc.recordLicences('paxos', { notes: 'updated only' }, actor);
-      const data = issuer.update.mock.calls[0][0].data;
+      const call = issuer.update.mock.calls[0];
+      expect(call).toBeDefined();
+      const data = call?.[0]?.data ?? {};
       expect(data.licenseTypes).toEqual(existing().licenseTypes);
       expect(data.licenseRefs).toEqual(existing().licenseRefs);
     });

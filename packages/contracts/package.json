@@ -1,0 +1,28 @@
+{
+  "name": "@correnthian/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Wire-format contracts shared by the API and its clients",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.package.json",
+    "typecheck": "tsc -p tsconfig.package.json --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.8"
+  }
+}

@@ -74,6 +74,9 @@ export class UsersService {
             label: true, deployed: true, isPrimary: true, createdAt: true,
           },
         },
+        // Matches the list projection so a detail view and the table agree;
+        // an operator switching between them should not see a field vanish.
+        _count: { select: { wallets: true, devices: true, sessions: true } },
         devices: {
           where: { revokedAt: null },
           select: { id: true, platform: true, label: true, trustedAt: true, lastSeenAt: true },

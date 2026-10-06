@@ -1,141 +1,49 @@
-export type UserRole = 'user' | 'support' | 'compliance' | 'admin' | 'owner';
-export type KycStatus = 'not_started' | 'pending' | 'approved' | 'rejected' | 'expired';
+import type { Contract } from '@correnthian/contracts';
 
-export interface UserSummary {
+/**
+ * API response types.
+ *
+ * These are inferred from the wire-format contracts in `@correnthian/contracts`,
+ * not hand-written. That distinction is the whole point: three incidents in this
+ * repo came from these declarations drifting from what the API actually returns
+ * — a page 500ing on a field nested one level deeper, and a destructive button
+ * rendering with an inverted label because the API never sent `enabled`.
+ *
+ * The API has a contract test that parses its real responses through the same
+ * schemas. If either side drifts, that test fails instead of a page.
+ */
+
+export type AssetSummary = Contract<'GET /assets'>[number];
+export type AssetStats = Contract<'GET /assets/stats'>;
+export type UserSummary = Contract<'GET /users'>['items'][number];
+export type UserListResponse = Contract<'GET /users'>;
+export type UserStats = Contract<'GET /users/stats'>;
+export type UserDetail = Contract<'GET /users/:id'>;
+export type DeviceRow = Contract<'GET /devices/all'>['items'][number];
+export type DeviceListResponse = Contract<'GET /devices/all'>;
+export type DeviceStats = Contract<'GET /devices/stats'>;
+export type Issuer = Contract<'GET /issuers'>[number];
+export type Chain = Contract<'GET /chains'>[number];
+export type Provider = Contract<'GET /providers'>[number];
+
+export type KycStatus = UserSummary['kycStatus'];
+export type UserRole = UserSummary['role'];
+
+/** Not yet in the contract registry — an endpoint the console does not consume. */
+export interface AuditRow {
   id: string;
-  email: string;
-  role: UserRole;
-  status: string;
-  country: string | null;
-  region: string | null;
-  kycStatus: KycStatus;
+  actorId: string | null;
+  actorRole: string | null;
+  action: string;
+  targetType: string | null;
+  targetId: string | null;
+  outcome: 'success' | 'failure' | 'denied';
+  ipAddress: string | null;
   createdAt: string;
-  lastLoginAt: string | null;
-  _count: { wallets: number; devices: number };
 }
 
-export interface UserListResponse { items: UserSummary[]; nextCursor: string | null }
-
-export interface UserStats {
+export interface QuoteStats {
   total: number;
-  newLast7d: number;
-  byKyc: Partial<Record<KycStatus, number>>;
-  byRole: Partial<Record<UserRole, number>>;
-}
-
-export interface AssetSummary {
-  asset: {
-    assetId: string;
-    chainId: string;
-    contractAddress: string | null;
-    symbol: string;
-    name: string;
-    decimals: number;
-    category: string;
-    issuer: { issuerId: string; issuerName: string; jurisdiction: string };
-    backing: {
-      custodyModel: 'allocated' | 'unallocated' | 'synthetic';
-      custodian: string | null;
-      vaultLocation: string[];
-      lastAttestation: string | null;
-    };
-    trust: { verifiedTier: string; riskFlags: string[] };
-    enabled: boolean;
-    trading: { redeemSupported: boolean };
-  };
-  /** The product's core promise: never render a token as metal without this. */
-  disclosure: string;
-}
-
-export interface AssetStats {
-  total: number;
-  enabled: number;
-  enabledMetals: number;
-  staleAttestations: number;
-  byTier: Record<string, number>;
-}
-
-export interface Provider {
-  id: string; slug: string; name: string; category: string;
-  status: 'active' | 'degraded' | 'disabled';
-  capabilities: string[]; lastCheckedAt: string | null; notes: string | null;
-}
-
-export interface Chain {
-  id: string; name: string; family: string; nativeSymbol: string;
-  decimals: number; explorerUrl: string | null;
-  enabled: boolean; isTestnet: boolean;
-  _count: { assets: number; wallets: number };
-}
-
-export interface DeviceRow {
-  id: string;
-  platform: 'ios' | 'android' | 'web';
-  label: string;
-  trustedAt: string;
-  lastSeenAt: string;
-  revokedAt: string | null;
-  user: { id: string; email: string; role: string; kycStatus: KycStatus };
-}
-
-export interface DeviceListResponse { items: DeviceRow[]; nextCursor: string | null }
-
-export interface DeviceStats {
-  total: number;
-  revoked: number;
-  stale: number;
-  byPlatform: Record<string, number>;
-}
-
-export interface Issuer {
-  id: string;
-  slug: string;
-  name: string;
-  jurisdiction: string;
-  licenseTypes: string[];
-  licenseRefs: string[];
-  website: string | null;
-  verifiedTier: 'issuer_verified' | 'community_verified' | 'unverified';
-  riskFlags: string[];
-  notes: string | null;
-  createdAt: string;
-  _count: { assets: number };
-}
-
-
-export interface Provider {
-  id: string;
-  slug: string;
-  name: string;
-  category: string;
-  status: 'active' | 'degraded' | 'disabled';
-  capabilities: string[];
-  lastCheckedAt: string | null;
-  notes: string | null;
-  _count: { quotes: number; redemptions: number };
-}
-
-export interface UserDetail {
-  id: string;
-  email: string;
-  role: string;
-  status: string;
-  displayName: string | null;
-  country: string | null;
-  region: string | null;
-  kycStatus: KycStatus;
-  emailVerifiedAt: string | null;
-  lastLoginAt: string | null;
-  createdAt: string;
-  wallets: Array<{
-    id: string; address: string; chainId: string; kind: string;
-    label: string | null; deployed: boolean; isPrimary: boolean; createdAt: string;
-  }>;
-  devices: Array<{
-    id: string; platform: string; label: string; trustedAt: string; lastSeenAt: string;
-  }>;
-  kyc: {
-    status: KycStatus; provider: string | null; providerRef: string | null;
-    jurisdiction: string | null; reviewedAt: string | null;
-  } | null;
+  byState: Record<string, number>;
+  byRail: Record<string, number>;
 }
