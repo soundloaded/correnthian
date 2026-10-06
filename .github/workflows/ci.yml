@@ -13,6 +13,35 @@ jobs:
   verify:
     name: Build, typecheck and test
     runs-on: ubuntu-latest
+
+    # Real Postgres and Redis, not mocks. The wire-format contract test boots
+    # the real API and asserts its actual responses, so it cannot run against a
+    # stand-in — and a substitute would make the guarantee meaningless.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: correnthian
+          POSTGRES_PASSWORD: correnthian
+          POSTGRES_DB: correnthian
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U correnthian -d correnthian"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 12
+
+    env:
+      DATABASE_URL: postgresql://correnthian:correnthian@localhost:5432/correnthian
+      REDIS_URL: redis://localhost:6379
+      LOG_LEVEL: error
+      # Lets the contract suite refuse to skip rather than pass vacuously.
+      CI: 'true'
+
     steps:
       - uses: actions/checkout@v4
 
@@ -26,6 +55,27 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+
+      - name: Build shared packages
+        # packages/* compile to dist; the apps and the API consume the built
+        # output, so this has to precede typecheck and test.
+        run: pnpm --filter './packages/*' build
+
+      - name: Migrate
+        run: pnpm --filter @correnthian/api exec prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+
+      - name: Seed
+        # The contract test authenticates as a seeded admin, so CI needs one.
+        run: pnpm --filter @correnthian/api exec prisma db seed
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          ADMIN_EMAIL: ci@correnthian.test
+          ADMIN_PASSWORD: ci-only-not-a-secret
+          ADMIN_PASSWORD_MIN_LENGTH: '8'
+          CONTRACT_TEST_EMAIL: ci@correnthian.test
+          CONTRACT_TEST_PASSWORD: ci-only-not-a-secret
 
       - name: Typecheck
         run: pnpm typecheck

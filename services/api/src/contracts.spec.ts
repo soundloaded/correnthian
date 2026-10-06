@@ -23,7 +23,28 @@ import { CONTRACT_REGISTRY } from '@correnthian/contracts';
  */
 const HAS_DB = Boolean(process.env.DATABASE_URL);
 
-describe.skipIf(!HAS_DB)('API wire-format contracts', () => {
+/**
+ * Locally this suite skips when no database is configured, so a contributor
+ * without the Docker stack can still run the fast tests.
+ *
+ * In CI it must never skip. A green build that silently omitted the contract
+ * check would be worse than having no check at all — it would assert that
+ * drift is impossible while proving nothing. So CI runs it unconditionally and
+ * fails if the database is unreachable.
+ */
+const CI = Boolean(process.env.CI);
+
+describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
+  it('is running rather than skipped', () => {
+    if (CI && !HAS_DB) {
+      throw new Error(
+        'The contract suite cannot skip in CI. The wire-format guarantee is ' +
+          'the whole point of this file — fix the database service or the job.',
+      );
+    }
+    expect(HAS_DB).toBe(CI ? true : HAS_DB);
+  });
+
   let app: INestApplication;
   let token: string;
 
@@ -32,10 +53,16 @@ describe.skipIf(!HAS_DB)('API wire-format contracts', () => {
     app = moduleRef.createNestApplication();
     await app.init();
 
-    // Authenticate as the seeded admin so the endpoints behind auth are covered.
+    // Authenticate as the seeded admin so the endpoints behind auth are
+    // covered. Configurable because CI seeds its own throwaway account —
+    // hardcoding local credentials here would fail the moment the CI seed
+    // differs, which is exactly the kind of drift this suite exists to catch.
     const login = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'admin@correnthian.local', password: 'correct-horse-battery-staple' });
+      .send({
+        email: process.env.CONTRACT_TEST_EMAIL ?? 'admin@correnthian.local',
+        password: process.env.CONTRACT_TEST_PASSWORD ?? 'correct-horse-battery-staple',
+      });
     token = login.body?.token ?? '';
   }, 60_000);
 
