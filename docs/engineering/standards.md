@@ -1,5 +1,13 @@
 # Engineering standards
 
+> **SUPERSEDED in one respect — 2026-10-06.**
+> `packages/*` are described below as "source-only, no build step". They build
+> to `dist/` via `tsc -p tsconfig.package.json`. This is not cosmetic:
+> `services/api` is a tsc-emitting Node service and cannot load a package whose
+> `main` points at `src/index.ts`. See ADR-006 in
+> [`../agent/DECISIONS.md`](../agent/DECISIONS.md). The rest of this document
+> remains current. Tracked as `DEF-014`.
+
 **Date:** 2026-10-05
 **Status:** Enforced by CI where marked. Read before writing code.
 

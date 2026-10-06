@@ -1,5 +1,14 @@
 # The API
 
+> **SUPERSEDED in its status claims — 2026-10-06.**
+> This document was written before the API was built and says "nothing exists
+> yet" throughout. Every domain module it lists as unbuilt is built, auth and
+> RBAC exist, and Prisma is in `services/api/package.json`. Read
+> [`../agent/ARCHITECTURE.md`](../agent/ARCHITECTURE.md) and
+> [`../agent/BACKEND_TASKS.md`](../agent/BACKEND_TASKS.md) for what is actually
+> there. The conventions, module-boundary rules, rate-limit categories and open
+> questions below remain current and worth reading. Tracked as `DEF-014`.
+
 **Date:** 2026-10-05
 **Status:** Partially built. This document marks clearly what exists and what
 is planned; the distinction matters because the admin work will be wired to real

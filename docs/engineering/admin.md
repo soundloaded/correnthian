@@ -1,5 +1,14 @@
 # The admin
 
+> **SUPERSEDED in its status claims — 2026-10-06.**
+> This document says `apps/admin/` does not exist. It does: nine routes,
+> server-rendered against live API data, with mutations and designed failure
+> states. Read [`../agent/ADMIN_OPS.md`](../agent/ADMIN_OPS.md) instead. Two
+> corrections to the direction below: the admin is **not** yet dark-first, and
+> it does **not** consume `packages/design-tokens` — it uses a neutral shadcn
+> palette. The shadcn CLI gotchas below are current and were expensive to learn.
+> Tracked as `DEF-014`.
+
 **Date:** 2026-10-05
 **Status:** Not yet built. `apps/admin/` does not exist at the time of writing.
 This document is the plan; the gotchas recorded here come from `TASK.md` P2 and
