@@ -2,6 +2,7 @@ import { Body, Controller, Get, Inject, Param, Post, Query } from '@nestjs/commo
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import { CurrentUser, type AuthenticatedUser } from '../common/decorators/current-user.decorator.js';
+import { Idempotent } from '../common/idempotency/idempotency.decorator.js';
 import { Roles } from '../common/guards/roles.guard.js';
 import { zodPipe } from '../common/pipes/zod-validation.pipe.js';
 import { listQuotesSchema, quoteStateSchema, type ListQuotesDto } from './dto/list-quotes.dto.js';
@@ -26,6 +27,7 @@ export class SwapsController {
 
   @Post('quotes')
   @ApiBearerAuth()
+  @Idempotent()
   @ApiOperation({ summary: 'Create a quote. Never executes — the user signs in their own wallet.' })
   quote(@CurrentUser() user: AuthenticatedUser, @Body(zodPipe(quoteSchema)) dto: z.infer<typeof quoteSchema>) {
     return this.swaps.createQuote({ userId: user.id, ...dto });

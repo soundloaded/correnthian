@@ -8,6 +8,16 @@ import { AuditService } from '../../audit/audit.service.js';
 const MUTATING = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
 
 /**
+ * Sign-in traffic is not audited here.
+ *
+ * Matched as a path segment rather than a prefix for the same reason the rate
+ * limiter does it: `startsWith('/auth/')` silently stopped matching the day
+ * `/api/v1` was introduced, and the first thing that would have surfaced the
+ * regression is a bug report saying sign-ins are not in the audit trail.
+ */
+const AUTH_SEGMENT = /(^|\/)auth(\/|$)/;
+
+/**
  * Records an audit line for every state-changing request.
  *
  * A hand-written `audit.record()` inside each service method is the obvious
@@ -36,7 +46,7 @@ export class AuditInterceptor implements NestInterceptor {
     // AuthService records sign-in attempts itself, where it knows whether the
     // attempt succeeded. Recording them here would log a failure for every
     // successful sign-in, which trains operators to ignore the audit trail.
-    if (req.originalUrl?.startsWith('/auth/')) return next.handle();
+    if (AUTH_SEGMENT.test(req.originalUrl ?? '')) return next.handle();
 
     const controller = context.getClass().name;
     const action = `${req.method} ${controller}.${context.getHandler().name}`;

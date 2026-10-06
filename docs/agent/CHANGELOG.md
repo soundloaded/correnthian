@@ -13,6 +13,43 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-06
 
+### `ec328ad` — Make financial POSTs idempotent, durably and across instances
+- A user presses Buy, the network is slow, the press registers twice. That was
+  two purchases. `Idempotency-Key` is now honoured on `POST /swaps/quotes`,
+  `POST /redemptions` and `POST /onramp/quote`.
+- The record lives in Postgres, not Redis. Redis is flushed and evicted for
+  reasons unrelated to money, and an idempotency store that forgets is worse
+  than none, because the retry it was supposed to absorb re-executes.
+- Concurrent duplicates are serialised by `INSERT ... ON CONFLICT DO NOTHING`
+  against a unique index, not by a lock. Two replicas mean two mutexes, and a
+  mutex only convinces the process holding it. Proved with six simultaneous
+  duplicates across two application instances.
+- Three refusals, all of them safe: a different body under the same key is a
+  conflict rather than a replay; a claim whose instance died is
+  `outcome_unknown` and does not re-execute; a failing handler drops its claim so
+  a retry is a real retry.
+- The key is never persisted in a recoverable form (`sha256(actorId + key)`), is
+  censored in pino, and is never echoed in a refusal.
+
+### `0563b85` — Version the API under /api/v1, with a version registry and honest 404s
+- Every route is now `/api/v1/...`; `/health` and `/docs` stay unversioned,
+  because an orchestrator's probe must keep working for as long as the process
+  does and must not require version negotiation.
+- The version lifecycle is data (`src/versioning/api-versions.ts`): `current`,
+  `deprecated` or `retired`, with a sunset date. Deprecated versions are still
+  served unchanged and announce themselves on every response; retired ones return
+  410 naming the successor. Retiring is a human editing `status`, not a date
+  comparison.
+- `/api/v2/assets` and a missing asset are both 404 and mean opposite things.
+  They now carry different codes, and both name the versions that exist.
+- The unversioned alias answers until 2026-12-01 so the in-flight admin
+  integration is not broken, and announces its own removal on every response.
+- Found while doing it: `RateLimitGuard` and `AuditInterceptor` both matched
+  `/auth/` as a URL prefix, which silently stopped matching the moment a prefix
+  existed. Every login would have moved onto the 120/minute budget — the budget
+  credential stuffing is not meant to have — and sign-ins would have entered the
+  audit trail the interceptor deliberately excludes.
+
 ### `2be6499` — Fix two issues that would have left CI red
 - `turbo.json` had no `globalPassThroughEnv`. Turbo's strict env mode strips
   anything undeclared, so the contract suite booted the API with no database and

@@ -323,7 +323,7 @@ export type AssetGroupByOutputType = {
   id: string
   assetId: string
   chainId: string
-  contractAddress: string | null
+  contractAddress: string
   tokenStandard: $Enums.TokenStandard
   symbol: string
   name: string
@@ -378,7 +378,7 @@ export type AssetWhereInput = {
   id?: Prisma.StringFilter<"Asset"> | string
   assetId?: Prisma.StringFilter<"Asset"> | string
   chainId?: Prisma.StringFilter<"Asset"> | string
-  contractAddress?: Prisma.StringNullableFilter<"Asset"> | string | null
+  contractAddress?: Prisma.StringFilter<"Asset"> | string
   tokenStandard?: Prisma.EnumTokenStandardFilter<"Asset"> | $Enums.TokenStandard
   symbol?: Prisma.StringFilter<"Asset"> | string
   name?: Prisma.StringFilter<"Asset"> | string
@@ -418,7 +418,7 @@ export type AssetOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   assetId?: Prisma.SortOrder
   chainId?: Prisma.SortOrder
-  contractAddress?: Prisma.SortOrderInput | Prisma.SortOrder
+  contractAddress?: Prisma.SortOrder
   tokenStandard?: Prisma.SortOrder
   symbol?: Prisma.SortOrder
   name?: Prisma.SortOrder
@@ -462,7 +462,7 @@ export type AssetWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.AssetWhereInput[]
   NOT?: Prisma.AssetWhereInput | Prisma.AssetWhereInput[]
   chainId?: Prisma.StringFilter<"Asset"> | string
-  contractAddress?: Prisma.StringNullableFilter<"Asset"> | string | null
+  contractAddress?: Prisma.StringFilter<"Asset"> | string
   tokenStandard?: Prisma.EnumTokenStandardFilter<"Asset"> | $Enums.TokenStandard
   symbol?: Prisma.StringFilter<"Asset"> | string
   name?: Prisma.StringFilter<"Asset"> | string
@@ -502,7 +502,7 @@ export type AssetOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   assetId?: Prisma.SortOrder
   chainId?: Prisma.SortOrder
-  contractAddress?: Prisma.SortOrderInput | Prisma.SortOrder
+  contractAddress?: Prisma.SortOrder
   tokenStandard?: Prisma.SortOrder
   symbol?: Prisma.SortOrder
   name?: Prisma.SortOrder
@@ -542,7 +542,7 @@ export type AssetScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"Asset"> | string
   assetId?: Prisma.StringWithAggregatesFilter<"Asset"> | string
   chainId?: Prisma.StringWithAggregatesFilter<"Asset"> | string
-  contractAddress?: Prisma.StringNullableWithAggregatesFilter<"Asset"> | string | null
+  contractAddress?: Prisma.StringWithAggregatesFilter<"Asset"> | string
   tokenStandard?: Prisma.EnumTokenStandardWithAggregatesFilter<"Asset"> | $Enums.TokenStandard
   symbol?: Prisma.StringWithAggregatesFilter<"Asset"> | string
   name?: Prisma.StringWithAggregatesFilter<"Asset"> | string
@@ -573,7 +573,7 @@ export type AssetScalarWhereWithAggregatesInput = {
 export type AssetCreateInput = {
   id?: string
   assetId: string
-  contractAddress?: string | null
+  contractAddress?: string
   tokenStandard?: $Enums.TokenStandard
   symbol: string
   name: string
@@ -612,7 +612,7 @@ export type AssetUncheckedCreateInput = {
   id?: string
   assetId: string
   chainId: string
-  contractAddress?: string | null
+  contractAddress?: string
   tokenStandard?: $Enums.TokenStandard
   symbol: string
   name: string
@@ -649,7 +649,7 @@ export type AssetUncheckedCreateInput = {
 export type AssetUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -688,7 +688,7 @@ export type AssetUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -726,7 +726,7 @@ export type AssetCreateManyInput = {
   id?: string
   assetId: string
   chainId: string
-  contractAddress?: string | null
+  contractAddress?: string
   tokenStandard?: $Enums.TokenStandard
   symbol: string
   name: string
@@ -757,7 +757,7 @@ export type AssetCreateManyInput = {
 export type AssetUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -788,7 +788,7 @@ export type AssetUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1169,7 +1169,7 @@ export type AssetUpdateOneRequiredWithoutRedemptionsNestedInput = {
 export type AssetCreateWithoutAccountsInput = {
   id?: string
   assetId: string
-  contractAddress?: string | null
+  contractAddress?: string
   tokenStandard?: $Enums.TokenStandard
   symbol: string
   name: string
@@ -1207,7 +1207,7 @@ export type AssetUncheckedCreateWithoutAccountsInput = {
   id?: string
   assetId: string
   chainId: string
-  contractAddress?: string | null
+  contractAddress?: string
   tokenStandard?: $Enums.TokenStandard
   symbol: string
   name: string
@@ -1259,7 +1259,7 @@ export type AssetUpdateToOneWithWhereWithoutAccountsInput = {
 export type AssetUpdateWithoutAccountsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1297,7 +1297,7 @@ export type AssetUncheckedUpdateWithoutAccountsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1333,7 +1333,7 @@ export type AssetUncheckedUpdateWithoutAccountsInput = {
 export type AssetCreateWithoutIssuerInput = {
   id?: string
   assetId: string
-  contractAddress?: string | null
+  contractAddress?: string
   tokenStandard?: $Enums.TokenStandard
   symbol: string
   name: string
@@ -1371,7 +1371,7 @@ export type AssetUncheckedCreateWithoutIssuerInput = {
   id?: string
   assetId: string
   chainId: string
-  contractAddress?: string | null
+  contractAddress?: string
   tokenStandard?: $Enums.TokenStandard
   symbol: string
   name: string
@@ -1437,7 +1437,7 @@ export type AssetScalarWhereInput = {
   id?: Prisma.StringFilter<"Asset"> | string
   assetId?: Prisma.StringFilter<"Asset"> | string
   chainId?: Prisma.StringFilter<"Asset"> | string
-  contractAddress?: Prisma.StringNullableFilter<"Asset"> | string | null
+  contractAddress?: Prisma.StringFilter<"Asset"> | string
   tokenStandard?: Prisma.EnumTokenStandardFilter<"Asset"> | $Enums.TokenStandard
   symbol?: Prisma.StringFilter<"Asset"> | string
   name?: Prisma.StringFilter<"Asset"> | string
@@ -1468,7 +1468,7 @@ export type AssetScalarWhereInput = {
 export type AssetCreateWithoutChainInput = {
   id?: string
   assetId: string
-  contractAddress?: string | null
+  contractAddress?: string
   tokenStandard?: $Enums.TokenStandard
   symbol: string
   name: string
@@ -1505,7 +1505,7 @@ export type AssetCreateWithoutChainInput = {
 export type AssetUncheckedCreateWithoutChainInput = {
   id?: string
   assetId: string
-  contractAddress?: string | null
+  contractAddress?: string
   tokenStandard?: $Enums.TokenStandard
   symbol: string
   name: string
@@ -1568,7 +1568,7 @@ export type AssetUpdateManyWithWhereWithoutChainInput = {
 export type AssetCreateWithoutQuotesAsFromInput = {
   id?: string
   assetId: string
-  contractAddress?: string | null
+  contractAddress?: string
   tokenStandard?: $Enums.TokenStandard
   symbol: string
   name: string
@@ -1606,7 +1606,7 @@ export type AssetUncheckedCreateWithoutQuotesAsFromInput = {
   id?: string
   assetId: string
   chainId: string
-  contractAddress?: string | null
+  contractAddress?: string
   tokenStandard?: $Enums.TokenStandard
   symbol: string
   name: string
@@ -1647,7 +1647,7 @@ export type AssetCreateOrConnectWithoutQuotesAsFromInput = {
 export type AssetCreateWithoutQuotesAsToInput = {
   id?: string
   assetId: string
-  contractAddress?: string | null
+  contractAddress?: string
   tokenStandard?: $Enums.TokenStandard
   symbol: string
   name: string
@@ -1685,7 +1685,7 @@ export type AssetUncheckedCreateWithoutQuotesAsToInput = {
   id?: string
   assetId: string
   chainId: string
-  contractAddress?: string | null
+  contractAddress?: string
   tokenStandard?: $Enums.TokenStandard
   symbol: string
   name: string
@@ -1737,7 +1737,7 @@ export type AssetUpdateToOneWithWhereWithoutQuotesAsFromInput = {
 export type AssetUpdateWithoutQuotesAsFromInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1775,7 +1775,7 @@ export type AssetUncheckedUpdateWithoutQuotesAsFromInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1822,7 +1822,7 @@ export type AssetUpdateToOneWithWhereWithoutQuotesAsToInput = {
 export type AssetUpdateWithoutQuotesAsToInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1860,7 +1860,7 @@ export type AssetUncheckedUpdateWithoutQuotesAsToInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1896,7 +1896,7 @@ export type AssetUncheckedUpdateWithoutQuotesAsToInput = {
 export type AssetCreateWithoutTransactionsInput = {
   id?: string
   assetId: string
-  contractAddress?: string | null
+  contractAddress?: string
   tokenStandard?: $Enums.TokenStandard
   symbol: string
   name: string
@@ -1934,7 +1934,7 @@ export type AssetUncheckedCreateWithoutTransactionsInput = {
   id?: string
   assetId: string
   chainId: string
-  contractAddress?: string | null
+  contractAddress?: string
   tokenStandard?: $Enums.TokenStandard
   symbol: string
   name: string
@@ -1986,7 +1986,7 @@ export type AssetUpdateToOneWithWhereWithoutTransactionsInput = {
 export type AssetUpdateWithoutTransactionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2024,7 +2024,7 @@ export type AssetUncheckedUpdateWithoutTransactionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2060,7 +2060,7 @@ export type AssetUncheckedUpdateWithoutTransactionsInput = {
 export type AssetCreateWithoutPricesInput = {
   id?: string
   assetId: string
-  contractAddress?: string | null
+  contractAddress?: string
   tokenStandard?: $Enums.TokenStandard
   symbol: string
   name: string
@@ -2098,7 +2098,7 @@ export type AssetUncheckedCreateWithoutPricesInput = {
   id?: string
   assetId: string
   chainId: string
-  contractAddress?: string | null
+  contractAddress?: string
   tokenStandard?: $Enums.TokenStandard
   symbol: string
   name: string
@@ -2150,7 +2150,7 @@ export type AssetUpdateToOneWithWhereWithoutPricesInput = {
 export type AssetUpdateWithoutPricesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2188,7 +2188,7 @@ export type AssetUncheckedUpdateWithoutPricesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2224,7 +2224,7 @@ export type AssetUncheckedUpdateWithoutPricesInput = {
 export type AssetCreateWithoutRedemptionsInput = {
   id?: string
   assetId: string
-  contractAddress?: string | null
+  contractAddress?: string
   tokenStandard?: $Enums.TokenStandard
   symbol: string
   name: string
@@ -2262,7 +2262,7 @@ export type AssetUncheckedCreateWithoutRedemptionsInput = {
   id?: string
   assetId: string
   chainId: string
-  contractAddress?: string | null
+  contractAddress?: string
   tokenStandard?: $Enums.TokenStandard
   symbol: string
   name: string
@@ -2314,7 +2314,7 @@ export type AssetUpdateToOneWithWhereWithoutRedemptionsInput = {
 export type AssetUpdateWithoutRedemptionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2352,7 +2352,7 @@ export type AssetUncheckedUpdateWithoutRedemptionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2389,7 +2389,7 @@ export type AssetCreateManyIssuerInput = {
   id?: string
   assetId: string
   chainId: string
-  contractAddress?: string | null
+  contractAddress?: string
   tokenStandard?: $Enums.TokenStandard
   symbol: string
   name: string
@@ -2419,7 +2419,7 @@ export type AssetCreateManyIssuerInput = {
 export type AssetUpdateWithoutIssuerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2457,7 +2457,7 @@ export type AssetUncheckedUpdateWithoutIssuerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2494,7 +2494,7 @@ export type AssetUncheckedUpdateManyWithoutIssuerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2524,7 +2524,7 @@ export type AssetUncheckedUpdateManyWithoutIssuerInput = {
 export type AssetCreateManyChainInput = {
   id?: string
   assetId: string
-  contractAddress?: string | null
+  contractAddress?: string
   tokenStandard?: $Enums.TokenStandard
   symbol: string
   name: string
@@ -2555,7 +2555,7 @@ export type AssetCreateManyChainInput = {
 export type AssetUpdateWithoutChainInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2592,7 +2592,7 @@ export type AssetUpdateWithoutChainInput = {
 export type AssetUncheckedUpdateWithoutChainInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2629,7 +2629,7 @@ export type AssetUncheckedUpdateWithoutChainInput = {
 export type AssetUncheckedUpdateManyWithoutChainInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
-  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contractAddress?: Prisma.StringFieldUpdateOperationsInput | string
   tokenStandard?: Prisma.EnumTokenStandardFieldUpdateOperationsInput | $Enums.TokenStandard
   symbol?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2915,7 +2915,12 @@ export type $AssetPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
      */
     assetId: string
     chainId: string
-    contractAddress: string | null
+    /**
+     * Empty string means a native asset, which has no contract. Not nullable:
+     * Postgres treats NULLs as distinct in a unique index, so a nullable column
+     * here would let duplicate native assets for one chain and issuer through.
+     */
+    contractAddress: string
     tokenStandard: $Enums.TokenStandard
     symbol: string
     name: string

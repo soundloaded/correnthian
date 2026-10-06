@@ -2,6 +2,7 @@ import { Body, Controller, Get, Inject, Param, Patch, Post } from '@nestjs/commo
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import { CurrentUser, type AuthenticatedUser } from '../common/decorators/current-user.decorator.js';
+import { Idempotent } from '../common/idempotency/idempotency.decorator.js';
 import { Roles } from '../common/guards/roles.guard.js';
 import { zodPipe } from '../common/pipes/zod-validation.pipe.js';
 import { RedemptionService } from './redemption.service.js';
@@ -24,6 +25,7 @@ export class RedemptionController {
   constructor(@Inject(RedemptionService) private readonly redemptions: RedemptionService) {}
 
   @Post()
+  @Idempotent()
   @ApiOperation({ summary: 'Request physical redemption. Requires a redeemable asset and a permitted jurisdiction.' })
   async request(
     @CurrentUser() user: AuthenticatedUser,

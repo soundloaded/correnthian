@@ -9,6 +9,7 @@ import helmet from 'helmet';
 import { Logger } from '@nestjs/common';
 import { AppModule } from './app.module.js';
 import { ConfigService } from './config/config.service.js';
+import { applyApiVersioning } from './versioning/apply-versioning.js';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -16,6 +17,10 @@ async function bootstrap(): Promise<void> {
 
   // Structured logging. Anything reaching a log must already be redacted.
   app.useLogger(app.get(PinoLogger));
+
+  // `/api/v1` on every route, plus version negotiation in front of them.
+  // Before `init()`, so the middleware is registered ahead of Nest's router.
+  applyApiVersioning(app);
 
   app.use(
     helmet({
@@ -29,6 +34,12 @@ async function bootstrap(): Promise<void> {
     origin: config.http.corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    // A client is allowed to send this on every request and gets a distinct
+    // replayed response back, so a browser must be able to read it. Without
+    // this the header is stripped and a retrying client cannot tell a replay
+    // from a fresh execution.
+    allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
+    exposedHeaders: ['Idempotency-Replayed', 'X-API-Version', 'Deprecation', 'Sunset', 'Link', 'Warning'],
   });
 
   if (config.http.trustProxy) app.getHttpAdapter().getInstance().set('trust proxy', 1);

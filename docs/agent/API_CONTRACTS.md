@@ -39,7 +39,11 @@ through the same schema. 27 tests.
 
 1. Add the schema to `packages/contracts/src/schemas.ts`, modelled on the
    actual response — including any envelope wrapper.
-2. Register it in `CONTRACT_REGISTRY` keyed by `METHOD /path`.
+2. Register it in `CONTRACT_REGISTRY` keyed by `METHOD /path` — the **real**
+   path, prefix included (`GET /api/v1/assets`). A registry that says `/assets`
+   while the API serves `/api/v1/assets` describes an API nobody has. Error
+   envelopes are registered separately, keyed `ERROR METHOD /path`, so a client
+   can declare what it expects to *not* get as precisely as what it expects.
 3. Add a test in `contracts.spec.ts` that calls the route and parses the result.
 4. Add a consumer on the client using `Contract<'METHOD /path'>`.
 

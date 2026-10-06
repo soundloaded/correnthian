@@ -23,6 +23,7 @@ import { RedisModule } from './redis/redis.module.js';
 import { SwapsModule } from './swaps/swaps.module.js';
 import { TransactionsModule } from './transactions/transactions.module.js';
 import { UsersModule } from './users/users.module.js';
+import { VersioningModule } from './versioning/versioning.module.js';
 import { WalletsModule } from './wallets/wallets.module.js';
 
 @Module({
@@ -35,8 +36,18 @@ import { WalletsModule } from './wallets/wallets.module.js';
         level: process.env['LOG_LEVEL'] ?? 'info',
         // Redaction at the transport layer is a second line of defence;
         // @correnthian/security is still the primary control.
+        //
+        // `idempotency-key` is listed because pino-http logs every request
+        // header by default and a key is client-supplied, opaque, and
+        // replayable. Never in a log, whatever the client put in it.
         redact: {
-          paths: ['req.headers.authorization', 'req.headers.cookie', 'password', '*.password'],
+          paths: [
+            'req.headers.authorization',
+            'req.headers.cookie',
+            'req.headers["idempotency-key"]',
+            'password',
+            '*.password',
+          ],
           censor: '[REDACTED]',
         },
       },
@@ -45,6 +56,7 @@ import { WalletsModule } from './wallets/wallets.module.js';
     RedisModule,
     CoreModule,
     HealthModule,
+    VersioningModule,
     AuthModule,
     UsersModule,
     DevicesModule,

@@ -50,7 +50,7 @@ export class AppError extends Error {
   static unauthorized(m = 'Authentication required') { return new AppError('unauthorized', m); }
   static forbidden(m = 'Not permitted') { return new AppError('forbidden', m); }
   static notFound(m = 'Not found') { return new AppError('not_found', m); }
-  static conflict(m: string) { return new AppError('conflict', m); }
+  static conflict(m: string, d?: unknown) { return new AppError('conflict', m, d); }
   static rateLimited(m = 'Too many requests') { return new AppError('rate_limited', m); }
   static jurisdictionBlocked(m: string, d?: unknown) { return new AppError('jurisdiction_blocked', m, d); }
   static providerUnavailable(m = 'Provider unavailable') { return new AppError('provider_unavailable', m); }
@@ -61,4 +61,43 @@ export class ValidationError extends AppError {
     super('validation_failed', 'Request validation failed', issues);
     this.name = 'ValidationError';
   }
+}
+
+/**
+ * The one builder for the wire error shape.
+ *
+ * Three places produce this envelope — the exception filter, the API-version
+ * middleware and the not-found handler — and the middle two run outside Nest's
+ * exception zone, so they cannot rely on the filter to shape their output.
+ * Two hand-written literals would drift the first time a field was added, and
+ * the drift would only show up in a client that parses `error.code`.
+ */
+export interface ErrorEnvelope {
+  error: { code: string; message: string; detail?: unknown };
+  path: string;
+  timestamp: string;
+}
+
+export function errorEnvelope(params: {
+  code: string;
+  message: string;
+  detail?: unknown;
+  path: string;
+  timestamp?: string;
+}): ErrorEnvelope {
+  return {
+    error: {
+      code: params.code,
+      message: params.message,
+      detail: params.detail,
+    },
+    path: params.path,
+    timestamp: params.timestamp ?? new Date().toISOString(),
+  };
+}
+
+/** The path without its query string, for messages that are read aloud. */
+export function pathOnly(url: string): string {
+  const cut = url.indexOf('?');
+  return cut === -1 ? url : url.slice(0, cut);
 }

@@ -7,6 +7,7 @@ import { AppModule } from './app.module.js';
 import { PrismaService } from './prisma/prisma.service.js';
 import { RedisService } from './redis/redis.service.js';
 import { CONTRACT_REGISTRY, type Contract } from '@correnthian/contracts';
+import { applyApiVersioning } from './versioning/apply-versioning.js';
 
 /**
  * The wire-format contract test.
@@ -81,6 +82,11 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
+    // The version prefix is configured here, not only in main.ts. This suite
+    // never runs main.ts, so wiring it in one place only would mean the tests
+    // that exist to prove the wire format were asserting against a different
+    // API than the one that ships.
+    applyApiVersioning(app);
     await app.init();
     prisma = app.get(PrismaService);
 
@@ -89,7 +95,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     // hardcoding local credentials here would fail the moment the CI seed
     // differs, which is exactly the kind of drift this suite exists to catch.
     const login = await request(app.getHttpServer())
-      .post('/auth/login')
+      .post('/api/v1/auth/login')
       .send({
         email: process.env.CONTRACT_TEST_EMAIL ?? 'admin@correnthian.local',
         password: process.env.CONTRACT_TEST_PASSWORD ?? 'correct-horse-battery-staple',
@@ -314,7 +320,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
   const get = (path: string) =>
     request(app.getHttpServer()).get(path).set('Authorization', `Bearer ${token}`);
 
-  type QuoteList = Contract<'GET /swaps/quotes'>;
+  type QuoteList = Contract<'GET /api/v1/swaps/quotes'>;
   type QuoteRow = QuoteList['items'][number];
 
   /** The route sorts by `createdAt desc, id desc`; this is that ordering. */
@@ -334,9 +340,9 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     for (let page = 0; page < maxPages; page += 1) {
       const qs = new URLSearchParams({ ...Object.fromEntries(new URLSearchParams(query)), limit: '1' });
       if (cursor) qs.set('cursor', cursor);
-      const res = await get(`/swaps/quotes?${qs.toString()}`);
+      const res = await get(`/api/v1/swaps/quotes?${qs.toString()}`);
       expect(res.status, `page ${page} returned ${res.status}`).toBe(200);
-      const parsed = CONTRACT_REGISTRY['GET /swaps/quotes'].parse(res.body);
+      const parsed = CONTRACT_REGISTRY['GET /api/v1/swaps/quotes'].parse(res.body);
       const first = parsed.items.at(0);
       if (!first) return { rows: seen, exhausted: true };
       seen.push(first);
@@ -347,21 +353,21 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
   }
 
   const ENDPOINTS: Array<[keyof typeof CONTRACT_REGISTRY, string]> = [
-    ['GET /assets', '/assets'],
-    ['GET /assets/stats', '/assets/stats'],
-    ['GET /users', '/users'],
-    ['GET /users/stats', '/users/stats'],
-    ['GET /devices/all', '/devices/all'],
-    ['GET /devices/stats', '/devices/stats'],
-    ['GET /issuers', '/issuers'],
-    ['GET /chains', '/chains'],
-    ['GET /providers', '/providers'],
-    ['GET /swaps/quotes/stats', '/swaps/quotes/stats'],
-    ['GET /swaps/quotes', '/swaps/quotes'],
-    ['GET /audit', '/audit'],
-    ['GET /transactions', '/transactions'],
-    ['GET /transactions/stats', '/transactions/stats'],
-    ['GET /transactions/mine', '/transactions/mine'],
+    ['GET /api/v1/assets', '/api/v1/assets'],
+    ['GET /api/v1/assets/stats', '/api/v1/assets/stats'],
+    ['GET /api/v1/users', '/api/v1/users'],
+    ['GET /api/v1/users/stats', '/api/v1/users/stats'],
+    ['GET /api/v1/devices/all', '/api/v1/devices/all'],
+    ['GET /api/v1/devices/stats', '/api/v1/devices/stats'],
+    ['GET /api/v1/issuers', '/api/v1/issuers'],
+    ['GET /api/v1/chains', '/api/v1/chains'],
+    ['GET /api/v1/providers', '/api/v1/providers'],
+    ['GET /api/v1/swaps/quotes/stats', '/api/v1/swaps/quotes/stats'],
+    ['GET /api/v1/swaps/quotes', '/api/v1/swaps/quotes'],
+    ['GET /api/v1/audit', '/api/v1/audit'],
+    ['GET /api/v1/transactions', '/api/v1/transactions'],
+    ['GET /api/v1/transactions/stats', '/api/v1/transactions/stats'],
+    ['GET /api/v1/transactions/mine', '/api/v1/transactions/mine'],
   ];
 
   it('authenticates as the seeded admin', () => {
@@ -390,20 +396,20 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
 
   it('GET /users/:id matches its contract', async () => {
     const list = await request(app.getHttpServer())
-      .get('/users').set('Authorization', `Bearer ${token}`);
+      .get('/api/v1/users').set('Authorization', `Bearer ${token}`);
     const id = list.body?.items?.[0]?.id;
     if (!id) return; // no seeded user to check
 
     const res = await request(app.getHttpServer())
-      .get(`/users/${id}`).set('Authorization', `Bearer ${token}`);
+      .get(`/api/v1/users/${id}`).set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
 
-    const parsed = CONTRACT_REGISTRY['GET /users/:id'].safeParse(res.body);
+    const parsed = CONTRACT_REGISTRY['GET /api/v1/users/:id'].safeParse(res.body);
     expect(parsed.success, JSON.stringify(parsed.error?.issues ?? [], null, 2)).toBe(true);
   });
 
   it('every failure uses the shared error envelope', async () => {
-    const res = await request(app.getHttpServer()).get('/users/not-a-real-id')
+    const res = await request(app.getHttpServer()).get('/api/v1/users/not-a-real-id')
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBeGreaterThanOrEqual(400);
     expect(res.body).toHaveProperty('error.code');
@@ -411,13 +417,120 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     expect(res.body).toHaveProperty('timestamp');
   });
 
+  // --- versioning -----------------------------------------------------------
+
+  it('GET /api/v1/meta/versions matches its contract', async () => {
+    const res = await request(app.getHttpServer()).get('/api/v1/meta/versions');
+    expect(res.status, `${res.status}: ${JSON.stringify(res.body)}`).toBe(200);
+
+    const parsed = CONTRACT_REGISTRY['GET /api/v1/meta/versions'].safeParse(res.body);
+    if (!parsed.success) {
+      const detail = parsed.error.issues
+        .map((i) => `  ${i.path.join('.') || '(root)'}: ${i.message}`)
+        .join('\n');
+      throw new Error(`/api/v1/meta/versions does not match its contract:\n${detail}`);
+    }
+    // The document has to describe this deployment, not a plausible one: a
+    // registry that does not list the version actually serving traffic is
+    // worse than no registry, because it is believed.
+    expect(parsed.data.currentVersion).toBe('v1');
+    expect(parsed.data.versionedPrefix).toBe('/api/v1');
+    expect(parsed.data.versions.map((v) => v.id)).toContain('v1');
+    expect(parsed.data.versions.find((v) => v.id === 'v1')?.status).toBe('current');
+    expect(parsed.data.unversionedPaths).toContain('health');
+  });
+
+  it('an unknown version is a distinguishable 404, not a missing resource', async () => {
+    const res = await request(app.getHttpServer()).get('/api/v2/assets');
+
+    expect(res.status).toBe(404);
+    const parsed = CONTRACT_REGISTRY['ERROR GET /api/v2/*'].safeParse(res.body);
+    if (!parsed.success) {
+      const detail = parsed.error.issues
+        .map((i) => `  ${i.path.join('.') || '(root)'}: ${i.message}`)
+        .join('\n');
+      throw new Error(`the v2 404 does not match its contract:\n${detail}`);
+    }
+
+    // The whole point: it says "wrong version", not "no such asset". A caller
+    // who gets this must go and fix the URL they built.
+    expect(parsed.data.error.code).toBe('unsupported_api_version');
+    const detail = parsed.data.error.detail as { supportedVersions: string[]; requestedVersion: string };
+    expect(detail.requestedVersion).toBe('v2');
+    expect(detail.supportedVersions).toContain('v1');
+
+    // And it is genuinely different from the other 404 this API produces.
+    const missing = await request(app.getHttpServer())
+      .get('/api/v1/assets/definitely-not-a-real-asset-id')
+      .set('Authorization', `Bearer ${token}`);
+    expect(missing.status).toBe(404);
+    expect(missing.body).toHaveProperty('error.code', 'not_found');
+    expect(missing.body.error.code).not.toBe('unsupported_api_version');
+  });
+
+  it('a versionless /api path is told which versions exist', async () => {
+    const res = await request(app.getHttpServer()).get('/api/assets');
+    expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty('error.code', 'api_version_required');
+    expect(res.body.error.detail.supportedVersions).toContain('v1');
+  });
+
+  it('an unknown route inside a served version names the versions', async () => {
+    const res = await request(app.getHttpServer()).get('/api/v1/no-such-route');
+    expect(res.status).toBe(404);
+
+    const parsed = CONTRACT_REGISTRY['ERROR GET /api/v1/does-not-exist'].safeParse(res.body);
+    expect(parsed.success, JSON.stringify(parsed.error?.issues ?? [], null, 2)).toBe(true);
+    expect(res.body.error.code).toBe('not_found');
+    expect(res.body.error.detail.versionedPrefix).toBe('/api/v1');
+    expect(res.body.error.detail.supportedVersions).toContain('v1');
+  });
+
+  it('/health stays unversioned, because an orchestrator must not negotiate', async () => {
+    const unversioned = await request(app.getHttpServer()).get('/health/live');
+    expect(unversioned.status).toBe(200);
+    expect(unversioned.body).toHaveProperty('status', 'ok');
+    // Says what it is rather than implying membership of a version.
+    expect(unversioned.headers['x-api-version']).toBe('unversioned');
+
+    // The prefix does not shadow it into a second, versioned address.
+    const versioned = await request(app.getHttpServer()).get('/api/v1/health/live');
+    expect(versioned.status).toBe(404);
+  });
+
+  it('the transitional unversioned alias works and announces its own removal', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/assets')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status, `${res.status}: ${JSON.stringify(res.body)}`).toBe(200);
+    expect(CONTRACT_REGISTRY['GET /api/v1/assets'].safeParse(res.body).success).toBe(true);
+    expect(res.headers['x-api-version']).toBe('v1');
+
+    // Loud, standard, and machine-readable. A client still on the old address
+    // has to be able to find out before it is cut off, not after.
+    expect(res.headers['deprecation']).toBe('true');
+    expect(res.headers['x-api-deprecated']).toBe('v1');
+    expect(res.headers['sunset']).toBeTruthy();
+    // A `Link` a client can actually follow. `</api/v1>` is a header that
+    // looks right in a log and resolves to nothing.
+    expect(res.headers['link']).toMatch(/^<\/api\/v1>;\s*rel="successor-version"$/);
+    expect(res.headers['warning']).toContain('299');
+  });
+
+  it('a versioned response names its version', async () => {
+    const res = await get('/api/v1/chains');
+    expect(res.status).toBe(200);
+    expect(res.headers['x-api-version']).toBe('v1');
+  });
+
   // --- quotes ---------------------------------------------------------------
 
   it('GET /swaps/quotes resolves asset symbols and the provider server-side', async () => {
-    const res = await get('/swaps/quotes?limit=100');
+    const res = await get('/api/v1/swaps/quotes?limit=100');
     expect(res.status).toBe(200);
 
-    const parsed = CONTRACT_REGISTRY['GET /swaps/quotes'].parse(res.body);
+    const parsed = CONTRACT_REGISTRY['GET /api/v1/swaps/quotes'].parse(res.body);
     const fixtures = parsed.items.filter((q) => fixtureQuoteIds.includes(q.id));
     // Every fixture is on the first page of a fresh database. If this is ever
     // not true the other assertions in this block are meaningless, so it fails
@@ -444,37 +557,37 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
   });
 
   it('GET /swaps/quotes filters by state and by railKind', async () => {
-    const byState = await get('/swaps/quotes?state=broadcast&limit=100');
+    const byState = await get('/api/v1/swaps/quotes?state=broadcast&limit=100');
     expect(byState.status).toBe(200);
-    const broadcast = CONTRACT_REGISTRY['GET /swaps/quotes'].parse(byState.body).items;
+    const broadcast = CONTRACT_REGISTRY['GET /api/v1/swaps/quotes'].parse(byState.body).items;
     expect(broadcast.length).toBeGreaterThan(0);
     expect(broadcast.every((q) => q.state === 'broadcast')).toBe(true);
     // A route that ignored `state` would return the other two fixtures here.
     expect(broadcast.map((q) => q.id)).toEqual(expect.arrayContaining([fxBroadcast, fxDex]));
     expect(broadcast.map((q) => q.id)).not.toContain(fxQuoted);
 
-    const byRail = await get('/swaps/quotes?railKind=dex&limit=100');
+    const byRail = await get('/api/v1/swaps/quotes?railKind=dex&limit=100');
     expect(byRail.status).toBe(200);
-    const dex = CONTRACT_REGISTRY['GET /swaps/quotes'].parse(byRail.body).items;
+    const dex = CONTRACT_REGISTRY['GET /api/v1/swaps/quotes'].parse(byRail.body).items;
     expect(dex.length).toBeGreaterThan(0);
     expect(dex.every((q) => q.railKind === 'dex')).toBe(true);
     expect(dex.map((q) => q.id)).toContain(fxDex);
 
-    const both = await get('/swaps/quotes?state=quoted&railKind=dex&limit=100');
+    const both = await get('/api/v1/swaps/quotes?state=quoted&railKind=dex&limit=100');
     expect(both.status).toBe(200);
-    const narrowed = CONTRACT_REGISTRY['GET /swaps/quotes'].parse(both.body).items;
+    const narrowed = CONTRACT_REGISTRY['GET /api/v1/swaps/quotes'].parse(both.body).items;
     expect(narrowed.every((q) => q.state === 'quoted' && q.railKind === 'dex')).toBe(true);
     expect(narrowed.map((q) => q.id)).not.toContain(fxQuoted);
   });
 
   it('GET /swaps/quotes caps the page size', async () => {
-    const res = await get('/swaps/quotes?limit=101');
+    const res = await get('/api/v1/swaps/quotes?limit=101');
     expect(res.status).toBe(422);
     expect(res.body).toHaveProperty('error.code', 'validation_failed');
   });
 
   it('GET /swaps/quotes rejects a cursor it cannot read', async () => {
-    const res = await get('/swaps/quotes?cursor=not-a-real-cursor');
+    const res = await get('/api/v1/swaps/quotes?cursor=not-a-real-cursor');
     // Restarting at page one would hide a client bug behind a page that looks
     // correct, so an unreadable cursor is an error and not a default.
     expect(res.status).toBe(400);
@@ -482,9 +595,9 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
   });
 
   it('GET /swaps/quotes paginates by keyset without repeating or skipping a row', async () => {
-    const first = await get('/swaps/quotes?limit=1');
+    const first = await get('/api/v1/swaps/quotes?limit=1');
     expect(first.status).toBe(200);
-    const firstPage = CONTRACT_REGISTRY['GET /swaps/quotes'].parse(first.body);
+    const firstPage = CONTRACT_REGISTRY['GET /api/v1/swaps/quotes'].parse(first.body);
     expect(firstPage.items).toHaveLength(1);
     expect(firstPage.nextCursor).toBeTruthy();
 
@@ -520,7 +633,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     const res = await get(`/swaps/quotes/${fxBroadcast}`);
     expect(res.status, `${res.status}: ${JSON.stringify(res.body)}`).toBe(200);
 
-    const parsed = CONTRACT_REGISTRY['GET /swaps/quotes/:id'].safeParse(res.body);
+    const parsed = CONTRACT_REGISTRY['GET /api/v1/swaps/quotes/:id'].safeParse(res.body);
     if (!parsed.success) {
       const detail = parsed.error.issues.map((i) => `  ${i.path.join('.') || '(root)'}: ${i.message}`).join('\n');
       throw new Error(`/swaps/quotes/:id does not match its contract:\n${detail}`);
@@ -536,7 +649,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     const res = await get('/audit?action=contract.spec.probe');
     expect(res.status).toBe(200);
 
-    const rows = CONTRACT_REGISTRY['GET /audit'].parse(res.body);
+    const rows = CONTRACT_REGISTRY['GET /api/v1/audit'].parse(res.body);
     expect(rows).toHaveLength(1);
     const row = rows[0];
     if (!row) throw new Error('the probe row vanished between the count and the assertions');
@@ -554,17 +667,17 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     const res = await get('/audit?outcome=denied&limit=200');
     expect(res.status).toBe(200);
 
-    const rows = CONTRACT_REGISTRY['GET /audit'].parse(res.body);
+    const rows = CONTRACT_REGISTRY['GET /api/v1/audit'].parse(res.body);
     expect(rows.length).toBeGreaterThan(0);
     expect(rows.every((r) => r.outcome === 'denied')).toBe(true);
     expect(rows.map((r) => r.id)).toContain(fixtureAuditId);
   });
 
   it('GET /audit/:id matches its contract and returns the redacted metadata', async () => {
-    const res = await get(`/audit/${fixtureAuditId}`);
+    const res = await get(`/api/v1/audit/${fixtureAuditId}`);
     expect(res.status, `${res.status}: ${JSON.stringify(res.body)}`).toBe(200);
 
-    const parsed = CONTRACT_REGISTRY['GET /audit/:id'].safeParse(res.body);
+    const parsed = CONTRACT_REGISTRY['GET /api/v1/audit/:id'].safeParse(res.body);
     if (!parsed.success) {
       const detail = parsed.error.issues.map((i) => `  ${i.path.join('.') || '(root)'}: ${i.message}`).join('\n');
       throw new Error(`/audit/:id does not match its contract:\n${detail}`);
@@ -642,7 +755,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
 
     const audit = await get(`/audit?requestId=${requestId}`);
     expect(audit.status).toBe(200);
-    const rows = CONTRACT_REGISTRY['GET /audit'].parse(audit.body);
+    const rows = CONTRACT_REGISTRY['GET /api/v1/audit'].parse(audit.body);
 
     // The global interceptor's line and the domain module's line, both under
     // the same id — which is what makes a support ticket actionable.
@@ -655,7 +768,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     // §55's before/after, on a real state-change attempt.
     const detail = await get(`/audit/${refused?.id}`);
     expect(detail.status).toBe(200);
-    const parsed = CONTRACT_REGISTRY['GET /audit/:id'].parse(detail.body);
+    const parsed = CONTRACT_REGISTRY['GET /api/v1/audit/:id'].parse(detail.body);
     expect(parsed.before).toEqual({ state: 'created' });
     expect(parsed.after).toEqual({ state: 'confirmed' });
     expect(parsed.outcome).toBe('failure');
@@ -672,7 +785,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     const res = await get(`/transactions?walletId=${fixtureWalletId}&limit=100`);
     expect(res.status).toBe(200);
 
-    const parsed = CONTRACT_REGISTRY['GET /transactions'].parse(res.body);
+    const parsed = CONTRACT_REGISTRY['GET /api/v1/transactions'].parse(res.body);
     expect(parsed.items.length).toBeGreaterThanOrEqual(fixtureTxIds.length);
 
     for (const row of parsed.items) {
@@ -695,7 +808,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
   it('GET /transactions filters by state, and the filter is applied', async () => {
     const res = await get(`/transactions?walletId=${fixtureWalletId}&state=signed&limit=100`);
     expect(res.status).toBe(200);
-    const rows = CONTRACT_REGISTRY['GET /transactions'].parse(res.body).items;
+    const rows = CONTRACT_REGISTRY['GET /api/v1/transactions'].parse(res.body).items;
     expect(rows.length).toBeGreaterThan(0);
     expect(rows.every((r) => r.state === 'signed')).toBe(true);
     expect(rows.map((r) => r.id)).toContain(fixtureTxIds[0]);
@@ -704,7 +817,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
 
   it('GET /transactions paginates by keyset without repeating a row', async () => {
     const first = await get(`/transactions?walletId=${fixtureWalletId}&limit=1`);
-    const page = CONTRACT_REGISTRY['GET /transactions'].parse(first.body);
+    const page = CONTRACT_REGISTRY['GET /api/v1/transactions'].parse(first.body);
     expect(page.items).toHaveLength(1);
     expect(page.nextCursor).toBeTruthy();
 
@@ -712,7 +825,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
       `/transactions?walletId=${fixtureWalletId}&limit=1&cursor=${page.nextCursor}`,
     );
     expect(second.status).toBe(200);
-    const next = CONTRACT_REGISTRY['GET /transactions'].parse(second.body);
+    const next = CONTRACT_REGISTRY['GET /api/v1/transactions'].parse(second.body);
     expect(next.items[0]?.id).not.toBe(page.items[0]?.id);
   });
 
@@ -720,7 +833,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     const res = await get(`/transactions/${fixtureTxIds[0]}`);
     expect(res.status, `${res.status}: ${JSON.stringify(res.body)}`).toBe(200);
 
-    const parsed = CONTRACT_REGISTRY['GET /transactions/:id'].safeParse(res.body);
+    const parsed = CONTRACT_REGISTRY['GET /api/v1/transactions/:id'].safeParse(res.body);
     if (!parsed.success) {
       const detail = parsed.error.issues.map((i) => `  ${i.path.join('.') || '(root)'}: ${i.message}`).join('\n');
       throw new Error(`/transactions/:id does not match its contract:\n${detail}`);

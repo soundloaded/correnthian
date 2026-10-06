@@ -41,6 +41,15 @@ no typecheck and no contract assertion catches. Several are silent.
 
 ### Completed in this sprint
 
+- `BE-101` — API versioning. `/api/v1` on every route; `/health` and `/docs`
+  deliberately outside it. The version lifecycle is data, not prose, so retiring
+  a version is one line plus an announcement the API already makes on every
+  response. Deprecated versions keep working; retired ones return 410 naming the
+  successor; the two 404s that used to be indistinguishable now are not.
+- `BE-106` — idempotency for the three financial POSTs. Durable in Postgres, not
+  Redis, and serialised across instances by a unique index rather than a lock —
+  proved by firing six simultaneous duplicates at two separate application
+  instances.
 - `docs/agent/` — the agent memory system (plan §69), all thirteen documents
   plus an index.
 - `TASK.md` folded into `docs/agent/BACKEND_TASKS.md`.
@@ -62,7 +71,9 @@ no typecheck and no contract assertion catches. Several are silent.
    contract suite, and DEF-001 exists precisely because of that gap.
 3. `BE-102` — generate OpenAPI from `CONTRACT_REGISTRY` rather than shipping a
    document that describes no request or response schemas.
-4. `BE-101` — the global route prefix decision, before a public client exists.
+4. `DEF-004` / `DEF-005` — the rate limiter still ignores its config and still
+   cannot see the authenticated user. `BE-101` fixed the *path* it matched, which
+   is a different bug in the same file.
 
 ---
 

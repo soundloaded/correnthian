@@ -17,6 +17,18 @@ const LIMITS = { auth: 10, api: 120 } as const;
 type Bucket = keyof typeof LIMITS;
 
 /**
+ * Sign-in traffic gets a much tighter budget than the rest of the API.
+ *
+ * Matched as a path *segment*, not as a prefix. `startsWith('/auth/')` was
+ * correct until `/api/v1` was introduced, at which point it silently stopped
+ * matching and every login quietly moved onto the 120-per-minute budget — the
+ * exact budget brute-force credential stuffing is not meant to have. A path
+ * assumption like this has to be written so that adding a version prefix
+ * cannot change it.
+ */
+const AUTH_SEGMENT = /(^|\/)auth(\/|$)/;
+
+/**
  * Redis-backed fixed-window rate limiting.
  *
  * Redis rather than an in-process counter because a horizontally scaled API
@@ -51,7 +63,7 @@ export class RateLimitGuard implements CanActivate {
     const req = ctx.switchToHttp().getRequest<Request & { user?: { id: string } }>();
     const res = ctx.switchToHttp().getResponse<Response>();
 
-    const bucket: Bucket = req.originalUrl?.startsWith('/auth/') ? 'auth' : 'api';
+    const bucket: Bucket = AUTH_SEGMENT.test(req.originalUrl ?? '') ? 'auth' : 'api';
     const max = LIMITS[bucket];
     const actor = req.user?.id ?? req.ip ?? 'unknown';
     const key = `correnthian:rate:${bucket}:${actor}`;

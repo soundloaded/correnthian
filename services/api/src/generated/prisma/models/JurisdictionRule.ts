@@ -194,7 +194,7 @@ export type JurisdictionRuleGroupByArgs<ExtArgs extends runtime.Types.Extensions
 export type JurisdictionRuleGroupByOutputType = {
   id: string
   country: string
-  region: string | null
+  region: string
   canBuyCrypto: boolean
   canSellCrypto: boolean
   canUseMetals: boolean
@@ -231,7 +231,7 @@ export type JurisdictionRuleWhereInput = {
   NOT?: Prisma.JurisdictionRuleWhereInput | Prisma.JurisdictionRuleWhereInput[]
   id?: Prisma.StringFilter<"JurisdictionRule"> | string
   country?: Prisma.StringFilter<"JurisdictionRule"> | string
-  region?: Prisma.StringNullableFilter<"JurisdictionRule"> | string | null
+  region?: Prisma.StringFilter<"JurisdictionRule"> | string
   canBuyCrypto?: Prisma.BoolFilter<"JurisdictionRule"> | boolean
   canSellCrypto?: Prisma.BoolFilter<"JurisdictionRule"> | boolean
   canUseMetals?: Prisma.BoolFilter<"JurisdictionRule"> | boolean
@@ -247,7 +247,7 @@ export type JurisdictionRuleWhereInput = {
 export type JurisdictionRuleOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   country?: Prisma.SortOrder
-  region?: Prisma.SortOrderInput | Prisma.SortOrder
+  region?: Prisma.SortOrder
   canBuyCrypto?: Prisma.SortOrder
   canSellCrypto?: Prisma.SortOrder
   canUseMetals?: Prisma.SortOrder
@@ -267,7 +267,7 @@ export type JurisdictionRuleWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.JurisdictionRuleWhereInput[]
   NOT?: Prisma.JurisdictionRuleWhereInput | Prisma.JurisdictionRuleWhereInput[]
   country?: Prisma.StringFilter<"JurisdictionRule"> | string
-  region?: Prisma.StringNullableFilter<"JurisdictionRule"> | string | null
+  region?: Prisma.StringFilter<"JurisdictionRule"> | string
   canBuyCrypto?: Prisma.BoolFilter<"JurisdictionRule"> | boolean
   canSellCrypto?: Prisma.BoolFilter<"JurisdictionRule"> | boolean
   canUseMetals?: Prisma.BoolFilter<"JurisdictionRule"> | boolean
@@ -283,7 +283,7 @@ export type JurisdictionRuleWhereUniqueInput = Prisma.AtLeast<{
 export type JurisdictionRuleOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   country?: Prisma.SortOrder
-  region?: Prisma.SortOrderInput | Prisma.SortOrder
+  region?: Prisma.SortOrder
   canBuyCrypto?: Prisma.SortOrder
   canSellCrypto?: Prisma.SortOrder
   canUseMetals?: Prisma.SortOrder
@@ -305,7 +305,7 @@ export type JurisdictionRuleScalarWhereWithAggregatesInput = {
   NOT?: Prisma.JurisdictionRuleScalarWhereWithAggregatesInput | Prisma.JurisdictionRuleScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"JurisdictionRule"> | string
   country?: Prisma.StringWithAggregatesFilter<"JurisdictionRule"> | string
-  region?: Prisma.StringNullableWithAggregatesFilter<"JurisdictionRule"> | string | null
+  region?: Prisma.StringWithAggregatesFilter<"JurisdictionRule"> | string
   canBuyCrypto?: Prisma.BoolWithAggregatesFilter<"JurisdictionRule"> | boolean
   canSellCrypto?: Prisma.BoolWithAggregatesFilter<"JurisdictionRule"> | boolean
   canUseMetals?: Prisma.BoolWithAggregatesFilter<"JurisdictionRule"> | boolean
@@ -321,7 +321,7 @@ export type JurisdictionRuleScalarWhereWithAggregatesInput = {
 export type JurisdictionRuleCreateInput = {
   id?: string
   country: string
-  region?: string | null
+  region?: string
   canBuyCrypto?: boolean
   canSellCrypto?: boolean
   canUseMetals?: boolean
@@ -337,7 +337,7 @@ export type JurisdictionRuleCreateInput = {
 export type JurisdictionRuleUncheckedCreateInput = {
   id?: string
   country: string
-  region?: string | null
+  region?: string
   canBuyCrypto?: boolean
   canSellCrypto?: boolean
   canUseMetals?: boolean
@@ -353,7 +353,7 @@ export type JurisdictionRuleUncheckedCreateInput = {
 export type JurisdictionRuleUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   country?: Prisma.StringFieldUpdateOperationsInput | string
-  region?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  region?: Prisma.StringFieldUpdateOperationsInput | string
   canBuyCrypto?: Prisma.BoolFieldUpdateOperationsInput | boolean
   canSellCrypto?: Prisma.BoolFieldUpdateOperationsInput | boolean
   canUseMetals?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -369,7 +369,7 @@ export type JurisdictionRuleUpdateInput = {
 export type JurisdictionRuleUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   country?: Prisma.StringFieldUpdateOperationsInput | string
-  region?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  region?: Prisma.StringFieldUpdateOperationsInput | string
   canBuyCrypto?: Prisma.BoolFieldUpdateOperationsInput | boolean
   canSellCrypto?: Prisma.BoolFieldUpdateOperationsInput | boolean
   canUseMetals?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -385,7 +385,7 @@ export type JurisdictionRuleUncheckedUpdateInput = {
 export type JurisdictionRuleCreateManyInput = {
   id?: string
   country: string
-  region?: string | null
+  region?: string
   canBuyCrypto?: boolean
   canSellCrypto?: boolean
   canUseMetals?: boolean
@@ -401,7 +401,7 @@ export type JurisdictionRuleCreateManyInput = {
 export type JurisdictionRuleUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   country?: Prisma.StringFieldUpdateOperationsInput | string
-  region?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  region?: Prisma.StringFieldUpdateOperationsInput | string
   canBuyCrypto?: Prisma.BoolFieldUpdateOperationsInput | boolean
   canSellCrypto?: Prisma.BoolFieldUpdateOperationsInput | boolean
   canUseMetals?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -417,7 +417,7 @@ export type JurisdictionRuleUpdateManyMutationInput = {
 export type JurisdictionRuleUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   country?: Prisma.StringFieldUpdateOperationsInput | string
-  region?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  region?: Prisma.StringFieldUpdateOperationsInput | string
   canBuyCrypto?: Prisma.BoolFieldUpdateOperationsInput | boolean
   canSellCrypto?: Prisma.BoolFieldUpdateOperationsInput | boolean
   canUseMetals?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -565,9 +565,11 @@ export type $JurisdictionRulePayload<ExtArgs extends runtime.Types.Extensions.In
     id: string
     country: string
     /**
-     * Null means "applies to the whole country".
+     * Empty string means "applies to the whole country". Not nullable: Prisma
+     * cannot target a nullable column in a compound unique selector, which
+     * makes (country, region) unusable for upsert and findUnique.
      */
-    region: string | null
+    region: string
     canBuyCrypto: boolean
     canSellCrypto: boolean
     canUseMetals: boolean

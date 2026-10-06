@@ -303,16 +303,39 @@ TypeScript, and the contract suite, both pass over them.
 
 ## 4. API architecture (plan §8)
 
-### BE-101 — Global route prefix · `BACKLOG`
-- **Description:** every route is at the root (`/assets`, `/health`, `/auth`).
-  No prefix. Recorded as an open question in `docs/engineering/api.md`.
-- **Why it matters:** changing it later breaks the admin. Decide before the
-  surface grows to a public client.
-- **Expected output:** a decision (ADR), then a prefix applied to every route
-  and to `apps/admin`'s `API_URL` paths.
-- **Acceptance criteria:** `contracts.spec.ts` updated for the new paths.
-- **Dependencies:** none. **Blocks:** the first external client.
-- **Status:** `BACKLOG`
+### BE-101 — API versioning · `DONE` (commit `0563b85`)
+- **What exists:** `/api/v1` on every route, applied with
+  `app.setGlobalPrefix` from `services/api/src/versioning/apply-versioning.ts`.
+  `/health` and `/docs` are excluded: a probe is configured in a cluster
+  manifest by someone who does not read changelogs, and a versioned probe means
+  rotating a version requires reconfiguring the cluster or leaving a probe
+  pointed at an address that gets removed.
+- **The lifecycle is data, not prose.** `src/versioning/api-versions.ts` holds
+  the registry: each version is `current`, `deprecated` or `retired` with a
+  sunset date once it leaves `current`. Deprecated versions are still served
+  **unchanged** and announce themselves on every response (`Deprecation`,
+  `Sunset`, `Link; rel="successor-version"`, `Warning`). Retired versions get
+  `410 Gone` naming the successor. Retirement is a human editing `status`, not a
+  date comparison — "it is past the sunset date so every client must have
+  migrated" is an assumption no system can make on its own.
+- **404s are distinguishable.** `/api/v2/assets` returns
+  `unsupported_api_version`; a missing asset returns `not_found`. Both name the
+  versions that do exist. `GET /api/v1/meta/versions` is the same registry for a
+  client that has not made a mistake yet.
+- **The unversioned alias answers until 2026-12-01** and announces its own
+  removal. It is a shim for the admin integration in flight, not a second API;
+  deleting `LEGACY_UNVERSIONED_ALIAS.enabled` turns it off.
+- **Tests:** 34 contract tests (including 7 for versioning), 8 unit tests of the
+  lifecycle in `src/versioning/api-version.spec.ts`.
+- **Two latent bugs found while doing it:** `RateLimitGuard` and
+  `AuditInterceptor` both tested `originalUrl.startsWith('/auth/')`, which
+  stopped matching the moment a prefix existed — every login would have moved
+  onto the 120/minute budget, and sign-ins would have entered the audit trail
+  the interceptor excludes. Both now match `auth` as a path segment.
+- **Not done:** `apps/admin`'s `API_URL` still points at the API root. It works
+  because of the alias, and moving it to `/api/v1` is a one-line change the admin
+  owner should make when the alias is removed.
+- **Status:** `DONE`
 
 ### BE-102 — OpenAPI documentation · `PARTIAL`
 - **What exists:** `@nestjs/swagger` is mounted at `/docs`
@@ -349,6 +372,40 @@ TypeScript, and the contract suite, both pass over them.
 - **What does not exist:** metrics, traces, error reporting. `SENTRY_DSN` and
   `OTEL_EXPORTER_OTLP_ENDPOINT` are in `.env.example` and read by nothing.
 - **Status:** `PARTIAL`
+
+
+### BE-106 — Idempotency for financial operations · `DONE` (commit `ec328ad`)
+- **What exists:** `Idempotency-Key` support on the three routes that move money
+  or create a financial commitment — `POST /swaps/quotes`, `POST /redemptions`,
+  `POST /onramp/quote` — via `@Idempotent()` on the route rather than a URL list,
+  so a new financial endpoint is visibly *not* covered until someone adds it.
+- **Storage is Postgres, not Redis.** `IdempotencyRecord`, keyed by
+  `sha256(actorId + key)`. Redis is a cache: it is flushed, evicted and
+  restarted for reasons unrelated to money, and an idempotency store that forgets
+  is worse than none, because the retry it was supposed to absorb re-executes.
+  The key itself is never persisted and never logged — only a 12-hex digest, and
+  pino censors the header.
+- **Concurrent duplicates across instances** are serialised by
+  `INSERT ... ON CONFLICT DO NOTHING` against the unique index on `keyHash`, not
+  by a lock. A mutex cannot do this: two replicas mean two mutexes, and a mutex
+  only convinces the process holding it. Proved by firing six simultaneous
+  duplicates at two separate application instances — one row, one claim, six
+  identical responses.
+- **Refusals, all of them safe:** same key with a different body is 409
+  `fingerprint_mismatch` (never a replay — answering a request nobody made is its
+  own failure); a claim whose instance died is 409 `outcome_unknown` and does
+  **not** re-execute, because whether it committed before it died is unknowable.
+  Refusing costs one error message; guessing wrong costs a second purchase.
+- **Expiry:** 24 hours, verified by ageing a record past its window.
+- **Tests:** 20 in `src/common/idempotency/idempotency.spec.ts`, DB-backed,
+  two application instances.
+- **Known gap:** expired rows are treated as absent but not deleted. No scheduler
+  exists in the repository, so `IdempotencyStore.purgeExpired()` is currently
+  called by nothing. It is a storage-growth issue, not a correctness one.
+- **Also known:** the header is supported, not required —
+  `@Idempotent({ required: true })` is the one-word change once every client
+  sends it.
+- **Status:** `DONE`
 
 ---
 
@@ -861,17 +918,17 @@ TypeScript, and the contract suite, both pass over them.
 
 ## 21. Summary counts
 
-54 tracked tasks plus 17 defects.
+56 tracked tasks plus 17 defects.
 
 | Status | Tasks |
 |---|---|
-| `DONE` | 13 |
+| `DONE` | 15 |
 | `PARTIAL` | 20 |
-| `BACKLOG` | 14 |
+| `BACKLOG` | 13 |
 | `BLOCKED` | 6 |
 | `OPEN` | 1 |
 | Defects `DEF-001`…`DEF-017` | 17, all `BACKLOG` |
 
-**13 of 54 tasks are complete.** The plan's §68 dependency chain is most of the
+**15 of 56 tasks are complete.** The plan's §68 dependency chain is most of the
 way built at the infrastructure layer and not started at the layer that moves
 money. See [`BACKEND_ROADMAP.md`](BACKEND_ROADMAP.md).

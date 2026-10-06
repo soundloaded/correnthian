@@ -12,7 +12,7 @@ import { AuditFilters } from './filters';
  * the quotes page. `actorEmail` is resolved by the API because an operator
  * cannot act on a cuid.
  */
-type AuditRow = Contract<'GET /audit'>[number];
+type AuditRow = Contract<'GET /api/v1/audit'>[number];
 type AuditOutcome = AuditRow['outcome'];
 
 export const metadata = { title: 'Audit · Correnthian admin' };
