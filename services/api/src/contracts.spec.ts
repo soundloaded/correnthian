@@ -79,6 +79,26 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
   /** Every request this suite made that should leave an audit line. */
   const requestIds: string[] = [];
 
+  /**
+   * Redemption fixtures.
+   *
+   * Built rather than assumed for the same reason the transaction fixtures
+   * are: the development seed deliberately ships a non-redeemable asset and a
+   * disabled provider, so a suite that leaned on it could only ever assert the
+   * refusal paths. `POST /redemptions` returning 201 is the assertion that
+   * matters, and it needs something to succeed against.
+   */
+  let fixtureRedemptionAssetId = '';
+  let fixtureRedemptionProviderSlug = '';
+  let fixtureRedemptionRuleId = '';
+  let fixtureRedemptionChainId = '';
+  let fixtureRedemptionIssuerId = '';
+  /** The account whose jurisdiction permits redemption, and its session. */
+  let fixtureRedeemerId = '';
+  let fixtureRedeemerToken = '';
+  let fixtureRedemptionId = '';
+  const fixtureRedemptionIds: string[] = [];
+
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
@@ -225,6 +245,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     fixtureProviderName = provider?.name ?? null;
 
     await seedTransactionFixtures(actor.id);
+    await seedRedemptionFixtures();
   }
 
   /**
@@ -289,6 +310,100 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     }
   }
 
+  /**
+   * A redeemable asset, an active metals provider, a jurisdiction that permits
+   * redemption, and an account that lives in it.
+   *
+   * The jurisdiction comes from the account record — `POST /redemptions` takes
+   * no country from the client — so the account is the fixture, not a request
+   * parameter. `ZZ` is not a real ISO code, so this can never be mistaken for
+   * a legal position or collide with a rule someone meant.
+   */
+  async function seedRedemptionFixtures() {
+    const chain = await prisma.chain.create({
+      data: {
+        id: `contractspec-rx-${process.pid}`,
+        name: 'Contract spec redemption chain',
+        family: 'evm',
+        nativeSymbol: 'ETH',
+        enabled: true,
+      },
+    });
+    fixtureRedemptionChainId = chain.id;
+
+    const issuer = await prisma.issuer.create({
+      data: {
+        slug: `contract-spec-rx-${process.pid}`,
+        name: 'Contract spec redemption issuer',
+        jurisdiction: 'ZZ',
+      },
+    });
+    fixtureRedemptionIssuerId = issuer.id;
+
+    const asset = await prisma.asset.create({
+      data: {
+        assetId: `contractspec:${process.pid}:gold`,
+        chainId: chain.id,
+        contractAddress: `0x${'cd'.repeat(20)}`,
+        symbol: 'CSXG',
+        name: 'Contract spec gold',
+        decimals: 18,
+        category: 'metal',
+        issuerId: issuer.id,
+        custodyModel: 'allocated',
+        redeemSupported: true,
+        enabled: true,
+      },
+    });
+    fixtureRedemptionAssetId = asset.assetId;
+
+    const provider = await prisma.provider.create({
+      data: {
+        slug: `contract-spec-rx-${process.pid}`,
+        name: 'Contract spec redemption provider',
+        category: 'metals',
+        status: 'active',
+        capabilities: ['redeem'],
+      },
+    });
+    fixtureRedemptionProviderSlug = provider.slug;
+
+    const rule = await prisma.jurisdictionRule.create({
+      data: {
+        country: 'ZZ',
+        region: '',
+        canUseMetals: true,
+        canRedeem: true,
+        kycRequired: false,
+        notes: 'Created by contracts.spec.ts. Not a legal position.',
+      },
+    });
+    fixtureRedemptionRuleId = rule.id;
+
+    // A dedicated account rather than the seeded admin. Jurisdiction is read
+    // off the account record, so covering this route means putting an account
+    // in the permitted jurisdiction — and rewriting an operator's real profile
+    // to do it would be the sort of side effect that only shows up later.
+    const email = `contract-rx-${process.pid}@correnthian.test`;
+    await prisma.user.deleteMany({ where: { email } });
+    const reg = await request(app.getHttpServer())
+      .post('/api/v1/auth/register')
+      .send({ email, password: 'correct-horse-battery-staple' });
+    if (reg.status !== 201) {
+      throw new Error(`could not create the redemption fixture account: ${reg.status}`);
+    }
+    const admin = await prisma.user.findUnique({ where: { email } });
+    if (!admin) throw new Error('The redemption fixture account was not created.');
+    fixtureRedeemerId = admin.id;
+    // `@Roles('compliance')` guards the transition route; the account must be
+    // able to take the same path the console's compliance operator would.
+    await prisma.user.update({
+      where: { id: admin.id },
+      data: { country: 'ZZ', region: '', role: 'compliance' },
+    });
+    fixtureRedeemerToken = reg.body.token as string;
+  }
+
   afterAll(async () => {
     // Fixture teardown. Deleting the audit probe is not a hole in the
     // append-only guarantee — that property is about the application's write
@@ -313,6 +428,40 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     }
     if (fixtureQuoteIds.length > 0) {
       await prisma.swapQuote.deleteMany({ where: { id: { in: fixtureQuoteIds } } });
+    }
+    // Redemptions before the asset they point at, and the fixture account
+    // before the rows attributed to it.
+    await prisma.redemptionRequest.deleteMany({
+      where: {
+        OR: [
+          { id: { in: fixtureRedemptionIds } },
+          ...(fixtureRedemptionAssetId ? [{ assetId: fixtureRedemptionAssetId }] : []),
+          ...(fixtureRedeemerId ? [{ userId: fixtureRedeemerId }] : []),
+        ],
+      },
+    });
+    if (fixtureRedemptionId) {
+      await prisma.redemptionRequest.deleteMany({ where: { id: fixtureRedemptionId } });
+    }
+    if (fixtureRedeemerId) {
+      await prisma.auditLog.deleteMany({ where: { actorId: fixtureRedeemerId } });
+      await prisma.session.deleteMany({ where: { userId: fixtureRedeemerId } });
+      await prisma.user.deleteMany({ where: { id: fixtureRedeemerId } });
+    }
+    if (fixtureRedemptionAssetId) {
+      await prisma.asset.deleteMany({ where: { assetId: fixtureRedemptionAssetId } });
+    }
+    if (fixtureRedemptionProviderSlug) {
+      await prisma.provider.deleteMany({ where: { slug: fixtureRedemptionProviderSlug } });
+    }
+    if (fixtureRedemptionRuleId) {
+      await prisma.jurisdictionRule.deleteMany({ where: { id: fixtureRedemptionRuleId } });
+    }
+    if (fixtureRedemptionIssuerId) {
+      await prisma.issuer.deleteMany({ where: { id: fixtureRedemptionIssuerId } });
+    }
+    if (fixtureRedemptionChainId) {
+      await prisma.chain.deleteMany({ where: { id: fixtureRedemptionChainId } });
     }
     await app?.close();
   });
@@ -368,6 +517,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     ['GET /api/v1/transactions', '/api/v1/transactions'],
     ['GET /api/v1/transactions/stats', '/api/v1/transactions/stats'],
     ['GET /api/v1/transactions/mine', '/api/v1/transactions/mine'],
+    ['GET /api/v1/redemptions/stats', '/api/v1/redemptions/stats'],
   ];
 
   it('authenticates as the seeded admin', () => {
@@ -415,6 +565,88 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     expect(res.body).toHaveProperty('error.code');
     expect(res.body).toHaveProperty('error.message');
     expect(res.body).toHaveProperty('timestamp');
+  });
+
+  // --- redemptions ---------------------------------------------------------
+
+  const redeem = (body: Record<string, unknown> = {}) =>
+    request(app.getHttpServer())
+      .post('/api/v1/redemptions')
+      .set('Authorization', `Bearer ${fixtureRedeemerToken}`)
+      .send({
+        assetId: fixtureRedemptionAssetId,
+        amountRaw: '1.5',
+        providerSlug: fixtureRedemptionProviderSlug,
+        ...body,
+      });
+
+  it('POST /api/v1/redemptions matches its contract', async () => {
+    const res = await redeem();
+    expect(res.status, `${res.status}: ${JSON.stringify(res.body)}`).toBe(201);
+
+    const parsed = CONTRACT_REGISTRY['POST /api/v1/redemptions'].safeParse(res.body);
+    if (!parsed.success) {
+      const detail = parsed.error.issues
+        .map((i) => `  ${i.path.join('.') || '(root)'}: ${i.message}`)
+        .join('\n');
+      throw new Error(`POST /api/v1/redemptions does not match its contract:\n${detail}`);
+    }
+    expect(parsed.data.state).toBe('requested');
+    fixtureRedemptionIds.push(parsed.data.id);
+  });
+
+  it('PATCH /api/v1/redemptions/:id/transition matches its contract', async () => {
+    // This is the route that wrote to a column the table did not have. A
+    // contract parse cannot see a missing column, but the 200 below cannot
+    // happen unless the write committed — Prisma rejects the unknown argument
+    // before it ever reaches Postgres.
+    const created = await redeem();
+    expect(created.status, `${created.status}: ${JSON.stringify(created.body)}`).toBe(201);
+    fixtureRedemptionIds.push(created.body.id as string);
+
+    const res = await request(app.getHttpServer())
+      .patch(`/api/v1/redemptions/${created.body.id}/transition`)
+      .set('Authorization', `Bearer ${fixtureRedeemerToken}`)
+      .send({ state: 'approved' });
+    expect(res.status, `${res.status}: ${JSON.stringify(res.body)}`).toBe(200);
+
+    const parsed = CONTRACT_REGISTRY['PATCH /api/v1/redemptions/:id/transition'].safeParse(res.body);
+    if (!parsed.success) {
+      const detail = parsed.error.issues
+        .map((i) => `  ${i.path.join('.') || '(root)'}: ${i.message}`)
+        .join('\n');
+      throw new Error(`PATCH /api/v1/redemptions/:id/transition does not match its contract:\n${detail}`);
+    }
+    // Who approved it is on the row, not only in the audit line.
+    expect(parsed.data.state).toBe('approved');
+    expect(parsed.data.reviewedBy).toBe(fixtureRedeemerId);
+    fixtureRedemptionId = parsed.data.id;
+  });
+
+  it('GET /api/v1/redemptions/mine matches its contract', async () => {
+    const created = await redeem();
+    expect(created.status).toBe(201);
+    fixtureRedemptionIds.push(created.body.id as string);
+
+    // As the account that made it. `mine` is scoped to the session, so the
+    // seeded admin would see an empty list and the assertion below would be
+    // checking nothing.
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/redemptions/mine')
+      .set('Authorization', `Bearer ${fixtureRedeemerToken}`);
+    expect(res.status, `${res.status}: ${JSON.stringify(res.body)}`).toBe(200);
+
+    const parsed = CONTRACT_REGISTRY['GET /api/v1/redemptions/mine'].safeParse(res.body);
+    if (!parsed.success) {
+      const detail = parsed.error.issues
+        .map((i) => `  ${i.path.join('.') || '(root)'}: ${i.message}`)
+        .join('\n');
+      throw new Error(`GET /api/v1/redemptions/mine does not match its contract:\n${detail}`);
+    }
+    // Non-vacuous: an empty list would parse perfectly and prove nothing.
+    expect(parsed.data.length).toBeGreaterThan(0);
+    expect(parsed.data.some((r) => r.id === created.body.id)).toBe(true);
+    expect(parsed.data.every((r) => r.asset.symbol.length > 0)).toBe(true);
   });
 
   // --- versioning -----------------------------------------------------------

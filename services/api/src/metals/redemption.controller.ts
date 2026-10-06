@@ -31,13 +31,15 @@ export class RedemptionController {
     @CurrentUser() user: AuthenticatedUser,
     @Body(zodPipe(requestSchema)) dto: z.infer<typeof requestSchema>,
   ) {
+    // No jurisdiction field on the DTO, and none on
+    // `RedemptionRequestInput` either. The service reads `country`/`region`
+    // off the account record; a client cannot claim a location, so it cannot
+    // claim a jurisdiction where redemption happens to be permitted.
     return this.redemptions.request({
       userId: user.id,
       amountRaw: dto.amountRaw,
       assetId: dto.assetId,
       providerSlug: dto.providerSlug,
-      country: null,   // resolved from the account record, never from the client
-      region: null,
       destination: dto.destination,
     });
   }

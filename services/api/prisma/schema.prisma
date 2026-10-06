@@ -710,6 +710,14 @@ model RedemptionRequest {
 
   state RedemptionState @default(requested)
 
+  /// Who approved this redemption, for the transitions that are a human
+  /// determination. Nullable: `requested` and the shipment states have no
+  /// reviewer, and a column that pretended otherwise would be a lie.
+  ///
+  /// A user id only. Nothing here may ever hold key material — see the
+  /// invariant at the top of this file.
+  reviewedBy String?
+
   amountRaw   String
   notionalUsd Decimal? @db.Decimal(36, 8)
   feesUsd     Decimal? @db.Decimal(36, 8)

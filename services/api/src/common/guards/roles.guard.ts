@@ -4,19 +4,11 @@ import {
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
 import { AppError } from '../errors.js';
+import { roleSatisfies } from '../roles.js';
 
 export const ROLES_KEY = 'correnthian:roles';
 
 export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
-
-/** Role hierarchy. A role satisfies a requirement if it is equal or higher. */
-const RANK: Record<string, number> = {
-  user: 0,
-  support: 1,
-  compliance: 2,
-  admin: 3,
-  owner: 4,
-};
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -30,10 +22,12 @@ export class RolesGuard implements CanActivate {
     if (!required?.length) return true;
 
     const req = ctx.switchToHttp().getRequest<Request & { user?: { role: string } }>();
-    const actual = req.user?.role;
-    const held = actual ? (RANK[actual] ?? -1) : -1;
 
-    if (!required.some((r) => held >= (RANK[r] ?? Infinity))) {
+    // Both failure directions are closed in `../roles.ts`: an unknown held
+    // role ranks below `user`, and an unknown requirement is unsatisfiable.
+    // A misspelled `@Roles()` therefore denies everyone rather than admitting
+    // them, which is the only safe direction for a permissions check to fail.
+    if (!required.some((r) => roleSatisfies(req.user?.role, r))) {
       throw AppError.forbidden('Insufficient role');
     }
     return true;
