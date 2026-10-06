@@ -64,7 +64,7 @@ correnthian/
 │   └── admin/           Next.js + shadcn/ui            ← active
 ├── services/
 │   └── api/             NestJS — modular monolith      ← active, priority
-├── packages/            source-only; no build step
+├── packages/            build to dist/ (see Conventions)
 │   ├── types/           domain types — asset identity, accounts, rails
 │   ├── wallet-core/     keys, derivation, local signing  ← the boundary
 │   ├── blockchain/      EVM / Bitcoin / Solana behind BlockchainAdapter
@@ -99,7 +99,7 @@ Requires **Node 22+** and **pnpm 10+**.
 pnpm install
 pnpm dev            # all apps
 pnpm typecheck      # tsc across every workspace
-pnpm build          # only apps build; packages are source-only
+pnpm build          # apps and packages
 pnpm test           # vitest + Nest specs
 ```
 
@@ -126,21 +126,12 @@ deferred and confusing: single-file packages load fine, so the problem only
 appears once a package gains a second file with a relative `.js` specifier.
 Everything is built for that reason, not for consistency alone.
 
-**`packages/*` build to `dist/`.** They compile with
-`tsc -p tsconfig.package.json` and expose `dist/index.js` + `dist/index.d.ts`
-through `exports`.
-
-This is not incidental. A package whose `main` points at `src/index.ts` works
-under a bundler (Vite, Next) but **not** when Node loads the `.ts` directly —
-`services/api` is a tsc-emitting Node service, so it hits this. The failure is
-deferred and confusing: single-file packages load fine, so the problem only
-appears once a package gains a second file with a relative `.js` specifier.
-Everything is built for that reason, not for consistency alone.
-
-**Explicit DI in Nest.** Use `@Inject(Service)`, never constructor
-parameter types alone. Nest's CLI uses `tsc`, which emits decorator metadata;
-vitest uses esbuild, which does not. Explicit injection behaves identically
-under both. This bug shipped broken in Nest's own scaffold.
+**Explicit DI in Nest.** Use `@Inject(Service)`, never constructor parameter
+types alone. tsc emits decorator metadata; esbuild does not, so implicit
+injection resolves in the compiled build and silently yields `undefined`
+everywhere else. It has shipped broken three times here, including in Nest's
+own scaffold. `node scripts/check-explicit-di.mjs` enforces it in CI — write it
+correctly rather than relying on noticing.
 
 **Metro is monorepo-aware.** `apps/mobile/metro.config.js` watches the
 workspace root so `@correnthian/*` resolve. Keep it committed.

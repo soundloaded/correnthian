@@ -105,6 +105,11 @@ jobs:
       - name: wallet-core must have no transport, UI or provider dependencies
         run: node scripts/check-key-boundary.mjs
 
+      - name: Nest DI must be explicit
+        # Implicit injection resolves under tsc and silently yields undefined
+        # under esbuild. It has shipped broken three times here.
+        run: node scripts/check-explicit-di.mjs
+
   credential-scan:
     name: No credentials in env files
     runs-on: ubuntu-latest
