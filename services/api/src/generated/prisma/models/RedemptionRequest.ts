@@ -42,6 +42,7 @@ export type RedemptionRequestMinAggregateOutputType = {
   assetId: string | null
   providerId: string | null
   state: $Enums.RedemptionState | null
+  reviewedBy: string | null
   amountRaw: string | null
   notionalUsd: runtime.Decimal | null
   feesUsd: runtime.Decimal | null
@@ -57,6 +58,7 @@ export type RedemptionRequestMaxAggregateOutputType = {
   assetId: string | null
   providerId: string | null
   state: $Enums.RedemptionState | null
+  reviewedBy: string | null
   amountRaw: string | null
   notionalUsd: runtime.Decimal | null
   feesUsd: runtime.Decimal | null
@@ -72,6 +74,7 @@ export type RedemptionRequestCountAggregateOutputType = {
   assetId: number
   providerId: number
   state: number
+  reviewedBy: number
   amountRaw: number
   notionalUsd: number
   feesUsd: number
@@ -101,6 +104,7 @@ export type RedemptionRequestMinAggregateInputType = {
   assetId?: true
   providerId?: true
   state?: true
+  reviewedBy?: true
   amountRaw?: true
   notionalUsd?: true
   feesUsd?: true
@@ -116,6 +120,7 @@ export type RedemptionRequestMaxAggregateInputType = {
   assetId?: true
   providerId?: true
   state?: true
+  reviewedBy?: true
   amountRaw?: true
   notionalUsd?: true
   feesUsd?: true
@@ -131,6 +136,7 @@ export type RedemptionRequestCountAggregateInputType = {
   assetId?: true
   providerId?: true
   state?: true
+  reviewedBy?: true
   amountRaw?: true
   notionalUsd?: true
   feesUsd?: true
@@ -235,6 +241,7 @@ export type RedemptionRequestGroupByOutputType = {
   assetId: string
   providerId: string
   state: $Enums.RedemptionState
+  reviewedBy: string | null
   amountRaw: string
   notionalUsd: runtime.Decimal | null
   feesUsd: runtime.Decimal | null
@@ -275,6 +282,7 @@ export type RedemptionRequestWhereInput = {
   assetId?: Prisma.StringFilter<"RedemptionRequest"> | string
   providerId?: Prisma.StringFilter<"RedemptionRequest"> | string
   state?: Prisma.EnumRedemptionStateFilter<"RedemptionRequest"> | $Enums.RedemptionState
+  reviewedBy?: Prisma.StringNullableFilter<"RedemptionRequest"> | string | null
   amountRaw?: Prisma.StringFilter<"RedemptionRequest"> | string
   notionalUsd?: Prisma.DecimalNullableFilter<"RedemptionRequest"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: Prisma.DecimalNullableFilter<"RedemptionRequest"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -294,6 +302,7 @@ export type RedemptionRequestOrderByWithRelationInput = {
   assetId?: Prisma.SortOrder
   providerId?: Prisma.SortOrder
   state?: Prisma.SortOrder
+  reviewedBy?: Prisma.SortOrderInput | Prisma.SortOrder
   amountRaw?: Prisma.SortOrder
   notionalUsd?: Prisma.SortOrderInput | Prisma.SortOrder
   feesUsd?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -316,6 +325,7 @@ export type RedemptionRequestWhereUniqueInput = Prisma.AtLeast<{
   assetId?: Prisma.StringFilter<"RedemptionRequest"> | string
   providerId?: Prisma.StringFilter<"RedemptionRequest"> | string
   state?: Prisma.EnumRedemptionStateFilter<"RedemptionRequest"> | $Enums.RedemptionState
+  reviewedBy?: Prisma.StringNullableFilter<"RedemptionRequest"> | string | null
   amountRaw?: Prisma.StringFilter<"RedemptionRequest"> | string
   notionalUsd?: Prisma.DecimalNullableFilter<"RedemptionRequest"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: Prisma.DecimalNullableFilter<"RedemptionRequest"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -335,6 +345,7 @@ export type RedemptionRequestOrderByWithAggregationInput = {
   assetId?: Prisma.SortOrder
   providerId?: Prisma.SortOrder
   state?: Prisma.SortOrder
+  reviewedBy?: Prisma.SortOrderInput | Prisma.SortOrder
   amountRaw?: Prisma.SortOrder
   notionalUsd?: Prisma.SortOrderInput | Prisma.SortOrder
   feesUsd?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -360,6 +371,7 @@ export type RedemptionRequestScalarWhereWithAggregatesInput = {
   assetId?: Prisma.StringWithAggregatesFilter<"RedemptionRequest"> | string
   providerId?: Prisma.StringWithAggregatesFilter<"RedemptionRequest"> | string
   state?: Prisma.EnumRedemptionStateWithAggregatesFilter<"RedemptionRequest"> | $Enums.RedemptionState
+  reviewedBy?: Prisma.StringNullableWithAggregatesFilter<"RedemptionRequest"> | string | null
   amountRaw?: Prisma.StringWithAggregatesFilter<"RedemptionRequest"> | string
   notionalUsd?: Prisma.DecimalNullableWithAggregatesFilter<"RedemptionRequest"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: Prisma.DecimalNullableWithAggregatesFilter<"RedemptionRequest"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -375,6 +387,7 @@ export type RedemptionRequestCreateInput = {
   id?: string
   userId: string
   state?: $Enums.RedemptionState
+  reviewedBy?: string | null
   amountRaw: string
   notionalUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -394,6 +407,7 @@ export type RedemptionRequestUncheckedCreateInput = {
   assetId: string
   providerId: string
   state?: $Enums.RedemptionState
+  reviewedBy?: string | null
   amountRaw: string
   notionalUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -409,6 +423,7 @@ export type RedemptionRequestUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   state?: Prisma.EnumRedemptionStateFieldUpdateOperationsInput | $Enums.RedemptionState
+  reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   notionalUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -428,6 +443,7 @@ export type RedemptionRequestUncheckedUpdateInput = {
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
   providerId?: Prisma.StringFieldUpdateOperationsInput | string
   state?: Prisma.EnumRedemptionStateFieldUpdateOperationsInput | $Enums.RedemptionState
+  reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   notionalUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -445,6 +461,7 @@ export type RedemptionRequestCreateManyInput = {
   assetId: string
   providerId: string
   state?: $Enums.RedemptionState
+  reviewedBy?: string | null
   amountRaw: string
   notionalUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -460,6 +477,7 @@ export type RedemptionRequestUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   state?: Prisma.EnumRedemptionStateFieldUpdateOperationsInput | $Enums.RedemptionState
+  reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   notionalUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -477,6 +495,7 @@ export type RedemptionRequestUncheckedUpdateManyInput = {
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
   providerId?: Prisma.StringFieldUpdateOperationsInput | string
   state?: Prisma.EnumRedemptionStateFieldUpdateOperationsInput | $Enums.RedemptionState
+  reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   notionalUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -504,6 +523,7 @@ export type RedemptionRequestCountOrderByAggregateInput = {
   assetId?: Prisma.SortOrder
   providerId?: Prisma.SortOrder
   state?: Prisma.SortOrder
+  reviewedBy?: Prisma.SortOrder
   amountRaw?: Prisma.SortOrder
   notionalUsd?: Prisma.SortOrder
   feesUsd?: Prisma.SortOrder
@@ -526,6 +546,7 @@ export type RedemptionRequestMaxOrderByAggregateInput = {
   assetId?: Prisma.SortOrder
   providerId?: Prisma.SortOrder
   state?: Prisma.SortOrder
+  reviewedBy?: Prisma.SortOrder
   amountRaw?: Prisma.SortOrder
   notionalUsd?: Prisma.SortOrder
   feesUsd?: Prisma.SortOrder
@@ -541,6 +562,7 @@ export type RedemptionRequestMinOrderByAggregateInput = {
   assetId?: Prisma.SortOrder
   providerId?: Prisma.SortOrder
   state?: Prisma.SortOrder
+  reviewedBy?: Prisma.SortOrder
   amountRaw?: Prisma.SortOrder
   notionalUsd?: Prisma.SortOrder
   feesUsd?: Prisma.SortOrder
@@ -656,6 +678,7 @@ export type RedemptionRequestCreateWithoutAssetInput = {
   id?: string
   userId: string
   state?: $Enums.RedemptionState
+  reviewedBy?: string | null
   amountRaw: string
   notionalUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -673,6 +696,7 @@ export type RedemptionRequestUncheckedCreateWithoutAssetInput = {
   userId: string
   providerId: string
   state?: $Enums.RedemptionState
+  reviewedBy?: string | null
   amountRaw: string
   notionalUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -719,6 +743,7 @@ export type RedemptionRequestScalarWhereInput = {
   assetId?: Prisma.StringFilter<"RedemptionRequest"> | string
   providerId?: Prisma.StringFilter<"RedemptionRequest"> | string
   state?: Prisma.EnumRedemptionStateFilter<"RedemptionRequest"> | $Enums.RedemptionState
+  reviewedBy?: Prisma.StringNullableFilter<"RedemptionRequest"> | string | null
   amountRaw?: Prisma.StringFilter<"RedemptionRequest"> | string
   notionalUsd?: Prisma.DecimalNullableFilter<"RedemptionRequest"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: Prisma.DecimalNullableFilter<"RedemptionRequest"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -734,6 +759,7 @@ export type RedemptionRequestCreateWithoutProviderInput = {
   id?: string
   userId: string
   state?: $Enums.RedemptionState
+  reviewedBy?: string | null
   amountRaw: string
   notionalUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -751,6 +777,7 @@ export type RedemptionRequestUncheckedCreateWithoutProviderInput = {
   userId: string
   assetId: string
   state?: $Enums.RedemptionState
+  reviewedBy?: string | null
   amountRaw: string
   notionalUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -793,6 +820,7 @@ export type RedemptionRequestCreateManyAssetInput = {
   userId: string
   providerId: string
   state?: $Enums.RedemptionState
+  reviewedBy?: string | null
   amountRaw: string
   notionalUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -808,6 +836,7 @@ export type RedemptionRequestUpdateWithoutAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   state?: Prisma.EnumRedemptionStateFieldUpdateOperationsInput | $Enums.RedemptionState
+  reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   notionalUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -825,6 +854,7 @@ export type RedemptionRequestUncheckedUpdateWithoutAssetInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   providerId?: Prisma.StringFieldUpdateOperationsInput | string
   state?: Prisma.EnumRedemptionStateFieldUpdateOperationsInput | $Enums.RedemptionState
+  reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   notionalUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -841,6 +871,7 @@ export type RedemptionRequestUncheckedUpdateManyWithoutAssetInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   providerId?: Prisma.StringFieldUpdateOperationsInput | string
   state?: Prisma.EnumRedemptionStateFieldUpdateOperationsInput | $Enums.RedemptionState
+  reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   notionalUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -857,6 +888,7 @@ export type RedemptionRequestCreateManyProviderInput = {
   userId: string
   assetId: string
   state?: $Enums.RedemptionState
+  reviewedBy?: string | null
   amountRaw: string
   notionalUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -872,6 +904,7 @@ export type RedemptionRequestUpdateWithoutProviderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   state?: Prisma.EnumRedemptionStateFieldUpdateOperationsInput | $Enums.RedemptionState
+  reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   notionalUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -889,6 +922,7 @@ export type RedemptionRequestUncheckedUpdateWithoutProviderInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
   state?: Prisma.EnumRedemptionStateFieldUpdateOperationsInput | $Enums.RedemptionState
+  reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   notionalUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -905,6 +939,7 @@ export type RedemptionRequestUncheckedUpdateManyWithoutProviderInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   assetId?: Prisma.StringFieldUpdateOperationsInput | string
   state?: Prisma.EnumRedemptionStateFieldUpdateOperationsInput | $Enums.RedemptionState
+  reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountRaw?: Prisma.StringFieldUpdateOperationsInput | string
   notionalUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   feesUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -924,6 +959,7 @@ export type RedemptionRequestSelect<ExtArgs extends runtime.Types.Extensions.Int
   assetId?: boolean
   providerId?: boolean
   state?: boolean
+  reviewedBy?: boolean
   amountRaw?: boolean
   notionalUsd?: boolean
   feesUsd?: boolean
@@ -943,6 +979,7 @@ export type RedemptionRequestSelectCreateManyAndReturn<ExtArgs extends runtime.T
   assetId?: boolean
   providerId?: boolean
   state?: boolean
+  reviewedBy?: boolean
   amountRaw?: boolean
   notionalUsd?: boolean
   feesUsd?: boolean
@@ -962,6 +999,7 @@ export type RedemptionRequestSelectUpdateManyAndReturn<ExtArgs extends runtime.T
   assetId?: boolean
   providerId?: boolean
   state?: boolean
+  reviewedBy?: boolean
   amountRaw?: boolean
   notionalUsd?: boolean
   feesUsd?: boolean
@@ -981,6 +1019,7 @@ export type RedemptionRequestSelectScalar = {
   assetId?: boolean
   providerId?: boolean
   state?: boolean
+  reviewedBy?: boolean
   amountRaw?: boolean
   notionalUsd?: boolean
   feesUsd?: boolean
@@ -992,7 +1031,7 @@ export type RedemptionRequestSelectScalar = {
   updatedAt?: boolean
 }
 
-export type RedemptionRequestOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "assetId" | "providerId" | "state" | "amountRaw" | "notionalUsd" | "feesUsd" | "serialNumbers" | "destination" | "providerRef" | "rejectionReason" | "requestedAt" | "updatedAt", ExtArgs["result"]["redemptionRequest"]>
+export type RedemptionRequestOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "assetId" | "providerId" | "state" | "reviewedBy" | "amountRaw" | "notionalUsd" | "feesUsd" | "serialNumbers" | "destination" | "providerRef" | "rejectionReason" | "requestedAt" | "updatedAt", ExtArgs["result"]["redemptionRequest"]>
 export type RedemptionRequestInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   asset?: boolean | Prisma.AssetDefaultArgs<ExtArgs>
   provider?: boolean | Prisma.ProviderDefaultArgs<ExtArgs>
@@ -1018,6 +1057,15 @@ export type $RedemptionRequestPayload<ExtArgs extends runtime.Types.Extensions.I
     assetId: string
     providerId: string
     state: $Enums.RedemptionState
+    /**
+     * Who approved this redemption, for the transitions that are a human
+     * determination. Nullable: `requested` and the shipment states have no
+     * reviewer, and a column that pretended otherwise would be a lie.
+     * 
+     * A user id only. Nothing here may ever hold key material — see the
+     * invariant at the top of this file.
+     */
+    reviewedBy: string | null
     amountRaw: string
     notionalUsd: runtime.Decimal | null
     feesUsd: runtime.Decimal | null
@@ -1460,6 +1508,7 @@ export interface RedemptionRequestFieldRefs {
   readonly assetId: Prisma.FieldRef<"RedemptionRequest", 'String'>
   readonly providerId: Prisma.FieldRef<"RedemptionRequest", 'String'>
   readonly state: Prisma.FieldRef<"RedemptionRequest", 'RedemptionState'>
+  readonly reviewedBy: Prisma.FieldRef<"RedemptionRequest", 'String'>
   readonly amountRaw: Prisma.FieldRef<"RedemptionRequest", 'String'>
   readonly notionalUsd: Prisma.FieldRef<"RedemptionRequest", 'Decimal'>
   readonly feesUsd: Prisma.FieldRef<"RedemptionRequest", 'Decimal'>

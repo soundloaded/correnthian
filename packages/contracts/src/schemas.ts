@@ -409,6 +409,60 @@ export const transactionStatsSchema = z.object({
   byDirection: z.record(z.string(), z.number()),
 });
 
+// --- redemptions ----------------------------------------------------------
+
+export const redemptionStateSchema = z.enum([
+  'requested', 'kyc_pending', 'approved', 'in_production', 'shipped', 'delivered',
+  'rejected', 'cancelled',
+]);
+
+/**
+ * One physical-redemption request, as the API returns it.
+ *
+ * Dates are ISO strings and money is a decimal string, because both leave the
+ * Prisma row unmapped: `RedemptionService` hands the row straight back. A
+ * contract that assumed a number here would be describing an API that does not
+ * exist, so the decimal is accepted as the string it actually is.
+ */
+export const redemptionRequestSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  /** The registry row's id, not the derived `assetId` string. */
+  assetId: z.string(),
+  providerId: z.string(),
+
+  state: redemptionStateSchema,
+  /**
+   * Who approved this. Null until a human moves it to `approved`, and null
+   * again for the shipment states, which have no reviewer.
+   */
+  reviewedBy: z.string().nullable(),
+
+  amountRaw: z.string(),
+  notionalUsd: z.union([z.string(), z.number()]).nullable(),
+  feesUsd: z.union([z.string(), z.number()]).nullable(),
+  serialNumbers: z.array(z.string()),
+
+  destination: z.unknown().nullable(),
+  providerRef: z.string().nullable(),
+  rejectionReason: z.string().nullable(),
+
+  requestedAt: z.string(),
+  updatedAt: z.string(),
+});
+
+/** `GET /redemptions/mine` resolves the asset, so an account can render a name. */
+export const myRedemptionsSchema = z.array(
+  redemptionRequestSchema.extend({
+    asset: z.object({ assetId: z.string(), symbol: z.string(), name: z.string() }),
+  }),
+);
+
+export const redemptionStatsSchema = z.object({
+  total: z.number().int(),
+  byState: z.record(z.string(), z.number()),
+});
+
 // --- misc ------------------------------------------------------------------
 
 export const errorSchema = z.object({
@@ -548,6 +602,10 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/transactions/stats': transactionStatsSchema,
   'GET /api/v1/transactions/mine': myTransactionsSchema,
   'GET /api/v1/transactions/:id': transactionDetailSchema,
+  'POST /api/v1/redemptions': redemptionRequestSchema,
+  'PATCH /api/v1/redemptions/:id/transition': redemptionRequestSchema,
+  'GET /api/v1/redemptions/mine': myRedemptionsSchema,
+  'GET /api/v1/redemptions/stats': redemptionStatsSchema,
   'GET /api/v1/meta/versions': apiVersionsDocumentSchema,
   'ERROR GET /api/v2/*': apiVersionErrorSchema,
   'ERROR GET /api/v1/does-not-exist': routeNotFoundSchema,

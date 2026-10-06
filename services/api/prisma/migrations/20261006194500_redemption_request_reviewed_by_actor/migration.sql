@@ -1,0 +1,19 @@
+-- Who approved a physical redemption.
+--
+-- `RedemptionService.transition` has always written `reviewedBy` on the move to
+-- `approved`, and `RedemptionRequest` has never had the column. Prisma rejects
+-- the unknown argument at runtime as a `PrismaClientValidationError`, which the
+-- exception filter maps to a 500 -- so approving a gold redemption returned
+-- "Internal server error" and the approval never happened.
+--
+-- `tsc --noEmit` accepted the write: Prisma types `update`'s `data` as
+-- `Prisma.XOR<...>`, a union, which defeats TypeScript's excess-property
+-- check. That hole is not specific to this field, which is why
+-- `scripts/check-prisma-writes.mjs` now exists.
+--
+-- Nullable and without a foreign key on purpose: `requested` and the shipment
+-- states have no reviewer, and a FK to `User` would make retiring an operator
+-- account fail against a physical-redemption record that outlives them.
+--
+-- A user id, never key material. See the invariant at the top of schema.prisma.
+ALTER TABLE "RedemptionRequest" ADD COLUMN "reviewedBy" TEXT;

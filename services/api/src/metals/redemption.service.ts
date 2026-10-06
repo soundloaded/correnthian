@@ -8,8 +8,6 @@ export interface RedemptionRequestInput {
   userId: string;
   assetId: string;
   amountRaw: string;
-  country: string | null;
-  region: string | null;
   providerSlug: string;
   destination?: Record<string, unknown>;
 }
@@ -59,8 +57,31 @@ export class RedemptionService {
       throw AppError.providerUnavailable('This redemption provider is not available');
     }
 
-    await this.jurisdiction.assertEligible(input.country, input.region, 'redeem');
-    if (await this.jurisdiction.isProviderBlocked(input.country, input.region, input.providerSlug)) {
+    // Jurisdiction is read off the account record and is not a field on this
+    // input. That is the whole trust rule: `JurisdictionService` denies by
+    // default, so any path that let a request body supply `country` would let
+    // a client claim to be somewhere redemption is permitted. Keeping it out
+    // of the input type makes that unrepresentable rather than merely
+    // discouraged.
+    const account = await this.prisma.user.findUnique({
+      where: { id: input.userId },
+      select: { country: true, region: true },
+    });
+    const country = account?.country ?? null;
+    const region = account?.region ?? null;
+
+    // An account that has not told us where it is must not redeem, but the
+    // answer is "tell us", not "you are blocked" — the UI cannot ask the right
+    // question if both arrive as the same reason.
+    if (!country || country.length !== 2) {
+      throw AppError.jurisdictionBlocked(
+        'Add a country to your account before requesting physical redemption.',
+        { country, region, reason: 'account_has_no_jurisdiction' },
+      );
+    }
+
+    await this.jurisdiction.assertEligible(country, region, 'redeem');
+    if (await this.jurisdiction.isProviderBlocked(country, region, input.providerSlug)) {
       throw AppError.jurisdictionBlocked('This redemption provider is not available in your jurisdiction.');
     }
 

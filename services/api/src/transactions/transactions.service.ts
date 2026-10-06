@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { validateAddress } from '@correnthian/blockchain';
 import { AuditService } from '../audit/audit.service.js';
 import { AppError } from '../common/errors.js';
+import { isOperatorRole } from '../common/roles.js';
 import type { Transaction } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type {
@@ -68,23 +69,12 @@ export interface TransactionActor {
 const SYSTEM_ACTOR: TransactionActor = { id: SYSTEM_ROLE, role: SYSTEM_ROLE };
 
 /**
- * Mirrors `RANK` in `common/guards/roles.guard.ts`, which is not exported.
- *
- * Duplicated rather than hoisted because that file is not this module's to
- * change. The failure mode is bounded: an unknown role ranks -1 and is
- * refused, so a hierarchy change that lands without updating this map makes
- * the service stricter, never looser. If the two ever disagree about who is
- * an operator, the HTTP guard is the one that decides at the edge.
+ * Whether the caller is platform staff rather than a customer is decided by
+ * `isOperatorRole` in `common/roles.ts` — the same map the HTTP guard reads.
+ * This module used to keep its own copy of `RANK`, which is the kind of
+ * duplication that only surfaces when the two disagree about whether someone
+ * may move a gold redemption forward.
  */
-const ROLE_RANK: Record<string, number> = {
-  user: 0,
-  support: 1,
-  compliance: 2,
-  admin: 3,
-  owner: 4,
-};
-
-const isOperator = (role: string) => (ROLE_RANK[role] ?? -1) >= (ROLE_RANK['support'] ?? 1);
 
 const POSITIVE_DECIMAL = /^\d+(\.\d+)?$/;
 
@@ -681,7 +671,7 @@ export class TransactionsService {
       throw AppError.forbidden(`Only the scheduler may assert "${to}"`);
     }
 
-    if (isOperator(actor.role)) return;
+    if (isOperatorRole(actor.role)) return;
 
     if (required === 'owner' && actor.id === tx.userId) return;
 
@@ -691,7 +681,7 @@ export class TransactionsService {
   }
 
   private assertOperator(actor: TransactionActor, tx: Transaction, what: string): void {
-    if (isOperator(actor.role)) return;
+    if (isOperatorRole(actor.role)) return;
     if (actor.id === tx.userId) {
       throw AppError.forbidden(`Only support may ${what} a transaction's chain state`);
     }

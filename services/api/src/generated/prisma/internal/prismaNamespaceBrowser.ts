@@ -368,6 +368,7 @@ export const RedemptionRequestScalarFieldEnum = {
   assetId: 'assetId',
   providerId: 'providerId',
   state: 'state',
+  reviewedBy: 'reviewedBy',
   amountRaw: 'amountRaw',
   notionalUsd: 'notionalUsd',
   feesUsd: 'feesUsd',
