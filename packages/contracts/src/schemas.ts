@@ -207,7 +207,14 @@ export const providerSchema = z.object({
 
 export const providerListSchema = z.array(providerSchema);
 
-// --- misc ------------------------------------------------------------------
+// --- swaps -----------------------------------------------------------------
+
+/** Mirrors the Prisma enums. A quote in a state the UI cannot colour is a bug. */
+export const quoteStateSchema = z.enum([
+  'quoted', 'awaiting_payment', 'broadcast', 'settled', 'failed', 'expired',
+]);
+export const railKindSchema = z.enum(['provider', 'dex', 'cex', 'otc']);
+export const executionQualitySchema = z.enum(['deep', 'thin', 'none']);
 
 export const quoteStatsSchema = z.object({
   total: z.number(),
@@ -215,19 +222,91 @@ export const quoteStatsSchema = z.object({
   byRail: z.record(z.string(), z.number()),
 });
 
+/**
+ * One row of the operator's quote table.
+ *
+ * The asset symbols and the provider name travel with the row on purpose. A
+ * console that has to join three tables to render one table renders the wrong
+ * join the first time one of them is empty, and the operator has no way to tell
+ * "no provider" from "we forgot to look".
+ */
+export const quoteRowSchema = z.object({
+  id: z.string(),
+  createdAt: z.string(),
+  state: quoteStateSchema,
+  railKind: railKindSchema,
+  railId: z.string(),
+  provider: z.object({ slug: z.string(), name: z.string() }).nullable(),
+  fromAsset: z.object({ assetId: z.string(), symbol: z.string() }),
+  toAsset: z.object({ assetId: z.string(), symbol: z.string() }),
+  fromAmountRaw: z.string(),
+  toAmountRaw: z.string(),
+  notionalUsd: z.number().nullable(),
+  priceImpactBps: z.number().int(),
+  slippageBps: z.number().int(),
+  /**
+   * These two are why a quote is or is not fillable. A thin-market quote that
+   * does not disclose its own limit is how a user is filled materially worse
+   * than the price they were shown, so the operator has to see both.
+   */
+  sizeCapUsd: z.number().nullable(),
+  executionQuality: executionQualitySchema,
+  /** The honest read of the two fields above, not a third opinion. */
+  executable: z.boolean(),
+  expiresAt: z.string(),
+});
+
+export const quoteListSchema = z.object({
+  items: z.array(quoteRowSchema),
+  nextCursor: z.string().nullable(),
+});
+
+/** The single-quote projection, which deliberately differs from the list row. */
+export const quoteDetailSchema = z.object({
+  id: z.string(),
+  rail: z.object({ kind: railKindSchema, id: z.string() }),
+  fromAmountRaw: z.string(),
+  toAmountRaw: z.string(),
+  slippageBps: z.number().int(),
+  priceImpactBps: z.number().int(),
+  minReceivedRaw: z.string(),
+  fees: z.unknown(),
+  executionQuality: executionQualitySchema,
+  sizeCapUsd: z.number().nullable(),
+  state: quoteStateSchema,
+  expiresAt: z.string(),
+  executable: z.boolean(),
+});
+
+// --- audit -----------------------------------------------------------------
+
+export const auditOutcomeSchema = z.enum(['success', 'failure', 'denied']);
+
 export const auditRowSchema = z.object({
   id: z.string(),
   actorId: z.string().nullable(),
+  /**
+   * Resolved server-side. `actorId` alone is a cuid, and an operator looking at
+   * a denied action cannot act on a cuid.
+   */
+  actorEmail: z.string().nullable(),
   actorRole: z.string().nullable(),
   action: z.string(),
   targetType: z.string().nullable(),
   targetId: z.string().nullable(),
-  outcome: z.enum(['success', 'failure', 'denied']),
+  outcome: auditOutcomeSchema,
   ipAddress: z.string().nullable(),
   createdAt: z.string(),
 });
 
 export const auditListSchema = z.array(auditRowSchema);
+
+/** The detail view adds the metadata the list deliberately withholds. */
+export const auditDetailSchema = auditRowSchema.extend({
+  metadata: z.record(z.string(), z.unknown()),
+});
+
+// --- misc ------------------------------------------------------------------
 
 export const errorSchema = z.object({
   error: z.object({
@@ -254,5 +333,8 @@ export const CONTRACT_REGISTRY = {
   'GET /chains': chainListSchema,
   'GET /providers': providerListSchema,
   'GET /swaps/quotes/stats': quoteStatsSchema,
+  'GET /swaps/quotes': quoteListSchema,
+  'GET /swaps/quotes/:id': quoteDetailSchema,
   'GET /audit': auditListSchema,
+  'GET /audit/:id': auditDetailSchema,
 } as const;

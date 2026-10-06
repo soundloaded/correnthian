@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { CurrentUser, type AuthenticatedUser } from '../common/decorators/current-user.decorator.js';
 import { Roles } from '../common/guards/roles.guard.js';
 import { zodPipe } from '../common/pipes/zod-validation.pipe.js';
+import { listQuotesSchema, quoteStateSchema, type ListQuotesDto } from './dto/list-quotes.dto.js';
 import { SwapsService } from './swaps.service.js';
 
 const quoteSchema = z.object({
@@ -15,7 +16,7 @@ const quoteSchema = z.object({
 });
 
 const listSchema = z.object({
-  state: z.enum(['quoted', 'awaiting_payment', 'broadcast', 'settled', 'failed', 'expired']).optional(),
+  state: quoteStateSchema.optional(),
 });
 
 @ApiTags('swaps')
@@ -43,6 +44,14 @@ export class SwapsController {
   @ApiOperation({ summary: 'Quote counters' })
   stats() {
     return this.swaps.stats();
+  }
+
+  @Get('quotes')
+  @Roles('support')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Every quote, for the operator console' })
+  listAll(@Query(zodPipe(listQuotesSchema)) query: ListQuotesDto) {
+    return this.swaps.listAll(query);
   }
 
   @Get('quotes/:id')
