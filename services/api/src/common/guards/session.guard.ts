@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
 import { AuthService } from '../../auth/auth.service.js';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator.js';
+import { bearerToken } from '../bearer.js';
 import { AppError } from '../errors.js';
 
 /**
@@ -23,16 +24,10 @@ export class SessionGuard implements CanActivate {
     if (isPublic) return true;
 
     const req = ctx.switchToHttp().getRequest<Request & { user?: unknown }>();
-    const token = this.extractToken(req);
+    const token = bearerToken(req.headers.authorization);
     if (!token) throw AppError.unauthorized('Missing session token');
 
     req.user = await this.auth.resolveSession(token);
     return true;
-  }
-
-  private extractToken(req: Request): string | null {
-    const header = req.headers.authorization;
-    if (header?.startsWith('Bearer ')) return header.slice(7).trim();
-    return null;
   }
 }

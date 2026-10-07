@@ -78,7 +78,18 @@ const schema = z.object({
 
   rateLimit: z.object({
     windowSeconds: z.coerce.number().int().min(1).default(60),
+    /** The general API budget. */
     maxRequests: z.coerce.number().int().min(1).default(120),
+    /**
+     * The sign-in budget, and it is deliberately not derived from
+     * `maxRequests`. `/auth/*` exists to guess credentials, so its ceiling is
+     * its own setting: raising the general budget for a bulk import must not
+     * quietly open the same headroom to credential stuffing.
+     *
+     * This had no knob at all before — the guard hardcoded `10` — so the
+     * constraint was invisible to an operator tuning `.env`.
+     */
+    authMaxRequests: z.coerce.number().int().min(1).default(10),
   }),
 });
 
@@ -117,6 +128,7 @@ export function parseConfig(source: NodeJS.ProcessEnv = process.env): ParseResul
     rateLimit: {
       windowSeconds: source['RATE_LIMIT_WINDOW_SECONDS'],
       maxRequests: source['RATE_LIMIT_MAX_REQUESTS'],
+      authMaxRequests: source['RATE_LIMIT_AUTH_MAX_REQUESTS'],
     },
   });
 

@@ -36,6 +36,37 @@ describe('config parsing', () => {
     ]);
   });
 
+  it('separates the sign-in ceiling from the general one', () => {
+    // DEF-004: both were validated here while the guard hardcoded its own
+    // values, so an operator could set them all day and change nothing.
+    const r = parseConfig(valid);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.config.rateLimit).toEqual({
+      windowSeconds: 60,
+      maxRequests: 120,
+      authMaxRequests: 10,
+    });
+  });
+
+  it('reads RATE_LIMIT_AUTH_MAX_REQUESTS', () => {
+    const r = parseConfig({ ...valid, RATE_LIMIT_AUTH_MAX_REQUESTS: '3' });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.config.rateLimit.authMaxRequests).toBe(3);
+  });
+
+  it('refuses a zero sign-in ceiling instead of disabling the limiter', () => {
+    // A coerced `0` would pass `min(1)` as a number but admit everything, and
+    // `.env` files are full of `=0` meaning "off".
+    const r = parseConfig({ ...valid, RATE_LIMIT_AUTH_MAX_REQUESTS: '0' });
+    expect(r.ok).toBe(false);
+  });
+
+  it('reads the window separately from either ceiling', () => {
+    const r = parseConfig({ ...valid, RATE_LIMIT_WINDOW_SECONDS: '5' });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.config.rateLimit.windowSeconds).toBe(5);
+  });
+
   it('enforces a floor on argon2 memory', () => {
     // 19 MiB is the argon2 minimum; anything lower is a security regression.
     const r = parseConfig({ ...valid, ARGON2_MEMORY: '1024' });

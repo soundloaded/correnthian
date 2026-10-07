@@ -83,8 +83,18 @@ describe.skipIf(!HAS_DB && !CI)('Idempotency on financial operations', () => {
     replicaB = await boot();
     prisma = replicaA.get(PrismaService);
 
+    // Scoped to the seeded fixture issuer, the same fix `contracts.spec.ts`
+    // already carries. Unscoped, this picked up whatever the table held, and
+    // `redemption.controller.spec.ts` creates an asset with symbol `RSPG`
+    // while its fixtures exist — which sorts before `tGOLD`. This suite then
+    // quoted that asset, and redemption's teardown could not delete it:
+    // `Foreign key constraint violated on SwapQuote_fromAssetId_fkey`, an
+    // intermittent failure with no obvious connection to idempotency at all.
+    //
+    // Test suites sharing one database must adopt fixtures only from rows they
+    // own, or they delete each other's.
     const assets = await prisma.asset.findMany({
-      where: { enabled: true },
+      where: { enabled: true, issuer: { slug: 'dev-fixtures' } },
       take: 2,
       orderBy: { symbol: 'asc' },
     });

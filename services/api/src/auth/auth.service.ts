@@ -3,6 +3,7 @@ import { hash, verify } from '@node-rs/argon2';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { AuthenticatedUser } from '../common/decorators/current-user.decorator.js';
 import { AppError } from '../common/errors.js';
+import { hashSessionToken } from './token-hash.js';
 import { ConfigService } from '../config/config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
@@ -54,7 +55,7 @@ export class AuthService {
   }
 
   private hashToken(raw: string): string {
-    return createHash('sha256').update(raw).digest('hex');
+    return hashSessionToken(raw);
   }
 
   async issueSession(

@@ -5,6 +5,7 @@ import { Public } from '../common/decorators/public.decorator.js';
 import { CurrentUser, type AuthenticatedUser } from '../common/decorators/current-user.decorator.js';
 import { zodPipe } from '../common/pipes/zod-validation.pipe.js';
 import { AuthService } from './auth.service.js';
+import { bearerToken } from '../common/bearer.js';
 import { loginSchema, registerSchema, type LoginDto, type RegisterDto } from './dto/login.dto.js';
 
 @ApiTags('auth')
@@ -41,7 +42,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Revoke the current session' })
   async logout(@Headers('authorization') auth?: string): Promise<void> {
-    const token = auth?.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+    const token = bearerToken(auth);
     if (token) await this.auth.revokeSession(token);
   }
 
