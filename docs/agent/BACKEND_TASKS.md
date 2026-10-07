@@ -629,6 +629,37 @@ kept for the record; it does not describe the current code._
 
 ---
 
+
+### BE-204 — Connected devices and DApp connections · `BACKLOG`
+
+- Surfaces a user-facing view over what `BE-201` already stores: registered
+  devices, last seen, revocation (the API and the admin page exist). The
+  client-side screen does not.
+- **The DApp-connection half is scope-blocked, not technically blocked.**
+  WalletConnect and dApp permissions were **removed from scope by the v1 design
+  spec** and are re-proposed in the owner's 2026-10-07 product document. See
+  [`DECISIONS.md` ADR-021](DECISIONS.md) — do not build the connection layer
+  until that is called.
+- **Status:** `BACKLOG`
+
+---
+
+### BE-205 — Client security controls: PIN, biometrics, limits, approvals · `BACKLOG`
+
+Raised by the owner's 2026-10-07 product document; never tracked before.
+
+- PIN and biometric lock, seed-phrase backup and verification, per-asset
+  spending limits, explicit transaction-approval steps, and security alerts.
+- **The alerts half has a server prerequisite:** `BE-1201` records intent but
+  sends nothing, and `notifications` has no transport (ADR-020). Alerts cannot
+  ship before a delivery provider exists.
+- **Key material stays on device.** PIN and biometric state are client-side
+  artefacts; no PIN, no derived key and no unlock signal may cross the boundary
+  (ADR-001).
+- **Status:** `BACKLOG`
+
+---
+
 ## 6. Blockchain (plan §13–§16)
 
 ### CHAIN-001 — Blockchain abstraction · `DONE`
@@ -716,6 +747,20 @@ kept for the record; it does not describe the current code._
 
 ---
 
+
+### BE-402 — Additional metals (platinum, and beyond) · `BACKLOG`
+
+- The registry is not gold-and-silver-shaped: `category`, `custodyModel` and
+  `backing` are already free-form, and `enabledMetals` counts by category
+  rather than by an enum of two. Adding a third metal should be **a registry
+  row and a disclosure string, not a code change** — verifying that claim is
+  most of this task.
+- Blocked on the same partner as `BE-802`: there is no platinum issuer to
+  point at, and an unsupported metal with a `verifiedTier` is worse than a gap.
+- **Status:** `BACKLOG`
+
+---
+
 ## 8. Portfolio and pricing (plan §19–§20)
 
 ### BE-501 — Portfolio engine · `PARTIAL` (see DEF-007, DEF-008)
@@ -761,6 +806,29 @@ kept for the record; it does not describe the current code._
   No endpoint exposes it.
 - **Security:** the server assembles, the device signs. A signed payload produced
   server-side would break ADR-001.
+- **Status:** `BACKLOG`
+
+---
+
+
+### BE-603 — Gas sponsorship and account abstraction · `BACKLOG`
+
+Raised by the owner's 2026-10-07 product document; never tracked before.
+
+- The problem is real and worth stating precisely: a user holding 1,000 USDT
+  cannot spend it without ETH for gas, and "you need $4 of ETH" is the first
+  wall an ordinary buyer hits. The document proposes folding network cost into
+  the quote instead.
+- **An investigation task, not a build task.** It must settle: relayer versus
+  paymaster versus an ERC-4337 smart account; who bears the gas economics;
+  whether it applies to metals purchases only or to every transfer; and — the
+  part that gates everything — what it does to the key boundary.
+- **Constraint:** the account abstraction work listed in
+  [`CURRENT_SPRINT.md`](CURRENT_SPRINT.md) "Do not start" exists because no
+  account contract is deployed and no implementation exists in
+  `packages/wallet-core`. That holds until this task's investigation says
+  otherwise. A smart account changes *where* the key lives, which is the one
+  property that cannot be compromised.
 - **Status:** `BACKLOG`
 
 ---
@@ -920,6 +988,25 @@ kept for the record; it does not describe the current code._
 
 ---
 
+
+### BE-1106 — Feature availability by country · `BACKLOG`
+
+Raised by the owner's 2026-10-07 product document; the *engine* already exists.
+
+- The hard half — `JurisdictionRule` → allow/deny per operation, deny-by-default
+  — is `BE-1103` and is `DONE`. What is missing is everything around it:
+  an admin surface that reads and writes the rules, and a client-side gate so a
+  user in a jurisdiction where metal is unavailable never sees a disabled buy
+  button with no explanation.
+- **Why it is tracked now rather than later:** the document's point is that
+  building the app around one country's assumptions is expensive to undo. The
+  data model already refuses to; the *surfaces* do not yet know it exists.
+- **Do not confuse with KYC.** Jurisdiction decides what a location may see;
+  KYC decides who a person is. `BE-1101` is separate and still `BACKLOG`.
+- **Status:** `BACKLOG`
+
+---
+
 ## 15. Notifications (plan §38)
 
 ### BE-1201 — Notifications backend · `PARTIAL`
@@ -966,6 +1053,19 @@ kept for the record; it does not describe the current code._
 ### BE-1505 — System configuration · `BACKLOG`
 - The `FeatureFlag` model exists (`key`, `enabled`, `rollout`, `description`)
   and **nothing reads or writes it**. No route, no middleware, no admin surface.
+- **Status:** `BACKLOG`
+
+---
+
+
+### BE-1506 — Support tickets (admin) · `BACKLOG`
+
+Raised by the owner's 2026-10-07 product document; never tracked before.
+
+- No model, no route, no admin page. Audit rows record what the *system* did;
+  a ticket records what a *person* asked, and the two are not interchangeable.
+- Sits alongside `BE-1505` (system configuration) as the remaining
+  "operations surface that exists in every internal console".
 - **Status:** `BACKLOG`
 
 ---
@@ -1070,17 +1170,28 @@ kept for the record; it does not describe the current code._
 
 ## 21. Summary counts
 
-56 tracked tasks plus 17 defects.
+**61 tracked tasks plus 19 defects.** Recomputed from the `Status` field on
+every entry, not from memory — the previous version of this section claimed 56
+tasks and "17 defects, all BACKLOG", and both were wrong by the time anyone
+read them.
 
-| Status | Tasks |
-|---|---|
-| `DONE` | 15 |
-| `PARTIAL` | 20 |
-| `BACKLOG` | 13 |
-| `BLOCKED` | 6 |
-| `OPEN` | 1 |
-| Defects `DEF-001`…`DEF-017` | 17, all `BACKLOG` |
+| Status | Tasks | Defects |
+|---|---|---|
+| `DONE` | 15 | 7 |
+| `PARTIAL` | 20 | 0 |
+| `BACKLOG` | 19 | 12 |
+| `BLOCKED` | 6 | 0 |
+| `OPEN` | 1 | 0 |
+| **Total** | **61** | **19** |
 
-**15 of 56 tasks are complete.** The plan's §68 dependency chain is most of the
-way built at the infrastructure layer and not started at the layer that moves
-money. See [`BACKEND_ROADMAP.md`](BACKEND_ROADMAP.md).
+**15 of 61 tasks are complete, and 7 of 19 defects.** The plan's §68 dependency
+chain is most of the way built at the infrastructure layer and not started at
+the layer that moves money.
+
+Six of the `BACKLOG` entries are new as of 2026-10-07 — `BE-204`, `BE-205`,
+`BE-402`, `BE-603`, `BE-1106`, `BE-1506` — raised by the owner's product
+document rather than by the plan. Their scope conflicts are recorded in
+[`DECISIONS.md` ADR-021](DECISIONS.md); two of them must not be started until
+that is called.
+
+See [`BACKEND_ROADMAP.md`](BACKEND_ROADMAP.md) for the order.

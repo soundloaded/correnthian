@@ -590,3 +590,55 @@ user could act on.
   Tracked as `DEF-009`.
 - No scheduler exists. Nothing calls `claimBatch`.
 - `Notification.sentAt`/`failedAt`/`error` are the only delivery state.
+
+---
+
+## ADR-021 — The owner's product document widens two scopes the spec closed
+
+**Status:** Open. Not adopted, not rejected — called out so it cannot be
+implemented by accident.
+
+**Decision.** Three deltas between the product document circulated 2026-10-07
+and this repository's recorded scope are held open until a human calls them:
+
+| # | Owner's document says | This repository records |
+|---|---|---|
+| 1 | Launch with **Ethereum, Bitcoin, BNB Chain, Polygon, Base, Arbitrum, Solana** | EVM slice first; **Bitcoin and Solana deferred by the v1 design spec**. Only an EVM adapter exists (`BE-301`). |
+| 2 | Eventually **WalletConnect, DApp connections, DeFi, NFT platforms** | **Removed from scope by the design spec.** `CexRail` is reserved and must stay reserved. |
+| 3 | **Seed-phrase import and recovery**, PIN, biometrics, multi-account | `BE-203b` seed-account recovery is `BLOCKED` on a decision: guardians have no BTC/SOL equivalent. |
+
+**Reason.** The document is the owner's; the spec is the repository's. Neither
+outranks the other silently, and three separate recorded decisions currently
+point the other way. Recording the disagreement is cheaper than discovering it
+after an adapter has been built.
+
+**What the document *confirms* — no conflict:**
+- Correnthian does **not** hold private keys. Same as ADR-001, unchanged.
+- External issuers provide the metal; Correnthian is a thin aggregator taking
+  stated fees. Same as the v1 spec.
+- **Admin never sees user keys**; public addresses only.
+- **A Correnthian account is not custody of a wallet.** Server-side profile
+  (preferences, devices, KYC) is a different thing from wallet ownership.
+- Fiat on-ramp/off-ramp through third parties, not Correnthian becoming a bank.
+
+**What the document adds that this repository has never tracked:**
+gas sponsorship / account abstraction; spending limits and transaction
+approvals; connected-device and DApp connection management; security alerts;
+admin support tickets; a user-facing feature-by-country surface; platinum and
+further metals. Each is now a `BACKLOG` entry in
+[`BACKEND_TASKS.md`](BACKEND_TASKS.md) rather than an omission — see `BE-603`,
+`BE-204`, `BE-205`, `BE-1506`, `BE-1106`, `BE-402`.
+
+**Consequences.**
+- **Nothing in this table may be built until it is called.** An agent that reads
+  the product document and starts a Bitcoin adapter is working against three
+  recorded decisions.
+- Deltas 1 and 2 are *scope* questions for the owner. Delta 3 is partly a
+  *safety* question: seed handling on a client that also serves a custodial
+  server touches the boundary rule, and ADR-001 has no exception for it.
+- The work that is unaffected by all three — asset registry, jurisdiction
+  gating, fees, transactions, compliance — can proceed regardless of the call,
+  because none of it is chain-specific.
+- If delta 1 is called, the EVM slice is still the right first adapter: it is
+  the one already verified against a live network, and the `BlockchainAdapter`
+  interface is what the other chains would implement.
