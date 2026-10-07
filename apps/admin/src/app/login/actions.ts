@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { canAccessConsole } from '@/lib/roles';
 import { setSession } from '@/lib/session';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:3000';
@@ -50,6 +51,13 @@ export async function loginAction(
     token: string;
     user: { id: string; email: string; role: string };
   };
+
+  // The credentials were correct. This account is simply not staff, so no
+  // session is written at all — there is then nothing for the shell to render
+  // a gate against, and no cookie to strip later.
+  if (!canAccessConsole(body.user.role)) {
+    return { error: 'This account does not have access to the operations console.' };
+  }
 
   await setSession(body.token, {
     userId: body.user.id,

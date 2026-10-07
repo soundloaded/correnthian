@@ -2,7 +2,8 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { apiSend, roleAtLeast } from '@/lib/api-server';
+import { apiSend } from '@/lib/api-server';
+import { roleAtLeast } from '@/lib/roles';
 import { clearSession, getSession, getToken } from '@/lib/session';
 
 export interface ActionState {

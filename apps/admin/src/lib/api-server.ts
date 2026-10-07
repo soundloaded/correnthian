@@ -129,7 +129,5 @@ export async function apiSend<T>(
   return { status: 'ok', data: (await response.json()) as T };
 }
 
-/** Role rank, mirroring the API's hierarchy. UI gates mirror the server's. */
-const RANK: Record<string, number> = { user: 0, support: 1, compliance: 2, admin: 3, owner: 4 };
-export const roleAtLeast = (actual: string | undefined, required: string): boolean =>
-  (actual ? (RANK[actual] ?? -1) : -1) >= (RANK[required] ?? Infinity);
+// The rank table and `roleAtLeast` moved to `lib/roles.ts`. They are pure, and
+// this module is `server-only`, which kept them out of any isolated test.
