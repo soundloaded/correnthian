@@ -141,13 +141,14 @@ dependency on things that are not code.
 eighteen are bounded. Several are silent and will otherwise be found by a
 customer.
 
-**Four are done** — `DEF-001`, `DEF-002` (`5a31c4b`), `DEF-003` (`7ad3d69`) and
-`DEF-016` (`50cb8a1`). Fourteen remain, and the time-sensitive one that ordered
+**Seven are done** — `DEF-001`, `DEF-002` (`5a31c4b`), `DEF-003` (`7ad3d69`),
+`DEF-016` (`50cb8a1`), `DEF-004` and `DEF-005` (`8c48624`), and `DEF-019`, found
+while fixing those two. Twelve remain, and the time-sensitive one that ordered
 this phase is closed: `prisma migrate diff` reports no difference, so running
 `migrate dev` can no longer reintroduce the asset-registry uniqueness hole.
 
-Order from here: `DEF-004` / `DEF-005` (one file, one behaviour), then
-`DEF-006`, then the rest. See `CURRENT_SPRINT.md` for why.
+Order from here: `DEF-006`, then `DEF-014`, then the rest. See
+`CURRENT_SPRINT.md` for why.
 
 ### Phase B — Make the existing surface testable
 

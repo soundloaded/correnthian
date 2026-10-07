@@ -64,18 +64,17 @@ the location the entry names.
 
 | Status | Defects | Count |
 |---|---|---|
-| `DONE` | `DEF-001`, `DEF-002`, `DEF-003`, `DEF-016` | 4 |
-| `BACKLOG` | `DEF-004`, `DEF-005`, `DEF-006`, `DEF-007`, `DEF-008`, `DEF-009`, `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-014`, `DEF-015`, `DEF-017`, `DEF-018` | 14 |
+| `DONE` | `DEF-001`, `DEF-002`, `DEF-003`, `DEF-004`, `DEF-005`, `DEF-016`, `DEF-019` | 7 |
+| `BACKLOG` | `DEF-006`, `DEF-007`, `DEF-008`, `DEF-009`, `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-014`, `DEF-015`, `DEF-017`, `DEF-018` | 12 |
 
-`DEF-018` is new — found while re-verifying the others, and recorded rather
-than fixed, because tracking work that is not yet done is the point of this
-file.
+`DEF-018` was found while re-verifying the others, and `DEF-019` while fixing
+`DEF-004` / `DEF-005`. Both were recorded rather than assumed, because tracking
+work that is not yet done is the point of this file.
 
-**Two that were previously recorded as fixed are not.** `DEF-005` reads as
-fixed if you look only at the `actor = req.user?.id ?? req.ip` line: the
-expression is right and the guard order is not. `DEF-015` reads as fixed if you
-look only at the comment above `users.list`, which claims keyset pagination
-while the code beneath it paginates on the primary key. Both remain `BACKLOG`.
+**One that was previously recorded as fixed is not.** `DEF-015` reads as fixed
+if you look only at the comment above `users.list`, which claims keyset
+pagination while the code beneath it paginates on the primary key. It remains
+`BACKLOG`.
 
 ### DEF-001 — `POST /redemptions` can never succeed
 _Fixed in `5a31c4b`. The description below is what was wrong and is
@@ -152,34 +151,66 @@ kept for the record; it does not describe the current code._
 ### DEF-004 — Rate limiting ignores its own configuration
 
 - **Location:** `services/api/src/common/guards/rate-limit.guard.ts`
-- **Description:** `RATE_LIMIT_WINDOW_SECONDS` and `RATE_LIMIT_MAX_REQUESTS`
-  are validated by `packages/config` and documented in `.env.example`, but the
-  guard hardcodes `WINDOW_SECONDS = 60` and `{ auth: 10, api: 120 }`. Setting
-  them changes nothing.
-- **Expected output:** read the limits from `ConfigService`.
-- **Status:** `BACKLOG`
+- **Was:** `RATE_LIMIT_WINDOW_SECONDS` and `RATE_LIMIT_MAX_REQUESTS` are
+  validated by `packages/config` and documented in `.env.example`, but the guard
+  hardcoded `WINDOW_SECONDS = 60` and `{ auth: 10, api: 120 }`. Setting them
+  changed nothing.
+- **Fixed in `8c48624`.** The guard reads all three through `ConfigService`, and
+  `rateLimit.authMaxRequests` was added to the config schema as
+  `RATE_LIMIT_AUTH_MAX_REQUESTS`.
+- **The addition matters:** there was never a knob for the sign-in ceiling at
+  all. `RATE_LIMIT_MAX_REQUESTS` only ever described the general budget, so an
+  operator raising it for a bulk import also widened the budget credential
+  stuffing runs against, with nothing in the environment to say so. The two are
+  now deliberately separate settings, and `.env.example` says why.
+- **Acceptance criteria:** each limit changes at runtime through config.
+  Verified against a running API with
+  `RATE_LIMIT_MAX_REQUESTS=7 RATE_LIMIT_AUTH_MAX_REQUESTS=3
+  RATE_LIMIT_WINDOW_SECONDS=45`: the headers answered `7`, `3` and `45`
+  respectively, where the old code answered `120`, `10` and `60`.
+- **Tests:** 5 unit tests in `rate-limit.guard.spec.ts`, 4 config tests, and
+  3 live assertions in `rate-limit.live.spec.ts`. All fail against the
+  pre-fix guard.
+- **Status:** `DONE`
+
 
 ### DEF-005 — The rate limiter can only bucket by IP
 
-- **Location:** `services/api/src/common/guards/rate-limit.guard.ts`,
-  `services/api/src/common/core.module.ts`
-- **Description:** the guard's comment claims "the authenticated identity is the
-  bucket where we have one", but `RateLimitGuard` is registered *before*
-  `SessionGuard` and Nest runs global guards in registration order, so
-  `req.user` is always `undefined` when the key is computed. Verified by reading
-  the registration array; **not verified at runtime**, because it needs a live
-  request with two identities behind one NAT.
-- **Consequence:** the stated property (one office behind one NAT does not share
-  a budget; one client rotating IPs does not get a fresh one) does not hold.
-- **Expected output:** reorder the guards, or resolve the session before
-  rate-limiting, and add a test.
-- **Re-verified 2026-10-07: still open.** `RateLimitGuard` is registered at
-  `core.module.ts:29`, `SessionGuard` at `:30`, and Nest runs global guards in
-  registration order. `req.user` is written only by `SessionGuard`
-  (`session.guard.ts:29`), so it is `undefined` at key-computation time and
-  every request buckets by IP. The `req.user?.id ?? req.ip` expression is
-  correct; the ordering defeats it.
-- **Status:** `BACKLOG`
+- **Location:** `services/api/src/common/guards/rate-limit.guard.ts`
+- **Was:** the guard's comment claimed "the authenticated identity is the bucket
+  where we have one", but `RateLimitGuard` is registered *before* `SessionGuard`
+  and Nest runs global guards in registration order, so `req.user` was always
+  `undefined` when the key was computed. One office behind one NAT address
+  shared a budget; one client rotating addresses got a fresh one per request.
+- **Why reordering does not fix it** — and this is the part that makes the
+  defect interesting rather than clerical. `SessionGuard` returns early on
+  `@Public()` routes, and `POST /auth/login` must be public, because you cannot
+  require a session in order to obtain one. Reordering would therefore fix
+  exactly the routes that do not need fixing and leave credential stuffing —
+  the route that most needs a per-identity budget — bucketed by IP precisely
+  because it has no session to be identified by.
+- **Fixed in `8c48624`.** The guard reads the `Bearer` header itself:
+  - token present → `correnthian:rate:<bucket>:session:<sha256(token)>`, which
+    is byte-for-byte `Session.tokenHash`
+  - token absent → `correnthian:rate:<bucket>:ip:<address>`
+
+  No lookup and no I/O: `hashSessionToken` is arithmetic, so the limiter stays
+  independent of the database it exists to protect. Resolving the user instead
+  would have made Redis failure and Postgres failure one failure mode.
+- **Stated consequence, not hidden:** the unit is the session, not the account,
+  so one account holding N sessions holds N budgets. Session creation goes
+  through authenticated flows, so this is bounded and is not amplification an
+  unauthenticated client can reach for.
+- **Acceptance criteria:** one identity holds one budget across addresses, and
+  two identities hold separate budgets behind one address. Both verified against
+  a running API with `TRUST_PROXY=true` and differing `X-Forwarded-For`:
+  one token went `6 → 5` across two addresses (shared), two tokens from one
+  address went `6` and `6` (separate). The Redis key was then matched against
+  Postgres: `Session.tokenHash` matched in 1 of 143 sessions.
+- **Tests:** 6 unit tests and 4 live assertions. All fail against the pre-fix
+  guard, which produced no `session:` key at all.
+- **Status:** `DONE`
+
 
 ### DEF-006 — Readiness probe never returns 503
 
@@ -365,6 +396,26 @@ kept for the record; it does not describe the current code._
   `ci.yml` executes the script.
 - **Tests:** the guard against a fixture with a real typo.
 - **Status:** `BACKLOG`
+
+### DEF-019 — A test suite adopted fixtures another suite deletes
+
+- **Location:** `services/api/src/common/idempotency/idempotency.spec.ts`
+- **Was:** `prisma.asset.findMany({ where: { enabled: true }, take: 2 })` with
+  no issuer filter, so it quoted whatever the table happened to hold.
+  `redemption.controller.spec.ts` creates a fixture asset with symbol `RSPG`
+  while its fixtures exist, which sorts before `tGOLD` — so the idempotency
+  suite quoted *redemption's own asset*, and redemption's teardown then hit
+  `Foreign key constraint violated on SwapQuote_fromAssetId_fkey`.
+- **Why it was recorded here and not before:** it is an intermittent failure
+  with no visible connection to idempotency, which is why it read as a Prisma or
+  FK problem. It surfaced only when this work added a fifth concurrently booted
+  application and shifted the timing: **0 of 11** baseline runs failed, **4 of
+  21** did once the suite was added, and **0 of 8** after the fix.
+- **Fixed in `8c48624`** by scoping the query to the `dev-fixtures` issuer —
+  the same fix `contracts.spec.ts` already carried for this exact reason.
+- **The rule:** suites sharing one database may adopt fixtures only from rows
+  they own, or they delete each other's.
+- **Status:** `DONE`
 
 ---
 

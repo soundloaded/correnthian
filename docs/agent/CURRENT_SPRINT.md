@@ -11,47 +11,59 @@ Last updated: 2026-10-07.
 ## Sprint: Backend Foundation 002 — Audit and Defect Clearance
 
 The previous sprint built the admin and the wire-format contract layer. This
-sprint exists because reading the code found seventeen defects that no test,
-no typecheck and no contract assertion catches. Several are silent.
+sprint exists because reading the code found defects that no test, no typecheck
+and no contract assertion catches. Several were silent. There are nineteen
+recorded (`DEF-001` … `DEF-019`); **seven are done**.
 
 ### Current task
 
-**`DEF-004` / `DEF-005` — the rate limiter ignores its config, and cannot see
-the user.**
+**`DEF-006` — the readiness probe never returns 503.**
 
-- **Why these two together:** they are one file and one behaviour. Fixing the
-  budget without fixing who the budget is keyed on leaves a limiter that is
-  correctly configured and still gives every client behind one NAT a shared
-  pool — which is the property the config was written to express.
-- **File:** `services/api/src/common/guards/rate-limit.guard.ts`,
-  registration order in `services/api/src/common/core.module.ts`
-- **`DEF-004`:** `packages/config` validates `RATE_LIMIT_MAX_REQUESTS` and
-  `RATE_LIMIT_WINDOW_SECONDS`; the guard hardcodes `WINDOW_SECONDS = 60` and
-  `LIMITS = { auth: 10, api: 120 }`. Setting them changes nothing.
-- **`DEF-005`:** `RateLimitGuard` is registered before `SessionGuard`
-  (`core.module.ts:29` vs `:30`) and Nest runs global guards in registration
-  order, so `req.user` is always `undefined` when the key is computed. The
-  `req.user?.id ?? req.ip` expression is correct and unreachable.
-- **Definition of done:** both limits change at runtime through config; two
-  authenticated identities behind one NAT hold separate budgets; one identity
-  rotating IPs does not get a fresh one.
-- **Security constraint:** rate limiting is fail-closed today and must stay so
-  — an error resolving the budget denies rather than admits. Read `DEF-004`'s
-  entry before touching the Redis error path.
+- **Why this one:** everything in `BACKEND-15` assumes health checks work. An
+  orchestrator reading only the status code currently keeps routing traffic to a
+  process that cannot serve it, and the docstring on the handler promises
+  otherwise. It is the cheapest defect left and it gates the hardening phase.
+- **File:** `services/api/src/health/health.controller.ts`
+- **What is wrong:** `ready()` computes `status: ok | degraded` from the
+  database and Redis checks and returns HTTP 200 in both cases. The comment
+  above it says "Fails with 503 when a required dependency is down so traffic is
+  diverted, not dropped."
+- **Definition of done:** `/health/ready` returns 503 when either dependency is
+  down and 200 when both are up; a test covers the failure path, not only the
+  healthy one.
+- **Decision to make rather than assume:** if 503 is wrong — if the intent is a
+  soft status for dashboards — then the docstring changes instead and the
+  orchestrator wiring is documented as out of scope. Either answer is
+  acceptable; leaving the promise and the behaviour disagreeing is not.
+- **Security constraint:** none specific, but a probe that throws must not be
+  able to take the process down. Keep the check inside the handler.
 
 ### Then, in order
 
 | # | Task | Why it is next |
 |---|---|---|
-| 2 | `DEF-006` — readiness never returns 503 | Everything in `BACKEND-15` assumes health checks work. An orchestrator currently keeps routing to a process that cannot serve. Three lines, no dependency, and it gates the hardening phase. |
-| 3 | `DEF-014` — `README.md`, `docs/engineering/standards.md` and `docs/engineering/api.md` state the opposite of the code | An agent will act on them. This file is not the only one being read. |
-| 4 | `DEF-007` / `DEF-008` — the portfolio returns 500 for a missing wallet, and sums floats | `054fdb9` established exact bigint money for fees. The portfolio then floats the same numbers. Two notions of a dollar must not coexist into `BE-1602`. |
-| 5 | `DEF-009` — `claimBatch` claims nothing | Two workers receive the same rows, and the comment above the function says otherwise. |
-| 6 | `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-017` — the bounded remainder | No dependency, all small, none urgent. |
-| 7 | `DEF-018` — the Prisma-write guard fails and is not in CI | Recording it here rather than fixing it: it is tracked, and it is not this sprint's work. |
+| 2 | `DEF-014` — `README.md`, `docs/engineering/standards.md` and `docs/engineering/api.md` state the opposite of the code | An agent will act on them. This file is not the only one being read. |
+| 3 | `DEF-007` / `DEF-008` — the portfolio returns 500 for a missing wallet, and sums floats | `054fdb9` established exact bigint money for fees. The portfolio then floats the same numbers. Two notions of a dollar must not coexist into `BE-1602`. |
+| 4 | `DEF-009` — `claimBatch` claims nothing | Two workers receive the same rows, and the comment above the function says otherwise. |
+| 5 | `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-017` — the bounded remainder | No dependency, all small, none urgent. |
+| 6 | `DEF-018` — the Prisma-write guard fails and is not in CI | Recording it here rather than fixing it: it is tracked, and it is not this sprint's work. |
 
 ### Completed in this sprint
 
+- `DEF-004` and `DEF-005` — the rate limiter now obeys its configuration and
+  counts against the session (`8c48624`). Limits read from `ConfigService`, with
+  `RATE_LIMIT_AUTH_MAX_REQUESTS` added because the sign-in ceiling never had a
+  knob at all. Keyed on `sha256(bearer)`, which is byte-for-byte
+  `Session.tokenHash`, falling back to the address when there is no token.
+  Reordering the guards was *not* the fix: `SessionGuard` returns early on
+  `@Public()` routes and `POST /auth/login` has to be public, so reordering
+  would have left credential stuffing — the route that most needs it — bucketed
+  by IP. Verified against a running API: one token `6 -> 5` across two
+  addresses, two tokens `6` and `6` behind one, and the key matched
+  `Session.tokenHash` in 1 of 143 sessions.
+- `DEF-019` — a test suite adopted fixtures another suite deletes, found because
+  adding a fifth booted application shifted timing (0/11 baseline runs failed,
+  4/21 with the new suite, 0/8 after scoping the query).
 - `DEF-016` — the admin console now gates on role, not just on a session
   (`50cb8a1`). Refused at sign-in before a session is written, gated again at
   the shell, landing on `/unauthorized`. The admin had no test runner; it has
@@ -100,9 +112,7 @@ the user.**
    contract suite, and DEF-001 exists precisely because of that gap.
 3. `BE-102` — generate OpenAPI from `CONTRACT_REGISTRY` rather than shipping a
    document that describes no request or response schemas.
-4. `DEF-004` / `DEF-005` — the rate limiter still ignores its config and still
-   cannot see the authenticated user. `BE-101` fixed the *path* it matched, which
-   is a different bug in the same file.
+4. `DEF-006` onward — see "Current task" above.
 
 ---
 

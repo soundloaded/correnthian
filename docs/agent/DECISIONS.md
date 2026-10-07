@@ -153,7 +153,7 @@ valid-looking address nobody controls.
   "Until a real keccak implementation is added… any mixed-case address is
   refused", and references an `EIP55_SUPPORTED` marker that does not exist in
   the file. That comment describes the pre-fix behaviour. The tests are the
-  authority; the comment should be deleted. Tracked as `DEF-004` and `DEF-005`.
+  authority; the comment should be deleted. Tracked as `DEF-011`.
 - Bitcoin and Solana validation is **format-only**. Solana does not decode the
   base58 payload to confirm a 32-byte ed25519 key length. Recorded as a known
   limit, not as done.
@@ -233,11 +233,24 @@ through.
   and `Retry-After` on rejection.
 - Verified live before commit `5362c72`: 10×401 then 429, correct headers, and
   429 with Redis stopped.
-- **Two open defects.** (a) `RATE_LIMIT_WINDOW_SECONDS` and
-  `RATE_LIMIT_MAX_REQUESTS` are validated by `@correnthian/config` and documented
-  in `.env.example`, but the guard hardcodes `WINDOW_SECONDS = 60` and
-  `{ auth: 10, api: 120 }`. Setting them has no effect (`DEF-004`). (b) The guard
-  is registered before `SessionGuard`, so it buckets by IP only (`DEF-005`).
+- **Limits are data, not constants** (`8c48624`). `RATE_LIMIT_WINDOW_SECONDS`,
+  `RATE_LIMIT_MAX_REQUESTS` and `RATE_LIMIT_AUTH_MAX_REQUESTS` are read through
+  `ConfigService`. `authMaxRequests` was added because the sign-in ceiling never
+  had a knob — `RATE_LIMIT_MAX_REQUESTS` only ever described the general budget,
+  so widening it for a bulk import widened credential stuffing's budget with
+  nothing in `.env` to say so.
+- **The bucket is the session, not the address** (`8c48624`).
+  `session:<sha256(bearer)>` — byte-for-byte `Session.tokenHash` — falling back
+  to `ip:<address>`. Deliberately *not* resolved through `SessionGuard` even
+  though reordering looks like the fix: that guard returns early on `@Public()`
+  routes and `POST /auth/login` has to be public, so reordering would leave the
+  one route that most needs a per-identity budget bucketed by IP. It is also
+  arithmetic rather than a lookup, keeping Redis failure and Postgres failure
+  separate — a limiter that queries Postgres to decide admission has made the
+  database a dependency of the thing protecting it.
+- **Unit, not account.** One account with N sessions holds N budgets; session
+  creation is authenticated, so this is bounded. Recorded here rather than
+  treated as fine print, because "per user" is the natural misreading.
 
 ---
 
@@ -274,7 +287,7 @@ drift for:
   `JurisdictionRule.region String?` (line 637). The database has both as
   `NOT NULL DEFAULT ''`. The *code* matches the database; the *schema file* does
   not. `prisma migrate dev` would now generate a migration reverting both columns
-  to nullable, which would reintroduce the uniqueness hole. Tracked as `DEF-004` and `DEF-005`.
+  to nullable, which would reintroduce the uniqueness hole. Tracked as `DEF-003`, fixed in `7ad3d69`.
 
 ---
 
@@ -313,7 +326,7 @@ rather than a build failure.
 - **One drift still present:** `apps/admin/src/lib/types.ts` still hand-declares
   `AuditRow` and `QuoteStats` with a comment claiming they are "not yet in the
   contract registry". Both are in the registry. `dashboard/page.tsx` still
-  imports the hand-written `AuditRow`. Tracked as `DEF-004` and `DEF-005`.
+  imports the hand-written `AuditRow`. Tracked as `DEF-012`.
 
 ---
 
@@ -508,7 +521,7 @@ resolves at *runtime* and so never resolves at all. Both are fixed in
 - **Exception, still present:** `dashboard/page.tsx` imports a hand-written
   `AuditRow` from `lib/types.ts` even though `Contract<'GET /audit'>` exists.
   `QuoteStats` in `lib/types.ts` is dead — the quotes page declares its own.
-  Tracked as `DEF-004` and `DEF-005`.
+  Tracked as `DEF-012`.
 
 ---
 
@@ -574,6 +587,6 @@ user could act on.
 - **The claim is not atomic.** `claimBatch` is a `findMany` with no status guard
   and no update, despite its docstring describing "`updateMany` with a status
   guard… the loser matches zero rows". Two workers will receive the same rows.
-  Tracked as `DEF-004` and `DEF-005`.
+  Tracked as `DEF-009`.
 - No scheduler exists. Nothing calls `claimBatch`.
 - `Notification.sentAt`/`failedAt`/`error` are the only delivery state.

@@ -202,15 +202,31 @@ Verified live before it was committed: 10×401 then 429, correct headers, and
 
 `@SkipRateLimit()` opts a route out. `HealthController` is the only user.
 
-**Two properties the code does not currently have** — both documented in
-`DEF-004` and `DEF-005`:
+**Two properties, both now real** (closed in `8c48624`; both were `DEF-004`
+and `DEF-005`):
 
-- `RATE_LIMIT_WINDOW_SECONDS` and `RATE_LIMIT_MAX_REQUESTS` are validated at
-  boot and documented in `.env.example`, but the guard hardcodes its values.
-  Setting them changes nothing.
-- The limiter claims to bucket by authenticated identity where one is
-  available. It is registered **before** `SessionGuard`, so `req.user` is always
-  undefined and it always buckets by IP.
+- **Every limit comes from configuration.** `RATE_LIMIT_WINDOW_SECONDS`,
+  `RATE_LIMIT_MAX_REQUESTS` and `RATE_LIMIT_AUTH_MAX_REQUESTS` are validated at
+  boot and read by the guard. The sign-in ceiling is a separate setting rather
+  than a fraction of the general one, so raising a bulk-import budget cannot
+  quietly widen the budget credential stuffing runs against.
+- **The budget is keyed on the session.** `correnthian:rate:<bucket>:session:
+  <sha256(bearer)>`, which is byte-for-byte `Session.tokenHash`, falling back to
+  `correnthian:rate:<bucket>:ip:<address>` when there is no token.
+
+**Why the limiter reads the header instead of waiting for `SessionGuard`.**
+Reordering is the obvious fix and does not work: `SessionGuard` returns early on
+`@Public()` routes, and `POST /auth/login` must be public — you cannot require a
+session in order to obtain one. Reordering would fix only routes that never
+needed it and leave credential stuffing bucketed by IP, which is the route with
+the tightest budget precisely because it has no session.
+
+**This does not make the limiter a session or account control.** The unit is
+the session, not the account: one account holding N sessions holds N budgets.
+Session creation goes through authenticated flows, so the amplification is
+bounded and not reachable by an unauthenticated client. Per-IP remains the
+fallback for every unauthenticated route other than sign-in, where the address
+is the only identity that exists.
 
 ---
 

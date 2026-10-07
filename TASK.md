@@ -63,10 +63,12 @@ These were the open items. Each is now a tracked task; none was dropped.
 
 ## New, found by the 2026-10-06 audit
 
-Eighteen defects, `DEF-001` through `DEF-018`. **Four are done** — `DEF-001`
-and `DEF-002` (`5a31c4b`), `DEF-003` (`7ad3d69`) and `DEF-016` (`50cb8a1`) —
-and **fourteen remain open**. Start with `DEF-004` / `DEF-005`: the rate
-limiter's configuration and its keying are both inert, in one file.
+Nineteen defects, `DEF-001` through `DEF-019`. **Seven are done** — `DEF-001`
+and `DEF-002` (`5a31c4b`), `DEF-003` (`7ad3d69`), `DEF-016` (`50cb8a1`),
+`DEF-004` and `DEF-005` (`8c48624`), and `DEF-019` — and **twelve remain open**.
+Start with `DEF-006`: the readiness probe never returns 503, so an orchestrator
+keeps routing to a process that cannot serve, and `BACKEND-15` assumes health
+checks work.
 
 `DEF-003` was the urgent one and is closed; `prisma migrate diff` reports no
 difference between schema and database.

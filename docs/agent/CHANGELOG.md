@@ -13,6 +13,49 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-07
 
+### `8c48624` — Make the rate limiter obey config, and count against the session
+- `DEF-004`. The guard hardcoded `WINDOW_SECONDS = 60` and `{ auth: 10,
+  api: 120 }` while `@correnthian/config` validated environment variables that
+  changed nothing. Limits now come from `ConfigService`.
+- `rateLimit.authMaxRequests` (`RATE_LIMIT_AUTH_MAX_REQUESTS`) is new. There
+  was never a knob for the sign-in ceiling — `RATE_LIMIT_MAX_REQUESTS` only
+  ever described the general budget, so raising it for a bulk import widened
+  the budget credential stuffing runs against, with nothing in `.env` to say
+  so. The two are deliberately not derived from one another.
+- `DEF-005`. The guard bucketed by IP despite a comment claiming otherwise.
+  **Reordering it after `SessionGuard` is not the fix**, which is the part
+  worth recording: `SessionGuard` returns early on `@Public()` routes and
+  `POST /auth/login` has to be public — you cannot require a session to obtain
+  one. Reordering would fix only routes that never needed it and leave
+  credential stuffing bucketed by IP, precisely because it has no session.
+- The guard now reads the `Bearer` header itself and keys on
+  `session:<sha256(token)>`, byte-for-byte `Session.tokenHash`, falling back to
+  `ip:<address>`. Arithmetic, not a lookup: a limiter that queries Postgres to
+  decide admission has made the database a dependency of the thing protecting
+  it. Stated rather than buried: the unit is the session, so one account with N
+  sessions holds N budgets — bounded, because session creation is authenticated.
+- **The route bucket stays in the key.** Dropping it once seemed tidy and would
+  have merged the budgets, so ten logins consumed the general API budget — the
+  exact inversion this guard exists to prevent.
+- `DEF-019`, found because this change added a fifth booted application and
+  shifted timing: `idempotency.spec` adopted `enabled: true, take: 2` with no
+  issuer filter and quoted `redemption.controller.spec`'s own fixture asset
+  (`RSPG` sorts before `tGOLD`), so redemption's teardown failed on
+  `SwapQuote_fromAssetId_fkey` — an intermittent failure with no visible
+  connection to idempotency. Measured **0/11 baseline runs failed, 4/21 with
+  the new suite, 0/8 after scoping the query** to the issuer
+  `contracts.spec.ts` already used. Test suites sharing one database may adopt
+  fixtures only from rows they own.
+- **Verified twice over.** Unit and live specs were each mutated back to the
+  pre-fix guard and confirmed to fail first — 10 unit tests, 5 live, with
+  messages that name the defect (`expected '10' to be '2'`,
+  `expected +0 to be 1`, `[401 ×8] to include 429`). Then against a running
+  API: limits answered `7`, `3`, `45` from configuration; one token went
+  `6 → 5` across two addresses; two tokens from one address went `6` and `6`;
+  the key matched `Session.tokenHash` in 1 of 143 sessions.
+
+## 2026-10-07
+
 ### `50cb8a1` — Gate the operations console on role, not just on a session
 - `DEF-016`. `loginAction` stored whatever role the API returned and the
   dashboard layout redirected only when there was no session, so a customer

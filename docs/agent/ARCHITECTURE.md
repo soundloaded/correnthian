@@ -131,12 +131,19 @@ Cross-cutting concerns are registered **globally** in
 4. `RolesGuard` — role hierarchy `user < support < compliance < admin < owner`.
 5. `AuditInterceptor` — every mutating request is recorded by construction.
 
-**Guard ordering caveat.** `RateLimitGuard` is registered *before*
-`SessionGuard`, and Nest executes global guards in registration order. The
-limiter's comment claims it buckets by authenticated identity where one is
-available, but `req.user` is not populated until `SessionGuard` has run, so in
-practice it always buckets by IP. This is unverified at runtime and is recorded
-as `DEF-005` in [`BACKEND_TASKS.md`](BACKEND_TASKS.md).
+**Guard ordering, and why it stays this way.** `RateLimitGuard` is registered
+before `SessionGuard`, so `req.user` is never populated when the rate key is
+computed. That was `DEF-005`, and the obvious fix — reorder them — does not
+work: `SessionGuard` returns early on `@Public()` routes, and `POST /auth/login`
+must be public, because you cannot require a session in order to obtain one.
+Reordering would fix routes that never needed it and leave credential stuffing
+bucketed by IP.
+
+Instead the limiter reads the `Bearer` header itself and keys on
+`sha256(token)`, which is byte-for-byte `Session.tokenHash`, falling back to the
+client address when there is no token. No lookup: `hashSessionToken` is
+arithmetic, so Redis failure and Postgres failure stay separate failure modes.
+Closed in `8c48624`; see [`BACKEND_TASKS.md`](BACKEND_TASKS.md).
 
 Full route inventory: [`API_CONTRACTS.md`](API_CONTRACTS.md).
 
