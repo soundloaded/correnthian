@@ -112,7 +112,17 @@ recorded (`DEF-001` … `DEF-019`); **seven are done**.
    contract suite, and DEF-001 exists precisely because of that gap.
 3. `BE-102` — generate OpenAPI from `CONTRACT_REGISTRY` rather than shipping a
    document that describes no request or response schemas.
-4. `DEF-006` onward — see "Current task" above.
+4. **`BE-603` — investigate gas sponsorship and account abstraction.**
+   Named rather than left implicit, because it is the one item in the backlog
+   the owner's product document asked for directly: "you can't swap because you
+   don't have $4 of ETH" is the first wall an ordinary buyer hits, and it is
+   worth more to the gold-owner beachhead than a sixth chain.
+
+   **It is an investigation, not a build.** Output is an ADR that settles the
+   relayer-vs-paymaster-vs-smart-account question, who bears the gas, whether
+   it applies only to metal purchases, and what any of it does to the key
+   boundary. The "Do not start" row above forbids the implementation until that
+   ADR exists — which is exactly why the investigation has to come first.
 
 ---
 
@@ -124,7 +134,7 @@ being resolved produces work that has to be thrown away.
 | Do not start | Because |
 |---|---|
 | **Any provider integration** — metals, on-ramp, pricing feed, KYC | No provider is contracted. `packages/integrations` is `export {}`. Writing an adapter against an imagined API means rewriting it against a real contract. |
-| **Smart accounts, passkeys, ERC-4337, paymaster, guardians** | No implementation exists — only interfaces in `packages/types` and `packages/wallet-core`. There is nothing to build on and no account contract to deploy against. Getting this wrong also breaks the key boundary, which is the one property that cannot be compromised. |
+| **Smart accounts, passkeys, ERC-4337, paymaster, guardians** | No implementation exists — only interfaces in `packages/types` and `packages/wallet-core`. There is nothing to build on and no account contract to deploy against. Getting this wrong also breaks the key boundary, which is the one property that cannot be compromised. **An investigation is not a start** — `BE-603` exists to *decide* this and reports back as an ADR. Writing the adapter, the paymaster or the account contract is what is forbidden, and forbidden until that ADR exists. |
 | **Bitcoin or Solana adapters** | Deferred by the design spec until after the EVM slice. Nothing in v1 needs them. |
 | **Marketing site, web wallet, mobile app** | All three are framework defaults. The API is not stable enough to build a client against, and the product decisions the client depends on (buy flow, redemption mechanics) are blocked on counsel. |
 | **A microservice split** | The decision is a modular monolith. A split is not a task; it is an ADR. |

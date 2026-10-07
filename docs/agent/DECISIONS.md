@@ -629,6 +629,12 @@ further metals. Each is now a `BACKLOG` entry in
 [`BACKEND_TASKS.md`](BACKEND_TASKS.md) rather than an omission — see `BE-603`,
 `BE-204`, `BE-205`, `BE-1506`, `BE-1106`, `BE-402`.
 
+**While this is Open, the recorded decision governs.** "Open" means "awaiting a
+call", not "suspended". Until someone closes this ADR with an explicit answer,
+the right-hand column above remains the operative scope — an undecided widening
+is a narrowing, because the narrower thing is what is currently built, tested
+and reasoned about.
+
 **Consequences.**
 - **Nothing in this table may be built until it is called.** An agent that reads
   the product document and starts a Bitcoin adapter is working against three

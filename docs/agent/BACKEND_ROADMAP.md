@@ -170,6 +170,10 @@ Order from here: `DEF-006`, then `DEF-014`, then the rest. See
 - `BE-1101` / `BE-1105` — KYC and sanctions. **These do not need the metals
   partner**, and they are legally required before selling gold to consumers for
   dollars regardless of custody posture.
+- `BE-603` — **investigate** gas sponsorship and account abstraction. Needed by
+  nobody else, dependent on nobody else, and the only backlog item the owner's
+  product document named directly. Investigation only: the implementation stays
+  on the do-not-start list until the ADR it produces exists (ADR-021).
 
 ### Phase D — Provider work (gated)
 
