@@ -3,11 +3,17 @@
 The single source of truth for what Correnthian's backend has, has half of, and
 has not got. `TASK.md` at the repository root points here.
 
-Verified against the repository at `2be6499` (2026-10-06). Plan section numbers
+Verified against the repository at `50cb8a1` (2026-10-07). Plan section numbers
 (`plan §N`) refer to `node_modules/plan.txt`, the backend master plan.
 
-**Statuses:** `BACKLOG` · `READY` · `IN_PROGRESS` · `BLOCKED` · `REVIEW` ·
-`TESTING` · `DONE`
+**Statuses:** `DONE` · `PARTIAL` · `BACKLOG` · `OPEN` · `READY` ·
+`IN_PROGRESS` · `BLOCKED` · `REVIEW` · `TESTING`
+
+Plan §67 defines none of `DONE`'s neighbours `PARTIAL`, `BACKLOG` or `OPEN`.
+`PARTIAL` in particular is load-bearing: it is the only value that can say
+"exists, is guarded, and still does not work", which is the honest state of
+twenty tasks here. Without it, status collapses into `DONE` and this file
+starts lying.
 
 ---
 
@@ -49,7 +55,32 @@ a test, or the test cannot fail, the status is `PARTIAL` and the gap is named.
 Found by reading the code, not by a failing test. Several of these are silent —
 TypeScript, and the contract suite, both pass over them.
 
+### Where they stand on 2026-10-07
+
+Re-verified against the code, not against this file. The tracker had every one
+of these marked `BACKLOG` while four were already fixed, because the fixes
+landed after this section was last written. Each status below was checked at
+the location the entry names.
+
+| Status | Defects | Count |
+|---|---|---|
+| `DONE` | `DEF-001`, `DEF-002`, `DEF-003`, `DEF-016` | 4 |
+| `BACKLOG` | `DEF-004`, `DEF-005`, `DEF-006`, `DEF-007`, `DEF-008`, `DEF-009`, `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-014`, `DEF-015`, `DEF-017`, `DEF-018` | 14 |
+
+`DEF-018` is new — found while re-verifying the others, and recorded rather
+than fixed, because tracking work that is not yet done is the point of this
+file.
+
+**Two that were previously recorded as fixed are not.** `DEF-005` reads as
+fixed if you look only at the `actor = req.user?.id ?? req.ip` line: the
+expression is right and the guard order is not. `DEF-015` reads as fixed if you
+look only at the comment above `users.list`, which claims keyset pagination
+while the code beneath it paginates on the primary key. Both remain `BACKLOG`.
+
 ### DEF-001 — `POST /redemptions` can never succeed
+_Fixed in `5a31c4b`. The description below is what was wrong and is
+kept for the record; it does not describe the current code._
+
 
 - **Location:** `services/api/src/metals/redemption.controller.ts`
 - **Description:** the controller passes `country: null, region: null` with the
@@ -67,9 +98,12 @@ TypeScript, and the contract suite, both pass over them.
   without an explicit decision. If it does, that decision is an ADR.
 - **Tests:** service-level test for the resolution, plus a controller test for
   the 451 path.
-- **Status:** `BACKLOG`
+- **Status:** `DONE` — fixed in `5a31c4b`. Re-verified 2026-10-07: the DTO carries no jurisdiction field, the comment is no longer a claim about code that does not exist, and `redemption.controller.spec.ts` exercises the controller against a live database (7 tests).
 
 ### DEF-002 — `RedemptionService.transition` writes a column that does not exist
+_Fixed in `5a31c4b`. The description below is what was wrong and is
+kept for the record; it does not describe the current code._
+
 
 - **Location:** `services/api/src/metals/redemption.service.ts`,
   `services/api/prisma/schema.prisma`
@@ -91,9 +125,12 @@ TypeScript, and the contract suite, both pass over them.
 - **Tests:** a live-database test, not a mock. This is precisely the class of
   bug `contracts.spec.ts` exists to catch, and that suite does not cover this
   route.
-- **Status:** `BACKLOG`
+- **Status:** `DONE` — fixed in `5a31c4b`. Re-verified 2026-10-07: `reviewedBy` is a column on the model (`schema.prisma:305`), a migration adds it, and the controller spec asserts the row rather than the response. `scripts/check-prisma-writes.mjs` was added as the permanent answer to the whole class — see `DEF-018` for its current state.
 
 ### DEF-003 — `services/api/prisma/schema.prisma` has drifted from the database
+_Fixed in `7ad3d69`. The description below is what was wrong and is
+kept for the record; it does not describe the current code._
+
 
 - **Location:** `services/api/prisma/schema.prisma:369` and `:637`
 - **Description:** the migration
@@ -110,7 +147,7 @@ TypeScript, and the contract suite, both pass over them.
   is empty.
 - **Tests:** run `prisma migrate status` against a fresh database and confirm no
   pending migration is generated.
-- **Status:** `BACKLOG`
+- **Status:** `DONE` — fixed in `7ad3d69`. Re-verified 2026-10-07: `prisma migrate diff --from-schema … --to-config-datasource` reports *No difference detected*, and `prisma migrate status` reports 7 migrations applied. The uniqueness hole cannot be reintroduced by `migrate dev`.
 
 ### DEF-004 — Rate limiting ignores its own configuration
 
@@ -136,6 +173,12 @@ TypeScript, and the contract suite, both pass over them.
   a budget; one client rotating IPs does not get a fresh one) does not hold.
 - **Expected output:** reorder the guards, or resolve the session before
   rate-limiting, and add a test.
+- **Re-verified 2026-10-07: still open.** `RateLimitGuard` is registered at
+  `core.module.ts:29`, `SessionGuard` at `:30`, and Nest runs global guards in
+  registration order. `req.user` is written only by `SessionGuard`
+  (`session.guard.ts:29`), so it is `undefined` at key-computation time and
+  every request buckets by IP. The `req.user?.id ?? req.ip` expression is
+  correct; the ordering defeats it.
 - **Status:** `BACKLOG`
 
 ### DEF-006 — Readiness probe never returns 503
@@ -241,28 +284,86 @@ TypeScript, and the contract suite, both pass over them.
   keyset and an unreadable cursor as a 400.
 - **Not a security defect.** A correctness and operator-trust one: this is the
   list an operator reconciles money against.
+- **Re-verified 2026-10-07: still open.** The comment above `users.list`
+  claims "Keyset pagination on a stable sort. `skip` degrades badly…" and the
+  statement three lines below it is
+  `...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {})`, ordered
+  by `createdAt`. Reading the comment alone records this as fixed; it is not.
+  `devices.service.ts:67` is the same.
 - **Status:** `BACKLOG`
 
 ### DEF-016 — The admin console has no role gate on sign-in
 
 - **Location:** `apps/admin/src/app/login/actions.ts`,
-  `apps/admin/src/app/(dashboard)/layout.tsx`
-- **Description:** `loginAction` stores whatever role the API returns;
-  `DashboardLayout` redirects only when there is no session. An account with
-  role `user` reaches the console shell. It sees no data — every page routes
-  through `ApiState`, and the API enforces independently — but the console does
-  not state the restriction.
-- **Also note:** `getSession()` reads an **unsigned base64 cookie** for display.
-  That is acceptable because authorisation is re-checked server-side on every
-  call, but the UI role gates (`roleAtLeast`) are therefore cosmetic. They are
-  not a security control and must not be described as one.
-- **Status:** `BACKLOG`
+  `apps/admin/src/app/(dashboard)/layout.tsx`,
+  `apps/admin/src/app/unauthorized/page.tsx`, `apps/admin/src/lib/roles.ts`
+- **Was:** `loginAction` stored whatever role the API returned and
+  `DashboardLayout` redirected only when there was no session, so an account
+  with role `user` was signed in and handed the whole operations shell —
+  navigation, branding, and a dozen panels each returning empty because the
+  API refuses the same account on every call.
+- **Built in `50cb8a1`:**
+  - `lib/roles.ts` owns the rank table and `canAccessConsole`. It fails closed:
+    an unrecognised role is denied, so a role the API grows before this file
+    learns about it cannot walk in.
+  - Sign-in refuses a role below `support` **before** `setSession`, so no
+    session is written and there is nothing for the shell to gate.
+  - The layout gates again — a session outlives a role change.
+  - `/unauthorized` states the restriction. Its two redirects are what keep it
+    from bouncing against `/login`, which already sends any session to
+    `/dashboard`.
+  - The rank table moved out of `lib/api-server`, which is `server-only` and
+    therefore threw on import anywhere a test could reach it. The API already
+    carries a duplicate of this hierarchy and it drifted once (`5a31c4b`).
+- **Acceptance criteria:** a `user` account is refused at sign-in with no
+  session cookie written; a session whose role is `user` reaches
+  `/unauthorized`, never the shell; `support` and above still reach the shell.
+  All three verified against the running app at 1440x900, not only in tests.
+- **Security:** **this gate is a UX control, not a security control.**
+  `getSession()` reads an unsigned base64 cookie, so the role it reports is
+  display state a determined client could edit. That is acceptable only because
+  the API re-checks authorisation on every call. The gate decides which shell
+  to render; it never decides whether data is served. This is written into
+  `lib/roles.ts` so the next reader does not promote it.
+- **Tests:** 21 tests in `apps/admin`, which had no test runner before this:
+  the rank matrix, the sign-in gate, the shell gate. The four that exercise the
+  gates were confirmed to fail with the gates removed.
+- **Status:** `DONE` — fixed in `50cb8a1`.
+
 
 ### DEF-017 — Unused dependency injection
 
 - **Location:** `services/api/src/swaps/swaps.service.ts`
 - **Description:** `ProvidersService` is injected and never used. Not harmful;
   it is a hint that rail binding was intended here and never written.
+- **Status:** `BACKLOG`
+
+### DEF-018 — `check-prisma-writes.mjs` fails and is not in CI
+
+- **Location:** `scripts/check-prisma-writes.mjs`, `.github/workflows/ci.yml`
+- **Description:** the guard built in `5a31c4b` to catch DEF-002's class of
+  bug exits `1` on the current tree, flagging `Provider.where` and
+  `Provider.data` at `provider-health.service.ts:142`. Those are not fields —
+  they are the arguments to `update`, and the checker cannot follow the spread
+  that builds `data`. `lastHealth` and `lastCheckedAt` are both declared on
+  `Provider`.
+- **The consequence is not the red exit.** `ci.yml` runs `check-key-boundary`
+  and `check-explicit-di` and not this one, so a guard that currently fails is
+  excluded from CI, which means it protects nothing. A check nobody wires up is
+  a comment.
+- **Why it is not a trivial fix either:** the commit message says the checker
+  "reports honestly where it cannot follow a spread expression rather than
+  passing silently, because a check claiming coverage it lacks is worse than
+  none." That behaviour is deliberate. The work is to resolve the spread, or
+  to mark the site explicitly inconclusive — and then to decide whether the
+  script belongs in CI, which is a call about how noisy CI is allowed to be.
+- **Dependencies:** none.
+- **Expected output:** the script exits `0` on a clean tree while still
+  failing on a genuine unknown field, and CI runs it.
+- **Acceptance criteria:** a deliberate unknown field is caught; the spread at
+  `provider-health.service.ts:142` is either resolved or explicitly marked;
+  `ci.yml` executes the script.
+- **Tests:** the guard against a fixture with a real typo.
 - **Status:** `BACKLOG`
 
 ---

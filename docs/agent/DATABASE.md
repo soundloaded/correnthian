@@ -162,9 +162,15 @@ would have carried the uniqueness hole.
 `pnpm migrate:deploy` (`prisma migrate deploy`). Recorded in
 [`../operations/production-database.md`](../operations/production-database.md).
 
-### DEF-003 — the schema file has drifted
+### DEF-003 — the schema file has drifted · `DONE` (`7ad3d69`)
 
-`services/api/prisma/schema.prisma` still declares both columns nullable:
+> **Closed 2026-10-07.** `schema.prisma` now declares both as
+> `String @default("")`, and `prisma migrate diff` between the schema and the
+> datasource reports *No difference detected*. `prisma migrate status` reports
+> 7 migrations applied. The description below is what was wrong, kept for the
+> record — the two line numbers no longer point at nullable columns.
+
+`services/api/prisma/schema.prisma` declared both columns nullable:
 
 - `services/api/prisma/schema.prisma:369` — `contractAddress String?`
 - `services/api/prisma/schema.prisma:637` — `region String?`
@@ -175,7 +181,9 @@ The **code** matches the database (`services/api/src/assets/assets.mapper.ts` do
 **schema file** does not. `prisma migrate dev` will now generate a migration
 reverting both to nullable, reintroducing the hole.
 
-Fix before anyone else runs `migrate dev`. Tracked as `DEF-003`.
+The fix landed in `7ad3d69`. **`migrate dev` against a shared or production
+database remains forbidden regardless** — that rule stands on its own and is
+repeated above.
 
 ---
 

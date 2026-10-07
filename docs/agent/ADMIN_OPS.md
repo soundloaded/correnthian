@@ -59,17 +59,24 @@ against the API — the cookie is display state only, and the code says so:
 one.** A user can trivially rewrite the cookie to change what the console shows
 them. They see no different data.
 
-### DEF-016 — the console has no role gate on sign-in
+### DEF-016 — the console has no role gate on sign-in · `DONE` (`50cb8a1`)
 
-`loginAction` stores whatever role the API returns. `DashboardLayout` redirects
-only when there is no session at all. **An account with role `user` reaches the
-console shell.** It sees no data — every page routes through `ApiState` and the
-API enforces independently — but the console does not state the restriction, and
-a non-operator looking at an empty console is a poor first impression of an
-internal tool.
+**Was:** `loginAction` stored whatever role the API returned and
+`DashboardLayout` redirected only when there was no session at all, so an
+account with role `user` reached the console shell. It saw no data — every page
+routes through `ApiState` and the API enforces independently — but the console
+never stated the restriction, and a non-operator looking at an empty console is
+a poor first impression of an internal tool.
 
-Fix: refuse a session below `support` in `loginAction` or in the layout, and say
-why.
+**Now:** a role below `support` is refused in `loginAction` *before*
+`setSession`, so no session is written; the layout gates again because a session
+outlives a role change; and `/unauthorized` says why, with a sign-out. The rank
+table and `canAccessConsole` live in `apps/admin/src/lib/roles.ts`, which fails
+closed on any role it does not recognise.
+
+The paragraph above it still holds, and is now written into `lib/roles.ts`
+itself: this gate decides **which shell to render**, never whether data is
+served.
 
 ---
 
@@ -243,7 +250,7 @@ is a refusal someone may need to explain. The filter is a GET form over
 |---|---|
 | Transactions | `BE-601` — no `Transaction` row is ever written |
 | Compliance / risk operations | `BE-1102` — no risk engine |
-| Metals / redemption | `BE-805`, and DEF-001 makes the request path dead |
+| Metals / redemption | `BE-805` — the request path works (`DEF-001` fixed in `5a31c4b`); there is still no provider to redeem against |
 | Finance / revenue | `BE-1601` — no analytics |
 | System configuration | `BE-1505` — `FeatureFlag` exists, nothing reads or writes it |
 | Users list audit history | `GET /audit/actor/:actorId` exists and is not surfaced |

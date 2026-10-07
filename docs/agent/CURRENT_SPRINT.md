@@ -4,7 +4,7 @@ Read this every time before starting work. It is deliberately short: it names
 the task, what is finished, what is next, and — most importantly — what must
 not be started.
 
-Last updated: 2026-10-06.
+Last updated: 2026-10-07.
 
 ---
 
@@ -16,31 +16,59 @@ no typecheck and no contract assertion catches. Several are silent.
 
 ### Current task
 
-**`DEF-001` — `POST /redemptions` can never succeed.**
+**`DEF-004` / `DEF-005` — the rate limiter ignores its config, and cannot see
+the user.**
 
-- **Why this one first:** it is a route that is fully implemented, fully tested
-  at the service layer, and completely unreachable. The tests pass because they
-  call the service directly and pass a country. Nothing in the repository
-  exercises the controller.
-- **File:** `services/api/src/metals/redemption.controller.ts`
-- **Definition of done:** a `POST /redemptions` in a permitted jurisdiction
-  creates a row in state `requested`; the same request in an unmatched
-  jurisdiction returns 451. Both verified against a live database.
-- **Security constraint:** jurisdiction must come from the authenticated `User`
-  row. Taking it from the request body is a different decision and needs an ADR.
+- **Why these two together:** they are one file and one behaviour. Fixing the
+  budget without fixing who the budget is keyed on leaves a limiter that is
+  correctly configured and still gives every client behind one NAT a shared
+  pool — which is the property the config was written to express.
+- **File:** `services/api/src/common/guards/rate-limit.guard.ts`,
+  registration order in `services/api/src/common/core.module.ts`
+- **`DEF-004`:** `packages/config` validates `RATE_LIMIT_MAX_REQUESTS` and
+  `RATE_LIMIT_WINDOW_SECONDS`; the guard hardcodes `WINDOW_SECONDS = 60` and
+  `LIMITS = { auth: 10, api: 120 }`. Setting them changes nothing.
+- **`DEF-005`:** `RateLimitGuard` is registered before `SessionGuard`
+  (`core.module.ts:29` vs `:30`) and Nest runs global guards in registration
+  order, so `req.user` is always `undefined` when the key is computed. The
+  `req.user?.id ?? req.ip` expression is correct and unreachable.
+- **Definition of done:** both limits change at runtime through config; two
+  authenticated identities behind one NAT hold separate budgets; one identity
+  rotating IPs does not get a fresh one.
+- **Security constraint:** rate limiting is fail-closed today and must stay so
+  — an error resolving the budget denies rather than admits. Read `DEF-004`'s
+  entry before touching the Redis error path.
 
 ### Then, in order
 
 | # | Task | Why it is next |
 |---|---|---|
-| 2 | `DEF-002` — `reviewedBy` written to a model without that column | Fails at runtime, maps to a 500. Currently the only reachable failure in the redemption flow once DEF-001 is fixed. |
-| 3 | `DEF-003` — `services/api/prisma/schema.prisma` has drifted from the database | The next person to run `prisma migrate dev` will silently reintroduce the asset-registry uniqueness hole. Every minute this stays open is a minute someone can do that. |
-| 4 | `DEF-004` / `DEF-005` — rate limiter ignores its config and cannot see the user | Two documented properties that do not hold. |
-| 5 | `DEF-006` — readiness never returns 503 | An orchestrator will keep routing to a process that cannot serve. |
-| 6 | `DEF-014` — `README.md` and two docs state the opposite of the code | An agent will act on them. |
+| 2 | `DEF-006` — readiness never returns 503 | Everything in `BACKEND-15` assumes health checks work. An orchestrator currently keeps routing to a process that cannot serve. Three lines, no dependency, and it gates the hardening phase. |
+| 3 | `DEF-014` — `README.md`, `docs/engineering/standards.md` and `docs/engineering/api.md` state the opposite of the code | An agent will act on them. This file is not the only one being read. |
+| 4 | `DEF-007` / `DEF-008` — the portfolio returns 500 for a missing wallet, and sums floats | `054fdb9` established exact bigint money for fees. The portfolio then floats the same numbers. Two notions of a dollar must not coexist into `BE-1602`. |
+| 5 | `DEF-009` — `claimBatch` claims nothing | Two workers receive the same rows, and the comment above the function says otherwise. |
+| 6 | `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-017` — the bounded remainder | No dependency, all small, none urgent. |
+| 7 | `DEF-018` — the Prisma-write guard fails and is not in CI | Recording it here rather than fixing it: it is tracked, and it is not this sprint's work. |
 
 ### Completed in this sprint
 
+- `DEF-016` — the admin console now gates on role, not just on a session
+  (`50cb8a1`). Refused at sign-in before a session is written, gated again at
+  the shell, landing on `/unauthorized`. The admin had no test runner; it has
+  21 tests now. The gate is documented as a UX control, not a security one —
+  `getSession()` still reads an unsigned cookie and the API still authorises
+  every call.
+- `DEF-001` and `DEF-002` — `5a31c4b`. The redemption controller resolves
+  jurisdiction from the authenticated account, and `reviewedBy` is a column.
+  `scripts/check-prisma-writes.mjs` was added against the whole class of
+  invisible Prisma-write typos.
+- `DEF-003` — `7ad3d69`. Schema and database agree; `prisma migrate diff`
+  reports no difference, so `migrate dev` can no longer reintroduce the
+  uniqueness hole.
+- **A re-verification pass over all seventeen defects**, because this file and
+  `BACKEND_TASKS.md` still named `DEF-001` as the current task two commits
+  after it was fixed. Four are `DONE`, fourteen are `BACKLOG`. Two that had
+  been read as fixed are not — see the note in `BACKEND_TASKS.md` §2.
 - `BE-101` — API versioning. `/api/v1` on every route; `/health` and `/docs`
   deliberately outside it. The version lifecycle is data, not prose, so retiring
   a version is one line plus an announcement the API already makes on every
@@ -66,7 +94,8 @@ no typecheck and no contract assertion catches. Several are silent.
 
 ### Next, after this sprint
 
-1. `DEF-007` through `DEF-017` — the remaining defects, mostly small.
+1. The remaining fourteen defects — `DEF-007` onward, mostly small, plus
+   `DEF-018` recorded during the re-verification.
 2. `BE-1702` — controller-level tests. Fourteen routes have none outside the
    contract suite, and DEF-001 exists precisely because of that gap.
 3. `BE-102` — generate OpenAPI from `CONTRACT_REGISTRY` rather than shipping a

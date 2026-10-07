@@ -57,16 +57,19 @@ These were the open items. Each is now a tracked task; none was dropped.
 | `admin` — internal operations surface | `BE-1501`, `BE-1504` |
 | OpenAPI docs | `BE-102` |
 | Integration test harness against real Postgres/Redis | `BE-1702` (the harness exists; the coverage does not) |
-| Admin auth + RBAC gate | `DEF-016` |
+| Admin auth + RBAC gate | `DEF-016` — **done** in `50cb8a1` |
 | Admin pages: transactions, compliance, metals, finance | `BE-1504` |
 | Marketing site, web wallet, mobile | Out of scope — see `CURRENT_SPRINT.md` do-not-start |
 
 ## New, found by the 2026-10-06 audit
 
-Seventeen defects, `DEF-001` through `DEF-017`. **`DEF-001`, `DEF-002` and
-`DEF-003` should be read before doing anything else** — the first two are code
-paths that cannot work, and the third will silently corrupt the asset registry
-the next time anyone runs `prisma migrate dev`.
+Eighteen defects, `DEF-001` through `DEF-018`. **Four are done** — `DEF-001`
+and `DEF-002` (`5a31c4b`), `DEF-003` (`7ad3d69`) and `DEF-016` (`50cb8a1`) —
+and **fourteen remain open**. Start with `DEF-004` / `DEF-005`: the rate
+limiter's configuration and its keying are both inert, in one file.
+
+`DEF-003` was the urgent one and is closed; `prisma migrate diff` reports no
+difference between schema and database.
 
 ---
 

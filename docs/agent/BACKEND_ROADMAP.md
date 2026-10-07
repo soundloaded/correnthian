@@ -12,7 +12,7 @@ Verified against the repository at `2be6499`.
 ```
 FOUNDATION            ████████████████████  DONE
     ↓
-DATABASE              ███████████████████░  DONE, one schema-drift defect (DEF-003)
+DATABASE              ████████████████████  DONE (DEF-003 closed in 7ad3d69)
     ↓
 AUTH                  ████████████████████  DONE
     ↓
@@ -40,7 +40,7 @@ PRECIOUS METALS       ████░░░░░░░░░░░░░░░�
     ↓
 COMPLIANCE/RISK       ████████░░░░░░░░░░░░  Jurisdiction only. No KYC, AML, sanctions, risk.
     ↓
-ADMIN OPS             ████████████████░░░░  11 route files. Operations pages missing.
+ADMIN OPS             ████████████████░░░░  11 route files. Operations pages missing. Role gate closed (DEF-016).
     ↓
 ANALYTICS             ░░░░░░░░░░░░░░░░░░░░  NOT STARTED
     ↓
@@ -137,13 +137,17 @@ dependency on things that are not code.
 
 ### Phase A — Clear the defects (do this now)
 
-`DEF-001` through `DEF-017`. No external dependency, no product decision, all
-seventeen are bounded. Several are silent and will otherwise be found by a
+`DEF-001` through `DEF-018`. No external dependency, no product decision, all
+eighteen are bounded. Several are silent and will otherwise be found by a
 customer.
 
-Order: `DEF-001`, `DEF-002`, `DEF-003`, then the rest.
-`DEF-003` in particular is time-sensitive — anyone running `migrate dev` before
-it is fixed will silently reintroduce the asset-registry uniqueness hole.
+**Four are done** — `DEF-001`, `DEF-002` (`5a31c4b`), `DEF-003` (`7ad3d69`) and
+`DEF-016` (`50cb8a1`). Fourteen remain, and the time-sensitive one that ordered
+this phase is closed: `prisma migrate diff` reports no difference, so running
+`migrate dev` can no longer reintroduce the asset-registry uniqueness hole.
+
+Order from here: `DEF-004` / `DEF-005` (one file, one behaviour), then
+`DEF-006`, then the rest. See `CURRENT_SPRINT.md` for why.
 
 ### Phase B — Make the existing surface testable
 

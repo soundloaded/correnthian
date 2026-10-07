@@ -11,6 +11,55 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ---
 
+## 2026-10-07
+
+### `50cb8a1` — Gate the operations console on role, not just on a session
+- `DEF-016`. `loginAction` stored whatever role the API returned and the
+  dashboard layout redirected only when there was no session, so a customer
+  account was handed the whole operations shell — navigation, branding, a dozen
+  panels each returning empty because the API refuses the same account on every
+  call. The console now states the restriction instead of rendering it as
+  confusion.
+- Sign-in refuses a role below `support` *before* `setSession`, so no session
+  is written at all: nothing for the shell to gate, no cookie to strip. The
+  layout gates again, because a session outlives a role change. `/unauthorized`
+  is the landing page, and its two redirects are what stop it bouncing against
+  `/login`, which already sends any session to `/dashboard`.
+- Both redirects are `return redirect(...)`. Next's `redirect` halts by
+  throwing, and a guard that depends on that stops guarding the moment it is
+  called from somewhere that does not. The test proved it: with a bare call the
+  layout walked past its own redirect and threw on `session.role`.
+- The rank table moved out of `lib/api-server` into `lib/roles`. That module is
+  `server-only`, which throws on import anywhere but a React Server runtime, so
+  the table had never been reachable by a test — and the table is the one thing
+  an agent forks. The API already carries a duplicate of this hierarchy and it
+  drifted once.
+- **It is a UX gate and is documented as one.** `getSession()` reads an
+  unsigned cookie, so the role it reports is display state a client could edit.
+  The API re-checks authorisation on every call and that remains the real
+  control. The note lives in `lib/roles.ts` so the next reader does not promote
+  it to a security control.
+- The admin had no test runner. It has vitest and 21 tests now, covering the
+  rank matrix, the sign-in gate and the shell gate. The four that exercise the
+  gates were confirmed to fail with the gates removed, then pass with them back.
+
+### Docs — re-synchronised with the code
+- `BACKEND_TASKS.md` still listed `DEF-001` through `DEF-017` as `BACKLOG`
+  after four of them were fixed, and `CURRENT_SPRINT.md` still named `DEF-001`
+  as the current task two commits after it was done. A tracker that lags the
+  code is the same failure mode as one that lies outright, so the defect section
+  was re-verified line by line rather than trusted.
+- The pass corrected two that had been read as fixed: `DEF-005` looks fixed if
+  you read `req.user?.id ?? req.ip` and stop, but `RateLimitGuard` is still
+  registered before `SessionGuard` so that expression never runs with a user;
+  `DEF-015` looks fixed if you read the comment above `users.list` and stop,
+  but the code beneath it paginates on the primary key.
+- `DEF-018` recorded: `check-prisma-writes.mjs` exits 1 on a false positive and
+  `ci.yml` does not run it — a guard that fails and is excluded protects
+  nothing. Tracked, not fixed.
+- The status vocabulary in `BACKEND_TASKS.md` now lists `PARTIAL` and `OPEN`,
+  which the file used throughout and plan §67 never defined.
+
 ## 2026-10-06
 
 ### `ec328ad` — Make financial POSTs idempotent, durably and across instances

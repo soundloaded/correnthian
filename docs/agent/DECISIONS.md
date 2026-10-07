@@ -450,11 +450,16 @@ over. Nothing auto-approves.
   tests.
 - The seed's development jurisdiction rule sets `canRedeem: false`, so even a
   correct request is refused in the default local environment.
-- **The request path is dead in code.** `RedemptionController.request` passes
+- **The request path was dead in code.** `RedemptionController.request` passed
   `country: null, region: null` with the comment "resolved from the account
-  record, never from the client" — but nothing resolves them. `evaluate(null, …)`
-  denies unconditionally, so `POST /redemptions` always returns 451. Tracked as
-  `DEF-001`.
+  record, never from the client" — but nothing resolved them.
+  `evaluate(null, …)` denied unconditionally, so `POST /redemptions` always
+  returned 451 despite being fully unit tested at the service layer.
+  **Closed in `5a31c4b`:** the DTO carries no jurisdiction field at all, the
+  service reads `country`/`region` off the account record as the comment
+  always claimed, and `redemption.controller.spec.ts` exercises the controller
+  against a live database. The trust rule above is therefore unchanged — a
+  client still cannot claim a jurisdiction — it is simply enforced now.
 
 ---
 
