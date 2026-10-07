@@ -1,4 +1,4 @@
-import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { hash, verify } from '@node-rs/argon2';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { AuthenticatedUser } from '../common/decorators/current-user.decorator.js';

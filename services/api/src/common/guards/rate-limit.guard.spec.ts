@@ -45,12 +45,17 @@ function makeGuard(rate: RateConfig = { ...RATE }, redis: Partial<RedisMock> = {
     ...redis,
   };
   const redisSvc = { raw } as unknown as RedisService;
-  const reflector = {
-    getAllAndOverride: vi.fn().mockReturnValue(false),
-  } as unknown as Reflector;
+  // Held as its own binding rather than reached through the cast, so the test
+  // never references the method unbound.
+  const getAllOverride = vi.fn().mockReturnValue(false);
+  const reflector = { getAllAndOverride: getAllOverride } as unknown as Reflector;
   const config = { rateLimit: rate } as ConfigService;
 
-  return { guard: new RateLimitGuard(redisSvc, reflector, config), raw, reflector };
+  return {
+    guard: new RateLimitGuard(redisSvc, reflector, config),
+    raw,
+    getAllOverride,
+  };
 }
 
 function ctx(url: string, opts: { authorization?: string; ip?: string | null } = {}) {
@@ -218,8 +223,8 @@ describe('fail-closed', () => {
   });
 
   it('does not touch the counter for an opted-out route', async () => {
-    const { guard, raw, reflector } = makeGuard();
-    vi.mocked(reflector.getAllAndOverride).mockReturnValue(true);
+    const { guard, raw, getAllOverride } = makeGuard();
+    getAllOverride.mockReturnValue(true);
 
     await expect(guard.canActivate(ctx('/health/ready').exec)).resolves.toBe(true);
     expect(raw.incr).not.toHaveBeenCalled();
