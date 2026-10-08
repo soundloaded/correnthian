@@ -792,11 +792,15 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
   is what enforces it.
 - **The gap:** **Tests are not against a node.** The acceptance criterion below
   asks for Sepolia or a local node, and this environment has no node binary and
-  no funded address holding a registered token, so the RPC seam is stubbed
-  instead. What that leaves unverified is `eth_getLogs` → `ObservedTokenTransfer`
-  decoding by viem — everything above that seam runs for real: the lifecycle
-  table, `observe()`'s promote/demote rules, the audit trail, and a store that
-  enforces the unique index rather than accepting whatever it is handed.
+  no funded address holding a registered token. The RPC *wire* is covered —
+  `rpc-wire.test.ts` stubs `fetch` and answers in node shape, so viem's
+  encoding of `args.from`/`args.to` into `topics` and its decoding of a log
+  back into `from`, `to` and `value` are pinned rather than assumed. What that
+  still is not is a node: no live reorg, no real provider's rate limits, no
+  wallet that actually holds a registered token. Everything above the wire runs
+  for real — the lifecycle table, `observe()`'s promote/demote rules, the audit
+  trail, and a store that enforces the unique index rather than accepting
+  whatever it is handed.
 - **Dependencies:** none for the implementation; a node for the acceptance run.
 - **Security:** reads public chain state only. No key is involved and none could
   be — `TransactionIndexingService` never touches `wallet-core`, and

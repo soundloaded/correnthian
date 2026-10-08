@@ -37,7 +37,7 @@ interface FakeLog {
  * the alternative is driving a live chain to assert that sorting works.
  */
 function adapterReturning(logs: FakeLog[][]) {
-  const adapter = new EvmAdapter(descriptor, ['http://localhost:1']);
+  const adapter = new EvmAdapter(descriptor, [{ url: 'http://localhost:1' }]);
   const getLogs = vi
     .fn()
     .mockResolvedValueOnce(logs[0] ?? [])

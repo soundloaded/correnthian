@@ -35,12 +35,14 @@ down, because `BE-302` has already built most of what its entry describes.**
   failures.
 - **Why it is not `DONE`:** the acceptance criterion says tests "against
   Sepolia or a local node, not mocks", and this machine has neither a node
-  binary nor a funded address holding a registered token. The RPC seam is
-  stubbed instead, so what remains unverified is viem's `eth_getLogs` decoding.
-  Everything above that seam is real — the lifecycle table, `observe()`'s
+  binary nor a funded address holding a registered token. The RPC wire is now
+  covered by stubbing `fetch` in node shape — so viem's topic encoding and log
+  decoding are pinned, not assumed — but a stub is still not a node: no live
+  reorg, no provider rate limits, no wallet that really holds a registered
+  token. Everything above the wire is real: the lifecycle table, `observe()`'s
   promote/demote rules, the audit trail, and a store that enforces
-  `@@unique([chainId, txHash])` rather than accepting what it is handed.
-  Closing it is a run against a node, not a code change.
+  `@@unique([chainId, txHash])`. Closing it is a run against a node, not a
+  code change.
 - **A defect found on the way, now fixed:** `assertEntitled` accepted the
   `system` actor and `assertOperator` did not, so `observe()` — the only method
   that moves a row with depth — rejected the one caller built to call it. It had
@@ -71,6 +73,15 @@ down, because `BE-302` has already built most of what its entry describes.**
 
 ### Completed in this sprint
 
+- **No test in any `packages/*` was ever typechecked.** All thirteen
+  `tsconfig.package.json` files exclude `src/**/__tests__/**` so tests stay out
+  of `dist` — and `typecheck` reuses that config, so the exclusion applied to
+  checking too. It was found because `transfers.test.ts` passed `['http://…']`
+  where `RpcEndpoint` requires `{url}`; the adapter it built would have thrown
+  "No URL was provided to the Transport" had `read` not been stubbed out. Fixed
+  with a `tsconfig.tests.json` per package and both configs in `typecheck`,
+  for the five packages that have `__tests__`. Two errors surfaced and both
+  were real.
 - `BE-302` — **`PARTIAL`, implementation complete.** The event half of the
   indexer: `getTokenTransfers` on the adapter (two `eth_getLogs` calls, one per
   direction, because a filter constrains one indexed position; de-duplicated on

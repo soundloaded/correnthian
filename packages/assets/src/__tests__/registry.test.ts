@@ -29,6 +29,9 @@ const paxg: Asset = {
   symbol: 'PAXG',
   name: 'Paxos Gold',
   decimals: 18,
+  // `enabled` was never typechecked: `tsconfig.package.json` excludes
+  // `src/**/__tests__/**`, so no test in any package reached tsc.
+  enabled: true,
   issuer: { issuerId: 'paxos', issuerName: 'Paxos Trust Company', jurisdiction: 'US-NY', licenseRefs: [] },
   backing: {
     custodyModel: 'allocated', custodian: 'Brink\'s', vaultLocation: ['London'],

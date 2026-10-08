@@ -13,6 +13,34 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-08
 
+### Pin the RPC wire, and typecheck every test in `packages/*`
+- Follow-up to `BE-302`, and the second half closes the gap the first recorded.
+- **The wire test exists because an assumption was doing work no test covered.**
+  `transfers.test.ts` stubs the adapter's private `read`, which is right for
+  de-duplication, sort order and what an unreadable log does — none of it is
+  network behaviour. What that skips is everything between the node and our
+  loop: whether viem puts `args.from` in `topics[1]` and `args.to` in
+  `topics[2]`, and whether it decodes a log back into `from`, `to`, `value`.
+  A wrong assumption there fails in one direction only — a filter matching
+  nothing is indistinguishable from an idle chain. `rpc-wire.test.ts` stubs
+  `fetch` one layer lower and answers in node shape.
+- **It also pinned something the adapter had not stated:** addresses come back
+  **checksummed**, not lower-cased. The indexer lower-cases before it looks a
+  wallet up, which is what makes that necessary rather than defensive.
+- **A finding on the way: no test in any `packages/*` was ever typechecked.**
+  Thirteen `tsconfig.package.json` files exclude `src/**/__tests__/**` so tests
+  stay out of `dist`, and `typecheck` reuses that config — so the exclusion
+  applied to *checking* as well as building. It surfaced because
+  `transfers.test.ts` passed `['http://localhost:1']` where `RpcEndpoint`
+  requires `{url}`: the adapter it constructed would have thrown "No URL was
+  provided to the Transport" on its first real read, and nothing had noticed
+  because `read` was stubbed. Five packages have `__tests__`; each now has a
+  `tsconfig.tests.json` and both configs run under `typecheck`. Two errors came
+  out of it — the endpoint shape above, and an `Asset` fixture missing
+  `enabled` — and both were real.
+- **Still not `DONE`:** a stub is not a node. No live reorg, no provider rate
+  limits, no wallet that really holds a registered token.
+
 ### BE-302 — Deposits now become rows: the indexer's event half
 - `PARTIAL`, and the reason for `PARTIAL` is verification rather than code.
 - **Read side:** `BlockchainAdapter.getTokenTransfers()` observes ERC-20
