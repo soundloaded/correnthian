@@ -148,12 +148,21 @@ function makeStore() {
         const w = args?.where ?? {};
         let out = [...rows.values()];
         if (w.chainId) out = out.filter((r) => r.chainId === w.chainId);
-        if (w.state?.in) out = out.filter((r) => (w.state.in as string[]).includes(r.state));
-        if (w.blockNumber && 'not' in w.blockNumber) {
-          const wanted = w.blockNumber.not;
-          out = out.filter((r) =>
-            wanted === null ? r.blockNumber !== null && r.blockNumber !== undefined : r.blockNumber !== wanted,
-          );
+        // `state` arrives as a scalar from the hash sweep and as `{in}` from
+        // the depth sweep; both are real Prisma shapes and both are read here.
+        if (typeof w.state === 'string') out = out.filter((r) => r.state === w.state);
+        else if (w.state?.in) out = out.filter((r) => (w.state.in as string[]).includes(r.state));
+        if (w.blockNumber !== undefined) {
+          if (w.blockNumber === null) out = out.filter((r) => r.blockNumber === null);
+          else if ('not' in w.blockNumber) {
+            const wanted = w.blockNumber.not;
+            out = out.filter((r) =>
+              wanted === null ? r.blockNumber !== null && r.blockNumber !== undefined : r.blockNumber !== wanted,
+            );
+          }
+        }
+        if (w.txHash && 'not' in w.txHash) {
+          out = out.filter((r) => r.txHash !== null && r.txHash !== undefined);
         }
         if (w.id?.notIn) out = out.filter((r) => !(w.id.notIn as string[]).includes(r.id));
         if (args?.orderBy?.updatedAt === 'asc') {
@@ -194,6 +203,15 @@ function makeAdapter(options?: {
   head?: bigint;
   logs?: ObservedTokenTransfer[];
   onRead?: (range: { fromBlock: bigint; toBlock: bigint }) => void;
+  /** What the node says about a hash. Absent means it does not have it. */
+  transactions?: Record<string, {
+    status: 'pending' | 'confirmed' | 'failed';
+    blockNumber: bigint | null;
+    from?: string;
+    to?: string;
+    valueRaw?: string;
+    hash?: string;
+  }>;
 }) {
   const head = options?.head ?? 112n;
   const logs = options?.logs ?? [];
@@ -204,9 +222,12 @@ function makeAdapter(options?: {
     },
   );
   const getBlockNumber = vi.fn(async () => head);
-  const adapter = { getTokenTransfers, getBlockNumber } as any;
+  const getTransaction = vi.fn(
+    async (hash: string) => (options?.transactions?.[hash] ?? null),
+  );
+  const adapter = { getTokenTransfers, getBlockNumber, getTransaction } as any;
   const blockchain = { forChain: vi.fn(async () => adapter) } as any;
-  return { adapter, blockchain, getTokenTransfers, getBlockNumber };
+  return { adapter, blockchain, getTokenTransfers, getBlockNumber, getTransaction };
 }
 
 function makeService(adapterFactory: () => ReturnType<typeof makeAdapter>) {
@@ -544,6 +565,189 @@ describe('TransactionIndexingService', () => {
 
     expect(report.errors.join(' ')).toMatch(/block number but no hash/);
     expect(rowById(store, 'tx1').txHash).toBeNull();
+  });
+
+  // --- BE-601: the hash sweep ---------------------------------------------
+
+  const BROADCAST_HASH = `0x${'7'.repeat(64)}`;
+
+  /** An outbound intent the client says it put on the network. */
+  function broadcastRow(over: Row = {}): Row {
+    const now = new Date('2026-10-08T12:00:00.000Z');
+    return {
+      id: 'tx1',
+      chainId: CHAIN_ID,
+      walletId: 'w1',
+      userId: 'u1',
+      assetId: 'a1',
+      direction: 'out',
+      destination: COUNTERPARTY,
+      state: 'broadcast',
+      txHash: BROADCAST_HASH,
+      amountRaw: '1000000',
+      amountUsd: null,
+      blockNumber: null,
+      confirmations: 0,
+      requiredConfirmations: 12,
+      dropCount: 0,
+      droppedAt: null,
+      lastSeenAt: null,
+      expiresAt: null,
+      createdAt: now,
+      updatedAt: now,
+      ...over,
+    };
+  }
+
+  it('BE-601 — a transaction the chain has mined gets its block and depth written', async () => {
+    const { store, indexing, built } = makeService(() =>
+      makeAdapter({
+        head: 112n,
+        logs: [],
+        transactions: {
+          [BROADCAST_HASH]: { status: 'confirmed', blockNumber: 100n },
+        },
+      }),
+    );
+    store.rows.set('tx1', broadcastRow());
+
+    const report = await run(indexing, { resumeFrom: 112n });
+
+    expect(built.getTransaction).toHaveBeenCalledWith(BROADCAST_HASH);
+    const row = rowById(store, 'tx1');
+    expect(row.blockNumber).toBe(100n);
+    expect(row.confirmations).toBe(12);
+    // `broadcast` → `pending` on first sighting; the depth sweep, which runs
+    // after this in the same run, carries it the rest of the way.
+    expect(row.state).toBe('confirmed');
+    expect(report.hashMined).toBe(1);
+    expect(report.hashDropped).toBe(0);
+  });
+
+  it('BE-601 — a transaction the chain has never heard of is marked dropped', async () => {
+    const { store, indexing, built } = makeService(() =>
+      makeAdapter({ head: 112n, logs: [], transactions: {} }),
+    );
+    // Broadcast an hour ago, so the grace window has passed.
+    store.rows.set(
+      'tx1',
+      broadcastRow({ broadcastAt: new Date('2026-10-08T11:00:00.000Z') }),
+    );
+
+    await run(indexing, { resumeFrom: 112n });
+
+    expect(built.getTransaction).toHaveBeenCalledTimes(1);
+    const row = rowById(store, 'tx1');
+    expect(row.droppedAt).toBeInstanceOf(Date);
+    expect(row.dropCount).toBe(1);
+    // Not a lifecycle state — `pending` with `droppedAt` is what the schema
+    // documents, and it is also what takes the row out of the sweep.
+    expect(row.state).toBe('pending');
+    expect(row.blockNumber).toBeNull();
+  });
+
+  it('BE-601 — does not declare a drop while it could still be propagation', async () => {
+    const { store, indexing } = makeService(() =>
+      makeAdapter({ head: 112n, logs: [], transactions: {} }),
+    );
+    store.rows.set(
+      'tx1',
+      broadcastRow({ broadcastAt: new Date('2026-10-08T11:59:30.000Z') }),
+    );
+
+    await run(indexing, { resumeFrom: 112n });
+
+    const row = rowById(store, 'tx1');
+    expect(row.droppedAt).toBeNull();
+    expect(row.dropCount).toBe(0);
+    expect(row.state).toBe('broadcast');
+  });
+
+  it('BE-601 — leaves a transaction that is in the mempool exactly as it is', async () => {
+    const { store, indexing } = makeService(() =>
+      makeAdapter({
+        head: 112n,
+        logs: [],
+        transactions: {
+          [BROADCAST_HASH]: { status: 'pending', blockNumber: null },
+        },
+      }),
+    );
+    store.rows.set(
+      'tx1',
+      broadcastRow({ broadcastAt: new Date('2026-10-08T11:00:00.000Z') }),
+    );
+
+    const report = await run(indexing, { resumeFrom: 112n });
+
+    // Present but not in a block. Calling it `pending` would say it is in a
+    // block it is not in, and calling it dropped would be wrong.
+    const row = rowById(store, 'tx1');
+    expect(row.state).toBe('broadcast');
+    expect(row.blockNumber).toBeNull();
+    expect(row.droppedAt).toBeNull();
+    // Both are load-bearing. Without them a run that tried to write a null
+    // block number, threw, and had the error swallowed one level up would look
+    // exactly like a correct skip — which is how this survived its first
+    // mutation run.
+    expect(report.hashMined).toBe(0);
+    expect(report.errors).toEqual([]);
+  });
+
+  it('BE-601 — a reverted send becomes failed, not confirmed', async () => {
+    const { store, indexing } = makeService(() =>
+      makeAdapter({
+        head: 112n,
+        logs: [],
+        transactions: {
+          [BROADCAST_HASH]: { status: 'failed', blockNumber: 100n },
+        },
+      }),
+    );
+    store.rows.set('tx1', broadcastRow());
+
+    await run(indexing, { resumeFrom: 112n });
+
+    const row = rowById(store, 'tx1');
+    expect(row.state).toBe('failed');
+    expect(row.errorCode).toBe('reverted');
+    expect(row.blockNumber).toBe(100n);
+  });
+
+  it('BE-601 — an unreachable chain is reported and the row is left alone', async () => {
+    const { store, indexing, built } = makeService(() =>
+      makeAdapter({ head: 112n, logs: [] }),
+    );
+    store.rows.set('tx1', broadcastRow());
+    (built.getTransaction as any).mockRejectedValue(new Error('connection reset'));
+
+    const report = await run(indexing, { resumeFrom: 112n });
+
+    const row = rowById(store, 'tx1');
+    expect(row.state).toBe('broadcast');
+    expect(row.droppedAt).toBeNull();
+    expect(report.hashDropped).toBe(0);
+    expect(report.errors.join(' ')).toMatch(/connection reset/);
+  });
+
+  it('BE-601 — does not ask again about a transaction it has already dropped', async () => {
+    const { store, indexing, built } = makeService(() =>
+      makeAdapter({ head: 112n, logs: [], transactions: {} }),
+    );
+    store.rows.set(
+      'tx1',
+      broadcastRow({
+        state: 'pending',
+        droppedAt: new Date('2026-10-08T11:00:00.000Z'),
+        dropCount: 1,
+      }),
+    );
+
+    await run(indexing, { resumeFrom: 112n });
+
+    // Out of scope by construction: a dropped row is no longer in `broadcast`.
+    expect(built.getTransaction).not.toHaveBeenCalled();
+    expect(rowById(store, 'tx1').dropCount).toBe(1);
   });
 
   it('does not scan a chain that is not enabled', async () => {

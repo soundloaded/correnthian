@@ -74,6 +74,11 @@ export class IndexTransactionsJob implements ScheduledJob {
       created: number;
       advanced: number;
       depthChanged: number;
+      hashChecked: number;
+      hashMined: number;
+      hashDropped: number;
+      skippedUnknownToken: number;
+      skippedNoWallet: number;
       errors: string[];
     }> = [];
 
@@ -94,6 +99,11 @@ export class IndexTransactionsJob implements ScheduledJob {
           created: report.rowsCreated,
           advanced: report.rowsAdvanced,
           depthChanged: report.depthChanged,
+          hashChecked: report.hashChecked,
+          hashMined: report.hashMined,
+          hashDropped: report.hashDropped,
+          skippedUnknownToken: report.skippedUnknownToken,
+          skippedNoWallet: report.skippedNoWallet,
           errors: report.errors,
         });
       } catch (err) {
@@ -107,6 +117,11 @@ export class IndexTransactionsJob implements ScheduledJob {
           created: 0,
           advanced: 0,
           depthChanged: 0,
+          hashChecked: 0,
+          hashMined: 0,
+          hashDropped: 0,
+          skippedUnknownToken: 0,
+          skippedNoWallet: 0,
           errors: [err instanceof Error ? err.message : String(err)],
         });
       }
@@ -115,6 +130,11 @@ export class IndexTransactionsJob implements ScheduledJob {
     const created = chains.reduce((n, c) => n + c.created, 0);
     const advanced = chains.reduce((n, c) => n + c.advanced, 0);
     const depthChanged = chains.reduce((n, c) => n + c.depthChanged, 0);
+    const hashChecked = chains.reduce((n, c) => n + c.hashChecked, 0);
+    const hashMined = chains.reduce((n, c) => n + c.hashMined, 0);
+    const hashDropped = chains.reduce((n, c) => n + c.hashDropped, 0);
+    const skippedUnknownToken = chains.reduce((n, c) => n + c.skippedUnknownToken, 0);
+    const skippedNoWallet = chains.reduce((n, c) => n + c.skippedNoWallet, 0);
     const affected = created + advanced + depthChanged;
     const allErrors = chains.flatMap((c) => c.errors.map((e) => `${c.chainId}: ${e}`));
     const progressed = chains.some((c) => c.cursor !== null);
@@ -149,6 +169,14 @@ export class IndexTransactionsJob implements ScheduledJob {
         created,
         advanced,
         depthChanged,
+        hashChecked,
+        hashMined,
+        hashDropped,
+        // Named because a counter sitting at `created: 0` is otherwise
+        // indistinguishable from an idle chain. Found the hard way: a control
+        // case wrote nothing because its token was not registered, and the
+        // run record said only `created: 0` with no reason anywhere in it.
+        skipped: { unknownToken: skippedUnknownToken, noWallet: skippedNoWallet },
         errors: allErrors.slice(0, MAX_ERRORS),
       },
     };

@@ -37,6 +37,32 @@ const CHUNK_BLOCKS = 2_500n;
 /** Rows one run advances in the depth sweep. Bounded so a run ends. */
 const DEPTH_BATCH = 500;
 
+/**
+ * Rows one run asks about by hash. Each is two RPC calls when mined — the
+ * transaction and its receipt — so this is the number that decides how much
+ * of the rate limit the sweep costs.
+ *
+ * In practice the population is small and self-limiting: a row leaves it the
+ * moment it mines or is declared dropped, so only transactions genuinely in
+ * flight are polled.
+ */
+const HASH_BATCH = 50;
+
+/**
+ * How long after a broadcast an absent hash may still be propagation.
+ *
+ * `RpcAbsent` already means every configured endpoint said no, which is the
+ * strongest evidence available — but a transaction submitted seconds ago can
+ * still be on its way, and `droppedAt` is a claim about money. One minute is
+ * well past gossip across public nodes and well short of anything a user would
+ * wait on.
+ *
+ * A false drop is recoverable: the row stays in `broadcast` only while it is
+ * in flight, and once a late-broadcast transaction mines, the same sweep sees
+ * it and writes the block. It does not stay wrong.
+ */
+const DROP_GRACE_MS = 60_000;
+
 /** One chain's worth of work, and the run record's `detail` for it. */
 export interface ChainIndexReport {
   chainId: string;
@@ -55,6 +81,12 @@ export interface ChainIndexReport {
   skippedNoWallet: number;
   depthChecked: number;
   depthChanged: number;
+  /** Rows the hash sweep asked a node about. */
+  hashChecked: number;
+  /** Of those, transactions the node had mined or reverted. */
+  hashMined: number;
+  /** Of those, transactions every endpoint said it did not have. */
+  hashDropped: number;
   errors: string[];
 }
 
@@ -134,6 +166,9 @@ export class TransactionIndexingService {
       skippedNoWallet: 0,
       depthChecked: 0,
       depthChanged: 0,
+      hashChecked: 0,
+      hashMined: 0,
+      hashDropped: 0,
       errors: [],
     };
 
@@ -172,6 +207,17 @@ export class TransactionIndexingService {
       await this.scan({ chain, adapter, resumeFrom, head, signal, now, report, touched });
     } catch (err) {
       report.errors.push(err instanceof Error ? err.message : String(err));
+    }
+
+    if (!signal.aborted) {
+      // Between the two: the hash sweep may write a `blockNumber` that the
+      // depth sweep then measures in the same run, so a transaction mined
+      // long enough ago arrives at `confirmed` once rather than twice.
+      try {
+        await this.sweepByHash({ chain, adapter, head, signal, now, report });
+      } catch (err) {
+        report.errors.push(`hash: ${err instanceof Error ? err.message : String(err)}`);
+      }
     }
 
     if (!signal.aborted) {
@@ -406,6 +452,131 @@ export class TransactionIndexingService {
           `${primary.transfer.txHash}: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
+    }
+  }
+
+  // --- the hash sweep ------------------------------------------------------
+
+  /**
+   * Ask the chain about transactions it cannot be told about any other way.
+   *
+   * `BE-601`. The log scan sees a transfer only when it produces an ERC-20
+   * log for a registered, enabled token — which excludes native-coin sends
+   * (the whole send path a user actually performs), anything whose token is
+   * not in the registry, and every transaction that has not been mined yet or
+   * never will be. All four sit in `broadcast` forever, and they did: measured
+   * on 2026-10-08 against a stub node, a transaction the chain had mined at
+   * the current head was untouched by a full run, and one the chain had never
+   * heard of was still not marked dropped afterwards.
+   *
+   * One method covers all of them, because they are the same question asked
+   * about a hash: *does the chain have this yet?*
+   *
+   * The query is `state = 'broadcast'`, not a wider one, and that is load-
+   * bearing rather than a first cut. A transaction leaves `broadcast` in
+   * exactly two ways — it mines, or `observe` records the drop and moves it to
+   * `pending` — so anything still in `broadcast` is genuinely in flight and
+   * worth a call. A re-broadcast returns a row *to* `broadcast`, which is how
+   * a dropped transaction re-enters the sweep without a second query
+   * predicate. Already-dropped rows are therefore out of scope by construction
+   * rather than by a filter they would have to be added to later.
+   */
+  private async sweepByHash(args: {
+    chain: { id: string };
+    adapter: Awaited<ReturnType<BlockchainService['forChain']>>;
+    head: bigint;
+    signal: AbortSignal;
+    now: Date;
+    report: ChainIndexReport;
+  }): Promise<void> {
+    const { chain, adapter, head, signal, now, report } = args;
+
+    const rows = await this.prisma.transaction.findMany({
+      where: {
+        chainId: chain.id,
+        state: 'broadcast',
+        blockNumber: null,
+        txHash: { not: null },
+      },
+      // Oldest first, and every row acted on is written, which lifts it out of
+      // this set. A row we leave alone stays at the front — that is deliberate:
+      // it is a transaction still in the mempool, and it is the one whose
+      // outcome matters most.
+      orderBy: { updatedAt: 'asc' },
+      take: HASH_BATCH,
+      select: { id: true, txHash: true, broadcastAt: true, updatedAt: true },
+    });
+
+    for (const row of rows) {
+      if (signal.aborted) break;
+      if (!row.txHash) continue;
+      report.hashChecked += 1;
+
+      let record;
+      try {
+        record = await adapter.getTransaction(row.txHash);
+      } catch (err) {
+        // An unreachable chain is not evidence about this transaction, so it
+        // is reported and the row is left exactly as it was.
+        report.errors.push(
+          `${row.txHash.slice(0, 10)}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        continue;
+      }
+
+      if (!record) {
+        const since = (row.broadcastAt ?? row.updatedAt).getTime();
+        if (now.getTime() - since < DROP_GRACE_MS) continue;
+        // Still inside the grace window is not absence, it is propagation.
+        report.hashDropped += 1;
+        await this.transactions.observe(
+          row.id,
+          { id: 'system', role: 'system' },
+          {
+            txHash: row.txHash,
+            confirmations: 0,
+            outcome: 'dropped',
+          },
+          now,
+        );
+        continue;
+      }
+
+      if (record.blockNumber === null) {
+        // In the mempool. Present, not mined, and nothing to write — moving it
+        // to `pending` would say it was in a block it is not in.
+        continue;
+      }
+
+      report.hashMined += 1;
+      if (record.status === 'failed') {
+        // A revert is what the receipt says, and `observe` already treats a
+        // node's report of a failure as a fact rather than an opinion.
+        await this.transactions.observe(
+          row.id,
+          { id: 'system', role: 'system' },
+          {
+            txHash: row.txHash,
+            confirmations: this.confirmationsAt(head, record.blockNumber),
+            blockNumber: record.blockNumber.toString(),
+            outcome: 'reverted',
+          },
+          now,
+        );
+        continue;
+      }
+
+      await this.transactions.observe(
+        row.id,
+        { id: 'system', role: 'system' },
+        {
+          txHash: row.txHash,
+          confirmations: this.confirmationsAt(head, record.blockNumber),
+          blockNumber: record.blockNumber.toString(),
+          outcome: 'seen',
+        },
+        now,
+      );
     }
   }
 

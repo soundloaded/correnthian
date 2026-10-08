@@ -22,12 +22,12 @@ recorded (`DEF-001` … `DEF-020`); **nineteen are done, one is half fixed, none
 
 ### Current task
 
-**Next: `BE-601` — the confirmation sweep.** Both preparations are done. The
-scope was measured by running the real job against a stub node rather than
-read off the source, and `DEF-020`, which it uncovered on the way, is fixed:
-absence is now an answer the pool passes through instead of an outage it
-quarantines an endpoint for. The old `BE-102` production-`/docs` question is
-still undecided and is now item 5.
+**Next: `BE-602` — send/receive backend.** `BE-601` is built and measured: the
+scope was written by running the real job against a stub node rather than
+reading the source, `DEF-020` — which that uncovered — is fixed, and the sweep
+itself was verified against the same setup across four cases. What `BE-601` and
+`BE-302` still share is a real node, which is item 2. The old `BE-102`
+production-`/docs` question is still undecided and is now item 4.
 
 - **`BE-302` is `PARTIAL`, and the gap is verification rather than code.**
   Balance sync and event indexing both exist. `getTokenTransfers` observes
@@ -60,12 +60,11 @@ still undecided and is now item 5.
 
 | # | Task | Why it is next |
 |---|---|---|
-| 1 | **`BE-601`** — build the confirmation sweep | Scope written and measured, not guessed, and its one blocker (`DEF-020`) is fixed. `eth_getTransactionByHash` was called by nothing; a mined outbound transaction and a dropped one both sat in `broadcast` forever. |
-| 2 | `BE-602` — send/receive backend | `EvmAdapter.buildTransaction` already exists and nothing exposes it. The server assembles, the device signs. |
-| 3 | Node-backed acceptance run for `BE-302` | The one unmet criterion, and it is verification rather than code: needs a node and a funded address holding a registered token. |
-| 4 | `BE-1101` / `BE-1105` — KYC and sanctions | Legally required before selling gold for dollars regardless of custody posture, and they need no metals partner. |
-| 5 | `BE-102`'s open question — is `/docs` exposed in production? | Not decided. An API schema is a map of everything an attacker can call; the answer is a disclosure decision, not a technical one. |
-| 6 | ADR-022's build-time choices — account implementation, paymaster, EntryPoint | Gated on a vendor or a contract, same as `BE-802`. Recording them as decided would repeat the `claimBatch` mistake. |
+| 1 | `BE-602` — send/receive backend | `EvmAdapter.buildTransaction` already exists and nothing exposes it. The server assembles, the device signs. |
+| 2 | Node-backed acceptance run for `BE-302` **and `BE-601`** | The one unmet criterion, and it is shared: both were verified against a stub node rather than a chain. Needs a node and a funded address holding a registered token. |
+| 3 | `BE-1101` / `BE-1105` — KYC and sanctions | Legally required before selling gold for dollars regardless of custody posture, and they need no metals partner. |
+| 4 | `BE-102`'s open question — is `/docs` exposed in production? | Not decided. An API schema is a map of everything an attacker can call; the answer is a disclosure decision, not a technical one. |
+| 5 | ADR-022's build-time choices — account implementation, paymaster, EntryPoint | Gated on a vendor or a contract, same as `BE-802`. Recording them as decided would repeat the `claimBatch` mistake. |
 
 **Still open, deliberately not scheduled:**
 
@@ -76,6 +75,19 @@ still undecided and is now item 5.
 ---
 
 ### Completed in this sprint
+
+- **`BE-601` — the confirmation sweep, built and measured.** `sweepByHash`
+  asks the chain about the transactions no log can describe: native-coin
+  sends, unregistered or disabled tokens, and anything not yet mined or never
+  to be. All four sat in `broadcast` forever; all four are now handled by one
+  question asked about a hash. Verified against the real database through a
+  stub node on four cases — mined writes its block and depth, absent is
+  dropped after a 60-second grace window, reverted becomes `failed`, and a
+  send broadcast seconds ago is left alone. The query is `state = 'broadcast'`
+  because that is the only state a row can be waiting in, which takes
+  already-dropped rows out of scope by construction rather than by a filter.
+  The run record also names its skips now, after a control case wrote nothing
+  and said only `created: 0`. 8 tests, eight mutations killed.
 
 - **`DEF-020` — fixed.** `getTransaction` used to be unable to say "the node
   does not have this": a `null` result and a node failure both threw, and

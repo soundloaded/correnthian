@@ -13,6 +13,44 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-08
 
+### `BE-601` — the confirmation sweep, and what it is for
+- The scoping pass found that `eth_getTransactionByHash` was called by nothing
+  in the repository, so a transaction the chain had mined and a transaction the
+  chain had never heard of both sat in `broadcast` forever. `sweepByHash` is
+  the fix, and it covers the four cases the log scan structurally cannot see —
+  native-coin sends, unregistered or disabled tokens, the mempool window, and
+  transactions that will never be mined — with one question asked about a hash.
+- **The query is `state = 'broadcast'`, chosen rather than arrived at.** A row
+  leaves that state in exactly two ways: it mines, or `observe` records the
+  drop and moves it to `pending`. So anything still there is genuinely in
+  flight, and a re-broadcast returns a row *to* it. Already-dropped rows are
+  therefore out of scope by construction — no second predicate to remember to
+  add later, and no row polled forever for being somewhere it no longer is.
+- **A 60-second grace before absence becomes a drop.** `RpcAbsent` means every
+  endpoint said no, which is the strongest evidence available, but a
+  transaction submitted seconds ago can still be travelling and `droppedAt` is
+  a claim about money. A false drop self-corrects: a late-broadcast
+  transaction that later mines is seen by the same sweep and written.
+- **Measured against the real database, same method as the scoping pass.**
+  Mined at 995 → `pending`, `blockNumber: 995`, `confirmations: 5`. Absent →
+  `droppedAt`, `dropCount: 1`. Reverted → `failed`, `errorCode: 'reverted'`.
+  Broadcast 30 seconds ago → untouched. The sweep sits between the scan and the
+  depth sweep so a sufficiently deep transaction arrives at `confirmed` in one
+  run rather than two.
+- **The run record names its skips.** `skipped.unknownToken` and
+  `skipped.noWallet` were counted in the report and dropped before
+  `JobRun.detail`. A control case that wrote nothing said only `created: 0`,
+  with no reason anywhere in the output — an idle chain and a refused log are
+  the same line to an operator.
+- **8 tests, eight mutations killed.** One survived the first pass: the mempool
+  case asserted the row but not that the run was clean, so a version that tried
+  to write a null block number, threw, and had the error swallowed one level up
+  looked exactly like a correct skip. Both `hashMined: 0` and
+  `errors: []` now distinguish them.
+- **`PARTIAL`, not `DONE`, for the same reason as `BE-302`:** no real node.
+  The stub speaks genuine JSON-RPC over HTTP through viem against real Prisma,
+  but it is not a chain. The verification run is queued for both.
+
 ### `DEF-020` — absence is an answer, not an outage
 - The defect had a layering cause, not a message-text one: a node replying
   `null` to `eth_getTransactionByHash` and a node failing to reply both

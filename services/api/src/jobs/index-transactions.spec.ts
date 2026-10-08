@@ -29,6 +29,9 @@ function report(over: Partial<ChainIndexReport> = {}): ChainIndexReport {
     skippedNoWallet: 0,
     depthChecked: 3,
     depthChanged: 2,
+    hashChecked: 0,
+    hashMined: 0,
+    hashDropped: 0,
     errors: [],
     ...over,
   };

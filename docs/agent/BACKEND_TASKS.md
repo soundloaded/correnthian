@@ -43,7 +43,7 @@ a test, or the test cannot fail, the status is `PARTIAL` and the gap is named.
 | `USER-001` | User/device model | **DONE** as `users` + `devices` | Keyset-ish pagination, role mutation, soft revoke |
 | `WALLET-001` | Wallet metadata architecture | **DONE** as `wallets` module | Public addresses only, address validation, guardians |
 | `CHAIN-001` | Blockchain abstraction | **DONE** as `packages/blockchain` | `BlockchainAdapter`, `EvmAdapter`, `RpcPool`, 25 tests |
-| `BLOCKCHAIN-001` | Blockchain engine | **PARTIAL** as `blockchain` module | Adapter resolves + health + wallet balance sync + **event indexing** (`BE-302`). `Transaction` rows are written by `blockchain.index-transactions`. Awaiting a node-backed acceptance run. |
+| `BLOCKCHAIN-001` | Blockchain engine | **PARTIAL** as `blockchain` module | Adapter resolves + health + wallet balance sync + event indexing (`BE-302`) + hash-keyed confirmation and drop sweep (`BE-601`). `Transaction` rows are written by `blockchain.index-transactions`. Awaiting a node-backed acceptance run. |
 | `ASSET-001` | Asset registry | **DONE** as `assets` module + `packages/assets` | Derived identity, disclosure on every response, 7 + 5 tests |
 
 **The plan's "immediate backend queue" is complete.** All ten exist.
@@ -952,63 +952,50 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 
 ## 9. Transactions (plan §21–§22)
 
-### BE-601 — Transaction engine · `BACKLOG` (scope written, ready to start)
+### BE-601 — Transaction engine · `PARTIAL` (built and measured)
 
-> **The remainder below was measured, not read.** On 2026-10-08 the real
-> `IndexTransactionsJob` and `TransactionsService` were booted through Nest
-> against the development database, with a local stub node standing in for
-> `eth_*` so the answer did not depend on a third-party RPC. Chain 1's
-> `rpcUrls` was pointed at the stub for the duration and restored afterwards;
-> the fixtures and the stub are not in the tree.
+- **Built:** a third sweep in `TransactionIndexingService`. The log scan sees a
+  transfer only when it produces an ERC-20 log for a registered, enabled token,
+  which excludes native-coin sends — the send a user actually performs — plus
+  unregistered or disabled tokens, and anything not yet mined or never to be.
+  `sweepByHash` asks the chain about those by hash instead, between the scan
+  and the depth sweep so a transaction mined long enough ago reaches
+  `confirmed` in one run rather than two.
+- **The query is `state = 'broadcast'` and that is load-bearing.** A row leaves
+  `broadcast` in exactly two ways — it mines, or `observe` records the drop and
+  moves it to `pending` — so anything still in it is genuinely in flight, and a
+  re-broadcast returns a row *to* it. Already-dropped rows are therefore out of
+  scope by construction rather than by a filter someone has to add later.
+- **Measured against the real database** with the stub node, same method as the
+  scoping pass, four cases:
 
-- **What exists and was verified working:** the `Transaction` model with
-  `@@unique([chainId, txHash])`, the lifecycle table, `create` / `markSigned` /
-  `reportBroadcast` / `transition` / `observe`, and — since `BE-302` — the
-  indexer. An inbound ERC-20 log to a registered wallet with a registered token
-  produces a row in `state: pending` with the right `blockNumber` and
-  `confirmations` (`created: 1`, rows 2 → 3 in the run above). The depth sweep
-  promotes and reorgs demote. **That half is done and does not need rebuilding.**
+  | Case | Before | After |
+  |---|---|---|
+  | chain has it, mined at 995 | `broadcast`, `blockNumber: null` | `pending`, `995`, `confirmations: 5` |
+  | chain has never heard of it | unchanged, `droppedAt: null` | `pending`, `droppedAt` set, `dropCount: 1` |
+  | reverted | — | `failed`, `errorCode: 'reverted'` |
+  | broadcast 30 seconds ago | unchanged | unchanged — still `broadcast`, no drop |
 
-- **What was measured, and does not work.** The job calls exactly two RPC
-  methods — `eth_blockNumber` and `eth_getLogs`. `eth_getTransactionByHash` is
-  never called, by anything, anywhere in the repository:
-
-  | The node says | What happened to our `broadcast` row |
-  |---|---|
-  | *it is mined at block 995* | **Unchanged.** `state: broadcast`, `blockNumber: null`, `confirmations: 0`. `A ADVANCED? false`. |
-  | *it has never heard of it* | **Unchanged.** `droppedAt: null`, `dropCount: 0`. It stays `broadcast` forever. |
-
-- **So the remainder is one mechanism: a confirmation sweep keyed by hash**, for
-  rows in `broadcast`/`pending` that have a `txHash` and no `blockNumber`. That
-  covers all four cases the scan cannot reach:
-  1. **native-coin sends** — no ERC-20 log exists at all;
-  2. **never-mined sends** — no log will ever exist;
-  3. **unregistered or disabled token** — the scan skips by design
-     (`skippedUnknownToken`);
-  4. **between broadcast and mining** — the mempool window.
-
-  It writes through `observe()`, which already owns the drop and reorg rules:
-  found-and-mined sets `blockNumber` and depth, not-found sets `droppedAt` and
-  increments `dropCount` without changing state, which is what the schema
-  documents a drop to be.
-
-- **`DEF-020` is fixed**, so the sweep's one judgement — "does the node have
-  this hash" — can now be asked and answered (`getTransaction` returns `null`
-  when every endpoint says no, and a failure still throws).
-
-- **Also to fix while building it:** the run record reports `created: 0` and
-  nothing about *why*. `skippedUnknownToken` and `skippedNoWallet` are counted
-  in `ChainIndexReport` and then dropped before `JobRun.detail`, so an operator
-  watching a counter sit at zero cannot tell an idle chain from one where every
-  log was refused. That was found by watching a control case fail for a
-  misconfigured token address with no explanation anywhere in the output.
-
-- **Dependencies:** `BE-302` and `DEF-020` (both satisfied).
-- **Security:** read-only over public chain state. Must never introduce a
-  signing path — this is a second reader of the same public data the indexer
-  already reads, and it must not become a sender.
-- **Tests:** fixture-based against a node.
-- **Status:** `BACKLOG` — scope measured and written, no code yet.
+- **A 60-second grace window** before an absent hash becomes a drop, because
+  `RpcAbsent` means every endpoint said no but a transaction submitted seconds
+  ago can still be travelling, and `droppedAt` is a claim about money. A false
+  drop self-corrects: a late-broadcast transaction that later mines is seen by
+  the same sweep and written.
+- **The run record now names its skips.** `skipped.unknownToken` and
+  `skipped.noWallet` were counted and then dropped before `JobRun.detail`, so
+  `created: 0` was indistinguishable from an idle chain — which is how a
+  misconfigured control cost a debugging round with no clue in the output.
+- **Not yet `DONE` for the same reason as `BE-302`:** no real node. The
+  stub speaks genuine JSON-RPC over HTTP through viem and against real Prisma,
+  but it is not a chain — no mainnet mempool behaviour, no reorgs, no provider
+  rate limits. The acceptance line asks for a node, so the verification run
+  queued alongside `BE-302` now covers both.
+- **Dependencies:** `BE-302`, `DEF-020` (both satisfied).
+- **Security:** read-only over public chain state. A second reader of what the
+  indexer already reads, and not a sender — no key material, no signing path.
+- **Tests:** 8 in the indexer suite, eight mutations killed, plus the
+  four-case run above.
+- **Status:** `PARTIAL`
 
 ### BE-602 — Send/receive backend · `BACKLOG`
 - **Description:** assemble an unsigned transaction for the client to sign.
