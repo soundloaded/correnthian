@@ -13,6 +13,25 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-08
 
+### `3f0ca1f` — Exercise every route over HTTP, without a session
+- `BE-1702`, first half. 21 of 22 controllers had no test outside the contract
+  suite, and `DEF-001` shipped as a fully unit-tested *dead endpoint* because
+  the service was tested, the controller was not, and nothing in between
+  exercised the route.
+- **86 routes, 7 public, 79 not.** Anonymous requests assert three things:
+  non-public routes answer 401, `@Public` routes do not, nothing answers 500.
+- **Discovery, not a checked-in list** — a controller added tomorrow is
+  exercised tomorrow. Two guards keep discovery honest: every controller file
+  must yield a route (a parser that stops understanding a new decorator would
+  shrink coverage while every assertion stayed green), and the public set is
+  pinned, because a route that *becomes* public is just discovered as public.
+- **Mutation-checked:** stripping `@Public()` from `/auth/login`, adding it to
+  `GET /users`, and unregistering `SessionGuard` each fail the suite.
+- Claims Redis database 14 like the rate-limit spec: every suite spends from one
+  shared `rate:auth:ip:127.0.0.1` counter with a budget of 10, and these four
+  sign-in requests pushed another suite's register into 429. Six clean full runs
+  after isolating.
+
 ### `aa45cd8` — Run the Prisma-write guard in CI
 - `DEF-018`, second half. The static-guards job ran the other two checks and
   never this one — so a guard that exited 1 was excluded from the only thing

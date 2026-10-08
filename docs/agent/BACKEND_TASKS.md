@@ -1202,20 +1202,37 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 - **Status:** `PARTIAL`
 
 ### BE-1702 — Testing strategy · `PARTIAL`
-- 140 tests across 6 workspaces: 92 in `services/api` (10 files, of which 27 are
-  the contract suite), 25 in `packages/blockchain`, 7 in `packages/assets`,
-  6 in `packages/swaps`, 6 in `packages/config`, 4 in `packages/security`.
-  Without a `DATABASE_URL` the 27 contract tests **skip** rather than fail, so a
-  local run reports 113 passed and 27 skipped. That is the documented behaviour;
-  in CI the suite fails instead of skipping.
-- **Gaps:** no controller or HTTP-level tests outside the contract suite; no
-  tests for `assets.service.ts`, `providers`, `chains`, `notifications`,
-  `portfolio`, `users`, `devices`, `audit`, or the guards themselves.
-  `packages/contracts`, `packages/types`, `packages/ui`, `packages/api-client`,
-  `packages/integrations`, `packages/transactions` have **no tests and no
-  implementation**.
-- **The e2e suite is dead.** See DEF-013.
+
+- **593 tests across 7 workspaces** in `pnpm test` (api 520, admin 21,
+  blockchain 25, config 10, assets 7, swaps 6, security 4), plus **5** under
+  `pnpm test:e2e`. Both suites are gated on a database and both *throw* in CI
+  rather than skipping, so a green build cannot be a run that checked nothing.
+- **New — HTTP coverage of the whole route table** (`test/routes.spec.ts`,
+  `3f0ca1f`): all **86 routes** across 23 controllers, discovered from the
+  controller files at run time so a controller added tomorrow is exercised
+  tomorrow. Asserts every non-`@Public` route answers 401 anonymously, every
+  `@Public` route does not, and nothing answers 500. The public set is pinned
+  to a reviewed list, because discovery alone cannot catch a route *becoming*
+  public — it would simply be discovered as public and everything else passes.
+- **New — the guard suite** (`test/check-prisma-writes.spec.ts`): 7 tests that
+  spawn `check-prisma-writes.mjs` against fixtures and assert it *fails*.
+- **New — `test:e2e`** now runs in CI, which is why DEF-013 could exist at all.
+- **Still missing, and this is why the status stays `PARTIAL`:**
+  - **Happy-path coverage per controller.** `routes.spec.ts` proves refusal,
+    not success — a success path needs fixtures, and only `health` and
+    `redemption` have controller specs. This is the half DEF-001 fell through.
+  - **Service specs** for `assets.service`, `blockchain`/`indexing`,
+    `chains.service`, `providers.service` (only `provider-health` is covered),
+    `redis.service`, `notifications.service`, `swaps.service`, `job-lock`.
+  - `packages/contracts`, `packages/types`, `packages/ui`, `packages/api-client`,
+    `packages/integrations`, `packages/transactions` still have no tests.
+- **Note on the fixture races:** three suites flush `correnthian:rate:*` and
+  adopt rows from a shared database, so suites can fail each other. The two
+  live specs added this sprint claim their own Redis database to stop adding to
+  that problem; the underlying sharing is unfixed and is why a full run can
+  flake. See the note in `DEF-015`'s neighbours and `idempotency.spec.ts`.
 - **Status:** `PARTIAL`
+
 
 ### BE-1703 — Security testing · `PARTIAL`
 - **Exists:** key-boundary guard (both directions verified), credential scan,
