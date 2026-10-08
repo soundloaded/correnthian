@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { AppError } from '../common/errors.js';
+import { decodeCursor, encodeCursor, KEYSET_ORDER, keysetAfter } from '../common/keyset.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { ListUsersDto } from './dto/list-users.dto.js';
 
@@ -8,10 +9,20 @@ export class UsersService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   /**
-   * Keyset pagination on a stable sort. `skip` degrades badly once a table
-   * is large and can repeat rows under concurrent writes.
+   * Keyset pagination over `(createdAt desc, id desc)`.
+   *
+   * The comment used to claim this while the code paginated with
+   * `cursor: { id }` and `skip: 1` — carrying only half the sort key, so two
+   * users created in the same instant could land on the same page twice or
+   * fall between pages. Reading the comment was enough to record it as fixed,
+   * which is how it survived two re-verifications (DEF-015).
+   *
+   * The cursor and the filter now come from `common/keyset`, the same
+   * implementation `SwapsService` and `TransactionsService` already use.
    */
   async list(query: ListUsersDto) {
+    const after = query.cursor ? decodeCursor(query.cursor) : null;
+
     const where = {
       ...(query.role ? { role: query.role } : {}),
       ...(query.kycStatus ? { kycStatus: query.kycStatus } : {}),
@@ -27,10 +38,9 @@ export class UsersService {
     };
 
     const rows = await this.prisma.user.findMany({
-      where,
+      where: { ...where, ...keysetAfter(after, 'createdAt') },
       take: query.limit + 1,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
-      orderBy: { createdAt: 'desc' },
+      orderBy: [...KEYSET_ORDER],
       select: {
         id: true,
         email: true,
@@ -47,9 +57,10 @@ export class UsersService {
 
     const hasMore = rows.length > query.limit;
     const items = hasMore ? rows.slice(0, query.limit) : rows;
+    const last = items.at(-1);
     return {
       items,
-      nextCursor: hasMore ? items[items.length - 1]?.id : null,
+      nextCursor: hasMore && last ? encodeCursor({ id: last.id, at: last.createdAt }) : null,
     };
   }
 

@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { AppError } from '../common/errors.js';
+import { decodeCursor, encodeCursor, keysetAfter } from '../common/keyset.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { RegisterDeviceDto } from './dto/register-device.dto.js';
 import type { ListAllDevicesDto } from './dto/list-all-devices.dto.js';
@@ -56,6 +57,8 @@ export class DevicesService {
    * so it carries no more sensitivity than the account row beside it.
    */
   async listAll(query: ListAllDevicesDto) {
+    const after = query.cursor ? decodeCursor(query.cursor) : null;
+
     const rows = await this.prisma.device.findMany({
       where: {
         ...(query.platform ? { platform: query.platform } : {}),
@@ -63,10 +66,14 @@ export class DevicesService {
         ...(query.search
           ? { user: { email: { contains: query.search, mode: 'insensitive' as const } } }
           : {}),
+        ...keysetAfter(after, 'lastSeenAt'),
       },
       take: query.limit + 1,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
-      orderBy: { lastSeenAt: 'desc' },
+      // The full key, not just the timestamp: two devices seen in the same
+      // instant tie, and a tie broken by nothing is a page boundary that moves
+      // (DEF-015). `KEYSET_ORDER` is the `createdAt` variant, so this list
+      // spells out its own sort rather than borrowing a column it does not use.
+      orderBy: [{ lastSeenAt: 'desc' }, { id: 'desc' }],
       select: {
         id: true,
         platform: true,
@@ -79,7 +86,11 @@ export class DevicesService {
     });
     const hasMore = rows.length > query.limit;
     const items = hasMore ? rows.slice(0, query.limit) : rows;
-    return { items, nextCursor: hasMore ? items[items.length - 1]?.id : null };
+    const last = items.at(-1);
+    return {
+      items,
+      nextCursor: hasMore && last ? encodeCursor({ id: last.id, at: last.lastSeenAt }) : null,
+    };
   }
   /** Counters for the admin dashboard. */
   async stats() {
