@@ -569,20 +569,34 @@ kept for the record; it does not describe the current code._
   owner should make when the alias is removed.
 - **Status:** `DONE`
 
-### BE-102 — OpenAPI documentation · `PARTIAL`
-- **What exists:** `@nestjs/swagger` is mounted at `/docs`
-  (`services/api/src/main.ts`), with a `DocumentBuilder`, bearer auth
-  declaration and a title. Controllers carry `@ApiTags` and `@ApiOperation`.
-- **What does not exist:** every route is validated by a Zod schema rather than
-  a decorated DTO class, so **the generated document describes no request
-  schemas and no response schemas**. It is a list of paths with summaries.
-- **Also:** `/docs` is mounted unconditionally, in production as well as
-  development. The CSP is disabled outside production to let it render.
-- **Expected output:** derive the OpenAPI document from `CONTRACT_REGISTRY` and
-  the Zod query/body schemas; decide whether `/docs` is exposed in production.
-- **Acceptance criteria:** the document's response schemas are generated from
-  the same schemas the contract suite enforces.
-- **Dependencies:** `BE-110`. **Status:** `PARTIAL`
+### BE-102 — OpenAPI documentation · `DONE` (`fb4587c`)
+
+- **Was:** `@nestjs/swagger` mounted at `/docs` with `@ApiTags` and
+  `@ApiOperation`, but every route validates through a Zod schema rather than a
+  decorated DTO — so there was no metadata to build from. The document was 78
+  paths with summaries, **zero response schemas, zero component schemas**, and
+  **no `/api/v1` prefix**: Swagger reads the controller's registered path while
+  the version middleware adds the prefix at request time, so it described the
+  *legacy unversioned alias* as if it were the route. That alias is removed on
+  2026-12-01.
+- **Now:** `createContractDocument()` writes the versioned path as canonical,
+  marks the unversioned copy `deprecated` with its sunset date, and attaches a
+  response schema per contract from `CONTRACT_REGISTRY` — the same object
+  `contracts.spec.ts` parses real responses with, so `/docs` and the contract
+  suite cannot drift apart silently (ADR-010's whole subject).
+- **Two details that would otherwise skip routes silently:** registry keys use
+  Express params (`/users/:id`) while the document uses OpenAPI braces
+  (`/users/{id}`), and `ERROR …` keys are not routes.
+- **`createContractDocument` is shared by `main.ts` and the test**, so a green
+  test describes the served document rather than a second copy of the wiring.
+  8 tests, mutation-checked: bypassing the helper in `main.ts` fails, and
+  replacing the registry schema with a hand-written one fails.
+- **Open, not decided: whether `/docs` is exposed in production.** That is a
+  question about disclosure — an API schema is a map of everything an attacker
+  can call — not a schema question, and nothing here changes that behaviour.
+- **Status:** `DONE` (the schema gap); the production-exposure question is
+  recorded above and is not implemented either way.
+
 
 ### BE-103 — Health and readiness · `DONE`
 - `GET /health/live` (process only, no dependencies) and `GET /health/ready`
@@ -1278,7 +1292,7 @@ read them.
 
 | Status | Tasks | Defects |
 |---|---|---|
-| `DONE` | 16 | 18 |
+| `DONE` | 17 | 18 |
 | `PARTIAL` | 19 | 0 |
 | `PARTIAL` | 0 | 1 |
 | `BACKLOG` | 19 | 0 |
@@ -1286,7 +1300,7 @@ read them.
 | `OPEN` | 1 | 0 |
 | **Total** | **61** | **19** |
 
-**16 of 61 tasks are complete; 18 of 19 defects are done and 1 is half fixed — no defect is left in `BACKLOG`.** The plan's §68 dependency
+**17 of 61 tasks are complete; 18 of 19 defects are done and 1 is half fixed — no defect is left in `BACKLOG`.** The plan's §68 dependency
 chain is most of the way built at the infrastructure layer and not started at
 the layer that moves money.
 

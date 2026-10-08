@@ -13,6 +13,23 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-08
 
+### `fb4587c` — Generate the OpenAPI response schemas from the contract registry
+- `BE-102`. The served document was 78 paths with summaries, **zero response
+  schemas, zero component schemas** — Swagger builds from route metadata, and
+  every Correnthian route validates through Zod instead, so there was none.
+- **It also had no `/api/v1` prefix.** Swagger reads the controller's registered
+  path and the version middleware adds the prefix at request time, so the
+  document described the *legacy unversioned alias* as the route — and that
+  alias is removed on 2026-12-01. The canonical path is now added and the
+  original marked `deprecated` with its sunset date.
+- Schemas come from `CONTRACT_REGISTRY`, the same object `contracts.spec.ts`
+  parses real responses with, so `/docs` and the contract suite cannot drift.
+- `createContractDocument` is used by both `main.ts` and the test — asserting
+  against a second copy of the wiring is how a green test and a broken endpoint
+  coexist. 8 tests, mutation-checked on both the wiring and the schema source.
+- **Not decided:** whether `/docs` is exposed in production. A disclosure
+  question, recorded in the entry, implemented neither way.
+
 ### `3f0ca1f` — Exercise every route over HTTP, without a session
 - `BE-1702`, first half. 21 of 22 controllers had no test outside the contract
   suite, and `DEF-001` shipped as a fully unit-tested *dead endpoint* because

@@ -21,34 +21,39 @@ recorded (`DEF-001` … `DEF-019`); **eighteen are done, one is half fixed, none
 
 ### Current task
 
-**`BE-1702` — controller-level tests. The first thing the defects pointed at.**
+**`BE-603` — investigate gas sponsorship and account abstraction. An ADR, not a build.**
 
-- **Why now:** `DEF-001` shipped as a fully unit-tested *dead endpoint* because
-  21 of 22 controllers have no test outside the contract suite. The service was
-  tested, the controller was not, and nothing in between exercised the route.
-  Every defect cleared this sprint was found by reading code, not by a test —
-  because the tests stop one layer short.
-- **Where:** `services/api/src/*/*.controller.ts` — **1 controller spec exists**
-  (`metals/redemption.controller.spec.ts`), for 22 controllers.
-- **Definition of done:** each controller has at least one test that reaches it
-  through HTTP, covering the happy path and one refusal; the count is asserted
-  somewhere so a new controller cannot land untested.
-- **Why it is worth the effort before anything else:** `BE-1702` is the gate in
-  front of `Phase C` on the roadmap — the indexer events, the transaction engine
-  and send/receive are money-moving code, and they are next.
-- **Security constraint:** every refusal path must be covered, not just the
-  success path. A controller test that only proves 200 is a controller test that
-  would pass while the route had no guard.
+- **Why it is next:** it is the one item the owner's product document asked for
+  by name, and it needs nothing from anybody else.
+- **The problem, stated precisely:** a user holding 1,000 USDT cannot spend it
+  without ETH for gas. "You need $4 of ETH" is the first wall an ordinary buyer
+  hits, and for the gold-owning beachhead — who is not here to learn about gas
+  — it is the difference between a working product and a demo.
+- **What this task produces:** an ADR settling, in this order — relayer vs
+  paymaster vs an ERC-4337 smart account; who bears the gas economics; whether
+  it applies only to metal purchases or to every transfer; and what any of it
+  does to the key boundary.
+- **Why the constraint is not negotiable:** a smart account changes *where* the
+  key lives. The "Do not start" row exists because no account contract is
+  deployed and `packages/wallet-core` has interfaces only — and because ADR-001
+  has no exception for features. Getting this wrong does not produce a bug, it
+  produces a custodial system that believes it is not one.
+- **Definition of done:** an ADR with a `Decision`/`Reason`/`Consequences`
+  record and a `Status` of either `Locked` (build it) or `Rejected` (don't),
+  plus an updated "Do not start" row naming what unblocks. **No adapter, no
+  paymaster, no contract code in this task.**
+- **Security constraint:** the key boundary. This is the task where it is most
+  at risk, which is why it is an investigation first.
 
 ### Then, in order
 
 | # | Task | Why it is next |
 |---|---|---|
 | 1 | `BE-102` — OpenAPI generated from `CONTRACT_REGISTRY` | The shipped document describes no request or response schemas. Cheap, and it makes every later route reviewable. |
-| 2 | `BE-603` — **investigate** gas sponsorship and account abstraction | Named rather than implicit. Investigation only — the implementation stays on the do-not-start list until the ADR it produces exists. |
-| 3 | `BE-302` — indexer events to `Transaction` rows | The largest remaining piece depending on nothing external, and everything downstream of it waits. |
-| 4 | `BE-601` / `BE-602` — transaction engine, send/receive | EVM only; the adapter already works against a live network. |
-| 5 | `BE-1101` / `BE-1105` — KYC and sanctions | Legally required before selling gold for dollars regardless of custody posture, and they need no metals partner. |
+| 2 | `BE-302` — indexer events to `Transaction` rows | The largest remaining piece depending on nothing external, and everything downstream of it waits. |
+| 3 | `BE-601` / `BE-602` — transaction engine, send/receive | EVM only; the adapter already works against a live network. |
+| 4 | `BE-1101` / `BE-1105` — KYC and sanctions | Legally required before selling gold for dollars regardless of custody posture, and they need no metals partner. |
+| 5 | `BE-102`'s open question — is `/docs` exposed in production? | Not decided. An API schema is a map of everything an attacker can call; the answer is a disclosure decision, not a technical one. |
 
 **Still open, deliberately not scheduled:**
 
@@ -60,6 +65,12 @@ recorded (`DEF-001` … `DEF-019`); **eighteen are done, one is half fixed, none
 
 ### Completed in this sprint
 
+- `BE-102` — the document `/docs` serves now carries response schemas from
+  `CONTRACT_REGISTRY` (`fb4587c`), and its paths are versioned. It had been 78
+  paths with **no schemas at all**, describing the legacy unversioned alias
+  rather than the route. `createContractDocument` is shared by `main.ts` and the
+  test, so a green test describes the served document. 8 tests,
+  mutation-checked.
 - `DEF-018` — the Prisma-write guard now fails when it should **and** is run by
   CI (`9b80932`, `aa45cd8`). Two parsing bugs, one of which mattered more than
   the reported failure: a property directly after a comment was never checked,
