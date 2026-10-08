@@ -5,6 +5,7 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { Logger as PinoLogger } from 'nestjs-pino';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { createContractDocument } from './versioning/apply-contracts.js';
 import helmet from 'helmet';
 import { Logger } from '@nestjs/common';
 import { AppModule } from './app.module.js';
@@ -53,7 +54,25 @@ async function bootstrap(): Promise<void> {
     .setVersion('0.1.0')
     .addBearerAuth()
     .build();
-  SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, swagger));
+  // Response schemas come from `CONTRACT_REGISTRY` — the same object
+  // `contracts.spec.ts` parses real responses with — because none of these
+  // routes have decorated DTOs for Swagger to read. See `applyContracts`.
+  const openapi = new Logger('OpenAPI');
+  const { document, applied } = createContractDocument(app, swagger);
+  if (applied.unmatched.length > 0) {
+    // A contract with no route behind it means the registry and the controllers
+    // have diverged. Loud, because it is exactly what this wiring exists to
+    // prevent.
+    openapi.warn(
+      `OpenAPI: ${applied.unmatched.length} contract(s) matched no route: ` +
+        applied.unmatched.join(', '),
+    );
+  }
+  openapi.log(
+    `OpenAPI: ${applied.applied} response schema(s) from the contract registry, ` +
+      `${applied.canonicalised} versioned path(s) added`,
+  );
+  SwaggerModule.setup('docs', app, document);
 
   // Close connections before the process exits, so in-flight requests are
   // not severed and pooled connections are drained.
