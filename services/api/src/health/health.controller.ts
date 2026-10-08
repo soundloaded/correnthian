@@ -1,4 +1,5 @@
-import { Controller, Get, HttpCode, Inject } from '@nestjs/common';
+import { Controller, Get, HttpCode, Inject, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../common/decorators/public.decorator.js';
 import { SkipRateLimit } from '../common/guards/rate-limit.guard.js';
@@ -33,13 +34,31 @@ export class HealthController {
   }
 
   /**
-   * Readiness. Answers whether the process can serve traffic. Fails with 503
-   * when a required dependency is down so traffic is diverted, not dropped.
+   * Readiness. Answers whether the process can serve traffic.
+   *
+   * **503 when a required dependency is down, not 200 with a flag.** The
+   * docstring always promised this and the code never did it, so an
+   * orchestrator reading only the status code kept routing to a process that
+   * could not serve — a readiness probe that says "fine" during an outage is
+   * worse than no probe, because the failure now looks like application load.
+   *
+   * The status is set through `passthrough` rather than by throwing, because
+   * `AllExceptionsFilter` rewrites any exception into the shared error
+   * envelope. Throwing would have returned 503 with `dependencies` replaced by
+   * `detail`, and every consumer of this endpoint reads `dependencies` to know
+   * *which* thing is down. Diverting traffic must not cost the operator the
+   * reason.
+   *
+   * Both dependencies are required: with Redis down the rate limiter fails
+   * closed and refuses every request, so the process genuinely cannot serve
+   * even though its own code is healthy.
    */
   @Public()
   @Get('ready')
   @ApiOperation({ summary: 'Readiness probe, checks dependencies' })
-  async ready(): Promise<{ status: 'ok' | 'degraded'; dependencies: Record<string, DependencyStatus> }> {
+  async ready(
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ status: 'ok' | 'degraded'; dependencies: Record<string, DependencyStatus> }> {
     const [db, redis] = await Promise.all([
       this.time(() => this.prisma.isHealthy()),
       this.time(() => this.redis.isHealthy()),
@@ -47,6 +66,7 @@ export class HealthController {
 
     const dependencies = { database: db, redis };
     const ok = Object.values(dependencies).every((d) => d.status === 'up');
+    res.status(ok ? 200 : 503);
     return { status: ok ? 'ok' : 'degraded', dependencies };
   }
 
