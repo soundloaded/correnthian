@@ -1,5 +1,5 @@
 import {
-  createPublicClient, defineChain, formatUnits, http,
+  createPublicClient, defineChain, formatUnits, http, TransactionNotFoundError,
   type Address, type Hex, type PublicClient,
 } from 'viem';
 import { erc20Abi, getAbiItem } from 'viem';
@@ -7,8 +7,27 @@ import type {
   Balance, BlockchainAdapter, BuildTransactionRequest, ChainDescriptor,
   FeeEstimate, ObservedTokenTransfer, TransactionRecord, UnsignedTransaction,
 } from './adapter.js';
-import { RpcPool, type RpcEndpoint } from './rpc.js';
+import { RpcAbsent, RpcPool, type RpcEndpoint } from './rpc.js';
 import type { AddressFamily } from './address.js';
+
+/**
+ * Did the node answer "I do not have this transaction"?
+ *
+ * Two shapes, because nodes differ: `viem` raises `TransactionNotFoundError`
+ * when the result is `null`, and a node that answers with a JSON-RPC error
+ * instead of a `null` result carries the same meaning in its message. Both are
+ * read as absence. Anything else is rethrown — an unreachable endpoint, a
+ * malformed response, a timeout — none of which say anything about the
+ * transaction, and all of which must stay with the pool so it can fail over
+ * and quarantine.
+ */
+function isTransactionAbsent(err: unknown): boolean {
+  if (err instanceof TransactionNotFoundError) return true;
+  return (
+    err instanceof Error &&
+    /transaction[^.]{0,80}(could not be found|not found)/i.test(err.message)
+  );
+}
 
 /**
  * EVM adapter.
@@ -148,18 +167,46 @@ export class EvmAdapter implements BlockchainAdapter {
     return hash;
   }
 
-  async getTransaction(hash: string): Promise<TransactionRecord> {
-    const tx = await this.read((c) => c.getTransaction({ hash: hash as `0x${string}` }));
-    return {
-      hash: tx.hash,
-      status: tx.blockNumber ? 'confirmed' : 'pending',
-      blockNumber: tx.blockNumber ?? null,
-      confirmations: 0,
-      blockTime: null,
-      from: tx.from,
-      to: tx.to ?? null,
-      valueRaw: tx.value.toString(),
-    };
+  async getTransaction(hash: string): Promise<TransactionRecord | null> {
+    try {
+      return await this.read(async (c) => {
+        let tx;
+        try {
+          tx = await c.getTransaction({ hash: hash as `0x${string}` });
+        } catch (err) {
+          // Raised as `RpcAbsent` so the pool moves to the next endpoint
+          // without quarantining this one: a node that correctly reports an
+          // absence is a node that worked. `DEF-020` is what happens when the
+          // two are told apart at the wrong layer — both arrived here as
+          // "All N RPC endpoint(s) failed for this read."
+          if (isTransactionAbsent(err)) throw new RpcAbsent(`transaction ${hash}`);
+          throw err;
+        }
+
+        const base = {
+          hash: tx.hash,
+          blockNumber: tx.blockNumber ?? null,
+          from: tx.from,
+          to: tx.to ?? null,
+          valueRaw: tx.value.toString(),
+        };
+
+        if (tx.blockNumber === null) return { ...base, status: 'pending' as const };
+
+        // Receipt or nothing. Not finding it here is a race we cannot rule
+        // out, so it is thrown and the pool may ask elsewhere — guessing
+        // `confirmed` would answer a question this did not answer.
+        const receipt = await c.getTransactionReceipt({ hash: tx.hash as `0x${string}` });
+        return {
+          ...base,
+          status: receipt.status === 'success' ? ('confirmed' as const) : ('failed' as const),
+        };
+      });
+    } catch (err) {
+      // Every endpoint said it is not there. That is the answer, not an error.
+      if (err instanceof RpcAbsent) return null;
+      throw err;
+    }
   }
 
   async getTokenTransfers(params: {

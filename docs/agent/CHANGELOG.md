@@ -13,6 +13,41 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-08
 
+### `DEF-020` — absence is an answer, not an outage
+- The defect had a layering cause, not a message-text one: a node replying
+  `null` to `eth_getTransactionByHash` and a node failing to reply both
+  emerged from `RpcPool.withFailover` as `All N RPC endpoint(s) failed for this
+  read. Drop detection — `BE-601`'s whole judgement — cannot be built on that,
+  because it would set `droppedAt` on live transactions during any outage and
+  quarantine a healthy endpoint that had answered correctly.
+- **`RpcAbsent` passes through the pool instead of being swallowed by it.** It
+  does not quarantine, it moves to the next endpoint, and it is only propagated
+  once **every** endpoint has said no. That is deliberate: one node's silence
+  is not proof of absence — a freshly broadcast transaction may not have
+  propagated — while "all of them said no" is the strongest evidence the
+  infrastructure can produce. If any endpoint has it, that answer wins.
+- **The contract is honest now.** `getTransaction` returns
+  `TransactionRecord | null`, so `'dropped'` leaves `status` as a *reply* rather
+  than a value no code could produce. `'failed'` stops being decorative: it is
+  read from the receipt, because mined is not succeeded, and a reverted send
+  reported as confirmed would tell an account holder their money moved.
+  `confirmations` and `blockTime` are **removed**, not filled — this adapter
+  does not hold the head and never fetches a block, so both were hard-coded to
+  `0` and `null`, and a field that is always zero reads as a measurement.
+- **10 tests, seven mutations, all killed.** The assertions are about *which
+  endpoints were asked and whether they were condemned*, not only what came
+  back — a test checking only the return value would pass for a fix that
+  quarantined the healthy node on its way out. One of the tests initially
+  failed for a reason worth keeping: it built a fresh adapter per call, and
+  quarantine lives on the pool, so it could never have seen the defect either
+  way.
+- **The test typecheck added earlier caught its first real error** — a `null`
+  the `Behaviour` type did not allow. That config had been introduced two
+  commits ago; this is the first thing it found.
+
+**19 of 20 defects are now `DONE`.** `DEF-009` remains the only one that is
+not, and it is gated on a decision outside code.
+
 ### `BE-601` scoped by running it, not by reading it — and `DEF-020` found
 - Scope only; no product code changed. The entry previously said "write the
   remainder down before touching it", because its expected output had been

@@ -64,12 +64,13 @@ the location the entry names.
 
 | Status | Defects | Count |
 |---|---|---|
-| `DONE` | `DEF-001` … `DEF-008`, `DEF-010` … `DEF-019` | 18 |
+| `DONE` | `DEF-001` … `DEF-008`, `DEF-010` … `DEF-020` | 19 |
 | `PARTIAL` | `DEF-009` | 1 |
-| `BACKLOG` | `DEF-020` | 1 |
+| `BACKLOG` | *none* | 0 |
 
 `DEF-020` was found on 2026-10-08 while scoping `BE-601`, by asking the
-adapter a question over the wire rather than reading its source.
+adapter a question over the wire rather than reading its source, and fixed the
+same day for the same reason.
 
 `DEF-018` was found while re-verifying the others, and `DEF-019` while fixing
 `DEF-004` / `DEF-005`. Both were recorded rather than assumed, because tracking
@@ -500,7 +501,7 @@ kept for the record; it does not describe the current code._
   they own, or they delete each other's.
 - **Status:** `DONE`
 
-### DEF-020 — `getTransaction` cannot say "the node does not have this" · `BACKLOG`
+### DEF-020 — `getTransaction` cannot say "the node does not have this" · `DONE`
 - **Found by:** asking the adapter, over the wire, rather than reading it. Two
   calls were made against a stub node: one where `eth_getTransactionByHash`
   returns `null`, one where the node answers with a JSON-RPC `error` object.
@@ -525,18 +526,27 @@ kept for the record; it does not describe the current code._
     up by its caller.
   - `getTransaction` has **zero callers** in `services/api`. It is built,
     unused, and wrong in the direction `BE-601` needs it.
-- **The fix shape:** the node's answer and the node's silence are different
-  facts and must not share a path. `RpcPool.withFailover` needs to recognise a
-  "definitive answer" thrown from inside `fn` and rethrow it unchanged — no
-  quarantine, no endpoint failure — so `getTransaction` can return
-  `TransactionRecord | null` with `null` meaning exactly *the node does not have
-  it*. `status: 'dropped'` then becomes reachable or is removed from the
-  interface; `confirmations`/`blockTime` are left to the caller, which already
-  has the head, or computed for real.
-- **Dependencies:** none. **Blocks:** `BE-601`.
-- **Tests:** the two wire responses above, plus proof that a node *error*
-  response still quarantines the endpoint while `null` does not.
-- **Status:** `BACKLOG`
+- **Fixed.** The two facts are now told apart at the layer that knows them:
+  `RpcPool.withFailover` recognises a new `RpcAbsent` thrown from inside `fn`,
+  does **not** quarantine the endpoint, and moves to the next one — so a
+  transaction is only called absent when *every* configured node that answered
+  says so, and a single stale or forked node cannot declare one gone on its
+  own. If any endpoint has it, that answer wins. Genuine failures still
+  quarantine and still surface as `All N RPC endpoint(s) failed for this read`,
+  which is now a statement that means exactly what it says.
+- **The contract is honest now:** `getTransaction` returns
+  `TransactionRecord | null`, `null` being a reply rather than a status, so
+  `'dropped'` is gone from `status`. `'failed'` is no longer decorative — it is
+  read from the receipt, because mined is not the same as succeeded. And
+  `confirmations` and `blockTime` are removed rather than left hard-coded to
+  `0` and `null`: this adapter does not hold the head and never fetches a
+  block, so neither could ever be filled, and a field that is always zero
+  reads as a measurement of zero.
+- **Dependencies:** none. **Unblocks:** `BE-601`.
+- **Tests:** 10 in `packages/blockchain/src/__tests__/get-transaction.test.ts`,
+  all seven mutations killed — including one that reverts the defect outright
+  and one that skips the receipt so a revert reads as a confirmation.
+- **Status:** `DONE`
 
 ---
 
@@ -982,8 +992,9 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
   increments `dropCount` without changing state, which is what the schema
   documents a drop to be.
 
-- **Blocked on `DEF-020`.** The sweep's whole judgement is "does the node have
-  this hash", and `getTransaction` cannot answer it — see that entry.
+- **`DEF-020` is fixed**, so the sweep's one judgement — "does the node have
+  this hash" — can now be asked and answered (`getTransaction` returns `null`
+  when every endpoint says no, and a failure still throws).
 
 - **Also to fix while building it:** the run record reports `created: 0` and
   nothing about *why*. `skippedUnknownToken` and `skippedNoWallet` are counted
@@ -992,7 +1003,7 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
   log was refused. That was found by watching a control case fail for a
   misconfigured token address with no explanation anywhere in the output.
 
-- **Dependencies:** `BE-302` (satisfied), `DEF-020`.
+- **Dependencies:** `BE-302` and `DEF-020` (both satisfied).
 - **Security:** read-only over public chain state. Must never introduce a
   signing path — this is a second reader of the same public data the indexer
   already reads, and it must not become a sender.

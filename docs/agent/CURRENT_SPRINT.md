@@ -10,21 +10,24 @@ Last updated: 2026-10-08.
 
 ## Sprint: Backend Foundation 002 — Audit and Defect Clearance
 
-> **Defect phase complete.** 18 of 19 defects are `DONE`, the 19th (`DEF-009`)
-> is `PARTIAL` and gated on a decision outside code, and nothing remains in
-> `BACKLOG`. Work below has moved on to what the defects were blocking.
+> **Defect phase complete.** 19 of 20 defects are `DONE`, the one that is
+> not (`DEF-009`) is `PARTIAL` and gated on a decision outside code, and
+> nothing remains in `BACKLOG`. Work below has moved on to what the defects
+> were blocking.
 
 The sprint began because reading the code found defects that no test, no
 typecheck and no contract assertion catches. Several were silent — including one
-where a guard had stopped checking anything and reported a green run. There are nineteen
-recorded (`DEF-001` … `DEF-019`); **eighteen are done, one is half fixed, none are `BACKLOG`**.
+where a guard had stopped checking anything and reported a green run. There are twenty
+recorded (`DEF-001` … `DEF-020`); **nineteen are done, one is half fixed, none are `BACKLOG`**.
 
 ### Current task
 
-**Next: `DEF-020`, then `BE-601`.** The scoping pass is done — `BE-601`'s
-remainder was measured by running the real job against a stub node, not read
-off the source, and `DEF-020` is what it uncovered on the way. The old `BE-102`
-production-`/docs` question is still undecided and is now item 6.
+**Next: `BE-601` — the confirmation sweep.** Both preparations are done. The
+scope was measured by running the real job against a stub node rather than
+read off the source, and `DEF-020`, which it uncovered on the way, is fixed:
+absence is now an answer the pool passes through instead of an outage it
+quarantines an endpoint for. The old `BE-102` production-`/docs` question is
+still undecided and is now item 5.
 
 - **`BE-302` is `PARTIAL`, and the gap is verification rather than code.**
   Balance sync and event indexing both exist. `getTokenTransfers` observes
@@ -57,13 +60,12 @@ production-`/docs` question is still undecided and is now item 6.
 
 | # | Task | Why it is next |
 |---|---|---|
-| 1 | **`DEF-020`** — make `getTransaction` able to say "the node does not have this" | `BE-601`'s whole judgement is whether the node holds a hash, and today "not found" and "RPC failed" are the same throw. Building drop detection on it would set `droppedAt` on live transactions during an outage. Small, self-contained, and it unblocks #2. |
-| 2 | **`BE-601`** — build the confirmation sweep | Scope written and measured, not guessed. `eth_getTransactionByHash` is called by nothing; a mined outbound transaction and a dropped one both sit in `broadcast` forever. |
-| 3 | `BE-602` — send/receive backend | `EvmAdapter.buildTransaction` already exists and nothing exposes it. The server assembles, the device signs. |
-| 4 | Node-backed acceptance run for `BE-302` | The one unmet criterion, and it is verification rather than code: needs a node and a funded address holding a registered token. |
-| 5 | `BE-1101` / `BE-1105` — KYC and sanctions | Legally required before selling gold for dollars regardless of custody posture, and they need no metals partner. |
-| 6 | `BE-102`'s open question — is `/docs` exposed in production? | Not decided. An API schema is a map of everything an attacker can call; the answer is a disclosure decision, not a technical one. |
-| 7 | ADR-022's build-time choices — account implementation, paymaster, EntryPoint | Gated on a vendor or a contract, same as `BE-802`. Recording them as decided would repeat the `claimBatch` mistake. |
+| 1 | **`BE-601`** — build the confirmation sweep | Scope written and measured, not guessed, and its one blocker (`DEF-020`) is fixed. `eth_getTransactionByHash` was called by nothing; a mined outbound transaction and a dropped one both sat in `broadcast` forever. |
+| 2 | `BE-602` — send/receive backend | `EvmAdapter.buildTransaction` already exists and nothing exposes it. The server assembles, the device signs. |
+| 3 | Node-backed acceptance run for `BE-302` | The one unmet criterion, and it is verification rather than code: needs a node and a funded address holding a registered token. |
+| 4 | `BE-1101` / `BE-1105` — KYC and sanctions | Legally required before selling gold for dollars regardless of custody posture, and they need no metals partner. |
+| 5 | `BE-102`'s open question — is `/docs` exposed in production? | Not decided. An API schema is a map of everything an attacker can call; the answer is a disclosure decision, not a technical one. |
+| 6 | ADR-022's build-time choices — account implementation, paymaster, EntryPoint | Gated on a vendor or a contract, same as `BE-802`. Recording them as decided would repeat the `claimBatch` mistake. |
 
 **Still open, deliberately not scheduled:**
 
@@ -74,6 +76,18 @@ production-`/docs` question is still undecided and is now item 6.
 ---
 
 ### Completed in this sprint
+
+- **`DEF-020` — fixed.** `getTransaction` used to be unable to say "the node
+  does not have this": a `null` result and a node failure both threw, and
+  `RpcPool.withFailover` wrapped both as `All N RPC endpoint(s) failed for this
+  read`. Drop detection built on it would have set `droppedAt` on live
+  transactions during any RPC blip. `RpcAbsent` now passes through the pool
+  without quarantining the endpoint and is only propagated once **every**
+  endpoint has said no, so one stale node cannot declare a transaction gone.
+  The contract is honest too: `null` replaces `'dropped'`, `'failed'` is read
+  from the receipt rather than asserted by inclusion, and `confirmations` and
+  `blockTime` — both hard-coded and unfillable — are removed rather than
+  documented. 10 tests, seven mutations, all killed.
 
 - **`BE-601` scoped by measurement.** The real job and services were booted
   through Nest against the development database with a local stub node standing

@@ -63,13 +63,35 @@ export interface UnsignedTransaction {
   gas?: string;
 }
 
+/**
+ * One transaction, as a node that has it reports it.
+ *
+ * **Absence is the `null` return, not a status.** `status: 'dropped'` used to
+ * be declared here and could never be produced: a node that does not have a
+ * transaction answers with `result: null`, which `viem` turns into an
+ * exception, and `RpcPool` wraps every exception identically — so "the chain
+ * does not have this" and "the chain did not answer" were the same failure to
+ * its caller. `getTransaction` now answers that distinction directly, which is
+ * the only thing drop detection can be built on.
+ *
+ * `confirmations` and `blockTime` were also here, hard-coded to `0` and
+ * `null`: this adapter does not know the chain head and never fetches a block,
+ * so neither could ever be filled. A field that is always zero reads as a
+ * measurement, so they are gone rather than documented — the caller already
+ * holds the head when it needs depth, and a block timestamp is a separate
+ * read for whoever wants one.
+ */
 export interface TransactionRecord {
   hash: string;
-  status: 'pending' | 'confirmed' | 'failed' | 'dropped';
+  /**
+   * `pending` — in the mempool, no block yet.
+   * `confirmed` — mined, and the receipt reports success.
+   * `failed` — mined, and the receipt reports a revert. Mined is not the same
+   * as succeeded, and recording a reverted send as confirmed would tell an
+   * account holder their money moved when it did not.
+   */
+  status: 'pending' | 'confirmed' | 'failed';
   blockNumber: bigint | null;
-  confirmations: number;
-  /** Block timestamp when known, ISO-8601. */
-  blockTime: string | null;
   from: string;
   to: string | null;
   valueRaw: string;
@@ -110,7 +132,15 @@ export interface BlockchainAdapter {
   /** Submit a payload the client already signed. */
   broadcastTransaction(signed: string): Promise<string>;
 
-  getTransaction(hash: string): Promise<TransactionRecord>;
+  /**
+   * Look one transaction up by hash.
+   *
+   * Resolves `null` when a node that answered correctly does not have it —
+   * a definitive answer, not a failure, and deliberately not routed through
+   * the failover path. Anything else it cannot determine throws, because an
+   * unknown is not an absence.
+   */
+  getTransaction(hash: string): Promise<TransactionRecord | null>;
   getBlockNumber(): Promise<bigint>;
 
   /**
