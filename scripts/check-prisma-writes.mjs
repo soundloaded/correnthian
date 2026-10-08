@@ -62,15 +62,32 @@
  *   node scripts/check-prisma-writes.mjs           # exit 1 on an unknown field
  *   node scripts/check-prisma-writes.mjs --strict  # also exit 1 on anything
  *                                                  # unverifiable
+ *   node scripts/check-prisma-writes.mjs --src=<dir> --schema=<file>
+ *                                                  # read somewhere else — used
+ *                                                  # by the test that proves
+ *                                                  # this script still fails
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const SCHEMA = join(ROOT, 'services/api/prisma/schema.prisma');
-const SRC = join(ROOT, 'services/api/src');
 const STRICT = process.argv.includes('--strict');
+
+/**
+ * `--schema=<path>` and `--src=<path>` override where to read, so a test can
+ * point the checker at a fixture tree and assert that it *fails*. That is the
+ * only way to prove a check still checks: a guard that has stopped inspecting
+ * anything and a working one are indistinguishable from a green run.
+ */
+const argPath = (name, fallback) => {
+  const flag = `--${name}=`;
+  const hit = process.argv.find((a) => a.startsWith(flag));
+  return hit ? resolve(hit.slice(flag.length)) : fallback;
+};
+
+const SCHEMA = argPath('schema', join(ROOT, 'services/api/prisma/schema.prisma'));
+const SRC = argPath('src', join(ROOT, 'services/api/src'));
 
 /**
  * `data` on create/update/updateMany; `create` and `update` on upsert. An
@@ -192,6 +209,13 @@ function readObjectLiteral(src, i) {
 
   while (j < src.length) {
     const c = src[j];
+
+    // Whitespace is not a property. Without this guard a newline after a comma
+    // fell through to the fallback at the bottom of the loop, which sets
+    // `expectKey = false` — and the next real property is then consumed one
+    // character at a time until the next comma. A property directly after a
+    // comment vanished from the check, so a typo there went unreported.
+    if (c === ' ' || c === '\t' || c === '\n' || c === '\r') { j += 1; continue; }
 
     if (c === '"' || c === "'" || c === '`') { j = skipString(src, j); continue; }
     if (c === '/' && (src[j + 1] === '/' || src[j + 1] === '*')) {
@@ -402,6 +426,15 @@ function collectTsFiles(dir, out = []) {
 }
 
 function check() {
+  // A wrong `--src=` used to die inside `readFileSync` with a stack trace. A
+  // tool whose job is to say what it could not check should say that too.
+  for (const [label, path] of [['schema', SCHEMA], ['source tree', SRC]]) {
+    if (!existsSync(path)) {
+      console.error(`\n  ${label} not found: ${path}\n  Check --schema= / --src=.\n`);
+      process.exit(2);
+    }
+  }
+
   const models = parseModels(readFileSync(SCHEMA, 'utf-8'));
   const files = collectTsFiles(SRC);
 
@@ -506,7 +539,26 @@ function check() {
         if (prop.computed) continue;
         if (!DATA_KEYS.has(prop.key)) continue;
 
-        const at = prop.valueStart < 0 ? argStart : skipTrivia(src, prop.valueStart);
+        // Shorthand: `{ ..., data }` means `data: data`, and there is no
+        // literal at this position. The old fallback used `argStart` — the
+        // enclosing `update({ where, data })` — so it read the *arguments* as
+        // if they were the fields being written and reported `Model.where` and
+        // `Model.data` as unknown columns.
+        if (prop.valueStart < 0) {
+          const shorthandAt = findConstObjectLiteral(src, prop.key);
+          if (shorthandAt >= 0) {
+            checkLiteral(file, src, shorthandAt, modelName, model);
+          } else {
+            unverifiable.push({
+              where: where(file, argStart, src),
+              model: modelName,
+              why: `${prop.key}: shorthand for \`${prop.key}\`, which is not a same-file object literal`,
+            });
+          }
+          continue;
+        }
+
+        const at = skipTrivia(src, prop.valueStart);
 
         if (src[at] === '{') {
           checkLiteral(file, src, at, modelName, model);
