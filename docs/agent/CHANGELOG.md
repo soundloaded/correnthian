@@ -13,6 +13,28 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-08
 
+### `7699d97` — Correct every document that stated the opposite of the code
+- `DEF-014`. Four documents contradicted the repository: `README.md` and
+  `engineering/standards.md` called `packages/*` "source-only, no build step"
+  while all thirteen run `tsc -p tsconfig.package.json`;
+  `engineering/api.md` said "Nothing exists yet — there is no auth module, no
+  users module, no session handling" against twenty registered modules;
+  `engineering/admin.md` said `apps/admin/` does not exist.
+- **The shared failure mode, and why a banner is not a fix.** Each had a
+  correction notice at the top while the operative section underneath still
+  taught the old thing. `standards.md` had carried "SUPERSEDED in one respect"
+  since 2026-10-06 and §1 still said the opposite. Nobody reaches a standard
+  through its banner, so the sections were corrected instead of the warnings
+  around them.
+- `api.md` now carries a status table driven by the same field as
+  `BACKEND_TASKS.md`, so the two cannot drift — and it closes by naming what is
+  actually missing: the layer that moves money.
+- The stale-docs inventory in `docs/agent/README.md` is empty now, kept as a
+  record of what was wrong and of the failure mode so the next one is fixed
+  where it is read.
+
+## 2026-10-08
+
 ### `7be8a6c` — Make the readiness probe return 503 when a dependency is down
 - `DEF-006`. The docstring has always promised "fails with 503 … so traffic is
   diverted, not dropped" and the handler always answered 200 with a `degraded`

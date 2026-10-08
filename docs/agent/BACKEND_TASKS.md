@@ -320,7 +320,7 @@ kept for the record; it does not describe the current code._
   "Nothing exists yet — there is no auth module, no users module, no session
   handling" and listed every domain module as unbuilt; `docs/engineering/admin.md`
   said `apps/admin/` does not exist.
-- **Fixed in `<sha>`.** Each section was corrected where a reader lands on it,
+- **Fixed in `7699d97`.** Each section was corrected where a reader lands on it,
   not with a banner above it — that was the shared failure mode. All four had a
   "superseded" note at the top while the operative section underneath still
   taught the old thing, and nobody reads the banner for §1.
