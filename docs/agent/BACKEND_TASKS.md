@@ -64,9 +64,9 @@ the location the entry names.
 
 | Status | Defects | Count |
 |---|---|---|
-| `DONE` | `DEF-001` … `DEF-017`, `DEF-019` | 17 |
+| `DONE` | `DEF-001` … `DEF-018`, `DEF-019` | 18 |
 | `PARTIAL` | `DEF-009` | 1 |
-| `BACKLOG` | `DEF-018` | 1 |
+| `BACKLOG` | *none* | 0 |
 
 `DEF-018` was found while re-verifying the others, and `DEF-019` while fixing
 `DEF-004` / `DEF-005`. Both were recorded rather than assumed, because tracking
@@ -445,33 +445,37 @@ kept for the record; it does not describe the current code._
   it is a hint that rail binding was intended here and never written.
 - **Status:** `DONE` (`00b095a`) — injection and import removed, with a note that the rail binding it implied is `BE-702`. `check-explicit-di` still passes (125 files).
 
-### DEF-018 — `check-prisma-writes.mjs` fails and is not in CI
+### DEF-018 — `check-prisma-writes.mjs` fails and is not in CI · `DONE` (`9b80932`, `aa45cd8`)
 
-- **Location:** `scripts/check-prisma-writes.mjs`, `.github/workflows/ci.yml`
-- **Description:** the guard built in `5a31c4b` to catch DEF-002's class of
-  bug exits `1` on the current tree, flagging `Provider.where` and
-  `Provider.data` at `provider-health.service.ts:142`. Those are not fields —
-  they are the arguments to `update`, and the checker cannot follow the spread
-  that builds `data`. `lastHealth` and `lastCheckedAt` are both declared on
-  `Provider`.
-- **The consequence is not the red exit.** `ci.yml` runs `check-key-boundary`
-  and `check-explicit-di` and not this one, so a guard that currently fails is
-  excluded from CI, which means it protects nothing. A check nobody wires up is
-  a comment.
-- **Why it is not a trivial fix either:** the commit message says the checker
-  "reports honestly where it cannot follow a spread expression rather than
-  passing silently, because a check claiming coverage it lacks is worse than
-  none." That behaviour is deliberate. The work is to resolve the spread, or
-  to mark the site explicitly inconclusive — and then to decide whether the
-  script belongs in CI, which is a call about how noisy CI is allowed to be.
-- **Dependencies:** none.
-- **Expected output:** the script exits `0` on a clean tree while still
-  failing on a genuine unknown field, and CI runs it.
-- **Acceptance criteria:** a deliberate unknown field is caught; the spread at
-  `provider-health.service.ts:142` is either resolved or explicitly marked;
-  `ci.yml` executes the script.
-- **Tests:** the guard against a fixture with a real typo.
-- **Status:** `BACKLOG`
+- **Was — two halves, and the second is why the first survived so long.**
+  1. The guard exited `1` on a clean tree, naming `Provider.where` and
+     `Provider.data` at `provider-health.service.ts:142`. Neither is a column:
+     they are the *arguments* to `update`.
+  2. `ci.yml` ran `check-key-boundary` and `check-explicit-di` and **not this
+     one** — so a failing guard was excluded from the thing that would have
+     surfaced it.
+- **Two parsing bugs, both hiding real fields** (`9b80932`):
+  - **Shorthand.** `{ where, data }` marks `valueStart: -1` for `data`, and the
+    fallback for a missing value used `argStart` — the enclosing `update(...)`.
+    It read the arguments as if they were the columns being written.
+  - **Whitespace.** At depth 1 a newline after a comma fell through to the
+    fallback that sets `expectKey = false`, so the next property was consumed a
+    character at a time until the next comma. **A property directly after a
+    comment was never checked** — a green run from a guard that had silently
+    stopped inspecting anything. This is the more dangerous of the two, because
+    the first one produced noise and this one produced silence.
+- **Now testable:** `--src=` / `--schema=` point it at a fixture tree, and a
+  wrong path gives a readable exit-2 message instead of a stack trace. 7 tests
+  spawn the script and assert it *fails* on a typo, on a property after a
+  comment, and on the shorthand case.
+- **Wired into CI** (`aa45cd8`) as the third step of the static-guards job.
+  Job id `key-boundary` unchanged (the docs refer to it); display name is now
+  *Static guards*.
+- **Verified:** exits `0` on this tree, `1` with a deliberately injected
+  `bogusColumnForTest` (reported as `Provider.bogusColumnForTest`), `1` under
+  `--strict`, `2` on a missing path.
+- **Status:** `DONE`
+
 
 ### DEF-019 — A test suite adopted fixtures another suite deletes
 
@@ -1257,15 +1261,15 @@ read them.
 
 | Status | Tasks | Defects |
 |---|---|---|
-| `DONE` | 16 | 17 |
+| `DONE` | 16 | 18 |
 | `PARTIAL` | 19 | 0 |
 | `PARTIAL` | 0 | 1 |
-| `BACKLOG` | 19 | 1 |
+| `BACKLOG` | 19 | 0 |
 | `BLOCKED` | 6 | 0 |
 | `OPEN` | 1 | 0 |
 | **Total** | **61** | **19** |
 
-**16 of 61 tasks are complete; 17 of 19 defects are done, 1 is half fixed and 1 remains.** The plan's §68 dependency
+**16 of 61 tasks are complete; 18 of 19 defects are done and 1 is half fixed — no defect is left in `BACKLOG`.** The plan's §68 dependency
 chain is most of the way built at the infrastructure layer and not started at
 the layer that moves money.
 

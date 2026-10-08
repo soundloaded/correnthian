@@ -13,6 +13,30 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-08
 
+### `aa45cd8` — Run the Prisma-write guard in CI
+- `DEF-018`, second half. The static-guards job ran the other two checks and
+  never this one — so a guard that exited 1 was excluded from the only thing
+  that would have surfaced it. It had been broken *and* green for weeks
+  precisely because nobody invoked it.
+- Job display name becomes "Static guards"; the id stays `key-boundary`
+  because `ARCHITECTURE.md` refers to it by that name.
+
+### `9b80932` — Make the Prisma-write guard fail when it should
+- `DEF-018`, first half. It reported `Provider.where` and `Provider.data` at
+  `provider-health.service.ts:142` — neither is a column, they are the
+  *arguments* to `update`.
+- **Shorthand:** `{ where, data }` marks `valueStart: -1`, and the fallback for
+  a missing value used `argStart` — the enclosing `update(...)`.
+- **Whitespace, the one that mattered more:** at depth 1 a newline after a
+  comma fell through to the fallback that clears `expectKey`, so the next
+  property was consumed a character at a time. **A property directly after a
+  comment was never checked** — a green run from a guard inspecting nothing.
+- `--src=` / `--schema=` so a test can point it at a fixture, plus a readable
+  exit-2 message for a wrong path.
+- 7 tests spawn the script and assert it *fails* on a typo, on a property after
+  a comment, and on the shorthand case. A guard that passes everything and one
+  that is broken are indistinguishable from a green run.
+
 ### `f2cf8d2` — Put the two existing copies of the cursor helpers on the shared module
 - `swaps.service.ts` and `transactions.service.ts` each carried a byte-identical
   `encodeCursor`/`decodeCursor` — same base64url `{ t, i }`, same validation,

@@ -10,56 +10,62 @@ Last updated: 2026-10-07.
 
 ## Sprint: Backend Foundation 002 — Audit and Defect Clearance
 
-The previous sprint built the admin and the wire-format contract layer. This
-sprint exists because reading the code found defects that no test, no typecheck
-and no contract assertion catches. Several were silent. There are nineteen
-recorded (`DEF-001` … `DEF-019`); **seventeen are done, one is half fixed and one remains**.
+> **Defect phase complete.** 18 of 19 defects are `DONE`, the 19th (`DEF-009`)
+> is `PARTIAL` and gated on a decision outside code, and nothing remains in
+> `BACKLOG`. Work below has moved on to what the defects were blocking.
+
+The sprint began because reading the code found defects that no test, no
+typecheck and no contract assertion catches. Several were silent — including one
+where a guard had stopped checking anything and reported a green run. There are nineteen
+recorded (`DEF-001` … `DEF-019`); **eighteen are done, one is half fixed, none are `BACKLOG`**.
 
 ### Current task
 
-**`DEF-018` — the Prisma-write guard fails and is not in CI. The last one.**
+**`BE-1702` — controller-level tests. The first thing the defects pointed at.**
 
-- **Why it closes the phase:** every other `BACKLOG` defect is fixed. `DEF-009`
-  is `PARTIAL` and gated on the transport decision, so this is the final item in
-  a sprint that exists to clear defects.
-- **File:** `scripts/check-prisma-writes.mjs`, `.github/workflows/ci.yml`
-- **What is wrong — two things:**
-  1. The guard built in `5a31c4b` exits `1` on a clean tree. It flags
-     `Provider.where` and `Provider.data` at `provider-health.service.ts:142`.
-     Those are not fields: they are arguments to `update`, and the checker
-     cannot follow the spread that builds `data`. `lastHealth` and
-     `lastCheckedAt` are both declared on `Provider`.
-  2. `ci.yml` runs `check-key-boundary` and `check-explicit-di` and **not this
-     one** — so a guard that currently fails is excluded from CI, which means
-     it protects nothing. A check nobody wires up is a comment.
-- **Decision already made on the second half:** wire it in. The first half
-  needs one: resolve the spread so the checker can follow it, or mark the site
-  explicitly inconclusive. The commit that added it argued a check claiming
-  coverage it lacks is worse than none — that argument still holds, and it is
-  why "just make it exit 0" is not the fix.
-- **Definition of done:** the script exits `0` on a clean tree *and* still fails
-  on a deliberately unknown field; `provider-health.service.ts:142` is either
-  followed or explicitly marked; `ci.yml` executes it.
-- **Security constraint:** none directly, but this is the guard that would have
-  caught a typo like `reviewedBy` — the class of bug Prisma's XOR input types
-  hide from the compiler.
+- **Why now:** `DEF-001` shipped as a fully unit-tested *dead endpoint* because
+  21 of 22 controllers have no test outside the contract suite. The service was
+  tested, the controller was not, and nothing in between exercised the route.
+  Every defect cleared this sprint was found by reading code, not by a test —
+  because the tests stop one layer short.
+- **Where:** `services/api/src/*/*.controller.ts` — **1 controller spec exists**
+  (`metals/redemption.controller.spec.ts`), for 22 controllers.
+- **Definition of done:** each controller has at least one test that reaches it
+  through HTTP, covering the happy path and one refusal; the count is asserted
+  somewhere so a new controller cannot land untested.
+- **Why it is worth the effort before anything else:** `BE-1702` is the gate in
+  front of `Phase C` on the roadmap — the indexer events, the transaction engine
+  and send/receive are money-moving code, and they are next.
+- **Security constraint:** every refusal path must be covered, not just the
+  success path. A controller test that only proves 200 is a controller test that
+  would pass while the route had no guard.
 
 ### Then, in order
 
-Nothing in this table — `DEF-018` above is the last defect in the phase.
-What follows it is the next sprint, in
-[Next, after this sprint](#next-after-this-sprint).
+| # | Task | Why it is next |
+|---|---|---|
+| 1 | `BE-102` — OpenAPI generated from `CONTRACT_REGISTRY` | The shipped document describes no request or response schemas. Cheap, and it makes every later route reviewable. |
+| 2 | `BE-603` — **investigate** gas sponsorship and account abstraction | Named rather than implicit. Investigation only — the implementation stays on the do-not-start list until the ADR it produces exists. |
+| 3 | `BE-302` — indexer events to `Transaction` rows | The largest remaining piece depending on nothing external, and everything downstream of it waits. |
+| 4 | `BE-601` / `BE-602` — transaction engine, send/receive | EVM only; the adapter already works against a live network. |
+| 5 | `BE-1101` / `BE-1105` — KYC and sanctions | Legally required before selling gold for dollars regardless of custody posture, and they need no metals partner. |
 
-**Still open, deliberately not scheduled here:**
+**Still open, deliberately not scheduled:**
 
 | | Why it waits |
 |---|---|
-| `DEF-009` | `PARTIAL`. The comment is honest; building the claim needs a column, a lease with a timeout and a requeue path — design questions belonging to ADR-020's transport decision, not a patch for a method nothing calls. |
+| `DEF-009` | `PARTIAL`. The comment is honest; the claim mechanism needs a column, a lease with a timeout and a requeue path — design questions belonging to ADR-020's transport decision, not a patch for a method nothing calls. |
 
 ---
 
 ### Completed in this sprint
 
+- `DEF-018` — the Prisma-write guard now fails when it should **and** is run by
+  CI (`9b80932`, `aa45cd8`). Two parsing bugs, one of which mattered more than
+  the reported failure: a property directly after a comment was never checked,
+  so the guard could produce a green run while inspecting nothing. 7 tests spawn
+  it against fixtures and assert it fails. It had been broken *and* green for
+  weeks because CI never invoked it — a check nobody wires up is a comment.
 - `DEF-015` — both admin lists now paginate on the whole sort key
   (`9c2b480`, `f2cf8d2`). The comment above `users.list` had claimed keyset
   pagination all along, which is how it survived two re-verifications. Two
