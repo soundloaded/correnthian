@@ -13,6 +13,25 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-08
 
+### ADR-022 — Gas is sponsored through an ERC-4337 paymaster, and only for first-party operations
+- `BE-603`, closed as an investigation rather than a build.
+- **Decision:** passkey-owned ERC-4337 account, gas paid by a paymaster,
+  **first-party operations only** — a paymaster that sponsors any transfer is an
+  open faucet, and Correnthian can price gas into a first-party flow.
+- **Rejected on consistency, not mechanics:** EOA + relayer and EIP-7702 both
+  need a seed phrase, which contradicts the account model `packages/wallet-core`
+  already specifies. Requiring the user to hold gas is the beachhead's first
+  wall.
+- **The boundary holds because the signature is made on the device.** The
+  paymaster pays and does not sign; conflating those turns sponsorship into
+  custody. The failure to design against is ever holding or reconstructing the
+  owner key server-side.
+- **The useful finding:** `BlockchainAdapter.estimateFee()` and
+  `Chain.gasPriceUsd` already exist and **nothing calls `estimateFee`** — the
+  knowledge half of the problem is built, only settlement is missing.
+- Implementation stays on the do-not-start list until an account implementation
+  and a paymaster are chosen. Recorded as build-time choices, not decided.
+
 ### `fb4587c` — Generate the OpenAPI response schemas from the contract registry
 - `BE-102`. The served document was 78 paths with summaries, **zero response
   schemas, zero component schemas** — Swagger builds from route metadata, and

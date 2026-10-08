@@ -648,3 +648,100 @@ and reasoned about.
 - If delta 1 is called, the EVM slice is still the right first adapter: it is
   the one already verified against a live network, and the `BlockchainAdapter`
   interface is what the other chains would implement.
+
+---
+
+## ADR-022 — Gas is sponsored through an ERC-4337 paymaster, and only for first-party operations
+
+**Status:** Locked.
+
+**Decision.** EVM holdings live in an ERC-4337 smart account whose owner key is
+derived from the user's passkey, and gas is paid by a **paymaster** rather than
+by the user's account. The user signs the `UserOperation` on the device; the
+paymaster submits it and pays the network.
+
+Sponsorship covers **first-party operations only** — swap execution, metal
+purchase, sell, redemption — because those are flows Correnthian is already a
+counterparty to and can price. A user transferring to an arbitrary address is
+**not sponsored** in v1.
+
+**Reason.**
+
+*Why an ERC-4337 account rather than an EOA plus a relayer.* Three alternatives
+were weighed:
+
+| | No seed phrase | No server key | Matches what is already specified | Pays gas for the user |
+|---|---|---|---|---|
+| **ERC-4337 + paymaster** | yes | yes | **yes** | yes |
+| EOA + meta-transaction relayer | **no — needs a seed** | yes | no | yes |
+| EIP-7702 delegated EOA | **no — needs a seed** | yes | no | yes |
+| Require the user to hold gas | yes | yes | yes | **no** |
+
+The last row is the product's own first wall: "you have 1,000 USDT" becoming
+"you need $4 of ETH" is where a non-crypto buyer stops. The middle two are
+rejected on consistency rather than on mechanics: `packages/wallet-core`
+already specifies `SmartAccountManager` as passkey-unlocked ERC-4337 with
+`deriveAddress(ownerPublicKey, chainId)` and `ensureDeployed`, and
+`packages/types` comments "there is no seed phrase on this path, so there is
+nothing for a user to write down, photograph, or be phished for." A relayer
+model would quietly reintroduce the seed phrase that the account model exists
+to remove.
+
+*Why the key boundary holds.* The signature is produced on the device and
+crosses the wire as bytes; the key does not. The paymaster **pays**, it does
+not sign — those are different capabilities and conflating them is how a
+sponsorship feature becomes a custodial one. The server's role is transport at
+most: submitting a `UserOperation` someone else already signed. The account's
+owner is `deriveAddress(ownerPublicKey, …)`, which is a public value.
+
+**The failure to design against** is the one that would end the project: storing
+or reconstructing the owner key server-side to "help" with recovery. Guardians
+are the answer and `SmartAccountManager.guardians()` is already in the
+interface for that reason. If a later proposal needs the server to hold a key,
+it does not ship.
+
+*Why sponsorship is scoped, not blanket.* A paymaster that sponsors any
+transfer is an open faucet: anyone can drain it by moving funds between their
+own addresses. First-party operations are different — Correnthian is the
+counterparty, the operation is already quoted, and the gas can be priced into
+the same disclosure. The three-line fee breakdown (`network` / `provider` /
+`Correnthian`) is where that cost belongs: the network line becomes honest
+instead of absent.
+
+**Consequences.**
+- **`estimateFee` is wired, not written.** `BlockchainAdapter.estimateFee()`
+  and `Chain.gasPriceUsd` ("base units of native currency per USD, kept current
+  by the pricing job") already exist, and **nothing calls `estimateFee`**. The
+  knowledge half of this problem is built; only settlement is missing. The first
+  implementation task is wiring an estimate into the quote, not writing an
+  estimator.
+- **A paymaster is another external dependency**, and it is gated the same way
+  as `BE-802`: an account implementation and a paymaster (ours or a hosted one)
+  must be chosen before code, and an adapter built against an imagined API gets
+  rewritten. Implementation stays on the do-not-start list until that choice
+  exists — but the boundary question is now **closed**, which is what this ADR
+  was for.
+- **The account implementation is a separate, load-bearing choice**: which
+  ERC-4337 account, which EntryPoint version, and which paymaster each change
+  what `ensureDeployed` does. Picking one is the first implementation step and
+  belongs to its own record.
+- **Non-sponsored transfers must be an explicit state, not a silent failure.**
+  A quote that quietly drops sponsorship shows a user a price that will not
+  hold. The refusal vocabulary this repo already uses (`refuse rather than
+  fabricate`) applies to it.
+- **Unbounded operations are never sponsored.** Anything Correnthian cannot
+  price before the user signs is out of scope for the paymaster, including every
+  transfer Correnthian is not a party to.
+- **Nothing here applies to Bitcoin or Solana.** They are deferred, and neither
+  has ERC-4337. `SeedAccountManager` is a separate interface precisely so the
+  recovery model per holding is answerable without inspecting the chain.
+- **Gas becomes a disclosed network fee**, which the fees engine already models
+  as an exact bigint line. It is not a new fee type; it is the existing one
+  becoming true.
+
+**What this ADR deliberately does not decide.** The account implementation, the
+paymaster provider, the EntryPoint version, and the sponsorship policy for each
+operation. Each is a build-time choice that needs a vendor or a contract, and
+recording them as decided would be the same mistake as shipping a `claimBatch`
+that does not claim.
+

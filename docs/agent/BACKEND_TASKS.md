@@ -908,147 +908,31 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 ---
 
 
-### BE-603 — Gas sponsorship and account abstraction · `BACKLOG`
+### BE-603 — Gas sponsorship and account abstraction · `DONE` (ADR-022)
 
-Raised by the owner's 2026-10-07 product document; never tracked before.
+- **What it produced:** [`ADR-022`](DECISIONS.md) — an investigation, not code.
+- **Decision:** an ERC-4337 smart account owned by the user's passkey, gas paid
+  by a **paymaster**, and sponsorship scoped to **first-party operations only**.
+- **Rejected, with reasons:** EOA + meta-transaction relayer and EIP-7702 both
+  require a seed phrase, which contradicts the account model already specified
+  in `packages/wallet-core`; requiring the user to hold gas is the product's
+  own first wall.
+- **The boundary holds because the signature is produced on the device.** The
+  paymaster pays and does not sign — conflating those turns a sponsorship
+  feature into a custodial one. The failure to design against is holding or
+  reconstructing the owner key server-side "to help with recovery".
+- **A useful finding: the knowledge half is already built.**
+  `BlockchainAdapter.estimateFee()` and `Chain.gasPriceUsd` both exist and
+  **nothing calls `estimateFee`**. Only settlement is missing — the first
+  implementation task is wiring an estimate into a quote, not writing an
+  estimator.
+- **Still not started, and that is deliberate:** the account implementation,
+  the paymaster provider and the EntryPoint version. Implementation stays on
+  the do-not-start list until one is chosen — but the boundary question that
+  gated the *investigation* is now closed.
+- **Status:** `DONE` (investigation and ADR); implementation gated on a
+  provider/contract choice, as `BE-802` is.
 
-- The problem is real and worth stating precisely: a user holding 1,000 USDT
-  cannot spend it without ETH for gas, and "you need $4 of ETH" is the first
-  wall an ordinary buyer hits. The document proposes folding network cost into
-  the quote instead.
-- **An investigation task, not a build task.** It must settle: relayer versus
-  paymaster versus an ERC-4337 smart account; who bears the gas economics;
-  whether it applies to metals purchases only or to every transfer; and — the
-  part that gates everything — what it does to the key boundary.
-- **Constraint:** the account abstraction work listed in
-  [`CURRENT_SPRINT.md`](CURRENT_SPRINT.md) "Do not start" exists because no
-  account contract is deployed and no implementation exists in
-  `packages/wallet-core`. That holds until this task's investigation says
-  otherwise. A smart account changes *where* the key lives, which is the one
-  property that cannot be compromised.
-- **Status:** `BACKLOG`
-
----
-
-## 10. Swaps (plan §23–§24)
-
-### BE-701 — Swap engine · `PARTIAL`
-- **What exists:** `POST /swaps/quotes` records a quote with disclosure and
-  executes nothing; `GET /swaps/quotes` (support) with state/railKind filters and
-  keyset pagination on `(createdAt, id)`; `GET /swaps/quotes/:id`;
-  `GET /swaps/quotes/stats`; `GET /swaps/quotes/mine`.
-- **What does not exist:** rail binding. `createQuote` hardcodes
-  `railKind: 'provider'`, `railId: 'unassigned'`, `executionQuality: 'none'`,
-  `toAmountRaw: '0'`. There is no `SwapRail` implementation, so `selectRail`
-  and `RAIL_PREFERENCE` are exercised only by tests.
-- **Why the hardcoding is right:** honest failure beats a fabricated executable
-  price. `executable` is computed as `executionQuality !== 'none' && toAmountRaw > 0`,
-  which is `false` for every quote the system can currently produce.
-- **Dependencies:** a contracted metals provider (`BE-802`).
-- **Tests:** the quotes list is covered by 5 dedicated contract-suite tests plus
-  keyset pagination, filter and cursor-validation cases, mutation-tested.
-- **Status:** `PARTIAL`
-
-### BE-702 — Swap provider adapters · `BACKLOG`
-- `packages/integrations/src/index.ts` is `export {}`. No adapter exists for any
-  provider.
-- **Status:** `BACKLOG`
-
----
-
-## 11. Precious metals (plan §25–§29)
-
-### BE-801 — Metals engine · `PARTIAL`
-- **What exists:** `RedemptionRequest` with an explicit state machine,
-  `RedemptionService.request` with asset/provider/jurisdiction gates, an
-  allowlisted `transition`, and `stats`.
-- **What does not exist:** instruments, serialisation, serial numbers as a first
-  class concept (`serialNumbers String[]` exists on the model and is never
-  written).
-- **Gap:** `PATCH /redemptions/:id/transition` to `approved` fails at runtime —
-  DEF-002.
-- **Tests:** 10 in `redemption.service.spec.ts`.
-- **Status:** `PARTIAL`
-
-### BE-802 — Metals provider adapter · `BACKLOG` (critical path)
-- No adapter. The seed registers `placeholder-metals` as `disabled` with no
-  capabilities.
-- **Critical path.** Multi-month lead time. Nothing in this repository can
-  substitute for it.
-- **Expected output:** the primary rail that delivers tokens directly to a
-  user's smart-account address, quoted with itemised fees.
-- **Security:** must never require a Correnthian-held key. Delivery target is an
-  address the user controls.
-- **Status:** `BLOCKED` — on an external contract, not on engineering.
-
-### BE-803 — Gold buy flow · `BACKLOG`
-- **Expected output:** fiat → metal, gold-denominated, fee itemised before
-  signing, gas sponsored, jurisdiction-gated.
-- **Status:** `BLOCKED` on `BE-802`.
-
-### BE-804 — Gold sell flow · `BACKLOG`
-- **Status:** `BLOCKED` on `BE-802`.
-
-### BE-805 — Redemption mechanics · `PARTIAL`
-- The state machine and the request path both work — `DEF-001` closed the dead
-  controller in `5a31c4b`. What remains is that mechanics and fees depend on
-  partner terms, and there is no partner.
-- **Status:** `PARTIAL` and `BLOCKED` on `BE-802`.
-
-### BE-806 — What "serialisation" means · `OPEN`
-- Recorded as open question 6 in `docs/engineering/api.md`. It implies minted
-  serial numbers on physical holdings, which depends entirely on whether the
-  partner has that data. It may be an empty module.
-- **Status:** `OPEN`
-
----
-
-## 12. On-ramp and off-ramp (plan §30–§31)
-
-### BE-901 — On-ramp · `PARTIAL`
-- **What exists:** `GET /onramp/availability?direction=buy|sell` (`@Public()`,
-  self-describing `{ available, reason }`), `POST /onramp/quote`.
-- **What does not exist:** a provider. `quote()` validates, resolves, and then
-  throws `providerUnavailable` unconditionally — deliberately, so the failure is
-  a refusal rather than a plausible rate.
-- **Off-ramp:** availability supports `sell`; `quote` hardcodes `'buy'`, so an
-  off-ramp quote is unreachable.
-- **Tests:** 6 in `onramp.service.spec.ts`.
-- **Status:** `PARTIAL`
-
----
-
-## 13. Providers (plan §32–§33)
-
-### BE-1001 — Provider management · `DONE`
-- `services/api/src/providers/`. `GET /providers`, `/providers/health`,
-  `/providers/:slug`, `PATCH /providers/:slug/status` (admin).
-- **Security:** only a health-probe payload is stored. No credential field
-  exists on the model. See ADR-018.
-- **Status:** `DONE`
-
-### BE-1002 — Provider health system · `PARTIAL`
-- **What exists:** `recordHealth` and `healthSummary` (counts by status).
-- **What does not exist:** a prober. Nothing calls `recordHealth` except a
-  manual service invocation. Every provider's `lastCheckedAt` is null unless set
-  by hand, and the admin renders "never checked" as destructive for exactly that
-  reason.
-- **Dependencies:** a provider to probe.
-- **Status:** `PARTIAL`
-
----
-
-## 14. Compliance and risk (plan §34–§37)
-
-### BE-1103 — Jurisdiction engine · `DONE`
-- `services/api/src/compliance/`. Deny-by-default, region precedence, inactive
-  rules treated as absent, `assertEligible` throws 451 rather than returning
-  false. `GET /compliance/eligibility` is `@Public()`.
-- **Security:** the seed's `US` rule is marked `DEVELOPMENT ONLY` and permits
-  buy/sell/metals while refusing redemption. It must be replaced with
-  counsel-reviewed rules before any deployment.
-- **Tests:** 7.
-- **Status:** `DONE`
 
 ### BE-1101 — KYC / AML · `BACKLOG`
 - **What exists:** the `KycProfile` model, `User.kycStatus`, an admin filter and
@@ -1292,15 +1176,15 @@ read them.
 
 | Status | Tasks | Defects |
 |---|---|---|
-| `DONE` | 17 | 18 |
+| `DONE` | 18 | 18 |
 | `PARTIAL` | 19 | 0 |
 | `PARTIAL` | 0 | 1 |
-| `BACKLOG` | 19 | 0 |
+| `BACKLOG` | 18 | 0 |
 | `BLOCKED` | 6 | 0 |
 | `OPEN` | 1 | 0 |
 | **Total** | **61** | **19** |
 
-**17 of 61 tasks are complete; 18 of 19 defects are done and 1 is half fixed — no defect is left in `BACKLOG`.** The plan's §68 dependency
+**18 of 61 tasks are complete; 18 of 19 defects are done and 1 is half fixed — no defect is left in `BACKLOG`.** The plan's §68 dependency
 chain is most of the way built at the infrastructure layer and not started at
 the layer that moves money.
 

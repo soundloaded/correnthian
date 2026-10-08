@@ -21,39 +21,39 @@ recorded (`DEF-001` … `DEF-019`); **eighteen are done, one is half fixed, none
 
 ### Current task
 
-**`BE-603` — investigate gas sponsorship and account abstraction. An ADR, not a build.**
+**`BE-302` — indexer events to `Transaction` rows. The largest piece that depends on nothing external.**
 
-- **Why it is next:** it is the one item the owner's product document asked for
-  by name, and it needs nothing from anybody else.
-- **The problem, stated precisely:** a user holding 1,000 USDT cannot spend it
-  without ETH for gas. "You need $4 of ETH" is the first wall an ordinary buyer
-  hits, and for the gold-owning beachhead — who is not here to learn about gas
-  — it is the difference between a working product and a demo.
-- **What this task produces:** an ADR settling, in this order — relayer vs
-  paymaster vs an ERC-4337 smart account; who bears the gas economics; whether
-  it applies only to metal purchases or to every transfer; and what any of it
-  does to the key boundary.
-- **Why the constraint is not negotiable:** a smart account changes *where* the
-  key lives. The "Do not start" row exists because no account contract is
-  deployed and `packages/wallet-core` has interfaces only — and because ADR-001
-  has no exception for features. Getting this wrong does not produce a bug, it
-  produces a custodial system that believes it is not one.
-- **Definition of done:** an ADR with a `Decision`/`Reason`/`Consequences`
-  record and a `Status` of either `Locked` (build it) or `Rejected` (don't),
-  plus an updated "Do not start" row naming what unblocks. **No adapter, no
-  paymaster, no contract code in this task.**
-- **Security constraint:** the key boundary. This is the task where it is most
-  at risk, which is why it is an investigation first.
+- **Why it is next:** `BE-603` closed with an ADR rather than code, so the
+  largest remaining self-contained build is this one. Everything downstream
+  waits on it: without `Transaction` rows there is nothing for `BE-601` to
+  operate on, nothing for the admin's transaction pages to show, and nothing for
+  `BE-1602` to reconcile.
+- **Where:** `services/api/src/blockchain/indexing.service.ts`. The adapter
+  surface exists (`getBlock`, `getTransaction`, `getTransactionStatus`) and
+  balance sync works; event indexing does not. `BACKEND-05` is "balance sync
+  only, no events, no `Transaction` rows".
+- **What is real today:** `Chain`, wallets and balances. What is missing is
+  subscriptions/polling per chain, decoding logs into domain events, and
+  writing a `Transaction` with its confirmations.
+- **Definition of done:** a confirmed on-chain transfer to a registered wallet
+  address produces a `Transaction` row with state, hash and confirmations;
+  reorgs move it backwards rather than duplicating it; a test covers a
+  duplicate event not creating a second row.
+- **Security constraint:** the indexer is **read-only against the chain**. It
+  must have no key material and no signing path — it observes, it never acts.
+  This is the boundary rule applied to a component that could easily grow one.
+- **Dependency:** none external. RPC access to a live network is already
+  verified (`CHAIN-001` against Sepolia).
 
 ### Then, in order
 
 | # | Task | Why it is next |
 |---|---|---|
 | 1 | `BE-102` — OpenAPI generated from `CONTRACT_REGISTRY` | The shipped document describes no request or response schemas. Cheap, and it makes every later route reviewable. |
-| 2 | `BE-302` — indexer events to `Transaction` rows | The largest remaining piece depending on nothing external, and everything downstream of it waits. |
-| 3 | `BE-601` / `BE-602` — transaction engine, send/receive | EVM only; the adapter already works against a live network. |
-| 4 | `BE-1101` / `BE-1105` — KYC and sanctions | Legally required before selling gold for dollars regardless of custody posture, and they need no metals partner. |
-| 5 | `BE-102`'s open question — is `/docs` exposed in production? | Not decided. An API schema is a map of everything an attacker can call; the answer is a disclosure decision, not a technical one. |
+| 2 | `BE-601` / `BE-602` — transaction engine, send/receive | EVM only; the adapter already works against a live network. |
+| 3 | `BE-1101` / `BE-1105` — KYC and sanctions | Legally required before selling gold for dollars regardless of custody posture, and they need no metals partner. |
+| 4 | `BE-102`'s open question — is `/docs` exposed in production? | Not decided. An API schema is a map of everything an attacker can call; the answer is a disclosure decision, not a technical one. |
+| 5 | ADR-022's build-time choices — account implementation, paymaster, EntryPoint | Gated on a vendor or a contract, same as `BE-802`. Recording them as decided would repeat the `claimBatch` mistake. |
 
 **Still open, deliberately not scheduled:**
 
@@ -65,6 +65,14 @@ recorded (`DEF-001` … `DEF-019`); **eighteen are done, one is half fixed, none
 
 ### Completed in this sprint
 
+- `BE-603` — **ADR-022**, an investigation rather than a build. Gas sponsorship
+  settles on ERC-4337 + a paymaster, scoped to first-party operations only,
+  because a paymaster that sponsors any transfer is an open faucet. Two
+  alternatives rejected for consistency with the account model rather than on
+  mechanics: both reintroduce the seed phrase `packages/wallet-core` exists to
+  remove. **Useful finding: `estimateFee()` and `Chain.gasPriceUsd` already
+  exist and nothing calls `estimateFee`** — the knowledge half is built, only
+  settlement is missing.
 - `BE-102` — the document `/docs` serves now carries response schemas from
   `CONTRACT_REGISTRY` (`fb4587c`), and its paths are versioned. It had been 78
   paths with **no schemas at all**, describing the legacy unversioned alias
@@ -208,7 +216,7 @@ being resolved produces work that has to be thrown away.
 | Do not start | Because |
 |---|---|
 | **Any provider integration** — metals, on-ramp, pricing feed, KYC | No provider is contracted. `packages/integrations` is `export {}`. Writing an adapter against an imagined API means rewriting it against a real contract. |
-| **Smart accounts, passkeys, ERC-4337, paymaster, guardians** | No implementation exists — only interfaces in `packages/types` and `packages/wallet-core`. There is nothing to build on and no account contract to deploy against. Getting this wrong also breaks the key boundary, which is the one property that cannot be compromised. **An investigation is not a start** — `BE-603` exists to *decide* this and reports back as an ADR. Writing the adapter, the paymaster or the account contract is what is forbidden, and forbidden until that ADR exists. |
+| **Smart accounts, passkeys, ERC-4337, paymaster, guardians** | **The boundary question is closed** — ADR-022 decided the mechanism (passkey-owned ERC-4337 account, paymaster-paid gas, first-party operations only) and showed why it holds. What still forbids starting is that no account implementation and no paymaster have been chosen: `packages/wallet-core` has interfaces only, there is no account contract to deploy against, and a vendor chosen in code rather than in a decision gets rewritten. **Writing the adapter, the paymaster or the contract is still not allowed** — and nothing may hold or reconstruct an owner key server-side, ever. |
 | **Bitcoin or Solana adapters** | Deferred by the design spec until after the EVM slice. Nothing in v1 needs them. |
 | **Marketing site, web wallet, mobile app** | All three are framework defaults. The API is not stable enough to build a client against, and the product decisions the client depends on (buy flow, redemption mechanics) are blocked on counsel. |
 | **A microservice split** | The decision is a modular monolith. A split is not a task; it is an ADR. |
