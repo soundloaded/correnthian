@@ -44,8 +44,25 @@ export class NotificationsService {
   }
 
   /**
-   * Claim a batch for delivery. `updateMany` with a status guard means two
-   * workers cannot claim the same row — the loser matches zero rows.
+   * Enumerate pending rows. **This does not claim anything**, despite the name.
+   *
+   * The docstring used to describe "`updateMany` with a status guard… the loser
+   * matches zero rows". No such guard exists, and none can without a schema
+   * change: `Notification` has only `sentAt`, `failedAt` and `error`, so there
+   * is no column to write a claim into. Two workers calling this today receive
+   * the same rows.
+   *
+   * That is recorded rather than quietly patched, because the obvious fix is
+   * worse than the bug. A naive `claimedAt` column is a lease with no expiry:
+   * a worker that dies mid-batch leaves those rows claimed forever, and
+   * notifications that are never sent are a harder failure than notifications
+   * sent twice — the second is visible, the first is silent. A real claim needs
+   * a lease with a timeout, a way to requeue an abandoned one, and a decision
+   * about idempotent delivery. Those are design questions, and they belong to
+   * the transport decision in ADR-020 rather than to a method nothing calls:
+   * no scheduler job invokes this, and no transport is wired.
+   *
+   * Tracked as `DEF-009`; the consequence is recorded in ADR-020.
    */
   async claimBatch(limit = 50) {
     const candidates = await this.prisma.notification.findMany({

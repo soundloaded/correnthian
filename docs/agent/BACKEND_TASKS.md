@@ -65,7 +65,8 @@ the location the entry names.
 | Status | Defects | Count |
 |---|---|---|
 | `DONE` | `DEF-001` … `DEF-008`, `DEF-014`, `DEF-016`, `DEF-019` | 11 |
-| `BACKLOG` | `DEF-009`, `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-015`, `DEF-017`, `DEF-018` | 8 |
+| `PARTIAL` | `DEF-009` | 1 |
+| `BACKLOG` | `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-015`, `DEF-017`, `DEF-018` | 7 |
 
 `DEF-018` was found while re-verifying the others, and `DEF-019` while fixing
 `DEF-004` / `DEF-005`. Both were recorded rather than assumed, because tracking
@@ -280,13 +281,30 @@ kept for the record; it does not describe the current code._
 - **Status:** `DONE`
 
 
-### DEF-009 — `claimBatch` does not claim
+### DEF-009 — `claimBatch` does not claim · `PARTIAL`
 
 - **Location:** `services/api/src/notifications/notifications.service.ts`
-- **Description:** the docstring describes "`updateMany` with a status guard…
-  the loser matches zero rows". The implementation is a plain `findMany` with no
-  update and no guard. Two workers receive the same rows.
-- **Status:** `BACKLOG`
+- **Was:** the docstring described "`updateMany` with a status guard… the loser
+  matches zero rows". The implementation was a plain `findMany` with no update
+  and no guard, so two workers received the same rows — a comment and a code
+  describing two different programs.
+- **Done:** the docstring now describes what the code actually does, and says
+  why. The lie is gone; nothing in the repository now promises a guarantee the
+  code does not make.
+- **Still open, and deliberately so.** Making it claim needs a column:
+  `Notification` has only `sentAt`, `failedAt` and `error`, so there is nothing
+  to write a claim into. The obvious `claimedAt` fix is a **lease with no
+  expiry** — a worker that dies mid-batch leaves those rows claimed forever, and
+  a notification that is never sent is a harder failure than one sent twice,
+  because the second is visible and the first is silent. A real claim needs a
+  timeout, a requeue path, and a decision about idempotent delivery.
+- **Those are design questions belonging to ADR-020's transport decision**, not
+  to a method nothing calls: no scheduler job invokes it and no transport is
+  wired. Building a leasing mechanism for dead code would be speculative design
+  presented as a fix.
+- **Status:** `PARTIAL` — the comment is honest; the claim mechanism is not
+  built, and is gated on the transport decision.
+
 
 ### DEF-010 — Committed build output inside `packages/*/src`
 
@@ -1232,12 +1250,13 @@ read them.
 |---|---|---|
 | `DONE` | 16 | 11 |
 | `PARTIAL` | 19 | 0 |
-| `BACKLOG` | 19 | 8 |
+| `PARTIAL` | 0 | 1 |
+| `BACKLOG` | 19 | 7 |
 | `BLOCKED` | 6 | 0 |
 | `OPEN` | 1 | 0 |
 | **Total** | **61** | **19** |
 
-**16 of 61 tasks are complete, and 11 of 19 defects.** The plan's §68 dependency
+**16 of 61 tasks are complete; 11 of 19 defects are done and 1 is half fixed.** The plan's §68 dependency
 chain is most of the way built at the infrastructure layer and not started at
 the layer that moves money.
 

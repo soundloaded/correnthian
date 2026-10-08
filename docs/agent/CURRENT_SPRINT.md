@@ -13,41 +13,45 @@ Last updated: 2026-10-07.
 The previous sprint built the admin and the wire-format contract layer. This
 sprint exists because reading the code found defects that no test, no typecheck
 and no contract assertion catches. Several were silent. There are nineteen
-recorded (`DEF-001` … `DEF-019`); **eleven are done**.
+recorded (`DEF-001` … `DEF-019`); **eleven are done and one is half fixed**.
 
 ### Current task
 
-**`DEF-009` — `claimBatch` does not claim.**
+**`DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-017` — the bounded remainder.**
 
-- **Why it is next:** it is the last defect where the comment and the code
-  describe two different programs, which is the failure mode this sprint exists
-  to clear. Everything after it is smaller.
-- **File:** `services/api/src/notifications/notifications.service.ts`
-- **What is wrong:** the docstring describes "`updateMany` with a status
-  guard… two workers cannot claim the same row — the loser matches zero rows".
-  The implementation is a plain `findMany` with no update and no guard. Two
-  workers receive the same rows, and the comment promises a guarantee the code
-  does not make.
-- **Why it matters:** `BE-1201` records intent and exposes `claimBatch`, and
-  `ADR-020` says no transport is wired — so nothing sends today. That is the
-  point at which this becomes a live bug rather than a latent one: the day a
-  provider is chosen, two workers would deliver the same message twice.
-- **Definition of done:** the claim is atomic (`updateMany` with a status
-  guard, or a conditional write), the docstring describes what the code does,
-  and a test fails when two concurrent claims target the same rows.
-- **Security constraint:** none, but a claim that cannot be lost is also the
-  difference between a notification that arrives twice and one that never
-  arrives.
+Five defects with no dependency, all small, none urgent. Taken together rather
+than one at a time because each is a self-contained patch with its own test and
+none gates another.
+
+| | What is wrong | Where |
+|---|---|---|
+| `DEF-010` | 10 build artifacts (`.js`, `.d.ts`, `.js.map`) checked into `packages/*/src` beside their sources. Stale output from a `tsc` that once emitted into `src`; `.gitignore` covers `dist/`, not `src/`. Nothing imports them and they will drift silently. | `packages/types/src/`, `packages/design-tokens/src/` |
+| `DEF-011` | The comment above `validateEvmAddress` says mixed-case addresses are "refused" and cites an `EIP55_SUPPORTED` marker that does not exist. Verification *is* implemented below it. An agent reading the comment may "restore" behaviour that is now a bug. | `packages/blockchain/src/address.ts` |
+| `DEF-012` | `lib/types.ts` declares `AuditRow` and `QuoteStats` by hand with a comment saying they are not in the contract registry. Both are. `dashboard/page.tsx` still imports the hand-written `AuditRow`. | `apps/admin/src/lib/types.ts` |
+| `DEF-013` | `test/app.e2e-spec.ts` asserts `GET /` returns `"Hello World!"`. There is no root route. `pnpm test` does not run it; `pnpm test:e2e` would fail. | `services/api/test/` |
+| `DEF-017` | `ProvidersService` is injected into `SwapsService` and never used. Not harmful — it is a hint that rail binding was intended and never written. | `services/api/src/swaps/swaps.service.ts` |
+
+- **Definition of done:** each has a test or a check that fails without the fix,
+  `pnpm test:e2e` is green, and no file in `packages/*/src` is generated output.
+- **Security constraint:** `DEF-011` is the one with a risk — a comment that
+  claims a checksum is rejected when it is not can cause a future reader to
+  remove the check that does exist.
 
 ### Then, in order
 
 | # | Task | Why it is next |
 |---|---|---|
-| 2 | `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-017` — the bounded remainder | No dependency, all small, none urgent. |
-| 3 | `DEF-018` — the Prisma-write guard fails and is not in CI | Recording it here rather than fixing it: it is tracked, and it is not this sprint's work. |
+| 2 | `DEF-018` — the Prisma-write guard fails and is not in CI | Recording it here rather than fixing it: it is tracked, and it is not this sprint's work. |
+| 3 | `DEF-015` — pagination is not keyset on two admin lists | The comment claims keyset; the code paginates on the primary key. Correctness on the list an operator reconciles money against. |
 
 ### Completed in this sprint
 
+- `DEF-009` — the `claimBatch` docstring now describes the code. Marked
+  `PARTIAL`, not `DONE`: the lie is gone but the claim mechanism is not built,
+  and building it needs a column that does not exist plus a lease with a
+  timeout. That is a design question for ADR-020's transport decision, not a
+  patch for a method nothing calls. See the entry for why the obvious fix is
+  worse than the bug.
 - `DEF-007` / `DEF-008` — the portfolio pair (`8b4d408`). A missing wallet is a
   404 instead of a 500, and balances and totals are exact bigint arithmetic
   through `notionalUsd` / `sumUsd`, the same primitives the fees engine uses.
@@ -128,8 +132,8 @@ recorded (`DEF-001` … `DEF-019`); **eleven are done**.
 
 ### Next, after this sprint
 
-1. The remaining eight defects — `DEF-010` onward, small, plus
-   `DEF-018` recorded during the re-verification.
+1. The remaining seven `BACKLOG` defects — `DEF-010` onward — plus
+   `DEF-015` and `DEF-018`, and `DEF-009` awaiting the transport call.
 2. `BE-1702` — controller-level tests. Fourteen routes have none outside the
    contract suite, and DEF-001 exists precisely because of that gap.
 3. `BE-102` — generate OpenAPI from `CONTRACT_REGISTRY` rather than shipping a
