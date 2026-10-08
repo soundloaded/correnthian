@@ -13,6 +13,33 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-08
 
+### `f2cf8d2` — Put the two existing copies of the cursor helpers on the shared module
+- `swaps.service.ts` and `transactions.service.ts` each carried a byte-identical
+  `encodeCursor`/`decodeCursor` — same base64url `{ t, i }`, same validation,
+  same error message. All four paginating lists now share one implementation
+  instead of three kept in step by hand.
+- Records a first attempt that cut too wide with a comment-boundary search and
+  deleted `ROW_INCLUDE` alongside the cursor block; redone against exact
+  anchors.
+
+### `9c2b480` — Paginate the two admin lists on the whole sort key
+- `DEF-015`. `users.list` and `devices.listAll` ordered by a timestamp but
+  paginated with `cursor: { id }` and `skip: 1` — half the sort key. Two rows
+  sharing a timestamp are ordered by nothing, so the page boundary can move and
+  the list an operator reconciles money against shows a duplicate or a gap.
+- **The comment already claimed keyset pagination**, which is how it survived
+  two re-verifications.
+- Both now sort on `[timestamp desc, id desc]`, filter over both halves, and
+  return an opaque cursor. A raw-id cursor would let a client order the list
+  however it likes; an unreadable one is a 400 rather than a silent restart at
+  page one, because a restart hides a client bug behind a page that looks
+  correct.
+- **Two failures the types could not see**, caught by tests: the filter was
+  first spread outside `where` (Prisma ignored it; spreading an `object`
+  contributes no known properties to check), and it needed `AND` nesting because
+  `users.list` ORs across email and displayName when searching.
+- 28 tests; **11 fail against the pre-fix code**.
+
 ### `c21be31` — Run the e2e suite in CI, so the one I just fixed is not decorative
 - `pnpm test` matches `**/*.spec.ts` and `test:e2e` matches `**/*.e2e-spec.ts`.
   Neither runs the other, and CI only ran the first — so the scaffold e2e had

@@ -13,43 +13,60 @@ Last updated: 2026-10-07.
 The previous sprint built the admin and the wire-format contract layer. This
 sprint exists because reading the code found defects that no test, no typecheck
 and no contract assertion catches. Several were silent. There are nineteen
-recorded (`DEF-001` … `DEF-019`); **sixteen are done, one is half fixed and two remain**.
+recorded (`DEF-001` … `DEF-019`); **seventeen are done, one is half fixed and one remains**.
 
 ### Current task
 
-**`DEF-015` — pagination is not keyset on two admin lists.**
+**`DEF-018` — the Prisma-write guard fails and is not in CI. The last one.**
 
-- **Why it is next:** the last `BACKLOG` defect that is code rather than
-  configuration. `DEF-018` is a CI wiring decision and `DEF-009` is gated on
-  the transport call, so this is the final mechanical fix.
-- **Files:** `services/api/src/users/users.service.ts`,
-  `services/api/src/devices/devices.service.ts`
-- **What is wrong:** both order by a timestamp (`createdAt`, `lastSeenAt`) but
-  paginate with `cursor: { id }` plus `skip: 1` on the primary key. A row
-  inserted between two page requests reappears on the later page. The comment
-  above `users.list` claims "Keyset pagination on a stable sort" — reading only
-  that comment records the defect as fixed, which is how it stayed open.
-- **How to do it:** `SwapsService` already solves this properly — an encoded
-  `(createdAt, id)` keyset with an unreadable cursor that answers 400. Copy that
-  pattern rather than inventing a second one.
-- **Why it is not cosmetic:** it is not a security defect, but it is a
-  correctness one on **the list an operator reconciles money against**, and a
-  duplicate or skipped row there is a reconciliation error waiting to happen
-  in `BE-1602`.
-- **Definition of done:** a row inserted between two page fetches does not
-  appear twice; an opaque cursor that is not ours returns 400 rather than
-  leaking an error; both lists share the implementation `SwapsService` uses.
-- **Security constraint:** none, but the cursor must stay opaque — encoding a
-  raw `createdAt` invites clients to construct their own.
+- **Why it closes the phase:** every other `BACKLOG` defect is fixed. `DEF-009`
+  is `PARTIAL` and gated on the transport decision, so this is the final item in
+  a sprint that exists to clear defects.
+- **File:** `scripts/check-prisma-writes.mjs`, `.github/workflows/ci.yml`
+- **What is wrong — two things:**
+  1. The guard built in `5a31c4b` exits `1` on a clean tree. It flags
+     `Provider.where` and `Provider.data` at `provider-health.service.ts:142`.
+     Those are not fields: they are arguments to `update`, and the checker
+     cannot follow the spread that builds `data`. `lastHealth` and
+     `lastCheckedAt` are both declared on `Provider`.
+  2. `ci.yml` runs `check-key-boundary` and `check-explicit-di` and **not this
+     one** — so a guard that currently fails is excluded from CI, which means
+     it protects nothing. A check nobody wires up is a comment.
+- **Decision already made on the second half:** wire it in. The first half
+  needs one: resolve the spread so the checker can follow it, or mark the site
+  explicitly inconclusive. The commit that added it argued a check claiming
+  coverage it lacks is worse than none — that argument still holds, and it is
+  why "just make it exit 0" is not the fix.
+- **Definition of done:** the script exits `0` on a clean tree *and* still fails
+  on a deliberately unknown field; `provider-health.service.ts:142` is either
+  followed or explicitly marked; `ci.yml` executes it.
+- **Security constraint:** none directly, but this is the guard that would have
+  caught a typo like `reviewedBy` — the class of bug Prisma's XOR input types
+  hide from the compiler.
 
 ### Then, in order
 
-| # | Task | Why it is next |
-|---|---|---|
-| 2 | `DEF-018` — the Prisma-write guard fails and is not in CI | Recording it here rather than fixing it: it is tracked, and it is not this sprint's work. |
+Nothing in this table — `DEF-018` above is the last defect in the phase.
+What follows it is the next sprint, in
+[Next, after this sprint](#next-after-this-sprint).
+
+**Still open, deliberately not scheduled here:**
+
+| | Why it waits |
+|---|---|
+| `DEF-009` | `PARTIAL`. The comment is honest; building the claim needs a column, a lease with a timeout and a requeue path — design questions belonging to ADR-020's transport decision, not a patch for a method nothing calls. |
+
+---
 
 ### Completed in this sprint
 
+- `DEF-015` — both admin lists now paginate on the whole sort key
+  (`9c2b480`, `f2cf8d2`). The comment above `users.list` had claimed keyset
+  pagination all along, which is how it survived two re-verifications. Two
+  failures the types could not see: the filter was first spread outside
+  `where`, so Prisma ignored it and every page returned the same rows, and it
+  needed `AND` nesting because `users.list` ORs across email and displayName
+  when searching. 28 tests, 11 of which fail against the pre-fix code.
 - **The bounded remainder** — `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`,
   `DEF-017` (`9403bab`, `31ed198`, `00b095a`, `c21be31`). Each was an artifact
   describing something other than the code: generated output committed beside

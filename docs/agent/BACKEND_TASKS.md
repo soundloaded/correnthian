@@ -64,9 +64,9 @@ the location the entry names.
 
 | Status | Defects | Count |
 |---|---|---|
-| `DONE` | `DEF-001` … `DEF-014`, `DEF-016`, `DEF-017`, `DEF-019` | 16 |
+| `DONE` | `DEF-001` … `DEF-017`, `DEF-019` | 17 |
 | `PARTIAL` | `DEF-009` | 1 |
-| `BACKLOG` | `DEF-015`, `DEF-018` | 2 |
+| `BACKLOG` | `DEF-018` | 1 |
 
 `DEF-018` was found while re-verifying the others, and `DEF-019` while fixing
 `DEF-004` / `DEF-005`. Both were recorded rather than assumed, because tracking
@@ -371,24 +371,33 @@ kept for the record; it does not describe the current code._
 - **Status:** `DONE`
 
 
-### DEF-015 — Pagination that is not keyset on two admin lists
+### DEF-015 — Pagination that is not keyset on two admin lists · `DONE` (`9c2b480`, `f2cf8d2`)
 
-- **Location:** `services/api/src/users/users.service.ts`,
-  `services/api/src/devices/devices.service.ts`
-- **Description:** both order by a timestamp (`createdAt`, `lastSeenAt`) but
-  paginate with Prisma `cursor: { id }` + `skip: 1` on the primary key. A row
-  inserted between two page requests reappears on the later page. `SwapsService`
-  solves the identical problem properly with an encoded `(createdAt, id)`
-  keyset and an unreadable cursor as a 400.
-- **Not a security defect.** A correctness and operator-trust one: this is the
-  list an operator reconciles money against.
-- **Re-verified 2026-10-07: still open.** The comment above `users.list`
-  claims "Keyset pagination on a stable sort. `skip` degrades badly…" and the
-  statement three lines below it is
-  `...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {})`, ordered
-  by `createdAt`. Reading the comment alone records this as fixed; it is not.
-  `devices.service.ts:67` is the same.
-- **Status:** `BACKLOG`
+- **Was:** `users.list` and `devices.listAll` ordered by a timestamp
+  (`createdAt`, `lastSeenAt`) but paginated with `cursor: { id }` plus `skip: 1`
+  — half the sort key. Two rows sharing a timestamp are ordered by nothing, so
+  the page boundary between them can move: a duplicate or a gap on the list an
+  operator reconciles money against.
+- **Why it survived two re-verifications:** the comment above `users.list`
+  already said "Keyset pagination on a stable sort". Reading it recorded the
+  defect as fixed.
+- **Fixed:** both sort on `[timestamp desc, id desc]`, filter with
+  `timestamp < cursor OR (timestamp = cursor AND id < cursor.id)`, and return an
+  opaque `{ t, i }` cursor. One implementation in `common/keyset.ts`, shared
+  with `swaps.service.ts` and `transactions.service.ts`, which each carried a
+  byte-identical copy of it.
+- **Two failures the types could not see**, both caught by tests: the filter
+  was first spread at the top level of `findMany` rather than inside `where`
+  (Prisma ignored it; every page returned the same rows — spreading an `object`
+  contributes no known properties to check), and it had to nest under `AND`
+  because `users.list` ORs across email and displayName when searching, where a
+  bare `{ OR }` spread would have silently dropped the search filter.
+- **Wire:** `nextCursor` remains `nullable string` in the contract and the admin
+  already treats it as opaque. Not a breaking change.
+- **Tests:** 28 across the cursor module and both services. **11 fail against
+  the pre-fix code** (6 of 9 users, 5 of 5 devices).
+- **Status:** `DONE`
+
 
 ### DEF-016 — The admin console has no role gate on sign-in
 
@@ -1248,15 +1257,15 @@ read them.
 
 | Status | Tasks | Defects |
 |---|---|---|
-| `DONE` | 16 | 16 |
+| `DONE` | 16 | 17 |
 | `PARTIAL` | 19 | 0 |
 | `PARTIAL` | 0 | 1 |
-| `BACKLOG` | 19 | 2 |
+| `BACKLOG` | 19 | 1 |
 | `BLOCKED` | 6 | 0 |
 | `OPEN` | 1 | 0 |
 | **Total** | **61** | **19** |
 
-**16 of 61 tasks are complete; 16 of 19 defects are done, 1 is half fixed and 2 remain.** The plan's §68 dependency
+**16 of 61 tasks are complete; 17 of 19 defects are done, 1 is half fixed and 1 remains.** The plan's §68 dependency
 chain is most of the way built at the infrastructure layer and not started at
 the layer that moves money.
 
