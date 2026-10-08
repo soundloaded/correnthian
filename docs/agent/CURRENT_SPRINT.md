@@ -13,39 +13,53 @@ Last updated: 2026-10-07.
 The previous sprint built the admin and the wire-format contract layer. This
 sprint exists because reading the code found defects that no test, no typecheck
 and no contract assertion catches. Several were silent. There are nineteen
-recorded (`DEF-001` … `DEF-019`); **eleven are done and one is half fixed**.
+recorded (`DEF-001` … `DEF-019`); **sixteen are done, one is half fixed and two remain**.
 
 ### Current task
 
-**`DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-017` — the bounded remainder.**
+**`DEF-015` — pagination is not keyset on two admin lists.**
 
-Five defects with no dependency, all small, none urgent. Taken together rather
-than one at a time because each is a self-contained patch with its own test and
-none gates another.
-
-| | What is wrong | Where |
-|---|---|---|
-| `DEF-010` | 10 build artifacts (`.js`, `.d.ts`, `.js.map`) checked into `packages/*/src` beside their sources. Stale output from a `tsc` that once emitted into `src`; `.gitignore` covers `dist/`, not `src/`. Nothing imports them and they will drift silently. | `packages/types/src/`, `packages/design-tokens/src/` |
-| `DEF-011` | The comment above `validateEvmAddress` says mixed-case addresses are "refused" and cites an `EIP55_SUPPORTED` marker that does not exist. Verification *is* implemented below it. An agent reading the comment may "restore" behaviour that is now a bug. | `packages/blockchain/src/address.ts` |
-| `DEF-012` | `lib/types.ts` declares `AuditRow` and `QuoteStats` by hand with a comment saying they are not in the contract registry. Both are. `dashboard/page.tsx` still imports the hand-written `AuditRow`. | `apps/admin/src/lib/types.ts` |
-| `DEF-013` | `test/app.e2e-spec.ts` asserts `GET /` returns `"Hello World!"`. There is no root route. `pnpm test` does not run it; `pnpm test:e2e` would fail. | `services/api/test/` |
-| `DEF-017` | `ProvidersService` is injected into `SwapsService` and never used. Not harmful — it is a hint that rail binding was intended and never written. | `services/api/src/swaps/swaps.service.ts` |
-
-- **Definition of done:** each has a test or a check that fails without the fix,
-  `pnpm test:e2e` is green, and no file in `packages/*/src` is generated output.
-- **Security constraint:** `DEF-011` is the one with a risk — a comment that
-  claims a checksum is rejected when it is not can cause a future reader to
-  remove the check that does exist.
+- **Why it is next:** the last `BACKLOG` defect that is code rather than
+  configuration. `DEF-018` is a CI wiring decision and `DEF-009` is gated on
+  the transport call, so this is the final mechanical fix.
+- **Files:** `services/api/src/users/users.service.ts`,
+  `services/api/src/devices/devices.service.ts`
+- **What is wrong:** both order by a timestamp (`createdAt`, `lastSeenAt`) but
+  paginate with `cursor: { id }` plus `skip: 1` on the primary key. A row
+  inserted between two page requests reappears on the later page. The comment
+  above `users.list` claims "Keyset pagination on a stable sort" — reading only
+  that comment records the defect as fixed, which is how it stayed open.
+- **How to do it:** `SwapsService` already solves this properly — an encoded
+  `(createdAt, id)` keyset with an unreadable cursor that answers 400. Copy that
+  pattern rather than inventing a second one.
+- **Why it is not cosmetic:** it is not a security defect, but it is a
+  correctness one on **the list an operator reconciles money against**, and a
+  duplicate or skipped row there is a reconciliation error waiting to happen
+  in `BE-1602`.
+- **Definition of done:** a row inserted between two page fetches does not
+  appear twice; an opaque cursor that is not ours returns 400 rather than
+  leaking an error; both lists share the implementation `SwapsService` uses.
+- **Security constraint:** none, but the cursor must stay opaque — encoding a
+  raw `createdAt` invites clients to construct their own.
 
 ### Then, in order
 
 | # | Task | Why it is next |
 |---|---|---|
 | 2 | `DEF-018` — the Prisma-write guard fails and is not in CI | Recording it here rather than fixing it: it is tracked, and it is not this sprint's work. |
-| 3 | `DEF-015` — pagination is not keyset on two admin lists | The comment claims keyset; the code paginates on the primary key. Correctness on the list an operator reconciles money against. |
 
 ### Completed in this sprint
 
+- **The bounded remainder** — `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`,
+  `DEF-017` (`9403bab`, `31ed198`, `00b095a`, `c21be31`). Each was an artifact
+  describing something other than the code: generated output committed beside
+  its sources, a comment describing the *pre-fix* EIP-55 behaviour while telling
+  a reader the check was missing, a hand-written type claiming the registry did
+  not cover it, an injection implying rail binding that was never written, and
+  an e2e test asserting a root route that has never existed.
+  `DEF-013` also got the CI step that was missing — `pnpm test` matches
+  `*.spec.ts` and `test:e2e` matches `*.e2e-spec.ts`, so the suite had been
+  failing since it was written with no build turning red.
 - `DEF-009` — the `claimBatch` docstring now describes the code. Marked
   `PARTIAL`, not `DONE`: the lie is gone but the claim mechanism is not built,
   and building it needs a column that does not exist plus a lease with a
@@ -132,8 +146,8 @@ none gates another.
 
 ### Next, after this sprint
 
-1. The remaining seven `BACKLOG` defects — `DEF-010` onward — plus
-   `DEF-015` and `DEF-018`, and `DEF-009` awaiting the transport call.
+1. `DEF-015` — the last code fix. `DEF-018` is a CI wiring decision and
+   `DEF-009` is gated on the transport call.
 2. `BE-1702` — controller-level tests. Fourteen routes have none outside the
    contract suite, and DEF-001 exists precisely because of that gap.
 3. `BE-102` — generate OpenAPI from `CONTRACT_REGISTRY` rather than shipping a

@@ -13,6 +13,48 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-08
 
+### `c21be31` — Run the e2e suite in CI, so the one I just fixed is not decorative
+- `pnpm test` matches `**/*.spec.ts` and `test:e2e` matches `**/*.e2e-spec.ts`.
+  Neither runs the other, and CI only ran the first — so the scaffold e2e had
+  been failing since it was written and no build ever turned red.
+- That is the second half of `DEF-013`. Fixing the assertion without wiring the
+  suite would have produced a green test nothing executes, which is the shape of
+  `DEF-018` and which this repository already records as a defect: a check
+  nobody wires up is a comment.
+
+### `00b095a` — Correct three artifacts that described something other than the code
+- `DEF-011`: the comment above `validateEvmAddress` said mixed-case addresses
+  are refused and cited an `EIP55_SUPPORTED` marker that exists nowhere, while
+  the function below verified EIP-55 with viem's keccak256 and tests covered
+  the canonical vectors. The dangerous reading is the one that could get a real
+  check *removed*. Also rehomed an orphaned comment onto `toChecksum`.
+- `DEF-012`: `AuditRow` was hand-written under a comment claiming the registry
+  did not cover it — and was missing `actorEmail`, `reason` and `requestId`, so
+  the dashboard showed a cuid where an address could have gone. Now inferred
+  from the registry; `QuoteStats` deleted as dead.
+- `DEF-017`: `ProvidersService` injected and never read, removed.
+- **This is a redone.** An earlier attempt at `DEF-012` was never committed and
+  a later revert of unrelated work discarded it silently.
+
+### `31ed198` — Replace the scaffold e2e test with one that can pass
+- `test/app.e2e-spec.ts` asserted `GET /` returned `Hello World!`. There is no
+  root route; it answers 404. `pnpm test:e2e` had never passed — which is why
+  nobody noticed CI does not run it either.
+- Replaced with four properties that need no fixtures: the app boots, liveness
+  answers without consulting a dependency, readiness reports `dependencies`
+  under either 200 or 503, and a protected route refuses an anonymous caller
+  with the error envelope. Plus the fact the old test got wrong.
+- Skips locally without a database, **throws in CI** rather than skipping — a
+  smoke test that is not run is worse than none.
+
+### `9403bab` — Stop generated output living beside its sources
+- `DEF-010`: 20 `.js`/`.d.ts`/`.map` files committed under `packages/*/src`
+  beside the `.ts` they came from. Unreachable — every package exports
+  `./dist/` — and they drift silently.
+- Both directions closed in `.gitignore`: the output patterns are ignored and
+  `.ts` is deliberately not, so hand-written JavaScript in a package stays
+  visible.
+
 ### `8b4d408` — Make the portfolio report missing wallets as 404 and money exactly
 - `DEF-007`: `forWallet` threw a bare `Error`, which the exception filter
   classifies as internal — so asking for a wallet you do not have returned

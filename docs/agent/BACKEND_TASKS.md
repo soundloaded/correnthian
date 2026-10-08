@@ -64,9 +64,9 @@ the location the entry names.
 
 | Status | Defects | Count |
 |---|---|---|
-| `DONE` | `DEF-001` … `DEF-008`, `DEF-014`, `DEF-016`, `DEF-019` | 11 |
+| `DONE` | `DEF-001` … `DEF-014`, `DEF-016`, `DEF-017`, `DEF-019` | 16 |
 | `PARTIAL` | `DEF-009` | 1 |
-| `BACKLOG` | `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-015`, `DEF-017`, `DEF-018` | 7 |
+| `BACKLOG` | `DEF-015`, `DEF-018` | 2 |
 
 `DEF-018` was found while re-verifying the others, and `DEF-019` while fixing
 `DEF-004` / `DEF-005`. Both were recorded rather than assumed, because tracking
@@ -315,7 +315,7 @@ kept for the record; it does not describe the current code._
   `dist/`, not `src/`. Nothing imports them, and they will drift silently.
 - **Expected output:** `git rm` them and add `src/**/*.js`, `src/**/*.d.ts` to
   `.gitignore`.
-- **Status:** `BACKLOG`
+- **Status:** `DONE` (`9403bab`) — 20 artifacts removed; `packages/*/src/**/*.{js,d.ts}` and their maps are now gitignored while `.ts` stays visible, and no source references the deleted paths.
 
 ### DEF-011 — Stale EIP-55 doc comment
 
@@ -327,7 +327,7 @@ kept for the record; it does not describe the current code._
   sits above `keccak256Hex`.
 - **Risk:** an agent reading the comment will believe mixed-case addresses are
   rejected, and may "restore" behaviour that is now a bug.
-- **Status:** `BACKLOG`
+- **Status:** `DONE` (`00b095a`) — the comment now states the rule EIP-55 actually has and that it is exercised against the canonical vectors; the orphaned one-liner was rehomed onto `toChecksum`. `EIP55_SUPPORTED` and the TODO no longer appear anywhere in source.
 
 ### DEF-012 — Hand-written admin response types
 
@@ -338,7 +338,7 @@ kept for the record; it does not describe the current code._
   `QuoteStats` in `lib/types.ts` is dead, shadowed by the quotes page's own
   inferred declaration.
 - **Risk:** exactly the drift class `ADR-010` exists to prevent.
-- **Status:** `BACKLOG`
+- **Status:** `DONE` (`00b095a`) — `AuditRow` is inferred from the registry; the hand-written version was missing `actorEmail`, `reason` and `requestId`. `QuoteStats` deleted rather than aliased: `quotes/page.tsx` already declares its own from the contract.
 
 ### DEF-013 — Nest's scaffold e2e test would fail
 
@@ -346,7 +346,7 @@ kept for the record; it does not describe the current code._
 - **Description:** asserts `GET /` returns `"Hello World!"`. There is no root
   route. `pnpm test` does not run it (`**/*.spec.ts` does not match
   `app.e2e-spec.ts`); `pnpm test:e2e` does, and would fail.
-- **Status:** `BACKLOG`
+- **Status:** `DONE` (`31ed198`, `c21be31`) — the scaffold assertion is replaced by a 5-test smoke suite (boots, liveness, readiness shape under either status, deny-by-default, no root route), `pnpm test:e2e` passes, **and CI runs it** — the step was missing, which is why a test that had never passed was invisible.
 
 ### DEF-014 — Two documents state the opposite of the code
 
@@ -434,7 +434,7 @@ kept for the record; it does not describe the current code._
 - **Location:** `services/api/src/swaps/swaps.service.ts`
 - **Description:** `ProvidersService` is injected and never used. Not harmful;
   it is a hint that rail binding was intended here and never written.
-- **Status:** `BACKLOG`
+- **Status:** `DONE` (`00b095a`) — injection and import removed, with a note that the rail binding it implied is `BE-702`. `check-explicit-di` still passes (125 files).
 
 ### DEF-018 — `check-prisma-writes.mjs` fails and is not in CI
 
@@ -1248,15 +1248,15 @@ read them.
 
 | Status | Tasks | Defects |
 |---|---|---|
-| `DONE` | 16 | 11 |
+| `DONE` | 16 | 16 |
 | `PARTIAL` | 19 | 0 |
 | `PARTIAL` | 0 | 1 |
-| `BACKLOG` | 19 | 7 |
+| `BACKLOG` | 19 | 2 |
 | `BLOCKED` | 6 | 0 |
 | `OPEN` | 1 | 0 |
 | **Total** | **61** | **19** |
 
-**16 of 61 tasks are complete; 11 of 19 defects are done and 1 is half fixed.** The plan's §68 dependency
+**16 of 61 tasks are complete; 16 of 19 defects are done, 1 is half fixed and 2 remain.** The plan's §68 dependency
 chain is most of the way built at the infrastructure layer and not started at
 the layer that moves money.
 
