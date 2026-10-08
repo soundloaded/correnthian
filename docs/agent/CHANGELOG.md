@@ -13,6 +13,44 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-08
 
+### `BE-601` scoped by running it, not by reading it — and `DEF-020` found
+- Scope only; no product code changed. The entry previously said "write the
+  remainder down before touching it", because its expected output had been
+  mostly built by `BE-302` and working it as written would rebuild that.
+- **The method matters more than the conclusion.** Rather than infer which rows
+  stall, the real `IndexTransactionsJob` and `TransactionsService` were booted
+  through Nest against the development database with a local stub node standing
+  in for `eth_*` — no third-party RPC, chain 1's `rpcUrls` restored afterwards,
+  fixtures deleted, tree clean. Three results:
+  - an inbound ERC-20 log to a registered wallet **does** produce a correct row
+    (`state: pending`, `blockNumber: 995`, `confirmations: 5`) — the positive
+    control, and it took two attempts because the first used an unregistered
+    token and the second a wallet address that did not match, which is how the
+    next bullet was noticed;
+  - a transaction the node has **mined at the current head** does not advance —
+    `state: broadcast`, `blockNumber: null` before and after, `A ADVANCED? false`;
+  - a transaction the node has **never heard of** is not detected as dropped
+    either — `droppedAt: null`, and it stays `broadcast` forever.
+- **The cause is one line of fact:** `eth_getTransactionByHash` is called by
+  **nothing** in the repository. The job asks only `eth_blockNumber` and
+  `eth_getLogs`. The log scan structurally cannot see native-coin sends,
+  never-mined sends, unregistered or disabled tokens, or the mempool window —
+  so the remainder is a single hash-keyed confirmation sweep.
+- **`DEF-020`, found by asking the adapter over the wire.** A `null` result and
+  a JSON-RPC `error` both throw, and `RpcPool.withFailover` wraps both into
+  `All 1 RPC endpoint(s) failed for this read.` Drop detection built on that
+  would set `droppedAt` on live transactions during any RPC blip — a claim about
+  money made from an outage — and would quarantine a healthy endpoint for 30s
+  for answering correctly. The same contract also declares `status: 'dropped' |
+  'failed'`, which the EVM adapter cannot produce, hardcodes `confirmations: 0`
+  and `blockTime: null`, and has zero callers.
+- **A second observation:** the run record prints `created: 0` and nothing
+  about why. `skippedUnknownToken` and `skippedNoWallet` are counted in the
+  report and dropped before `JobRun.detail`, so the first control failure was
+  invisible in the output. That goes into `BE-601`'s build.
+- The defect tally also lost a range typo: it listed `DEF-001 … DEF-018` as
+  `DONE`, which double-counts `DEF-009` as both `DONE` and `PARTIAL`.
+
 ### Pin the RPC wire, and typecheck every test in `packages/*`
 - Follow-up to `BE-302`, and the second half closes the gap the first recorded.
 - **The wire test exists because an assumption was doing work no test covered.**

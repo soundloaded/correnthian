@@ -55,7 +55,7 @@ a test, or the test cannot fail, the status is `PARTIAL` and the gap is named.
 Found by reading the code, not by a failing test. Several of these are silent —
 TypeScript, and the contract suite, both pass over them.
 
-### Where they stand on 2026-10-07
+### Where they stand on 2026-10-08
 
 Re-verified against the code, not against this file. The tracker had every one
 of these marked `BACKLOG` while four were already fixed, because the fixes
@@ -64,9 +64,12 @@ the location the entry names.
 
 | Status | Defects | Count |
 |---|---|---|
-| `DONE` | `DEF-001` … `DEF-018`, `DEF-019` | 18 |
+| `DONE` | `DEF-001` … `DEF-008`, `DEF-010` … `DEF-019` | 18 |
 | `PARTIAL` | `DEF-009` | 1 |
-| `BACKLOG` | *none* | 0 |
+| `BACKLOG` | `DEF-020` | 1 |
+
+`DEF-020` was found on 2026-10-08 while scoping `BE-601`, by asking the
+adapter a question over the wire rather than reading its source.
 
 `DEF-018` was found while re-verifying the others, and `DEF-019` while fixing
 `DEF-004` / `DEF-005`. Both were recorded rather than assumed, because tracking
@@ -497,6 +500,44 @@ kept for the record; it does not describe the current code._
   they own, or they delete each other's.
 - **Status:** `DONE`
 
+### DEF-020 — `getTransaction` cannot say "the node does not have this" · `BACKLOG`
+- **Found by:** asking the adapter, over the wire, rather than reading it. Two
+  calls were made against a stub node: one where `eth_getTransactionByHash`
+  returns `null`, one where the node answers with a JSON-RPC `error` object.
+- **The problem:** both throw. `viem` raises `Transaction with hash "…" could
+  not be found` for the first and `Missing or invalid parameters` for the
+  second, and `RpcPool.withFailover` wraps **both** into the same
+  `All 1 RPC endpoint(s) failed for this read.` — so at the adapter boundary a
+  transaction the chain does not have is indistinguishable from a chain that
+  did not answer.
+- **Why it matters more than it looks:** drop detection is the one judgement
+  `BE-601` rests on. Built on a throw, it would set `droppedAt` and increment
+  `dropCount` on every live transaction during any RPC blip — a claim about
+  money, made from an outage. The endpoint would also be quarantined for 30s as
+  if it had failed, when it answered correctly.
+- **Two smaller lies in the same contract:**
+  - `TransactionRecord.status` declares `'dropped' | 'failed'`. The EVM adapter
+    returns only `'pending' | 'confirmed'`; **no code path can produce the
+    other two, and nothing consumes the field.**
+  - `confirmations` is hardcoded `0` and `blockTime` hardcoded `null`. The
+    adapter does not know the head, so it cannot compute depth — which means
+    the record as returned is not usable as an observation without being fixed
+    up by its caller.
+  - `getTransaction` has **zero callers** in `services/api`. It is built,
+    unused, and wrong in the direction `BE-601` needs it.
+- **The fix shape:** the node's answer and the node's silence are different
+  facts and must not share a path. `RpcPool.withFailover` needs to recognise a
+  "definitive answer" thrown from inside `fn` and rethrow it unchanged — no
+  quarantine, no endpoint failure — so `getTransaction` can return
+  `TransactionRecord | null` with `null` meaning exactly *the node does not have
+  it*. `status: 'dropped'` then becomes reachable or is removed from the
+  interface; `confirmations`/`blockTime` are left to the caller, which already
+  has the head, or computed for real.
+- **Dependencies:** none. **Blocks:** `BE-601`.
+- **Tests:** the two wire responses above, plus proof that a node *error*
+  response still quarantines the endpoint while `null` does not.
+- **Status:** `BACKLOG`
+
 ---
 
 ## 3. Foundation (plan §2–§7)
@@ -901,25 +942,62 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 
 ## 9. Transactions (plan §21–§22)
 
-### BE-601 — Transaction engine · `BACKLOG`
-- **What exists:** the `Transaction` model with `@@unique([chainId, txHash])`,
-  state, direction, confirmations, block number and time; the lifecycle table;
-  `create` / `markSigned` / `reportBroadcast` / `transition` / `observe`; and —
-  since `BE-302` — the indexer that **does** write rows from observed events,
-  plus confirmation counting and reorg demotion through `observe()`.
-- **Scope note:** the expected output below is now largely built. What remains
-  to be defined before this is worked is the *outbound* half the indexer cannot
-  cover: an intent the client broadcast that no log has yet reported, drop
-  detection and re-broadcast. Do not start this until that remainder is written
-  down — the entry currently describes a gap that has mostly closed, and
-  working it as written would rebuild what exists.
-- **Expected output:** lifecycle from observed event to `confirmed`/`failed`/
-  `dropped`, with confirmation counting and reorg handling.
-- **Dependencies:** `BE-302`.
+### BE-601 — Transaction engine · `BACKLOG` (scope written, ready to start)
+
+> **The remainder below was measured, not read.** On 2026-10-08 the real
+> `IndexTransactionsJob` and `TransactionsService` were booted through Nest
+> against the development database, with a local stub node standing in for
+> `eth_*` so the answer did not depend on a third-party RPC. Chain 1's
+> `rpcUrls` was pointed at the stub for the duration and restored afterwards;
+> the fixtures and the stub are not in the tree.
+
+- **What exists and was verified working:** the `Transaction` model with
+  `@@unique([chainId, txHash])`, the lifecycle table, `create` / `markSigned` /
+  `reportBroadcast` / `transition` / `observe`, and — since `BE-302` — the
+  indexer. An inbound ERC-20 log to a registered wallet with a registered token
+  produces a row in `state: pending` with the right `blockNumber` and
+  `confirmations` (`created: 1`, rows 2 → 3 in the run above). The depth sweep
+  promotes and reorgs demote. **That half is done and does not need rebuilding.**
+
+- **What was measured, and does not work.** The job calls exactly two RPC
+  methods — `eth_blockNumber` and `eth_getLogs`. `eth_getTransactionByHash` is
+  never called, by anything, anywhere in the repository:
+
+  | The node says | What happened to our `broadcast` row |
+  |---|---|
+  | *it is mined at block 995* | **Unchanged.** `state: broadcast`, `blockNumber: null`, `confirmations: 0`. `A ADVANCED? false`. |
+  | *it has never heard of it* | **Unchanged.** `droppedAt: null`, `dropCount: 0`. It stays `broadcast` forever. |
+
+- **So the remainder is one mechanism: a confirmation sweep keyed by hash**, for
+  rows in `broadcast`/`pending` that have a `txHash` and no `blockNumber`. That
+  covers all four cases the scan cannot reach:
+  1. **native-coin sends** — no ERC-20 log exists at all;
+  2. **never-mined sends** — no log will ever exist;
+  3. **unregistered or disabled token** — the scan skips by design
+     (`skippedUnknownToken`);
+  4. **between broadcast and mining** — the mempool window.
+
+  It writes through `observe()`, which already owns the drop and reorg rules:
+  found-and-mined sets `blockNumber` and depth, not-found sets `droppedAt` and
+  increments `dropCount` without changing state, which is what the schema
+  documents a drop to be.
+
+- **Blocked on `DEF-020`.** The sweep's whole judgement is "does the node have
+  this hash", and `getTransaction` cannot answer it — see that entry.
+
+- **Also to fix while building it:** the run record reports `created: 0` and
+  nothing about *why*. `skippedUnknownToken` and `skippedNoWallet` are counted
+  in `ChainIndexReport` and then dropped before `JobRun.detail`, so an operator
+  watching a counter sit at zero cannot tell an idle chain from one where every
+  log was refused. That was found by watching a control case fail for a
+  misconfigured token address with no explanation anywhere in the output.
+
+- **Dependencies:** `BE-302` (satisfied), `DEF-020`.
 - **Security:** read-only over public chain state. Must never introduce a
-  signing path.
+  signing path — this is a second reader of the same public data the indexer
+  already reads, and it must not become a sender.
 - **Tests:** fixture-based against a node.
-- **Status:** `BACKLOG`
+- **Status:** `BACKLOG` — scope measured and written, no code yet.
 
 ### BE-602 — Send/receive backend · `BACKLOG`
 - **Description:** assemble an unsigned transaction for the client to sign.

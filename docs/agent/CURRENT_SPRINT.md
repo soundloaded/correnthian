@@ -21,9 +21,10 @@ recorded (`DEF-001` … `DEF-019`); **eighteen are done, one is half fixed, none
 
 ### Current task
 
-**`BE-102`'s open question — is `/docs` exposed in production? Not code.**
-**Next build: `BE-601` / `BE-602` — but only after `BE-601`'s scope is written
-down, because `BE-302` has already built most of what its entry describes.**
+**Next: `DEF-020`, then `BE-601`.** The scoping pass is done — `BE-601`'s
+remainder was measured by running the real job against a stub node, not read
+off the source, and `DEF-020` is what it uncovered on the way. The old `BE-102`
+production-`/docs` question is still undecided and is now item 6.
 
 - **`BE-302` is `PARTIAL`, and the gap is verification rather than code.**
   Balance sync and event indexing both exist. `getTokenTransfers` observes
@@ -56,12 +57,13 @@ down, because `BE-302` has already built most of what its entry describes.**
 
 | # | Task | Why it is next |
 |---|---|---|
-| 1 | Write down what is left of `BE-601`, then build it | Its entry says "nothing writes to `Transaction`", which `BE-302` has made false, and its expected output is now largely built. The remainder is the outbound half: a client-broadcast intent no log has reported yet, drop detection, re-broadcast. Scope it before touching it. |
-| 2 | `BE-602` — send/receive backend | `EvmAdapter.buildTransaction` already exists and nothing exposes it. The server assembles, the device signs. |
-| 3 | Node-backed acceptance run for `BE-302` | The one unmet criterion, and it is verification rather than code: needs a node and a funded address holding a registered token. |
-| 4 | `BE-1101` / `BE-1105` — KYC and sanctions | Legally required before selling gold for dollars regardless of custody posture, and they need no metals partner. |
-| 5 | `BE-102`'s open question — is `/docs` exposed in production? | Not decided. An API schema is a map of everything an attacker can call; the answer is a disclosure decision, not a technical one. |
-| 6 | ADR-022's build-time choices — account implementation, paymaster, EntryPoint | Gated on a vendor or a contract, same as `BE-802`. Recording them as decided would repeat the `claimBatch` mistake. |
+| 1 | **`DEF-020`** — make `getTransaction` able to say "the node does not have this" | `BE-601`'s whole judgement is whether the node holds a hash, and today "not found" and "RPC failed" are the same throw. Building drop detection on it would set `droppedAt` on live transactions during an outage. Small, self-contained, and it unblocks #2. |
+| 2 | **`BE-601`** — build the confirmation sweep | Scope written and measured, not guessed. `eth_getTransactionByHash` is called by nothing; a mined outbound transaction and a dropped one both sit in `broadcast` forever. |
+| 3 | `BE-602` — send/receive backend | `EvmAdapter.buildTransaction` already exists and nothing exposes it. The server assembles, the device signs. |
+| 4 | Node-backed acceptance run for `BE-302` | The one unmet criterion, and it is verification rather than code: needs a node and a funded address holding a registered token. |
+| 5 | `BE-1101` / `BE-1105` — KYC and sanctions | Legally required before selling gold for dollars regardless of custody posture, and they need no metals partner. |
+| 6 | `BE-102`'s open question — is `/docs` exposed in production? | Not decided. An API schema is a map of everything an attacker can call; the answer is a disclosure decision, not a technical one. |
+| 7 | ADR-022's build-time choices — account implementation, paymaster, EntryPoint | Gated on a vendor or a contract, same as `BE-802`. Recording them as decided would repeat the `claimBatch` mistake. |
 
 **Still open, deliberately not scheduled:**
 
@@ -72,6 +74,22 @@ down, because `BE-302` has already built most of what its entry describes.**
 ---
 
 ### Completed in this sprint
+
+- **`BE-601` scoped by measurement.** The real job and services were booted
+  through Nest against the development database with a local stub node standing
+  in for `eth_*` — no third-party RPC, and chain 1's `rpcUrls` restored
+  afterwards. Three results: an inbound ERC-20 log **does** produce a correct
+  row (`state: pending`, `blockNumber: 995`, `confirmations: 5`); a transaction
+  the node has **mined** does not advance, because `eth_getTransactionByHash`
+  is called by nothing in the repository; and a transaction the node has
+  **never heard of** is not detected as dropped either. The remainder is one
+  mechanism — a hash-keyed confirmation sweep — covering native sends,
+  never-mined sends, unregistered tokens and the mempool window, all of which
+  the log scan structurally cannot see.
+- **`DEF-020`**, found on the way: `getTransaction` conflates "the node does
+  not have this" with "the node failed", because `RpcPool.withFailover` wraps
+  both identically. Drop detection built on that would mark live transactions
+  dropped during any RPC blip.
 
 - **No test in any `packages/*` was ever typechecked.** All thirteen
   `tsconfig.package.json` files exclude `src/**/__tests__/**` so tests stay out
