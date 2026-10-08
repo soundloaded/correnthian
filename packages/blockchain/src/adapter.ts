@@ -21,6 +21,28 @@ export interface Balance {
   decimals: number;
 }
 
+/**
+ * A token transfer observed on-chain in which a watched address participates.
+ *
+ * Chain-neutral on purpose: an adapter over UTXOs or Solana instructions would
+ * synthesise this same shape from its own primitives, so nothing above this
+ * line has to learn how a particular network reports that value moved.
+ */
+export interface ObservedTokenTransfer {
+  /** Transaction hash — unique per chain, and the idempotency key above. */
+  txHash: string;
+  /** Position of this transfer within its transaction. A tx may move several. */
+  logIndex: number;
+  /** Block it was mined in. Used for confirmation depth and reorg detection. */
+  blockNumber: bigint;
+  /** Contract address of the token, not its ticker. An identity, not a label. */
+  token: string;
+  from: string;
+  to: string;
+  /** Base units, as a decimal string — never a float. */
+  amountRaw: string;
+}
+
 export interface FeeEstimate {
   /** Native-currency amount, in wei-equivalent base units. */
   raw: string;
@@ -90,6 +112,28 @@ export interface BlockchainAdapter {
 
   getTransaction(hash: string): Promise<TransactionRecord>;
   getBlockNumber(): Promise<bigint>;
+
+  /**
+   * Token transfers where one of `addresses` is the sender or the receiver,
+   * over an inclusive block range. At most one RPC page per address list —
+   * callers are expected to page, not to ask for a year of blocks at once.
+   *
+   * Used to index observed activity for registered addresses. **It observes
+   * and never acts:** there is no signing path in it and none could be added
+   * without reaching the key boundary.
+   *
+   * Native-coin transfers are deliberately absent. They are not in a token
+   * contract's logs, so surfacing them needs a block-by-block scan or a tracing
+   * endpoint — a different cost and a different correctness story. Native
+   * holdings are covered by balance sync until that exists, and the gap is
+   * documented rather than papered over with a zero.
+   */
+  getTokenTransfers(params: {
+    /** Addresses to watch, in any case the adapter normalises internally. */
+    addresses: readonly string[];
+    fromBlock: bigint;
+    toBlock: bigint;
+  }): Promise<ObservedTokenTransfer[]>;
 
   /** Whether the chain is reachable right now. Drives the readiness probe. */
   isHealthy(): Promise<boolean>;

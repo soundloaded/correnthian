@@ -2,10 +2,10 @@ import {
   createPublicClient, defineChain, formatUnits, http,
   type Address, type Hex, type PublicClient,
 } from 'viem';
-import { erc20Abi } from 'viem';
+import { erc20Abi, getAbiItem } from 'viem';
 import type {
   Balance, BlockchainAdapter, BuildTransactionRequest, ChainDescriptor,
-  FeeEstimate, TransactionRecord, UnsignedTransaction,
+  FeeEstimate, ObservedTokenTransfer, TransactionRecord, UnsignedTransaction,
 } from './adapter.js';
 import { RpcPool, type RpcEndpoint } from './rpc.js';
 import type { AddressFamily } from './address.js';
@@ -160,6 +160,65 @@ export class EvmAdapter implements BlockchainAdapter {
       to: tx.to ?? null,
       valueRaw: tx.value.toString(),
     };
+  }
+
+  async getTokenTransfers(params: {
+    addresses: readonly string[];
+    fromBlock: bigint;
+    toBlock: bigint;
+  }): Promise<ObservedTokenTransfer[]> {
+    const { addresses, fromBlock, toBlock } = params;
+    if (addresses.length === 0 || toBlock < fromBlock) return [];
+
+    // Two calls, not one. `eth_getLogs` constrains one indexed position per
+    // filter, so "the watcher is the sender OR the receiver" cannot be one
+    // request; `args.from` and `args.to` are the two sides of it.
+    const watch = [...new Set(addresses.map((a) => a.toLowerCase()))] as Address[];
+    const event = getAbiItem({ abi: erc20Abi, name: 'Transfer' });
+
+    const [incoming, outgoing] = await Promise.all([
+      this.read((c) => c.getLogs({ event, args: { from: watch }, fromBlock, toBlock })),
+      this.read((c) => c.getLogs({ event, args: { to: watch }, fromBlock, toBlock })),
+    ]);
+
+    const seen = new Set<string>();
+    const transfers: ObservedTokenTransfer[] = [];
+
+    for (const log of [...incoming, ...outgoing]) {
+      if (!log.transactionHash || log.blockNumber === null) continue;
+
+      // A transfer between two watched addresses matches both queries. One row
+      // per log, or a wallet watching itself would double-count every move.
+      const key = `${log.transactionHash}:${log.logIndex ?? 0}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      // ERC-721 shares this topic0 but indexes the token id, so its `data` is
+      // empty and `value` cannot be decoded. `strict` is false for exactly this
+      // reason: an un-decodable log is skipped, not thrown — one token we
+      // cannot read must not fail the page for the fifty we can.
+      const args = log.args as { from?: string; to?: string; value?: bigint } | undefined;
+      if (!args?.value || !args.from || !args.to) continue;
+
+      transfers.push({
+        txHash: log.transactionHash,
+        logIndex: log.logIndex ?? 0,
+        blockNumber: log.blockNumber,
+        token: log.address,
+        from: args.from,
+        to: args.to,
+        amountRaw: args.value.toString(),
+      });
+    }
+
+    // Stable order, so re-running over the same range yields the same array and
+    // a test comparing two runs is not asserting on RPC arrival order.
+    transfers.sort((a, b) =>
+      a.blockNumber === b.blockNumber
+        ? a.logIndex - b.logIndex
+        : Number(a.blockNumber - b.blockNumber),
+    );
+    return transfers;
   }
 
   async getBlockNumber(): Promise<bigint> {
