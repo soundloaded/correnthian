@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { deriveAssetId } from '@correnthian/assets';
 import { AppError } from '../common/errors.js';
+import { decodeCursor, encodeCursor, KEYSET_ORDER, keysetAfter } from '../common/keyset.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { FeesService } from '../fees/fees.service.js';
 import type { PublicFeeBreakdown, PublicFeeLine } from '../fees/fee-breakdown.js';
@@ -42,31 +43,6 @@ const DECIMAL = /^\d+(\.\d+)?$/;
  */
 const PRICE_MAX_AGE_SECONDS = 300;
 
-/** The keyset position: both halves of the sort key, because either alone is ambiguous. */
-interface QuoteCursor {
-  createdAt: Date;
-  id: string;
-}
-
-function encodeCursor(row: { id: string; createdAt: Date }): string {
-  return Buffer.from(JSON.stringify({ t: row.createdAt.toISOString(), i: row.id }), 'utf8').toString('base64url');
-}
-
-function decodeCursor(cursor: string): QuoteCursor {
-  let parsed: { t?: unknown; i?: unknown };
-  try {
-    parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { t?: unknown; i?: unknown };
-  } catch {
-    throw AppError.badRequest('cursor is not a valid pagination cursor');
-  }
-  const createdAt = new Date(String(parsed?.t));
-  if (typeof parsed?.i !== 'string' || Number.isNaN(createdAt.getTime())) {
-    // Silently restarting at page one would hide a client bug behind a page
-    // that looks fine, so this is an error rather than a default.
-    throw AppError.badRequest('cursor is not a valid pagination cursor');
-  }
-  return { createdAt, id: parsed.i };
-}
 
 /**
  * Accept a fee payload in either historical shape and return the one the
@@ -138,7 +114,6 @@ function normalizeFees(stored: unknown): PublicFeeBreakdown {
 function labelFor(kind: 'network' | 'provider' | 'correnthian'): string {
   return kind === 'network' ? 'Network fee' : kind === 'provider' ? 'Provider fee' : 'Correnthian fee';
 }
-
 
 @Injectable()
 export class SwapsService {
@@ -288,16 +263,9 @@ export class SwapsService {
       where: {
         ...(query.state ? { state: query.state } : {}),
         ...(query.railKind ? { railKind: query.railKind } : {}),
-        ...(after
-          ? {
-              OR: [
-                { createdAt: { lt: after.createdAt } },
-                { createdAt: after.createdAt, id: { lt: after.id } },
-              ],
-            }
-          : {}),
+                ...keysetAfter(after, 'createdAt'),
       },
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      orderBy: [...KEYSET_ORDER],
       take: limit + 1,
       select: {
         id: true,
@@ -345,7 +313,7 @@ export class SwapsService {
         executable: row.executionQuality !== 'none' && Number(row.toAmountRaw) > 0,
         expiresAt: row.expiresAt.toISOString(),
       })),
-      nextCursor: hasMore && last ? encodeCursor(last) : null,
+      nextCursor: hasMore && last ? encodeCursor({ id: last.id, at: last.createdAt }) : null,
     };
   }
 

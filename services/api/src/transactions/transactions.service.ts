@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { validateAddress } from '@correnthian/blockchain';
 import { AuditService } from '../audit/audit.service.js';
 import { AppError } from '../common/errors.js';
+import { decodeCursor, encodeCursor, KEYSET_ORDER, keysetAfter } from '../common/keyset.js';
 import { isOperatorRole } from '../common/roles.js';
 import type { Transaction } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -94,33 +95,6 @@ const ROW_INCLUDE = {
   user: { select: { id: true, email: true } },
 } as const;
 
-interface TxCursor {
-  createdAt: Date;
-  id: string;
-}
-
-function encodeCursor(row: { id: string; createdAt: Date }): string {
-  return Buffer.from(
-    JSON.stringify({ t: row.createdAt.toISOString(), i: row.id }),
-    'utf8',
-  ).toString('base64url');
-}
-
-function decodeCursor(cursor: string): TxCursor {
-  let parsed: { t?: unknown; i?: unknown };
-  try {
-    parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { t?: unknown; i?: unknown };
-  } catch {
-    throw AppError.badRequest('cursor is not a valid pagination cursor');
-  }
-  const createdAt = new Date(String(parsed?.t));
-  if (typeof parsed?.i !== 'string' || Number.isNaN(createdAt.getTime())) {
-    // Silently restarting at page one would hide a client bug behind a page
-    // that looks correct, so this is an error and not a default.
-    throw AppError.badRequest('cursor is not a valid pagination cursor');
-  }
-  return { createdAt, id: parsed.i };
-}
 
 /**
  * The transaction lifecycle engine — §21, §62.
@@ -467,7 +441,7 @@ export class TransactionsService {
         ...(query.state ? { state: query.state } : {}),
         ...(query.direction ? { direction: query.direction } : {}),
       },
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      orderBy: [...KEYSET_ORDER],
       take: Math.min(query.limit, 100),
       include: ROW_INCLUDE,
     });
@@ -495,16 +469,9 @@ export class TransactionsService {
         ...(query.chainId ? { chainId: query.chainId } : {}),
         ...(query.walletId ? { walletId: query.walletId } : {}),
         ...(query.userId ? { userId: query.userId } : {}),
-        ...(after
-          ? {
-              OR: [
-                { createdAt: { lt: after.createdAt } },
-                { createdAt: after.createdAt, id: { lt: after.id } },
-              ],
-            }
-          : {}),
+                ...keysetAfter(after, 'createdAt'),
       },
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      orderBy: [...KEYSET_ORDER],
       take: limit + 1,
       include: ROW_INCLUDE,
     });
@@ -515,7 +482,7 @@ export class TransactionsService {
 
     return {
       items: page.map((row) => this.presentRow(row)),
-      nextCursor: hasMore && last ? encodeCursor(last) : null,
+      nextCursor: hasMore && last ? encodeCursor({ id: last.id, at: last.createdAt }) : null,
     };
   }
 
