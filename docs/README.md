@@ -11,7 +11,7 @@ does not exist. It supersedes [TASK.md](../TASK.md).
 | Work on the backend at all | **[agent/MASTER_CONTEXT.md](agent/MASTER_CONTEXT.md)**, then [agent/CURRENT_SPRINT.md](agent/CURRENT_SPRINT.md) |
 | Know what is built vs planned | [agent/BACKEND_TASKS.md](agent/BACKEND_TASKS.md) |
 | Understand what this product is and why | [product/vision.md](product/vision.md) |
-| Know who we're building for | [product/beachhead.md](product/beachhead.md) |
+| Know who we're building for | `product/beachhead.md` — *not yet written* |
 | See the full decision record | [superpowers/specs/2026-10-05-correnthian-v1-architecture-design.md](superpowers/specs/2026-10-05-correnthian-v1-architecture-design.md) |
 | Understand the key boundary | [architecture/key-boundary.md](architecture/key-boundary.md) |
 | Know what an asset is and what backs it | [architecture/asset-registry.md](architecture/asset-registry.md) |
@@ -40,7 +40,7 @@ docs/
 ├── engineering/      how to write code here — standards, API, admin
 ├── compliance/       regulatory posture and the jurisdiction engine
 ├── operations/       running, monitoring and supporting the platform
-├── runbooks/         step-by-step procedures for specific incidents/tasks
+├── runbooks/         step-by-step procedures  *(directory not yet created)*
 ├── specs/            design documents and decision records
 └── archive/          superseded material, kept for provenance
 ```

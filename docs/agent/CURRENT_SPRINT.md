@@ -13,41 +13,54 @@ Last updated: 2026-10-07.
 The previous sprint built the admin and the wire-format contract layer. This
 sprint exists because reading the code found defects that no test, no typecheck
 and no contract assertion catches. Several were silent. There are nineteen
-recorded (`DEF-001` … `DEF-019`); **eight are done**.
+recorded (`DEF-001` … `DEF-019`); **nine are done**.
 
 ### Current task
 
-**`DEF-014` — three documents state the opposite of the code.**
+**`DEF-007` / `DEF-008` — the portfolio is wrong in two different ways.**
 
-- **Why this one:** an agent will act on them, and this file is not the only
-  one being read. It is a documentation defect, so it is cheap, and it is the
-  one remaining defect most likely to cause *other* work to be wrong.
-- **Where:**
-  - `README.md` (two places) — says `packages/*` are "source-only, no build
-    step". They build to `dist/`; that is ADR-006's whole point, and the reason
-    the convention exists is that a source-only package breaks when Node loads
-    it.
-  - `docs/engineering/standards.md` (two places) — same claim.
-  - `docs/engineering/api.md` — "Nothing exists yet — there is no auth module,
-    no users module, no session handling", and every domain module listed as
-    not built. All of them are.
-- **Definition of done:** a search for `source-only` returns only records
-  explicitly marked as historical, and `docs/engineering/api.md` no longer
-  describes an empty API.
-- **Note:** this is documentation, not code. It changes no behaviour, and it
-  should be done before anything else reads those files.
+- **Why together:** they are one file and one idea — `portfolio.service.ts`
+  misreports failure and misreports value. Fixing either alone leaves a surface
+  an operator reads money from behaving incorrectly.
+- **`DEF-007`:** `forWallet` throws a bare `new Error('Wallet not found')`.
+  `AllExceptionsFilter` classifies a plain error as internal, so a missing
+  wallet is a **500** rather than a 404 — it conflates "you asked for something
+  you cannot have" with "we are broken". It is not a leak (the message is
+  generic), but it is the wrong signal. Fix: `AppError.notFound(...)`.
+- **`DEF-008`:** the comment says "Base units to a human number, via string
+  arithmetic — never a float multiply on an 18-decimal balance", and the line
+  below it is `Number(a.balanceRaw) / 10 ** a.asset.decimals`. A float divide
+  on an 18-decimal balance is precisely what the comment forbids.
+- **Why it matters more than it looks:** `054fdb9` established exact bigint
+  arithmetic at 10⁻⁸ for fees. The portfolio then floats the same numbers. Two
+  notions of a dollar coexisting in one system is how a reconciliation
+  (`BE-1602`) becomes impossible later. `packages/blockchain` already gets this
+  right with viem's `formatUnits`.
+- **Definition of done:** a missing wallet is a 404; balances round-trip
+  exactly for a value with more decimal places than a double can hold; and
+  `BE-1602` is written so both sides of a reconciliation use one arithmetic.
+- **Security constraint:** none specific, but a displayed balance that is
+  wrong by a rounding step is a trust failure in a product whose whole pitch is
+  disclosed, exact numbers.
 
 ### Then, in order
 
 | # | Task | Why it is next |
 |---|---|---|
-| 2 | `DEF-007` / `DEF-008` — the portfolio returns 500 for a missing wallet, and sums floats | `054fdb9` established exact bigint money for fees. The portfolio then floats the same numbers. Two notions of a dollar must not coexist into `BE-1602`. |
-| 3 | `DEF-009` — `claimBatch` claims nothing | Two workers receive the same rows, and the comment above the function says otherwise. |
-| 4 | `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-017` — the bounded remainder | No dependency, all small, none urgent. |
-| 5 | `DEF-018` — the Prisma-write guard fails and is not in CI | Recording it here rather than fixing it: it is tracked, and it is not this sprint's work. |
+| 2 | `DEF-009` — `claimBatch` claims nothing | Two workers receive the same rows, and the comment above the function says otherwise. |
+| 3 | `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-017` — the bounded remainder | No dependency, all small, none urgent. |
+| 4 | `DEF-018` — the Prisma-write guard fails and is not in CI | Recording it here rather than fixing it: it is tracked, and it is not this sprint's work. |
 
 ### Completed in this sprint
 
+- `DEF-014` — every document that stated the opposite of the code is corrected
+  (`README.md`, `docs/engineering/standards.md`, `docs/engineering/api.md`,
+  `docs/engineering/admin.md`, `docs/README.md`). The shared failure mode was
+  that each had a "superseded" banner at the top while §1 underneath still
+  taught the old thing — nobody reads a banner for the operative section, so
+  the sections were fixed instead. `api.md` now carries a status table driven by
+  the same field as `BACKEND_TASKS.md`, so the two cannot drift. The stale-docs
+  inventory in `docs/agent/README.md` is now empty and records what was wrong.
 - `DEF-006` — the readiness probe now returns 503 when a dependency is down
   (`7be8a6c`). Verified against the running API with Redis stopped: 503 with
   `redis: down` in the body, liveness still 200 in the same window, recovery
@@ -113,7 +126,7 @@ recorded (`DEF-001` … `DEF-019`); **eight are done**.
 
 ### Next, after this sprint
 
-1. The remaining eleven defects — `DEF-007` onward, mostly small, plus
+1. The remaining ten defects — `DEF-009` onward, mostly small, plus
    `DEF-018` recorded during the re-verification.
 2. `BE-1702` — controller-level tests. Fourteen routes have none outside the
    contract suite, and DEF-001 exists precisely because of that gap.

@@ -38,7 +38,7 @@ correnthian/
 │   └── mobile/          React Native + Expo — Android and iOS, one codebase
 ├── services/
 │   └── api/             NestJS — modular monolith
-├── packages/            source-only, shared, no build step
+├── packages/            shared, build to dist/ (see Conventions)
 │   ├── types/           domain types — asset identity, accounts, rails
 │   ├── wallet-core/     keys, derivation, local signing  ← the boundary
 │   ├── blockchain/      EVM / Bitcoin / Solana behind BlockchainAdapter
@@ -55,8 +55,10 @@ correnthian/
 └── docs/
 ```
 
-`packages/*` are **source-only**: they export TypeScript directly and have no
-build step. The apps compile them. Only the three apps have `build`.
+`packages/*` compile to `dist/` with `tsc -p tsconfig.package.json` and expose
+`dist/index.js` plus `dist/index.d.ts` through `exports`. They are shared, they
+are built by `pnpm build`, and they are **not** handed to consumers as
+TypeScript — see Conventions for why that distinction is load-bearing.
 
 ---
 

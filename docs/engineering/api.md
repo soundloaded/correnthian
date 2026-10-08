@@ -84,25 +84,35 @@ reach into each other's internals has neither property.
    may depend on module B's public providers; A must not import from
    `b/`'s private services.
 
-### The planned modules
+### The modules
 
-Status is from `TASK.md` P1.3. **None of these are built** — only `assets` has a
-stub with no persistence.
+All of these are registered in `app.module.ts`. Status is the same field used
+in [`../agent/BACKEND_TASKS.md`](../agent/BACKEND_TASKS.md), so this table and
+the tracker cannot disagree.
 
-| Module | Owns | Notes |
+| Module | Status | Note |
 |---|---|---|
-| `assets` | Asset + issuer registry CRUD, backing disclosure | Has a stub. See [architecture/asset-registry.md](../architecture/asset-registry.md) |
-| `chains` | Chain configuration, per-chain enablement | Config, not a service, after the EVM slice |
-| `providers` | Provider registry, health, **credentials** | The only module that holds provider secrets |
-| `swaps` | Quote requests, `SwapRail` resolution | Rail selection policy is unwritten — [architecture/rails.md](../architecture/rails.md) |
-| `metals` | Instruments, serialisation, redemption states | Serialisation implies minted serial numbers; needs a decision |
-| `pricing` | Metal spot + reference vs executable price | The reference/executable distinction matters for the fee disclosure |
-| `onramp` | Fiat buy provider adapters | KYC and card/bank rails are provider-handled |
-| `offramp` | Fiat sell provider adapters | v1.5, needs its own compliance analysis |
-| `compliance` | Jurisdiction engine, sanctions screening hooks | See [compliance/overview.md](../compliance/overview.md) |
-| `admin` | Internal operations surface | Backs [engineering/admin.md](admin.md) |
-| `audit` | Immutable audit log | See below |
-| `notifications` | Delivery of user-facing messages | |
+| `auth`, `users`, `devices` | `DONE` | Argon2id password + session tokens. Passwordless (`BE-203`) is a decision, not built |
+| `wallets` | `DONE` | Public addresses and guardians only — no key material |
+| `assets`, `issuers` | `DONE` | Registry, disclosure, attestations. The issuer verification workflow (`BE-401`) is missing |
+| `chains` | `DONE` | EVM only; Bitcoin and Solana deferred |
+| `providers` | `DONE` | Registry, status, health probing |
+| `audit` | `DONE` | Append-only, see below |
+| `fees` | `PARTIAL` | Exact bigint arithmetic; rules engine exists |
+| `compliance` | `PARTIAL` | Jurisdiction engine `DONE`; no KYC, AML, sanctions or risk |
+| `portfolio` | `PARTIAL` | Values and snapshots; no history curve, and floats where fees use bigint |
+| `pricing` | `PARTIAL` | Records and reads; no feed, no scheduler |
+| `swaps` | `PARTIAL` | Quote and fee disclosure; **no rail, no execution** |
+| `metals` | `PARTIAL` | Redemption state machine and request path work; no provider to redeem through |
+| `onramp` | `PARTIAL` | Refuses by design — no provider contracted |
+| `transactions` | `PARTIAL` | Reads and state machine; no `Transaction` row is ever written from the chain |
+| `notifications` | `PARTIAL` | Records intent and exposes `claimBatch`; no transport (ADR-020) |
+| `jobs`, `health`, `versioning`, `blockchain` | `DONE` | Infrastructure |
+| `offramp` | not built | v1.5; needs its own compliance analysis |
+| `admin` | `DONE` | Not a service — `apps/admin`, the operations console |
+
+**What is not built at all** is the layer that moves money: send, receive, swap
+execution, metal purchase. Every module above either reads, or refuses.
 
 **Where credentials live.** Exactly one module — `providers` — holds provider
 API keys, and nothing else may read them. `integrations/*` (the per-provider
@@ -151,8 +161,14 @@ a shared package for runtime behaviour. Decide before either is built.
 
 ## Identity and access
 
-**Planned** (P1.2). Nothing exists yet — there is no auth module, no users
-module, no session handling.
+**Built** (P1.2), with the direction below still open. `auth`, `users`,
+`devices` and sessions exist and are tested: password login with Argon2id,
+server-side session records hashed at rest, deny-by-default routes, and RBAC.
+
+The **passwordless** direction has not been implemented — see `BE-203`, which
+is a `BLOCKED` product decision rather than missing plumbing. What ships today
+is an email and password, which is the opposite of the direction stated here and
+is recorded rather than quietly rewritten.
 
 | Piece | Direction |
 |---|---|

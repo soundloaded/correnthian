@@ -1,13 +1,5 @@
 # Engineering standards
 
-> **SUPERSEDED in one respect — 2026-10-06.**
-> `packages/*` are described below as "source-only, no build step". They build
-> to `dist/` via `tsc -p tsconfig.package.json`. This is not cosmetic:
-> `services/api` is a tsc-emitting Node service and cannot load a package whose
-> `main` points at `src/index.ts`. See ADR-006 in
-> [`../agent/DECISIONS.md`](../agent/DECISIONS.md). The rest of this document
-> remains current. Tracked as `DEF-014`.
-
 **Date:** 2026-10-05
 **Status:** Enforced by CI where marked. Read before writing code.
 
@@ -17,49 +9,51 @@ Related: [engineering/api.md](api.md) ·
 
 ---
 
-## 1. `packages/*` are source-only
+## 1. `packages/*` build to `dist/`
 
-Every package under `packages/` exports TypeScript **directly from `src/`** and
-has **no `build` script**:
+Every package under `packages/` compiles with `tsc -p tsconfig.package.json` and
+exposes the result:
 
 ```json
-"main":   "./src/index.ts",
-"types":  "./src/index.ts",
-"exports": { ".": "./src/index.ts" },
-"scripts": { "typecheck": "tsc --noEmit", "clean": "rm -rf dist .turbo *.tsbuildinfo" }
+"main":    "./dist/index.js",
+"types":   "./dist/index.d.ts",
+"exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+"scripts": { "build": "tsc -p tsconfig.package.json", "typecheck": "tsc --noEmit" }
 ```
 
-Only `apps/*` and `services/*` compile. There is no `dist/` in any package and
-there must not be one.
+`pnpm build` runs them, and `turbo.json` gives `lint`, `typecheck` and `test` a
+`dependsOn: ["^build"]`, so a consumer never resolves a package that is behind
+its own source.
 
-**Why.** One TypeScript version, one set of type definitions, no staleness. A
-compiled package in a monorepo is a package whose `.d.ts` files were generated
-by whatever compiler version was installed when someone last ran a build —
-which is how "works in the app, wrong types in CI" happens. It also eliminates
-the dual-package hazard entirely, because there is only ever one artefact.
+**Why, and why this is not cosmetic.** `services/api` is a tsc-emitting Node
+service. Node cannot execute `main: "./src/index.ts"`, and a package that only
+works under a bundler looks fine until the one consumer that is *not* a bundler
+loads it. The failure is deferred and confusing: a single-file package loads
+fine, so the problem appears only once a package gains a second file and the
+relative specifier needs its `.js` extension resolved against real output.
+Recorded as [ADR-006](../agent/DECISIONS.md).
 
-**What it costs, and the rules that follow.**
+> **This document previously said the opposite.** It recommended shipping
+> TypeScript directly and called a compiled package a staleness hazard. That
+> was corrected in `standards.md` after `services/api` failed to load a package
+> that worked everywhere else. The rules below about extensions and `import
+> type` are unchanged — they were always about the Node consumer.
 
-- Consumers must be able to compile TypeScript out of `node_modules`. The root
-  `tsconfig.json` sets `"moduleResolution": "Bundler"` and
-  `"verbatimModuleSyntax": true`. Adding a package with a different module
-  resolution strategy will break its consumers silently until someone
-  typechecks them.
-- Relative imports **must** carry their `.js` extension
-  (`from './index.js'`, not `from './index'`). This is what `services/api`
-  (`"module": "nodenext"`) requires, and the packages follow it so that the
-  same import specifiers work under both configs.
-- **Type-only imports must use `import type`.** `verbatimModuleSyntax` means a
-  value import of a type-only symbol is a build error, not a warning. This is
-  why
-  [packages/types/src/asset.ts](../../packages/types/src/asset.ts) is imported
-  with `import type { ... } from '@correnthian/types'` throughout.
-- **Do not add a build step to a package without writing down the reason.**
-  If a package genuinely needs one, say why in the PR — it is an architecture
-  decision, not a preference.
+**Rules that follow.**
 
-`turbo.json` runs `lint`, `typecheck` and `test` with `dependsOn: ["^build"]`.
-For packages with no `build`, that dependency is a no-op; that is intended.
+- **Relative imports carry their `.js` extension** (`from './index.js'`, not
+  `from './index'`). `services/api` compiles with `"module": "nodenext"`, which
+  requires it, and the packages use it so one specifier works under both
+  configurations.
+- **Type-only imports use `import type`.** `verbatimModuleSyntax` is on, so a
+  value import of a type-only symbol is a build error rather than a warning.
+  This is why [packages/types/src/asset.ts](../../packages/types/src/asset.ts)
+  is imported with `import type { ... } from '@correnthian/types'` throughout.
+- **Never hand-edit `dist/`.** It is generated output and is gitignored; a
+  change there is a change that evaporates on the next build.
+- **Adding a `build` script is not an architectural decision any more** — every
+  package has one. Adding a *different* build mechanism (a bundler, a codegen
+  step, a prepack hook) still is, and it belongs in an ADR.
 
 ---
 

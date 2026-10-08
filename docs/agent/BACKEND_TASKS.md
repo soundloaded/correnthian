@@ -64,8 +64,8 @@ the location the entry names.
 
 | Status | Defects | Count |
 |---|---|---|
-| `DONE` | `DEF-001`, `DEF-002`, `DEF-003`, `DEF-004`, `DEF-005`, `DEF-006`, `DEF-016`, `DEF-019` | 8 |
-| `BACKLOG` | `DEF-007`, `DEF-008`, `DEF-009`, `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-014`, `DEF-015`, `DEF-017`, `DEF-018` | 11 |
+| `DONE` | `DEF-001`, `DEF-002`, `DEF-003`, `DEF-004`, `DEF-005`, `DEF-006`, `DEF-014`, `DEF-016`, `DEF-019` | 9 |
+| `BACKLOG` | `DEF-007`, `DEF-008`, `DEF-009`, `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-015`, `DEF-017`, `DEF-018` | 10 |
 
 `DEF-018` was found while re-verifying the others, and `DEF-019` while fixing
 `DEF-004` / `DEF-005`. Both were recorded rather than assumed, because tracking
@@ -314,12 +314,26 @@ kept for the record; it does not describe the current code._
 
 ### DEF-014 — Two documents state the opposite of the code
 
-- `README.md` and `docs/engineering/standards.md` both say `packages/*` are
-  "source-only, no build step". They build to `dist/`. See ADR-006.
-- `docs/engineering/api.md` says "Nothing exists yet — there is no auth module,
-  no users module, no session handling" and lists every domain module as
-  "None of these are built". All of them are built.
-- **Status:** `BACKLOG`
+- **Was:** `README.md` (two places) and `docs/engineering/standards.md` said
+  `packages/*` are "source-only, no build step" when every one of them runs
+  `tsc -p tsconfig.package.json` to `dist/`; `docs/engineering/api.md` said
+  "Nothing exists yet — there is no auth module, no users module, no session
+  handling" and listed every domain module as unbuilt; `docs/engineering/admin.md`
+  said `apps/admin/` does not exist.
+- **Fixed in `<sha>`.** Each section was corrected where a reader lands on it,
+  not with a banner above it — that was the shared failure mode. All four had a
+  "superseded" note at the top while the operative section underneath still
+  taught the old thing, and nobody reads the banner for §1.
+- **`api.md` now carries a status table driven by the same field as this
+  file**, so the two cannot drift apart, plus an honest closing line: the layer
+  that moves money is what is not built.
+- **DoD met:** no `source-only` in `README.md`, `standards.md` or
+  `docs/README.md`; `api.md` contains no empty-API claim; `admin.md` no longer
+  says the console is missing. Every remaining occurrence of the phrase is
+  inside an ADR, a changelog entry or a defect record — that is, describing the
+  past.
+- **Status:** `DONE`
+
 
 ### DEF-015 — Pagination that is not keyset on two admin lists
 
@@ -1198,14 +1212,14 @@ read them.
 
 | Status | Tasks | Defects |
 |---|---|---|
-| `DONE` | 16 | 8 |
+| `DONE` | 16 | 9 |
 | `PARTIAL` | 19 | 0 |
-| `BACKLOG` | 19 | 11 |
+| `BACKLOG` | 19 | 10 |
 | `BLOCKED` | 6 | 0 |
 | `OPEN` | 1 | 0 |
 | **Total** | **61** | **19** |
 
-**16 of 61 tasks are complete, and 8 of 19 defects.** The plan's §68 dependency
+**16 of 61 tasks are complete, and 9 of 19 defects.** The plan's §68 dependency
 chain is most of the way built at the infrastructure layer and not started at
 the layer that moves money.
 

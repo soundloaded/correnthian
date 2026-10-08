@@ -62,20 +62,30 @@ These predate this directory and are not superseded by it:
 
 ## Stale documents
 
-These state the opposite of the code. They are tracked as `DEF-014` in
-[`BACKEND_TASKS.md`](BACKEND_TASKS.md), and an agent should not act on them:
+**None outstanding.** These used to state the opposite of the code; all are
+corrected as of 2026-10-08, closing `DEF-014`:
 
-- `../engineering/api.md` — says every domain module is unbuilt. All of them are
-  built.
-- `../engineering/standards.md` and `../../README.md` — say `packages/*` are
-  "source-only, no build step". They build to `dist/`.
-- `../engineering/admin.md` — says `apps/admin/` does not exist.
-- `../README.md` — lists `product/beachhead.md` and `docs/runbooks/`, neither of
-  which exists.
-- `../../TASK.md` — now a pointer to
-  [`BACKEND_TASKS.md`](BACKEND_TASKS.md). Its old content is superseded and its
-  `apps/admin/STUB-AUDIT.md` link was broken; that file is at
-  `archive/admin-legacy/STUB-AUDIT.md`.
+| Was wrong | Fixed |
+|---|---|
+| `../engineering/api.md` said every domain module was unbuilt | Now a status table driven by the same field as [`BACKEND_TASKS.md`](BACKEND_TASKS.md), plus an honest line about the layer that moves money |
+| `../../README.md` and `../engineering/standards.md` said `packages/*` are "source-only, no build step" | Both corrected; standards §1 now states why they build (ADR-006) and keeps the rules that were always about the Node consumer |
+| `../engineering/admin.md` said `apps/admin/` does not exist | Status line corrected; the plan below it is marked as provenance |
+| `../README.md` linked `product/beachhead.md` and `docs/runbooks/` | Marked *not yet written* at the row and the tree entry, not only in a footnote |
+
+**Kept as-is, because they are accurate:**
+
+- `../../TASK.md` is now a pointer to [`BACKEND_TASKS.md`](BACKEND_TASKS.md).
+  Its old content is superseded and its `apps/admin/STUB-AUDIT.md` link was
+  broken; that file is at `archive/admin-legacy/STUB-AUDIT.md`.
+- Every remaining occurrence of "source-only" in the repository is inside an
+  ADR, a changelog entry or a defect record — that is, describing the past.
+
+**The failure mode these shared.** Each had a correction banner or footnote at
+the top while the operative section underneath still asserted the old thing. A
+reader who lands on §1 of a standard does not read the banner, so the document
+still taught the wrong thing. Correct the section, not the warning label.
+
+---
 
 ## Keeping this current
 

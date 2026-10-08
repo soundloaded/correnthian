@@ -10,7 +10,10 @@
 > Tracked as `DEF-014`.
 
 **Date:** 2026-10-05
-**Status:** Not yet built. `apps/admin/` does not exist at the time of writing.
+**Status:** Built. `apps/admin/` has nine routes, server-rendered against
+live API data, with mutations and designed failure states — read
+[`../agent/ADMIN_OPS.md`](../agent/ADMIN_OPS.md) for the current state.
+*The plan below was written before it existed and is kept for provenance.*
 This document is the plan; the gotchas recorded here come from `TASK.md` P2 and
 from work already done on the shadcn CLI.
 
