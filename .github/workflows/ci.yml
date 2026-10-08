@@ -89,6 +89,14 @@ jobs:
       - name: Test
         run: pnpm test
 
+      # `pnpm test` matches `**/*.spec.ts` and `test:e2e` matches
+      # `**/*.e2e-spec.ts`; neither runs the other. This step is why DEF-013
+      # existed: the scaffold e2e asserted `GET /` returned `Hello World!`,
+      # there is no root route, and no build ever turned red — a failing test
+      # nobody runs is not a failing test.
+      - name: Test (e2e)
+        run: pnpm --filter @correnthian/api test:e2e
+
   key-boundary:
     name: Key boundary
     runs-on: ubuntu-latest
