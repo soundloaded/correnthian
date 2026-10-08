@@ -64,8 +64,8 @@ the location the entry names.
 
 | Status | Defects | Count |
 |---|---|---|
-| `DONE` | `DEF-001`, `DEF-002`, `DEF-003`, `DEF-004`, `DEF-005`, `DEF-016`, `DEF-019` | 7 |
-| `BACKLOG` | `DEF-006`, `DEF-007`, `DEF-008`, `DEF-009`, `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-014`, `DEF-015`, `DEF-017`, `DEF-018` | 12 |
+| `DONE` | `DEF-001`, `DEF-002`, `DEF-003`, `DEF-004`, `DEF-005`, `DEF-006`, `DEF-016`, `DEF-019` | 8 |
+| `BACKLOG` | `DEF-007`, `DEF-008`, `DEF-009`, `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-014`, `DEF-015`, `DEF-017`, `DEF-018` | 11 |
 
 `DEF-018` was found while re-verifying the others, and `DEF-019` while fixing
 `DEF-004` / `DEF-005`. Both were recorded rather than assumed, because tracking
@@ -521,12 +521,15 @@ kept for the record; it does not describe the current code._
   the same schemas the contract suite enforces.
 - **Dependencies:** `BE-110`. **Status:** `PARTIAL`
 
-### BE-103 — Health and readiness · `PARTIAL` (see DEF-006)
-- **What exists:** `GET /health/live` (process only, no dependencies) and
-  `GET /health/ready` (Postgres and Redis with latency). Both `@Public()` and
-  `@SkipRateLimit()`.
-- **Gap:** readiness returns 200 when degraded. See DEF-006.
-- **Status:** `PARTIAL`
+### BE-103 — Health and readiness · `DONE`
+- `GET /health/live` (process only, no dependencies) and `GET /health/ready`
+  (Postgres and Redis with latency). Both `@Public()` and `@SkipRateLimit()`.
+- **Readiness answers 503 when a dependency is down** and 200 when both are up,
+  with `dependencies` intact in the body either way; liveness stays 200 during
+  an outage so an orchestrator withdraws the process rather than restarting it.
+  Closed with `DEF-006` in `7be8a6c`, and verified against the running API with
+  Redis stopped.
+- **Status:** `DONE`
 
 ### BE-104 — Graceful shutdown · `DONE`
 - `enableShutdownHooks()`; `RedisService.onModuleDestroy` quits the client.
@@ -909,9 +912,10 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 ### BE-804 — Gold sell flow · `BACKLOG`
 - **Status:** `BLOCKED` on `BE-802`.
 
-### BE-805 — Redemption mechanics · `PARTIAL` (see DEF-001)
-- Mechanics and fees depend on partner terms. The state machine exists; the
-  request path is dead.
+### BE-805 — Redemption mechanics · `PARTIAL`
+- The state machine and the request path both work — `DEF-001` closed the dead
+  controller in `5a31c4b`. What remains is that mechanics and fees depend on
+  partner terms, and there is no partner.
 - **Status:** `PARTIAL` and `BLOCKED` on `BE-802`.
 
 ### BE-806 — What "serialisation" means · `OPEN`
@@ -1194,14 +1198,14 @@ read them.
 
 | Status | Tasks | Defects |
 |---|---|---|
-| `DONE` | 15 | 8 |
-| `PARTIAL` | 20 | 0 |
+| `DONE` | 16 | 8 |
+| `PARTIAL` | 19 | 0 |
 | `BACKLOG` | 19 | 11 |
 | `BLOCKED` | 6 | 0 |
 | `OPEN` | 1 | 0 |
 | **Total** | **61** | **19** |
 
-**15 of 61 tasks are complete, and 8 of 19 defects.** The plan's §68 dependency
+**16 of 61 tasks are complete, and 8 of 19 defects.** The plan's §68 dependency
 chain is most of the way built at the infrastructure layer and not started at
 the layer that moves money.
 
