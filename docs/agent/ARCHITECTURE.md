@@ -75,7 +75,11 @@ Enforcement is structural, not procedural:
   dependency closure from `packages/wallet-core` and fails on any transport
   (`axios`, `undici`, `ws`), chain SDK (`viem`, `ethers`, `bitcoinjs-lib`),
   UI framework (`react`, `next`, `expo`), or server framework.
-- CI job `key-boundary` in `.github/workflows/ci.yml` runs it.
+- CI job `key-boundary` (displayed as **Static guards**) in
+  `.github/workflows/ci.yml` runs it alongside `check-explicit-di.mjs` and
+  `check-prisma-writes.mjs`. The job id is kept because it is what the
+  documentation and any status check refer to; the display name says what it
+  now does.
 
 **Two things share the word "account", and conflating them is a security bug:**
 

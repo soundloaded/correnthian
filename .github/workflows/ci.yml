@@ -98,7 +98,7 @@ jobs:
         run: pnpm --filter @correnthian/api test:e2e
 
   key-boundary:
-    name: Key boundary
+    name: Static guards
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -117,6 +117,13 @@ jobs:
         # Implicit injection resolves under tsc and silently yields undefined
         # under esbuild. It has shipped broken three times here.
         run: node scripts/check-explicit-di.mjs
+
+      - name: Prisma writes must use declared fields
+        # Prisma types `data` as a XOR union, which defeats the excess-property
+        # check, so a typo in any `data` compiles and 500s at runtime. This ran
+        # broken and green for weeks precisely because CI did not invoke it —
+        # a check nobody wires up is a comment.
+        run: node scripts/check-prisma-writes.mjs
 
   credential-scan:
     name: No credentials in env files
