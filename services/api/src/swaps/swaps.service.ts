@@ -2,7 +2,6 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { deriveAssetId } from '@correnthian/assets';
 import { AppError } from '../common/errors.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { ProvidersService } from '../providers/providers.service.js';
 import { FeesService } from '../fees/fees.service.js';
 import type { PublicFeeBreakdown, PublicFeeLine } from '../fees/fee-breakdown.js';
 import {
@@ -147,9 +146,13 @@ export class SwapsService {
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(ProvidersService) private readonly providers: ProvidersService,
     @Inject(FeesService) private readonly fees: FeesService,
-  ) {}
+  ) {
+    // `ProvidersService` used to be injected here and was never read. It is
+    // gone rather than left as a hint: the rail binding it implied is `BE-702`,
+    // which is tracked, and an unused provider in a constructor is a comment
+    // that costs a dependency and reads as a half-written feature.
+  }
 
   /**
    * Create a quote.

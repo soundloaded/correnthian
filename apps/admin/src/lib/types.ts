@@ -29,21 +29,17 @@ export type Provider = Contract<'GET /api/v1/providers'>[number];
 export type KycStatus = UserSummary['kycStatus'];
 export type UserRole = UserSummary['role'];
 
-/** Not yet in the contract registry — an endpoint the console does not consume. */
-export interface AuditRow {
-  id: string;
-  actorId: string | null;
-  actorRole: string | null;
-  action: string;
-  targetType: string | null;
-  targetId: string | null;
-  outcome: 'success' | 'failure' | 'denied';
-  ipAddress: string | null;
-  createdAt: string;
-}
-
-export interface QuoteStats {
-  total: number;
-  byState: Record<string, number>;
-  byRail: Record<string, number>;
-}
+/**
+ * Inferred from the registry, like everything else in this file.
+ *
+ * Both used to be hand-written here under a comment claiming the contract
+ * registry did not cover them. It does — and the hand-written `AuditRow` was
+ * missing `actorEmail`, `reason` and `requestId`, so the dashboard displayed
+ * `cmuwgsuf10002z888e48ghecu` where it could have shown an address. That is
+ * precisely the drift `ADR-010` exists to prevent.
+ *
+ * `QuoteStats` is gone rather than aliased: `quotes/page.tsx` already declares
+ * its own from the contract, so a shared copy was dead and one step away from
+ * being the second source of truth.
+ */
+export type AuditRow = Contract<'GET /api/v1/audit'>[number];

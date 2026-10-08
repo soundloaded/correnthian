@@ -34,22 +34,21 @@ const bad = (family: AddressFamily | null, reason: string): AddressValidation =>
 // --- EVM ------------------------------------------------------------------
 
 /**
- * EIP-55 verification needs keccak-256, Ethereum's original digest.
+ * EIP-55, verified against keccak-256 — Ethereum's digest, not NIST `sha3-256`.
  *
- * Node's `crypto` exposes NIST `sha3-256`, which is a *different* algorithm
- * and produces a different hash — a substitution here would silently accept
- * mistyped addresses, which is the exact failure this module exists to
- * prevent. So no substitute is used.
+ * The two are different algorithms producing different hashes, so Node's
+ * `crypto` cannot stand in for the one EIP-55 is defined against: substituting
+ * it would accept mistyped addresses, which is the exact failure this module
+ * exists to prevent. `viem`'s `keccak256` supplies the real one.
  *
- * Until a real keccak implementation is added (via the chain library that
- * ships one), all-lowercase addresses are accepted — they cannot carry a
- * checksum error — and any mixed-case address is refused, because it is
- * asserting a checksum we have no way to confirm. `EIP55_SUPPORTED` marks
- * that branch for whoever wires the real digest in.
+ * The rule is EIP-55's own:
+ *   - no mixed case (all lower, or all upper) — there is no checksum to
+ *     evaluate, so the address is accepted and normalised to lowercase;
+ *   - mixed case — reconstructed from the hash and compared. A mismatch is
+ *     rejected, because a transposed digit still reads as valid hex.
  *
- * TODO: enable EIP-55 checking. This is a real gap: a checksummed address
- * pasted from a trusted wallet is currently rejected, which pushes users
- * toward lower-confidence workflows. Track with the blockchain adapter work.
+ * This is exercised against the canonical vectors in
+ * `__tests__/address.test.ts`, including a transposition that keeps valid hex.
  */
 
 export function validateEvmAddress(address: string): AddressValidation {
@@ -69,7 +68,6 @@ export function validateEvmAddress(address: string): AddressValidation {
     : bad('evm', 'EIP-55 checksum mismatch — the address is very likely mistyped');
 }
 
-/** Uppercase the hex digits at positions the keccak hash marks as >= 8. */
 /**
  * keccak-256, the digest EIP-55 is defined against — not NIST sha3-256, which
  * is a different algorithm and produces a different hash.
@@ -82,6 +80,7 @@ function keccak256Hex(input: string): string {
   return keccak256(toHex(input)).slice(2);
 }
 
+/** Uppercase the hex digits whose keccak nibble is >= 8 — EIP-55's rule. */
 function toChecksum(body: string): string {
   const lower = body.toLowerCase();
   const hash = keccak256Hex(lower);
