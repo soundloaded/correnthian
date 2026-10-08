@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { assertReason } from '../audit/audit.service.js';
+import { isOperatorRole, rankOf, roleSatisfies } from '../common/roles.js';
 import type { Transaction } from '../generated/prisma/client.js';
 import { TransactionsService, type TransactionActor } from './transactions.service.js';
 
@@ -20,8 +21,15 @@ function makeStore(initial: Row[]) {
 
   const prisma = {
     transaction: {
-      findUnique: async ({ where }: { where: { id: string } }) => {
-        const row = rows.get(where.id);
+      findUnique: async ({ where }: { where: { id?: string; chainId_txHash?: { chainId: string; txHash: string } } }) => {
+        if (where.chainId_txHash) {
+          const key = where.chainId_txHash;
+          const found = [...rows.values()].find(
+            (r) => r['chainId'] === key.chainId && r['txHash'] === key.txHash,
+          );
+          return found ? ({ ...found } as unknown as Transaction) : null;
+        }
+        const row = rows.get(where.id as string);
         return row ? ({ ...row } as unknown as Transaction) : null;
       },
       findMany: async (args?: { where?: { state?: { in?: string[] }; expiresAt?: { lt?: Date } } }) => {
@@ -35,6 +43,18 @@ function makeStore(initial: Row[]) {
       count: async () => rows.size,
       groupBy: async () => [],
       create: async ({ data }: { data: Row }) => {
+        // The real unique index. `recordObserved` relies on it for idempotency,
+        // and a stub that accepted any hash would let a second row through.
+        if (data.txHash) {
+          const clash = [...rows.values()].find(
+            (r) => r['chainId'] === data.chainId && r['txHash'] === data.txHash,
+          );
+          if (clash) {
+            const err = new Error('Unique constraint failed on (chainId, txHash)');
+            (err as unknown as { code: string }).code = 'P2002';
+            throw err;
+          }
+        }
         const row = { txHash: null, createdAt: new Date(), ...data, id: `tx${rows.size + 1}` };
         rows.set(row.id as string, row);
         return { ...row };
@@ -263,6 +283,101 @@ describe('TransactionsService — the lifecycle', () => {
         .rejects.toThrow(/from "broadcast" to "cancelled"/);
       await expect(svc.transition('tx1', 'expired', SUPPORT, { to: 'expired' }))
         .rejects.toThrow(/from "broadcast" to "expired"/);
+    });
+  });
+
+  describe('recording what the chain reports', () => {
+    const AT = new Date('2026-10-08T12:00:00.000Z');
+    const HASH = '0x' + 'f'.repeat(64);
+
+    beforeEach(() => seed({ state: 'broadcast', txHash: HASH }));
+
+    it('lets the scheduler observe chain state', async () => {
+      // `assertEntitled` has always accepted `system`; `assertOperator` did
+      // not, so `observe` — the only method that moves a row with depth —
+      // rejected the one caller that exists to call it. Nothing scheduled
+      // called `observe` until the indexer landed, which is why it went
+      // unnoticed.
+      const after = await svc.observe(
+        'tx1',
+        { id: 'system', role: 'system' },
+        { txHash: HASH, confirmations: 3, outcome: 'seen' },
+        AT,
+      );
+
+      expect(after.state).toBe('pending');
+      expect(after.confirmations).toBe(3);
+    });
+
+    it('keeps "system" out of the role hierarchy, which is what makes trusting it safe', () => {
+      // Both `assertEntitled` and `assertOperator` accept `role === 'system'`
+      // on the strength of one property: no session can present it. That is
+      // not enforced here, it is enforced by `system` being absent from
+      // `ROLE_RANK` — it ranks below `user`, satisfies nothing, and `UserRole`
+      // has no such value to store. Drop that and the shortcut above becomes
+      // a privilege any account could claim.
+      expect(rankOf('system')).toBe(-1);
+      expect(roleSatisfies('system', 'support')).toBe(false);
+      expect(isOperatorRole('system')).toBe(false);
+    });
+
+    it('records an inbound transfer already deep enough as confirmed', async () => {
+      const created = await svc.recordObserved(
+        {
+          walletId: 'w1',
+          assetKey: '1:0xgold:c1',
+          txHash: '0x' + '9'.repeat(64),
+          direction: 'in',
+          amountRaw: '500',
+          blockNumber: 100n,
+          confirmations: 12,
+          metadata: { logIndex: 4 },
+        },
+        AT,
+      );
+
+      expect(created.created).toBe(true);
+      expect(store.rows.get(created.id)).toMatchObject({
+        state: 'confirmed',
+        direction: 'in',
+        txHash: '0x' + '9'.repeat(64),
+        confirmations: 12,
+        requiredConfirmations: 12,
+        walletId: 'w1',
+        userId: 'u1',
+        assetId: 'a1',
+        amountRaw: '500',
+      });
+      // No intent was filed, so there is nothing for the expiry sweep to end.
+      expect(store.rows.get(created.id)?.['expiresAt']).toBeUndefined();
+    });
+
+    it('refuses an asset registered on a different chain', async () => {
+      await expect(
+        svc.recordObserved({
+          walletId: 'w1',
+          assetKey: '8453:0xgold:c1',
+          txHash: '0x' + '8'.repeat(64),
+          direction: 'in',
+          amountRaw: '500',
+          blockNumber: 100n,
+          confirmations: 12,
+        }),
+      ).rejects.toThrow(/on chain 8453, not 1/);
+    });
+
+    it('refuses a zero or malformed amount', async () => {
+      await expect(
+        svc.recordObserved({
+          walletId: 'w1',
+          assetKey: '1:0xgold:c1',
+          txHash: '0x' + '7'.repeat(64),
+          direction: 'in',
+          amountRaw: '0',
+          blockNumber: 100n,
+          confirmations: 12,
+        }),
+      ).rejects.toThrow(/positive decimal string/);
     });
   });
 

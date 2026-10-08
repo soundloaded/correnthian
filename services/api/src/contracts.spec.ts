@@ -1135,6 +1135,10 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     // and forgotten in the operations view is visible as a missing row.
     const names = parsed.jobs.map((j) => j.name).sort();
     expect(names).toEqual([
+      // Sorted, and complete. `blockchain.index-transtransactions` is absent from
+      // this list only by mistake — the row it would add is the one that says
+      // whether deposits are being filed at all.
+      'blockchain.index-transactions',
       'idempotency.purge',
       'price.flag-stale',
       'provider.health-probe',

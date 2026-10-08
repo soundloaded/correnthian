@@ -70,6 +70,31 @@ export interface TransactionActor {
 const SYSTEM_ACTOR: TransactionActor = { id: SYSTEM_ROLE, role: SYSTEM_ROLE };
 
 /**
+ * One transfer as the chain reported it, for a row that does not exist yet.
+ *
+ * Deliberately not `CreateTransactionDto`: that shape describes an intent
+ * someone filed, and every field it requires — an expiry, a transferable
+ * asset, a destination — is a question nobody asked about a deposit that has
+ * already happened.
+ */
+export interface ObservedTransactionInput {
+  walletId: string;
+  /** `Asset.assetId`, the derived registry key — not the contract address. */
+  assetKey: string;
+  txHash: string;
+  direction: 'in' | 'out' | 'internal';
+  /** Where the value went. Null for an inbound transfer, whose value came here. */
+  destination?: string | null;
+  /** Base units, as a positive decimal string. Never a float. */
+  amountRaw: string;
+  blockNumber: bigint;
+  /** Depth at the supplied head. The state decision stays in `observe`. */
+  confirmations: number;
+  /** `logIndex` and how many transfers this hash carried. Facts, not guesses. */
+  metadata?: Record<string, unknown>;
+}
+
+/**
  * Whether the caller is platform staff rather than a customer is decided by
  * `isOperatorRole` in `common/roles.ts` — the same map the HTTP guard reads.
  * This module used to keep its own copy of `RANK`, which is the kind of
@@ -276,6 +301,134 @@ export class TransactionsService {
   // --- observation ---------------------------------------------------------
 
   /**
+   * Record a transfer the chain reported, rather than one anyone asked for.
+   *
+   * An account that *receives* gold has filed no intent, signed nothing and
+   * broadcast nothing, so `create` cannot describe it: that method asks who
+   * is sending, when the intent expires, and whether the asset may be
+   * transferred at all — three questions about a deposit that is already on
+   * chain. This is the path that writes a row from a hash and a depth alone.
+   *
+   * Three deliberate differences from `create`:
+   *
+   *  - **`transferSupported` is not checked.** That flag says whether
+   *    Correnthian will *execute* a transfer of this asset. Recording one that
+   *    already happened is not an execution, and refusing to write history
+   *    because the asset is currently frozen would put a hole in the record
+   *    exactly where an operator most needs to see it.
+   *  - **The hash is present on the first write.** `@@unique([chainId,
+   *    txHash])` is the idempotency mechanism, and a unique index on a column
+   *    that is still NULL does not constrain anything — Postgres treats NULLs
+   *    as distinct, so a row born without its hash can be written twice.
+   *  - **It is born at the state its depth already warrants**, rather than in
+   *    `created`. A first sighting of a transfer twelve blocks deep that wrote
+   *    `pending` beside `confirmations: 12, requiredConfirmations: 12` would
+   *    be a row contradicting itself until a later run noticed.
+   *
+   * It does not touch `expiresAt`, so `expireStale` cannot sweep a row that
+   * represents something already settled on the network.
+   */
+  async recordObserved(input: ObservedTransactionInput, at: Date = new Date()) {
+    if (!POSITIVE_DECIMAL.test(input.amountRaw) || /^0+(\.0+)?$/.test(input.amountRaw)) {
+      throw AppError.badRequest('amountRaw must be a positive decimal string');
+    }
+
+    const [wallet, asset] = await Promise.all([
+      this.prisma.wallet.findUnique({ where: { id: input.walletId }, include: { chain: true } }),
+      this.prisma.asset.findUnique({ where: { assetId: input.assetKey } }),
+    ]);
+    if (!wallet) throw AppError.notFound('Wallet not found');
+    if (!wallet.chain.enabled) {
+      throw AppError.badRequest(`Chain ${wallet.chainId} is not enabled`);
+    }
+    if (!asset) throw AppError.notFound('Asset not in the registry');
+    if (asset.chainId !== wallet.chainId) {
+      throw AppError.badRequest(
+        `${asset.symbol} is on chain ${asset.chainId}, not ${wallet.chainId}`,
+      );
+    }
+
+    const required = DEFAULT_CONFIRMATIONS[wallet.chain.family] ?? 1;
+    const confirmations = Math.max(0, Math.trunc(input.confirmations));
+    const settled = confirmations >= required;
+
+    // Already written? Then this is a re-sighting, and `observe` owns that —
+    // it is the single place that decides whether depth promotes or demotes.
+    const existing = await this.prisma.transaction.findUnique({
+      where: { chainId_txHash: { chainId: wallet.chainId, txHash: input.txHash } },
+    });
+    if (existing) {
+      if (existing.userId !== wallet.userId || existing.walletId !== wallet.id) {
+        // Two of our wallets on one hash. The schema permits one row per hash,
+        // so it belongs to whichever wallet was written first; saying so beats
+        // quietly re-pointing a row at a different account.
+        this.logger.warn(
+          `Transaction ${input.txHash} on ${wallet.chainId} already belongs to wallet ` +
+            `${existing.walletId}; recording nothing for ${wallet.id}`,
+        );
+        return { id: existing.id, created: false, changed: false };
+      }
+      await this.observe(existing.id, SYSTEM_ACTOR, {
+        txHash: input.txHash,
+        confirmations,
+        // The DTO takes a decimal string because it crosses HTTP; this path
+        // already holds a bigint and must not be re-parsed into a float.
+        blockNumber: input.blockNumber.toString(),
+        outcome: 'seen',
+        metadata: input.metadata,
+      }, at);
+      return { id: existing.id, created: false, changed: true };
+    }
+
+    const created = await this.prisma.transaction.create({
+      data: {
+        userId: wallet.userId,
+        walletId: wallet.id,
+        assetId: asset.id,
+        chainId: wallet.chainId,
+        providerId: null,
+        direction: input.direction,
+        destination: input.destination ?? null,
+        txHash: input.txHash,
+        state: settled ? 'confirmed' : 'pending',
+        amountRaw: input.amountRaw,
+        // No price for this block is held, and a deposit's dollar value is a
+        // number an operator would read as settled fact. It stays null until
+        // something that owns pricing fills it.
+        amountUsd: null,
+        blockNumber: input.blockNumber,
+        confirmations,
+        requiredConfirmations: required,
+        lastSeenAt: at,
+        ...(settled ? { confirmedAt: at } : {}),
+        metadata: (input.metadata ?? {}) as object,
+      },
+    });
+
+    await this.audit.record({
+      actorId: SYSTEM_ACTOR.id,
+      action: 'transaction.observed',
+      targetType: 'Transaction',
+      targetId: created.id,
+      after: {
+        state: created.state,
+        direction: created.direction,
+        amountRaw: created.amountRaw,
+        txHash: created.txHash,
+        confirmations: created.confirmations,
+      },
+      metadata: {
+        chainId: created.chainId,
+        assetId: asset.assetId,
+        symbol: asset.symbol,
+        blockNumber: created.blockNumber?.toString() ?? null,
+      },
+    });
+
+    return { id: created.id, created: true, changed: true };
+  }
+
+  /**
    * Record what a node reports about a transaction.
    *
    * Kept apart from `transition` because depth is a fact read off a chain,
@@ -289,7 +442,13 @@ export class TransactionsService {
    *    transaction that leaves the mempool and is accepted again later is one
    *    transaction with `dropCount = 1`, not a dead record and a new one.
    */
-  async observe(id: string, actor: TransactionActor, input: ObservationDto) {
+  async observe(
+    id: string,
+    actor: TransactionActor,
+    input: ObservationDto,
+    /** The run's own clock. Defaults to the wall clock for an HTTP caller. */
+    at: Date = new Date(),
+  ) {
     const current = await this.load(id);
     this.assertOperator(actor, current, 'observe');
 
@@ -301,7 +460,7 @@ export class TransactionsService {
       );
     }
 
-    const seenAt = new Date();
+    const seenAt = at;
     const patch: Record<string, unknown> = {
       txHash: input.txHash,
       confirmations: input.confirmations,
@@ -648,6 +807,14 @@ export class TransactionsService {
   }
 
   private assertOperator(actor: TransactionActor, tx: Transaction, what: string): void {
+    // The same rule `assertEntitled` applies, for the same reason: `system` is
+    // the scheduler, and no session can carry that role because it is not in
+    // `ROLE_RANK` at all — `rankOf` would give it -1 either way. Without this
+    // line `observe` rejected the one caller it exists for, while `apply`
+    // accepted it, so an indexer could record a transaction it could never
+    // advance. The asymmetry went unnoticed only because nothing scheduled
+    // called `observe` until now.
+    if (actor.role === SYSTEM_ROLE) return;
     if (isOperatorRole(actor.role)) return;
     if (actor.id === tx.userId) {
       throw AppError.forbidden(`Only support may ${what} a transaction's chain state`);

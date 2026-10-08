@@ -13,6 +13,49 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-08
 
+### BE-302 — Deposits now become rows: the indexer's event half
+- `PARTIAL`, and the reason for `PARTIAL` is verification rather than code.
+- **Read side:** `BlockchainAdapter.getTokenTransfers()` observes ERC-20
+  `Transfer` logs. `eth_getLogs` constrains one indexed position per filter, so
+  "sender OR receiver" cannot be one request — `args.from` and `args.to` are two
+  calls, made in parallel and de-duplicated on `transactionHash:logIndex`,
+  because a self-transfer matches both. Only three-topic logs are returned:
+  ERC-721 shares topic0 but carries an indexed `tokenId` as its fourth topic.
+  Native-coin transfers are **deliberately absent** — they are not in a token
+  contract's logs, they belong to balance sync, and saying so on the method is
+  better than a silent gap that reads like coverage.
+- **Write side:** `TransactionsService.recordObserved()`, because `create()`
+  describes an intent nobody filed — it asks when the intent expires and whether
+  the asset may be transferred, and refusing to record a deposit because a token
+  is currently frozen would put a hole exactly where an operator needs to look.
+  Three differences that matter: no `transferSupported` check; **the hash is
+  present on the first write**, since `@@unique([chainId, txHash])` constrains
+  nothing while the column is still NULL and Postgres treats NULLs as distinct;
+  and the row is born at the state its depth already warrants, so a twelve-block
+  transfer is never written as `pending` beside `confirmations: 12`.
+- **The cursor has no column, on purpose.** It is read from `JobRun.detail`,
+  which already exists, is already redacted and is already retained. Every way
+  of losing it — a crash with no `finish`, a failed run, 200 pruned records —
+  falls back to a trailing window, which re-does work instead of skipping it.
+  The unrecoverable case is stated rather than hidden: a transfer older than the
+  window that was never seen.
+- **A defect found because nothing had ever exercised it:** `assertEntitled`
+  accepted the `system` actor and `assertOperator` did not, so `observe()` — the
+  only method that moves a row with depth — rejected the one caller built to
+  call it. Both now share the rule, and the property that makes it safe is
+  pinned by a test: `system` is absent from `ROLE_RANK`, so no session can hold
+  it. `observe` also takes the run's clock now, so a job is anchored to
+  `ctx.now` rather than the wall clock.
+- **Verification:** 28 tests. Nine mutations — the `system` branch, orphan
+  detection, the trailing window, the unknown-token skip, the idempotency
+  guard, the budget check, the depth-derived state, the amount summation, the
+  resume margin, plus the failed-run cursor — **all killed**.
+- **Not done, and it is not code:** the acceptance criterion asks for tests
+  against Sepolia or a local node. There is no node binary on this machine and
+  no funded address holding a registered token, so the RPC seam is stubbed and
+  viem's log decoding is the part left unverified. Everything above that seam
+  runs for real. Closing it is a run against a node.
+
 ### ADR-022 — Gas is sponsored through an ERC-4337 paymaster, and only for first-party operations
 - `BE-603`, closed as an investigation rather than a build.
 - **Decision:** passkey-owned ERC-4337 account, gas paid by a paymaster,

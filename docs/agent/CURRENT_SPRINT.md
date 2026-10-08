@@ -4,7 +4,7 @@ Read this every time before starting work. It is deliberately short: it names
 the task, what is finished, what is next, and — most importantly — what must
 not be started.
 
-Last updated: 2026-10-07.
+Last updated: 2026-10-08.
 
 ---
 
@@ -21,39 +21,45 @@ recorded (`DEF-001` … `DEF-019`); **eighteen are done, one is half fixed, none
 
 ### Current task
 
-**`BE-302` — indexer events to `Transaction` rows. The largest piece that depends on nothing external.**
+**`BE-102`'s open question — is `/docs` exposed in production? Not code.**
+**Next build: `BE-601` / `BE-602` — but only after `BE-601`'s scope is written
+down, because `BE-302` has already built most of what its entry describes.**
 
-- **Why it is next:** `BE-603` closed with an ADR rather than code, so the
-  largest remaining self-contained build is this one. Everything downstream
-  waits on it: without `Transaction` rows there is nothing for `BE-601` to
-  operate on, nothing for the admin's transaction pages to show, and nothing for
-  `BE-1602` to reconcile.
-- **Where:** `services/api/src/blockchain/indexing.service.ts`. The adapter
-  surface exists (`getBlock`, `getTransaction`, `getTransactionStatus`) and
-  balance sync works; event indexing does not. `BACKEND-05` is "balance sync
-  only, no events, no `Transaction` rows".
-- **What is real today:** `Chain`, wallets and balances. What is missing is
-  subscriptions/polling per chain, decoding logs into domain events, and
-  writing a `Transaction` with its confirmations.
-- **Definition of done:** a confirmed on-chain transfer to a registered wallet
-  address produces a `Transaction` row with state, hash and confirmations;
-  reorgs move it backwards rather than duplicating it; a test covers a
-  duplicate event not creating a second row.
-- **Security constraint:** the indexer is **read-only against the chain**. It
-  must have no key material and no signing path — it observes, it never acts.
-  This is the boundary rule applied to a component that could easily grow one.
-- **Dependency:** none external. RPC access to a live network is already
-  verified (`CHAIN-001` against Sepolia).
+- **`BE-302` is `PARTIAL`, and the gap is verification rather than code.**
+  Balance sync and event indexing both exist. `getTokenTransfers` observes
+  ERC-20 logs, `TransactionIndexingService` writes one `Transaction` row per
+  hash through `TransactionsService.recordObserved()`, the depth sweep promotes
+  and demotes rows against the current head, and `blockchain.index-transactions`
+  runs the whole thing every 60s. All three definition-of-done bullets are
+  covered by tests that were mutation-checked: nine deliberate breaks, nine
+  failures.
+- **Why it is not `DONE`:** the acceptance criterion says tests "against
+  Sepolia or a local node, not mocks", and this machine has neither a node
+  binary nor a funded address holding a registered token. The RPC seam is
+  stubbed instead, so what remains unverified is viem's `eth_getLogs` decoding.
+  Everything above that seam is real — the lifecycle table, `observe()`'s
+  promote/demote rules, the audit trail, and a store that enforces
+  `@@unique([chainId, txHash])` rather than accepting what it is handed.
+  Closing it is a run against a node, not a code change.
+- **A defect found on the way, now fixed:** `assertEntitled` accepted the
+  `system` actor and `assertOperator` did not, so `observe()` — the only method
+  that moves a row with depth — rejected the one caller built to call it. It had
+  never surfaced because nothing scheduled called `observe` before this. Both
+  now share the same rule, and a test pins the property that makes it safe:
+  `system` is absent from `ROLE_RANK`, so no session can carry it.
+- **Dependency for what follows:** `BE-601` depends on `BE-302`, which is now
+  satisfied.
 
 ### Then, in order
 
 | # | Task | Why it is next |
 |---|---|---|
-| 1 | `BE-102` — OpenAPI generated from `CONTRACT_REGISTRY` | The shipped document describes no request or response schemas. Cheap, and it makes every later route reviewable. |
-| 2 | `BE-601` / `BE-602` — transaction engine, send/receive | EVM only; the adapter already works against a live network. |
-| 3 | `BE-1101` / `BE-1105` — KYC and sanctions | Legally required before selling gold for dollars regardless of custody posture, and they need no metals partner. |
-| 4 | `BE-102`'s open question — is `/docs` exposed in production? | Not decided. An API schema is a map of everything an attacker can call; the answer is a disclosure decision, not a technical one. |
-| 5 | ADR-022's build-time choices — account implementation, paymaster, EntryPoint | Gated on a vendor or a contract, same as `BE-802`. Recording them as decided would repeat the `claimBatch` mistake. |
+| 1 | Write down what is left of `BE-601`, then build it | Its entry says "nothing writes to `Transaction`", which `BE-302` has made false, and its expected output is now largely built. The remainder is the outbound half: a client-broadcast intent no log has reported yet, drop detection, re-broadcast. Scope it before touching it. |
+| 2 | `BE-602` — send/receive backend | `EvmAdapter.buildTransaction` already exists and nothing exposes it. The server assembles, the device signs. |
+| 3 | Node-backed acceptance run for `BE-302` | The one unmet criterion, and it is verification rather than code: needs a node and a funded address holding a registered token. |
+| 4 | `BE-1101` / `BE-1105` — KYC and sanctions | Legally required before selling gold for dollars regardless of custody posture, and they need no metals partner. |
+| 5 | `BE-102`'s open question — is `/docs` exposed in production? | Not decided. An API schema is a map of everything an attacker can call; the answer is a disclosure decision, not a technical one. |
+| 6 | ADR-022's build-time choices — account implementation, paymaster, EntryPoint | Gated on a vendor or a contract, same as `BE-802`. Recording them as decided would repeat the `claimBatch` mistake. |
 
 **Still open, deliberately not scheduled:**
 
@@ -64,6 +70,19 @@ recorded (`DEF-001` … `DEF-019`); **eighteen are done, one is half fixed, none
 ---
 
 ### Completed in this sprint
+
+- `BE-302` — **`PARTIAL`, implementation complete.** The event half of the
+  indexer: `getTokenTransfers` on the adapter (two `eth_getLogs` calls, one per
+  direction, because a filter constrains one indexed position; de-duplicated on
+  `txHash:logIndex`; three-topic check so ERC-721 sharing topic0 is not mistaken
+  for a token), `recordObserved` on the service, and a scheduled job with a
+  cursor read back from its own run record. **A new column would have been
+  tidier and would have needed a migration, which `DEF-003` says never to run
+  against a shared database** — so the resume point lives in `JobRun.detail`,
+  and every way of losing it falls back to a trailing window, i.e. backwards,
+  never past unread blocks. Native-coin transfers are deliberately absent and
+  the gap is stated on the method rather than papered over. 28 tests,
+  9 mutations, all killed.
 
 - `BE-603` — **ADR-022**, an investigation rather than a build. Gas sponsorship
   settles on ERC-4337 + a paymaster, scoped to first-party operations only,

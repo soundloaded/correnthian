@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
+import { BlockchainModule } from '../blockchain/blockchain.module.js';
 import { PricingModule } from '../pricing/pricing.module.js';
 import { ProvidersModule } from '../providers/providers.module.js';
 import { TransactionsModule } from '../transactions/transactions.module.js';
 import { CLOCK, SystemClock } from './clock.js';
 import { IdempotencyPurgeJob } from './idempotency-purge.job.js';
+import { IndexTransactionsJob } from './index-transactions.job.js';
 import { JobLockService } from './job-lock.service.js';
 import { JobRunStore } from './job-run.store.js';
 import { JobScheduler } from './job-scheduler.service.js';
@@ -19,8 +21,9 @@ import { JOBS } from './job.js';
  *
  * The order is the dependency graph's shape rather than the code's: the purge
  * keeps the idempotency table from growing, the provider probe keeps the
- * registry honest, and the two expiry sweeps keep state machines from
- * accumulating rows they have already declared terminal.
+ * registry honest, the two expiry sweeps keep state machines from accumulating
+ * rows they have already declared terminal, and the indexer is what puts
+ * on-chain activity into those state machines in the first place.
  *
  * `JOBS` is a factory rather than a class so that adding a job is one entry
  * here plus one line in the factory — and so the scheduler has one dependency
@@ -38,11 +41,12 @@ const JOB_CLASSES = [
   SwapQuoteExpiryJob,
   StalePriceFlagJob,
   TransactionIntentExpiryJob,
+  IndexTransactionsJob,
 ] as const;
 
 @Module({
   controllers: [JobsController],
-  imports: [ProvidersModule, TransactionsModule, PricingModule],
+  imports: [ProvidersModule, TransactionsModule, PricingModule, BlockchainModule],
   providers: [
     { provide: CLOCK, useClass: SystemClock },
     JobLockService,

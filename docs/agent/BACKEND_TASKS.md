@@ -43,7 +43,7 @@ a test, or the test cannot fail, the status is `PARTIAL` and the gap is named.
 | `USER-001` | User/device model | **DONE** as `users` + `devices` | Keyset-ish pagination, role mutation, soft revoke |
 | `WALLET-001` | Wallet metadata architecture | **DONE** as `wallets` module | Public addresses only, address validation, guardians |
 | `CHAIN-001` | Blockchain abstraction | **DONE** as `packages/blockchain` | `BlockchainAdapter`, `EvmAdapter`, `RpcPool`, 25 tests |
-| `BLOCKCHAIN-001` | Blockchain engine | **PARTIAL** as `blockchain` module | Adapter resolves + health + wallet balance sync. No event indexing, no `Transaction` rows written. |
+| `BLOCKCHAIN-001` | Blockchain engine | **PARTIAL** as `blockchain` module | Adapter resolves + health + wallet balance sync + **event indexing** (`BE-302`). `Transaction` rows are written by `blockchain.index-transactions`. Awaiting a node-backed acceptance run. |
 | `ASSET-001` | Asset registry | **DONE** as `assets` module + `packages/assets` | Derived identity, disclosure on every response, 7 + 5 tests |
 
 **The plan's "immediate backend queue" is complete.** All ten exist.
@@ -779,23 +779,34 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 - **Status:** `DONE`
 
 ### BE-302 — Indexer · `PARTIAL`
-- **What exists:** `POST /blockchain/wallets/:walletId/sync` reads the native
-  balance and every enabled token on the wallet's chain into `WalletAccount`,
-  with per-contract error isolation and an audit entry. Verified live against
-  Sepolia (61.060896814128264732 ETH indexed).
-- **What does not exist:** the plan's `BACKEND-05 Indexer` — addresses to
-  blockchain **events** to transactions. **No `Transaction` row is ever written.**
-  The model exists; nothing populates it. No confirmation tracking, no dropped
-  transaction handling, no backfill.
-- **Dependencies:** none for balance sync; contract provider for events.
-- **Expected output:** an event poller writing `Transaction` with `txHash`,
-  `direction`, `state`, `blockNumber`, `confirmations`.
+- **What exists:** balance sync (unchanged), **and now the event half** —
+  `BlockchainAdapter.getTokenTransfers()` observes ERC-20 `Transfer` logs, and
+  `TransactionIndexingService` turns them into `Transaction` rows through a new
+  `TransactionsService.recordObserved()`. The scheduled job
+  `blockchain.index-transactions` runs it every 60s for every enabled chain.
+- **What is real today:** a confirmed transfer to a registered wallet produces
+  one row with `state`, `txHash`, `blockNumber` and `confirmations`; a shallow
+  one produces `pending`; the depth sweep promotes and — on a reorg, demotes —
+  every row on the chain; a duplicate event cannot create a second row because
+  `recordObserved` looks up `@@unique([chainId, txHash])` first and the index
+  is what enforces it.
+- **The gap:** **Tests are not against a node.** The acceptance criterion below
+  asks for Sepolia or a local node, and this environment has no node binary and
+  no funded address holding a registered token, so the RPC seam is stubbed
+  instead. What that leaves unverified is `eth_getLogs` → `ObservedTokenTransfer`
+  decoding by viem — everything above that seam runs for real: the lifecycle
+  table, `observe()`'s promote/demote rules, the audit trail, and a store that
+  enforces the unique index rather than accepting whatever it is handed.
+- **Dependencies:** none for the implementation; a node for the acceptance run.
 - **Security:** reads public chain state only. No key is involved and none could
-  be.
+  be — `TransactionIndexingService` never touches `wallet-core`, and
+  `node scripts/check-key-boundary.mjs` still reports OK.
 - **Acceptance criteria:** a wallet with on-chain activity shows transactions
   after a sync, with correct direction and confirmation count.
 - **Tests:** fixture-based, against Sepolia or a local node, not mocks.
-- **Status:** `PARTIAL`
+- **Status:** `PARTIAL` — implementation and fixture tests done; the node-backed
+  acceptance run above is the unmet criterion, and it is a verification step
+  rather than missing code.
 
 ### BE-303 — Bitcoin adapter · `BACKLOG`
 - `AddressFamily` includes `bitcoin` and `validateBitcoinAddress` accepts bech32
@@ -887,8 +898,17 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 ## 9. Transactions (plan §21–§22)
 
 ### BE-601 — Transaction engine · `BACKLOG`
-- **What exists:** the `Transaction` model, with `@@unique([chainId, txHash])`,
-  state, direction, confirmations, block number and time. Nothing writes to it.
+- **What exists:** the `Transaction` model with `@@unique([chainId, txHash])`,
+  state, direction, confirmations, block number and time; the lifecycle table;
+  `create` / `markSigned` / `reportBroadcast` / `transition` / `observe`; and —
+  since `BE-302` — the indexer that **does** write rows from observed events,
+  plus confirmation counting and reorg demotion through `observe()`.
+- **Scope note:** the expected output below is now largely built. What remains
+  to be defined before this is worked is the *outbound* half the indexer cannot
+  cover: an intent the client broadcast that no log has yet reported, drop
+  detection and re-broadcast. Do not start this until that remainder is written
+  down — the entry currently describes a gap that has mostly closed, and
+  working it as written would rebuild what exists.
 - **Expected output:** lifecycle from observed event to `confirmed`/`failed`/
   `dropped`, with confirmation counting and reorg handling.
 - **Dependencies:** `BE-302`.
