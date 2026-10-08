@@ -1,5 +1,16 @@
 node_modules/
 dist/
+
+# Generated output must not land beside its source. `packages/*` compile with
+# `tsc -p tsconfig.package.json` into `dist/`; an older `tsc` emitted into `src`
+# and twenty of those files were committed (DEF-010). They are unreachable —
+# every package exports `./dist/` — and they drift silently, so both directions
+# are closed here rather than trusted to a reviewer.
+packages/*/src/**/*.js
+packages/*/src/**/*.js.map
+packages/*/src/**/*.d.ts
+packages/*/src/**/*.d.ts.map
+
 .next/
 .turbo/
 coverage/
