@@ -13,6 +13,24 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-08
 
+### `8b4d408` — Make the portfolio report missing wallets as 404 and money exactly
+- `DEF-007`: `forWallet` threw a bare `Error`, which the exception filter
+  classifies as internal — so asking for a wallet you do not have returned
+  **500**, conflating "you asked for something you cannot have" with "we are
+  broken".
+- `DEF-008`: `Number(balanceRaw) / 10 ** decimals` sat three lines below a
+  comment forbidding exactly that. Valuation now runs through `notionalUsd` and
+  `sumUsd` — the same bigint arithmetic the fees engine uses, so both sides of a
+  future `BE-1602` reconciliation agree.
+- **The severity, stated honestly:** a search found **no input between $1 and
+  $100,000** where the old float path disagrees with the exact one at 8 decimal
+  places. Divergence appears above `$10^15` and in sub-cent holdings. This was a
+  real correctness bug and a comment that lied — not a wrong number anyone was
+  shown.
+- Money on the wire is now a decimal string. `GET /portfolio` has no contract,
+  no consumer and no test, so nothing was reading the numbers it changed.
+- 7 tests, every one failing against the pre-fix code.
+
 ### `7699d97` — Correct every document that stated the opposite of the code
 - `DEF-014`. Four documents contradicted the repository: `README.md` and
   `engineering/standards.md` called `packages/*` "source-only, no build step"

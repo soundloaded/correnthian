@@ -13,46 +13,48 @@ Last updated: 2026-10-07.
 The previous sprint built the admin and the wire-format contract layer. This
 sprint exists because reading the code found defects that no test, no typecheck
 and no contract assertion catches. Several were silent. There are nineteen
-recorded (`DEF-001` … `DEF-019`); **nine are done**.
+recorded (`DEF-001` … `DEF-019`); **eleven are done**.
 
 ### Current task
 
-**`DEF-007` / `DEF-008` — the portfolio is wrong in two different ways.**
+**`DEF-009` — `claimBatch` does not claim.**
 
-- **Why together:** they are one file and one idea — `portfolio.service.ts`
-  misreports failure and misreports value. Fixing either alone leaves a surface
-  an operator reads money from behaving incorrectly.
-- **`DEF-007`:** `forWallet` throws a bare `new Error('Wallet not found')`.
-  `AllExceptionsFilter` classifies a plain error as internal, so a missing
-  wallet is a **500** rather than a 404 — it conflates "you asked for something
-  you cannot have" with "we are broken". It is not a leak (the message is
-  generic), but it is the wrong signal. Fix: `AppError.notFound(...)`.
-- **`DEF-008`:** the comment says "Base units to a human number, via string
-  arithmetic — never a float multiply on an 18-decimal balance", and the line
-  below it is `Number(a.balanceRaw) / 10 ** a.asset.decimals`. A float divide
-  on an 18-decimal balance is precisely what the comment forbids.
-- **Why it matters more than it looks:** `054fdb9` established exact bigint
-  arithmetic at 10⁻⁸ for fees. The portfolio then floats the same numbers. Two
-  notions of a dollar coexisting in one system is how a reconciliation
-  (`BE-1602`) becomes impossible later. `packages/blockchain` already gets this
-  right with viem's `formatUnits`.
-- **Definition of done:** a missing wallet is a 404; balances round-trip
-  exactly for a value with more decimal places than a double can hold; and
-  `BE-1602` is written so both sides of a reconciliation use one arithmetic.
-- **Security constraint:** none specific, but a displayed balance that is
-  wrong by a rounding step is a trust failure in a product whose whole pitch is
-  disclosed, exact numbers.
+- **Why it is next:** it is the last defect where the comment and the code
+  describe two different programs, which is the failure mode this sprint exists
+  to clear. Everything after it is smaller.
+- **File:** `services/api/src/notifications/notifications.service.ts`
+- **What is wrong:** the docstring describes "`updateMany` with a status
+  guard… two workers cannot claim the same row — the loser matches zero rows".
+  The implementation is a plain `findMany` with no update and no guard. Two
+  workers receive the same rows, and the comment promises a guarantee the code
+  does not make.
+- **Why it matters:** `BE-1201` records intent and exposes `claimBatch`, and
+  `ADR-020` says no transport is wired — so nothing sends today. That is the
+  point at which this becomes a live bug rather than a latent one: the day a
+  provider is chosen, two workers would deliver the same message twice.
+- **Definition of done:** the claim is atomic (`updateMany` with a status
+  guard, or a conditional write), the docstring describes what the code does,
+  and a test fails when two concurrent claims target the same rows.
+- **Security constraint:** none, but a claim that cannot be lost is also the
+  difference between a notification that arrives twice and one that never
+  arrives.
 
 ### Then, in order
 
 | # | Task | Why it is next |
 |---|---|---|
-| 2 | `DEF-009` — `claimBatch` claims nothing | Two workers receive the same rows, and the comment above the function says otherwise. |
-| 3 | `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-017` — the bounded remainder | No dependency, all small, none urgent. |
-| 4 | `DEF-018` — the Prisma-write guard fails and is not in CI | Recording it here rather than fixing it: it is tracked, and it is not this sprint's work. |
+| 2 | `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-017` — the bounded remainder | No dependency, all small, none urgent. |
+| 3 | `DEF-018` — the Prisma-write guard fails and is not in CI | Recording it here rather than fixing it: it is tracked, and it is not this sprint's work. |
 
 ### Completed in this sprint
 
+- `DEF-007` / `DEF-008` — the portfolio pair (`8b4d408`). A missing wallet is a
+  404 instead of a 500, and balances and totals are exact bigint arithmetic
+  through `notionalUsd` / `sumUsd`, the same primitives the fees engine uses.
+  Recorded with its real severity: **no input between $1 and $100,000 made the
+  old float path disagree with the exact one**, so this was a correctness bug
+  and a comment that lied, not a number an operator had been shown. 7 tests, all
+  failing against the pre-fix code.
 - `DEF-014` — every document that stated the opposite of the code is corrected
   (`README.md`, `docs/engineering/standards.md`, `docs/engineering/api.md`,
   `docs/engineering/admin.md`, `docs/README.md`). The shared failure mode was
@@ -126,7 +128,7 @@ recorded (`DEF-001` … `DEF-019`); **nine are done**.
 
 ### Next, after this sprint
 
-1. The remaining ten defects — `DEF-009` onward, mostly small, plus
+1. The remaining eight defects — `DEF-010` onward, small, plus
    `DEF-018` recorded during the re-verification.
 2. `BE-1702` — controller-level tests. Fourteen routes have none outside the
    contract suite, and DEF-001 exists precisely because of that gap.

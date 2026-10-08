@@ -64,8 +64,8 @@ the location the entry names.
 
 | Status | Defects | Count |
 |---|---|---|
-| `DONE` | `DEF-001`, `DEF-002`, `DEF-003`, `DEF-004`, `DEF-005`, `DEF-006`, `DEF-014`, `DEF-016`, `DEF-019` | 9 |
-| `BACKLOG` | `DEF-007`, `DEF-008`, `DEF-009`, `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-015`, `DEF-017`, `DEF-018` | 10 |
+| `DONE` | `DEF-001` … `DEF-008`, `DEF-014`, `DEF-016`, `DEF-019` | 11 |
+| `BACKLOG` | `DEF-009`, `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-015`, `DEF-017`, `DEF-018` | 8 |
 
 `DEF-018` was found while re-verifying the others, and `DEF-019` while fixing
 `DEF-004` / `DEF-005`. Both were recorded rather than assumed, because tracking
@@ -240,27 +240,45 @@ kept for the record; it does not describe the current code._
 - **Status:** `DONE`
 
 
-### DEF-007 — Missing wallets return 500, not 404
+### DEF-007 — Missing wallets return 500, not 404 · `DONE` (`8b4d408`)
 
-- **Location:** `services/api/src/portfolio/portfolio.service.ts`
-- **Description:** `forWallet` throws a bare `new Error('Wallet not found')`,
-  which `AllExceptionsFilter` classifies as `internal` → 500.
-- **Security note:** this is not a leak (the message is generic), but it
-  conflates "you asked for something you cannot have" with "we are broken".
-- **Expected output:** `AppError.notFound(...)`.
-- **Status:** `BACKLOG`
+- **Was:** `portfolio.service.ts` `forWallet` threw a bare
+  `new Error('Wallet not found')`. `AllExceptionsFilter` classifies a plain
+  error as internal, so a missing wallet was a **500** — conflating "you asked
+  for something you cannot have" with "we are broken". Not a leak (the message
+  is generic), but the wrong signal.
+- **Fixed:** `AppError.notFound('Wallet not found')`, scoped by
+  `{ id, userId }` so another user's wallet is the same missing wallet — one
+  message, one status, no existence oracle.
+- **Status:** `DONE`
 
-### DEF-008 — Portfolio balances are converted with a float
+---
 
-- **Location:** `services/api/src/portfolio/portfolio.service.ts`
-- **Description:** the code comment says "Base units to a human number, via
-  string arithmetic — never a float multiply on an 18-decimal balance", and the
-  line below it is `Number(a.balanceRaw) / 10 ** a.asset.decimals`. A float
-  divide on an 18-decimal balance is precisely what the comment forbids.
-  `packages/blockchain` gets this right with viem's `formatUnits`.
-- **Expected output:** exact decimal division, or correct the comment and accept
-  the loss with an explicit tolerance.
-- **Status:** `BACKLOG`
+### DEF-008 — Portfolio balances are converted with a float · `DONE` (`8b4d408`)
+
+- **Was:** `Number(a.balanceRaw) / 10 ** a.asset.decimals`, three lines below a
+  comment reading "Base units to a human number, via string arithmetic — never a
+  float multiply on an 18-decimal balance." `Number()` on an integer above
+  `2^53` drops digits, and an 18-decimal token reaches that at 0.9 of a token.
+- **Fixed:** valuation runs through `notionalUsd(balanceRaw, decimals, priceUsd)`
+  and sums with `sumUsd` — the same bigint arithmetic the fees engine uses.
+  `054fdb9` gave fees exact money; the portfolio was floating the same numbers,
+  and two notions of a dollar cannot coexist into `BE-1602`.
+- **The float enters at exactly one place**, `priceAt`, because
+  `PricingService.latestMap` already returns `Number(row.priceUsd)` off a
+  `Decimal`. That conversion is named rather than implied; a price that cannot
+  be represented becomes `unpriced` — this module's existing vocabulary for
+  "cannot value this" — instead of throwing the portfolio away on one bad row.
+- **Severity, stated honestly:** a search for an input where the old path
+  disagrees with the exact one **found none between $1 and $100,000** — both
+  produce the same 8 decimal places. Divergence appears above `$10^15` and in
+  sub-cent holdings. This was a real correctness bug and a live lie in a
+  comment, **not** a wrong number anyone was shown.
+- **Wire change:** `valueUsd`, `totalUsd`, `pricedValueUsd` and `combinedUsd`
+  are now decimal `string`. `GET /portfolio` has no contract, no consumer and
+  no test, so nothing was reading the old numbers.
+- **Status:** `DONE`
+
 
 ### DEF-009 — `claimBatch` does not claim
 
@@ -1212,14 +1230,14 @@ read them.
 
 | Status | Tasks | Defects |
 |---|---|---|
-| `DONE` | 16 | 9 |
+| `DONE` | 16 | 11 |
 | `PARTIAL` | 19 | 0 |
-| `BACKLOG` | 19 | 10 |
+| `BACKLOG` | 19 | 8 |
 | `BLOCKED` | 6 | 0 |
 | `OPEN` | 1 | 0 |
 | **Total** | **61** | **19** |
 
-**16 of 61 tasks are complete, and 9 of 19 defects.** The plan's §68 dependency
+**16 of 61 tasks are complete, and 11 of 19 defects.** The plan's §68 dependency
 chain is most of the way built at the infrastructure layer and not started at
 the layer that moves money.
 
