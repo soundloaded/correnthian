@@ -215,13 +215,30 @@ kept for the record; it does not describe the current code._
 ### DEF-006 — Readiness probe never returns 503
 
 - **Location:** `services/api/src/health/health.controller.ts`
-- **Description:** the docstring says "Fails with 503 when a required dependency
-  is down so traffic is diverted, not dropped." The handler returns
-  `{ status: 'degraded', … }` with HTTP 200. An orchestrator reading only the
-  status code will keep routing traffic to a process that cannot serve it.
-- **Expected output:** throw or set 503, or correct the docstring and document
-  the intent.
-- **Status:** `BACKLOG`
+- **Was:** the docstring said "Fails with 503 when a required dependency is
+  down so traffic is diverted, not dropped." The handler returned
+  `{ status: 'degraded', … }` with HTTP 200, so an orchestrator reading only the
+  status code kept routing traffic to a process that could not serve it.
+- **Fixed in `7be8a6c`.** The status is set through `@Res({ passthrough: true })`
+  rather than by throwing, because `AllExceptionsFilter` rewrites any exception
+  into the shared envelope — throwing would have returned 503 with
+  `dependencies` replaced by `detail`, and every consumer reads `dependencies`
+  to know *which* dependency is down. Diverting traffic must not cost the
+  operator the reason.
+- **Decision made:** 503 was the right answer, so the docstring stayed and the
+  code was corrected. Both dependencies are required — with Redis down the rate
+  limiter fails closed and refuses everything, so the process genuinely cannot
+  serve.
+- **Liveness deliberately unchanged,** now asserted: a dependency outage must
+  pull the process from rotation, not make an orchestrator restart a healthy
+  process.
+- **Verified live against the running API**, not only in tests: both up → 200;
+  Redis stopped → 503 with `redis: down` while `/health/live` stayed 200 in the
+  same window; Redis restored → 200. 9 controller tests cover the failure
+  paths with stubbed dependencies, because forcing a real outage to observe one
+  503 would be testing the environment rather than the handler.
+- **Status:** `DONE`
+
 
 ### DEF-007 — Missing wallets return 500, not 404
 
@@ -1177,14 +1194,14 @@ read them.
 
 | Status | Tasks | Defects |
 |---|---|---|
-| `DONE` | 15 | 7 |
+| `DONE` | 15 | 8 |
 | `PARTIAL` | 20 | 0 |
-| `BACKLOG` | 19 | 12 |
+| `BACKLOG` | 19 | 11 |
 | `BLOCKED` | 6 | 0 |
 | `OPEN` | 1 | 0 |
 | **Total** | **61** | **19** |
 
-**15 of 61 tasks are complete, and 7 of 19 defects.** The plan's §68 dependency
+**15 of 61 tasks are complete, and 8 of 19 defects.** The plan's §68 dependency
 chain is most of the way built at the infrastructure layer and not started at
 the layer that moves money.
 

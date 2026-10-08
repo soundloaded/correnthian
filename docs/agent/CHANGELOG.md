@@ -11,6 +11,61 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ---
 
+## 2026-10-08
+
+### `7be8a6c` — Make the readiness probe return 503 when a dependency is down
+- `DEF-006`. The docstring has always promised "fails with 503 … so traffic is
+  diverted, not dropped" and the handler always answered 200 with a `degraded`
+  flag, so an orchestrator reading only the status code kept routing to a
+  process that could not serve — a dependency failure wearing the costume of a
+  load problem.
+- **Observed on the running build before the change:** Redis stopped,
+  `GET /health/ready` → **200**. After: **503**, same body.
+- The status is set through `@Res({ passthrough: true })`, not by throwing, and
+  that is the substance of the fix: `AllExceptionsFilter` rewrites any exception
+  into the shared envelope, so throwing would have returned 503 with
+  `dependencies` replaced by `detail` — and every consumer reads
+  `dependencies` to learn *which* thing is down. Diverting traffic must not cost
+  the operator the reason.
+- Liveness deliberately unchanged and now asserted: an outage must pull a
+  process from rotation, not make an orchestrator restart a healthy one.
+- Verified live: 200 healthy → 503 with `redis: down` → liveness still 200 →
+  200 on recovery. 9 controller tests for the failure paths.
+
+### `9d90f67` — Stop the rate-limit live spec depending on a shared Redis keyspace
+- It failed roughly one run in four, always in a different test, and every
+  cause was another suite rather than the limiter: three suites flush
+  `correnthian:rate:*` in their own `beforeAll`, so a counter read could vanish
+  and a ceiling loop could be reset before reaching its ceiling.
+- The suite also never set trust proxy — `main.ts` sets it and the suite never
+  runs `main.ts` — so `X-Forwarded-For` was ignored and the test written to
+  catch a key-on-IP guard would have passed against one.
+- The suite now owns Redis database 15, asserts through response headers
+  computed inside the request, mints both sessions in `beforeAll`, and sets
+  trust proxy beside the version wiring that already had to be duplicated.
+- Six consecutive clean full runs afterwards (470 tests each).
+
+### `689b96b` — Name BE-603 as the next investigation, and say what "Open" defaults to
+- Gas sponsorship and account abstraction becomes the fourth item after this
+  sprint, and an *investigation* rather than a build — which the "Do not start"
+  table now says explicitly, so nominating it does not contradict forbidding it.
+- ADR-021 now states that while it is Open the recorded decision governs: an
+  undecided widening is a narrowing, because the narrower thing is what is
+  built, tested and reasoned about.
+
+### `b89cb52` — Record the product document's scope deltas instead of adopting them
+- The owner's product document proposes seven chains at launch, Web3 and
+  seed-phrase recovery. Three of those conflict with decisions already recorded
+  here, so all three are `Open` in ADR-021 rather than implemented or rejected.
+- Six features it raised that had never been tracked are now backlog entries
+  (`BE-204`, `BE-205`, `BE-402`, `BE-603`, `BE-1106`, `BE-1506`), two of them
+  marked do-not-build until ADR-021 is called.
+- Summary counts recomputed from the `Status` field: **61 tasks and 19
+  defects**, not 56 and 17 — and not "17 defects, all BACKLOG", when seven were
+  already done.
+
+---
+
 ## 2026-10-07
 
 ### `8c48624` — Make the rate limiter obey config, and count against the session

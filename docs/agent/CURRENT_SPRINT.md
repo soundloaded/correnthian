@@ -13,43 +13,50 @@ Last updated: 2026-10-07.
 The previous sprint built the admin and the wire-format contract layer. This
 sprint exists because reading the code found defects that no test, no typecheck
 and no contract assertion catches. Several were silent. There are nineteen
-recorded (`DEF-001` … `DEF-019`); **seven are done**.
+recorded (`DEF-001` … `DEF-019`); **eight are done**.
 
 ### Current task
 
-**`DEF-006` — the readiness probe never returns 503.**
+**`DEF-014` — three documents state the opposite of the code.**
 
-- **Why this one:** everything in `BACKEND-15` assumes health checks work. An
-  orchestrator reading only the status code currently keeps routing traffic to a
-  process that cannot serve it, and the docstring on the handler promises
-  otherwise. It is the cheapest defect left and it gates the hardening phase.
-- **File:** `services/api/src/health/health.controller.ts`
-- **What is wrong:** `ready()` computes `status: ok | degraded` from the
-  database and Redis checks and returns HTTP 200 in both cases. The comment
-  above it says "Fails with 503 when a required dependency is down so traffic is
-  diverted, not dropped."
-- **Definition of done:** `/health/ready` returns 503 when either dependency is
-  down and 200 when both are up; a test covers the failure path, not only the
-  healthy one.
-- **Decision to make rather than assume:** if 503 is wrong — if the intent is a
-  soft status for dashboards — then the docstring changes instead and the
-  orchestrator wiring is documented as out of scope. Either answer is
-  acceptable; leaving the promise and the behaviour disagreeing is not.
-- **Security constraint:** none specific, but a probe that throws must not be
-  able to take the process down. Keep the check inside the handler.
+- **Why this one:** an agent will act on them, and this file is not the only
+  one being read. It is a documentation defect, so it is cheap, and it is the
+  one remaining defect most likely to cause *other* work to be wrong.
+- **Where:**
+  - `README.md` (two places) — says `packages/*` are "source-only, no build
+    step". They build to `dist/`; that is ADR-006's whole point, and the reason
+    the convention exists is that a source-only package breaks when Node loads
+    it.
+  - `docs/engineering/standards.md` (two places) — same claim.
+  - `docs/engineering/api.md` — "Nothing exists yet — there is no auth module,
+    no users module, no session handling", and every domain module listed as
+    not built. All of them are.
+- **Definition of done:** a search for `source-only` returns only records
+  explicitly marked as historical, and `docs/engineering/api.md` no longer
+  describes an empty API.
+- **Note:** this is documentation, not code. It changes no behaviour, and it
+  should be done before anything else reads those files.
 
 ### Then, in order
 
 | # | Task | Why it is next |
 |---|---|---|
-| 2 | `DEF-014` — `README.md`, `docs/engineering/standards.md` and `docs/engineering/api.md` state the opposite of the code | An agent will act on them. This file is not the only one being read. |
-| 3 | `DEF-007` / `DEF-008` — the portfolio returns 500 for a missing wallet, and sums floats | `054fdb9` established exact bigint money for fees. The portfolio then floats the same numbers. Two notions of a dollar must not coexist into `BE-1602`. |
-| 4 | `DEF-009` — `claimBatch` claims nothing | Two workers receive the same rows, and the comment above the function says otherwise. |
-| 5 | `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-017` — the bounded remainder | No dependency, all small, none urgent. |
-| 6 | `DEF-018` — the Prisma-write guard fails and is not in CI | Recording it here rather than fixing it: it is tracked, and it is not this sprint's work. |
+| 2 | `DEF-007` / `DEF-008` — the portfolio returns 500 for a missing wallet, and sums floats | `054fdb9` established exact bigint money for fees. The portfolio then floats the same numbers. Two notions of a dollar must not coexist into `BE-1602`. |
+| 3 | `DEF-009` — `claimBatch` claims nothing | Two workers receive the same rows, and the comment above the function says otherwise. |
+| 4 | `DEF-010`, `DEF-011`, `DEF-012`, `DEF-013`, `DEF-017` — the bounded remainder | No dependency, all small, none urgent. |
+| 5 | `DEF-018` — the Prisma-write guard fails and is not in CI | Recording it here rather than fixing it: it is tracked, and it is not this sprint's work. |
 
 ### Completed in this sprint
 
+- `DEF-006` — the readiness probe now returns 503 when a dependency is down
+  (`7be8a6c`). Verified against the running API with Redis stopped: 503 with
+  `redis: down` in the body, liveness still 200 in the same window, recovery
+  clean. The status is set through `passthrough` rather than thrown, so
+  `dependencies` survives the exception filter and an operator still learns
+  which dependency failed. 9 controller tests. It also forced a fix in
+  `rate-limit.live.spec.ts` (`9d90f67`), which had been failing roughly one run
+  in four because three other suites flush its Redis keys mid-test and the
+  suite never set trust proxy — that suite now owns database 15.
 - `DEF-004` and `DEF-005` — the rate limiter now obeys its configuration and
   counts against the session (`8c48624`). Limits read from `ConfigService`, with
   `RATE_LIMIT_AUTH_MAX_REQUESTS` added because the sign-in ceiling never had a
@@ -106,7 +113,7 @@ recorded (`DEF-001` … `DEF-019`); **seven are done**.
 
 ### Next, after this sprint
 
-1. The remaining fourteen defects — `DEF-007` onward, mostly small, plus
+1. The remaining eleven defects — `DEF-007` onward, mostly small, plus
    `DEF-018` recorded during the re-verification.
 2. `BE-1702` — controller-level tests. Fourteen routes have none outside the
    contract suite, and DEF-001 exists precisely because of that gap.
