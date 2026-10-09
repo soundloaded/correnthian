@@ -232,7 +232,9 @@ function makeAdapter(options?: {
 
 function makeService(adapterFactory: () => ReturnType<typeof makeAdapter>) {
   const store = makeStore();
-  const transactions = new TransactionsService(store.prisma as any, audit as any);
+  const transactions = new TransactionsService(
+    store.prisma as any, audit as any, { forChain: async () => undefined } as any,
+  );
   const built = adapterFactory();
   const indexing = new TransactionIndexingService(
     store.prisma as any,

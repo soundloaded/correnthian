@@ -6,6 +6,17 @@
  * version of that goal: nothing secret ever becomes an ordinary string.
  */
 
+/**
+ * Endpoints, including their query string.
+ *
+ * Not key material, and still withheld: an RPC URL is a metered quota
+ * (`BlockchainService` never returns one), and provider errors arrive
+ * wearing theirs — viem's standard failure body contains `URL: http://…`.
+ * The whole URL goes, query string included, because credentials ride in
+ * query parameters at least as often as in headers.
+ */
+const URL = /\b(?:https?:\/\/|wss?:\/\/)[^\s"'<>\]]+/gi;
+
 const SEED_PHRASE = /\b(?:[a-z]{3,8}\s+){11,23}[a-z]{3,8}\b/gi;
 const HEX_KEY = /\b(?:0x)?[0-9a-f]{64}\b/gi;
 const BECH32 = /\b(?:bc1[a-z0-9]{25,62}|0x[a-z0-9]{40})\b/gi;
@@ -15,6 +26,7 @@ export type Redacted = string;
 /** Replace anything that looks like key material with a marker. */
 export function redact(input: string): Redacted {
   return input
+    .replace(URL, '[REDACTED:URL]')
     .replace(SEED_PHRASE, '[REDACTED:SEED_PHRASE]')
     .replace(HEX_KEY, '[REDACTED:HEX_KEY]')
     .replace(BECH32, (m) => (m.startsWith('bc1') ? '[REDACTED:BTC_ADDRESS]' : m));

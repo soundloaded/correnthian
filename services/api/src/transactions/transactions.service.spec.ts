@@ -59,6 +59,13 @@ function makeStore(initial: Row[]) {
         rows.set(row.id as string, row);
         return { ...row };
       },
+      update: async ({ where, data }: { where: { id: string }; data: Row }) => {
+        const row = rows.get(where.id);
+        if (!row) throw new Error('record not found');
+        for (const [key, value] of Object.entries(data)) row[key] = value;
+        row.updatedAt = new Date();
+        return { ...row };
+      },
       updateMany: async ({ where, data }: { where: Row; data: Row }) => {
         written.push({ where, data });
         const row = rows.get(where['id'] as string);
@@ -81,18 +88,27 @@ function makeStore(initial: Row[]) {
           ? {
               id: 'w1',
               userId: 'u1',
+              address: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
               chainId: '1',
-              chain: { id: '1', family: 'evm', enabled: true },
+              chain: { id: '1', family: 'evm', enabled: true, nativeSymbol: 'ETH' },
             }
           : null,
     },
     asset: {
-      findUnique: async ({ where }: { where: { assetId: string } }) =>
-        where.assetId === '1:0xgold:c1'
-          ? { id: 'a1', assetId: '1:0xgold:c1', symbol: 'XAU', chainId: '1', enabled: true, transferSupported: true }
+      findUnique: async ({ where }: { where: { assetId?: string; id?: string } }) =>
+        // Two keys, two callers: the registry is read by the derived
+        // `assetId`, and a `Transaction.assetId` foreign key by row id.
+        where.id === 'a1'
+          ? { id: 'a1', assetId: '1:0xgold:c1', symbol: 'XAU', chainId: '1', contractAddress: '0xgold', enabled: true, transferSupported: true }
+          : where.id === 'native1'
+            ? { id: 'native1', assetId: '1:native:c1', symbol: 'ETH', chainId: '1', contractAddress: '', enabled: true, transferSupported: true }
+            : where.assetId === '1:0xgold:c1'
+          ? { id: 'a1', assetId: '1:0xgold:c1', symbol: 'XAU', chainId: '1', contractAddress: '0xgold', enabled: true, transferSupported: true }
           : where.assetId === '8453:0xgold:c1'
-            ? { id: 'a2', assetId: '8453:0xgold:c1', symbol: 'XAU', chainId: '8453', enabled: true, transferSupported: true }
-            : null,
+            ? { id: 'a2', assetId: '8453:0xgold:c1', symbol: 'XAU', chainId: '8453', contractAddress: '0xgold', enabled: true, transferSupported: true }
+            : where.assetId === '1:native:c1'
+              ? { id: 'native1', assetId: '1:native:c1', symbol: 'ETH', chainId: '1', contractAddress: '', enabled: true, transferSupported: true }
+              : null,
     },
     provider: { findUnique: async () => ({ id: 'p1', slug: 'placeholder-metals' }) },
   };
@@ -147,6 +163,18 @@ describe('TransactionsService — the lifecycle', () => {
     recordChange: ReturnType<typeof vi.fn>;
     assertReason: typeof assertReason;
   };
+  /**
+   * What `BlockchainService.forChain` hands out this test — the assembly
+   * and relay side of BE-602. Reset in `seed`; each test replaces the
+   * methods it cares about.
+   */
+  let adapter: {
+    assemblePayload: ReturnType<typeof vi.fn>;
+    buildTransaction: ReturnType<typeof vi.fn>;
+    broadcastTransaction: ReturnType<typeof vi.fn>;
+    decodeSignedTransaction: ReturnType<typeof vi.fn>;
+  };
+  let blockchain: { forChain: ReturnType<typeof vi.fn> };
   let row: Row;
 
   const seed = (over: Row = {}) => {
@@ -159,7 +187,37 @@ describe('TransactionsService — the lifecycle', () => {
       // under test and a `vi.fn()` would assert nothing.
       assertReason,
     };
-    svc = new TransactionsService(store.prisma as never, audit as never);
+    adapter = {
+      // The pure half of assembly: what the payload must say, with no RPC.
+      // The relay path re-derives it to compare against what was signed.
+      assemblePayload: vi.fn((req: { to: string; value?: string; token?: string }) =>
+        req.token
+          ? { to: req.token, value: '0', data: '0xa9059cbb' }
+          : { to: req.to, value: req.value ?? '0', data: '0x' },
+      ),
+      buildTransaction: vi.fn(async () => ({
+        to: '0xdac17f958d2ee523a2206206994597c13d831ec7',
+        value: '0',
+        data: '0xa9059cbb',
+        chainId: 1,
+        gas: '21000',
+        nonce: 3,
+        maxFeePerGas: '2000000000',
+        maxPriorityFeePerGas: '100000000',
+      })),
+      broadcastTransaction: vi.fn(async () => '0x' + 'c'.repeat(64)),
+      decodeSignedTransaction: vi.fn(async () => ({
+        chainId: 1,
+        from: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        // A signed token transfer points at the *contract*, not the payee.
+        to: '0xgold',
+        value: '0',
+        nonce: 3,
+        data: '0xa9059cbb',
+      })),
+    };
+    blockchain = { forChain: vi.fn(async () => adapter) };
+    svc = new TransactionsService(store.prisma as never, audit as never, blockchain as never);
   };
 
   beforeEach(() => seed());
@@ -378,6 +436,191 @@ describe('TransactionsService — the lifecycle', () => {
           confirmations: 12,
         }),
       ).rejects.toThrow(/positive decimal string/);
+    });
+  });
+
+  // --- BE-602: the server assembles, the device signs ---------------------
+
+  describe('assembling an unsigned send', () => {
+    it('assembles a token transfer against the token contract and records the fee it was shown', async () => {
+      seed();
+      const out = await svc.assemble('tx1', 'u1');
+
+      expect(adapter.buildTransaction).toHaveBeenCalledTimes(1);
+      const request = adapter.buildTransaction.mock.calls[0]?.[0];
+      expect(request).toMatchObject({
+        chainId: '1',
+        from: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        to: '0xdac17f958d2ee523a2206206994597c13d831ec7',
+        token: '0xgold',
+        amount: '100000000',
+      });
+
+      // Nothing is signed by assembling: the row stays exactly where it was.
+      const row = store.rows.get('tx1');
+      expect(row?.['state']).toBe('created');
+      expect(out).toMatchObject({
+        id: 'tx1',
+        state: 'created',
+        walletAddress: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        fee: { raw: '42000000000000', nativeSymbol: 'ETH' },
+      });
+      expect(out.unsigned).toMatchObject({ gas: '21000', nonce: 3 });
+
+      // The fee the account holder was shown is recorded, not reconstructed
+      // later: gas 21000 × cap 2000000000, exactly, in base units.
+      expect(row?.['feeRaw']).toBe('42000000000000');
+      expect(row?.['metadata']).toMatchObject({
+        build: expect.objectContaining({ nonce: 3, gas: '21000' }),
+      });
+    });
+
+    it('assembles a native transfer as value to the destination', async () => {
+      // The row's `assetId` is the foreign key, not the derived registry key.
+      seed({ assetId: 'native1' });
+      await svc.assemble('tx1', 'u1');
+
+      const request = adapter.buildTransaction.mock.calls[0]?.[0];
+      expect(request).toMatchObject({
+        chainId: '1',
+        to: '0xdac17f958d2ee523a2206206994597c13d831ec7',
+        value: '100000000',
+      });
+      expect(request.token).toBeUndefined();
+      expect(request.amount).toBeUndefined();
+    });
+
+    it('refuses to assemble for someone else\'s transaction, and never calls the chain', async () => {
+      seed();
+      await expect(svc.assemble('tx1', 'u2')).rejects.toThrow(/not found/i);
+      expect(adapter.buildTransaction).not.toHaveBeenCalled();
+    });
+
+    it('refuses an intent that is no longer unsigned', async () => {
+      seed({ state: 'signed' });
+      await expect(svc.assemble('tx1', 'u1')).rejects.toThrow(/unsigned intent/i);
+    });
+
+    it('refuses an inbound transfer: there is nothing for the owner to sign', async () => {
+      seed({ direction: 'in', destination: null });
+      await expect(svc.assemble('tx1', 'u1')).rejects.toThrow(/nothing to sign/i);
+    });
+
+    it('reports a transport failure without leaking the endpoint', async () => {
+      seed();
+      adapter.buildTransaction.mockRejectedValue(
+        new Error('All 1 RPC endpoint(s) failed for this read. Last error: http://rpc.internal:8545/key'),
+      );
+      await expect(svc.assemble('tx1', 'u1')).rejects.toMatchObject({ status: 503 });
+    });
+
+    it('surfaces a node decline as a client error, with the endpoint redacted out of it', async () => {
+      seed();
+      adapter.buildTransaction.mockRejectedValue(
+        new Error('execution reverted: insufficient funds at http://rpc.internal:8545/v1'),
+      );
+      await expect(svc.assemble('tx1', 'u1')).rejects.toMatchObject({ status: 400 });
+      await svc.assemble('tx1', 'u1').catch((err: Error) => {
+        expect(err.message).not.toContain('rpc.internal');
+        expect(err.message).toContain('insufficient funds');
+      });
+    });
+  });
+
+  describe('relaying a signed send', () => {
+    const SIGNED = '0x' + 'ab'.repeat(80);
+
+    it('verifies the payload against the intent, relays it, and records the hash', async () => {
+      seed();
+      await svc.markSigned('tx1', OWNER);
+      adapter.broadcastTransaction.mockResolvedValue('0x' + '9'.repeat(64));
+
+      await svc.relay('tx1', 'u1', SIGNED);
+
+      // Decoded before anything goes to the network, and compared against
+      // what this server assembled — not against itself.
+      expect(adapter.decodeSignedTransaction).toHaveBeenCalledWith(SIGNED);
+      expect(adapter.broadcastTransaction).toHaveBeenCalledWith(SIGNED);
+
+      const row = store.rows.get('tx1');
+      expect(row?.['state']).toBe('broadcast');
+      expect(row?.['txHash']).toBe('0x' + '9'.repeat(64));
+      expect(row?.['broadcastAt']).toBeInstanceOf(Date);
+    });
+
+    it('refuses a payload signed by a different account, before any network call', async () => {
+      seed();
+      await svc.markSigned('tx1', OWNER);
+      adapter.decodeSignedTransaction.mockResolvedValue({
+        chainId: 1,
+        from: '0x9999999999999999999999999999999999999999',
+        to: '0xgold',
+        value: '0',
+        nonce: 3,
+        data: '0xa9059cbb',
+      });
+
+      await expect(svc.relay('tx1', 'u1', SIGNED)).rejects.toThrow(/different account/i);
+      expect(adapter.broadcastTransaction).not.toHaveBeenCalled();
+      expect(store.rows.get('tx1')?.['state']).toBe('signed');
+    });
+
+    it('refuses a payload signed for another chain', async () => {
+      seed();
+      await svc.markSigned('tx1', OWNER);
+      adapter.decodeSignedTransaction.mockResolvedValue({
+        chainId: 8453,
+        from: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        to: '0xgold',
+        value: '0',
+        nonce: 3,
+        data: '0xa9059cbb',
+      });
+
+      await expect(svc.relay('tx1', 'u1', SIGNED)).rejects.toThrow(/chain/i);
+      expect(adapter.broadcastTransaction).not.toHaveBeenCalled();
+    });
+
+    it('refuses a payload whose value and destination are not the intent\'s', async () => {
+      seed();
+      await svc.markSigned('tx1', OWNER);
+      adapter.decodeSignedTransaction.mockResolvedValue({
+        chainId: 1,
+        from: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        // The right account, paid to someone else.
+        to: '0x7777777777777777777777777777777777777777',
+        value: '0',
+        nonce: 3,
+        data: '0xa9059cbb',
+      });
+
+      await expect(svc.relay('tx1', 'u1', SIGNED)).rejects.toThrow(/destination|does not match/i);
+      expect(adapter.broadcastTransaction).not.toHaveBeenCalled();
+    });
+
+    it('refuses before the signature has been reported', async () => {
+      seed();
+      await expect(svc.relay('tx1', 'u1', SIGNED)).rejects.toThrow(/reported as signed/i);
+      expect(adapter.decodeSignedTransaction).not.toHaveBeenCalled();
+    });
+
+    it('refuses someone else\'s transaction without decoding anything', async () => {
+      seed();
+      await svc.markSigned('tx1', OWNER);
+      await expect(svc.relay('tx1', 'u2', SIGNED)).rejects.toThrow(/not found/i);
+      expect(adapter.decodeSignedTransaction).not.toHaveBeenCalled();
+    });
+
+    it('leaves the row in signed when the network refuses the payload', async () => {
+      seed();
+      await svc.markSigned('tx1', OWNER);
+      adapter.broadcastTransaction.mockRejectedValue(
+        new Error('All 1 RPC endpoint(s) failed for this read. Last error: nonce too low'),
+      );
+
+      await expect(svc.relay('tx1', 'u1', SIGNED)).rejects.toMatchObject({ status: 503 });
+      expect(store.rows.get('tx1')?.['state']).toBe('signed');
+      expect(store.rows.get('tx1')?.['txHash']).toBeNull();
     });
   });
 

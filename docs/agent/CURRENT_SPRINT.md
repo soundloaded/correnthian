@@ -10,19 +10,24 @@ Last updated: 2026-10-09.
 
 ## Sprint: Backend Foundation 002 — Audit and Defect Clearance
 
-> **Defect phase complete.** 19 of 20 defects are `DONE`, the one that is
+> **Defect phase complete.** 20 of 21 defects are `DONE`, the one that is
 > not (`DEF-009`) is `PARTIAL` and gated on a decision outside code, and
 > nothing remains in `BACKLOG`. Work below has moved on to what the defects
 > were blocking.
 
 The sprint began because reading the code found defects that no test, no
 typecheck and no contract assertion catches. Several were silent — including one
-where a guard had stopped checking anything and reported a green run. There are twenty
-recorded (`DEF-001` … `DEF-020`); **nineteen are done, one is half fixed, none are `BACKLOG`**.
+where a guard had stopped checking anything and reported a green run. There are twenty-one
+recorded (`DEF-001` … `DEF-021`); **twenty are done, one is half fixed, none are `BACKLOG`**.
 
 ### Current task
 
-**Next: `BE-602` — send/receive backend.** `BE-601` is built and measured: the
+**Next: `BE-1101` / `BE-1105` — KYC and sanctions.** `BE-602` is done: the
+send path walks intent → build → sign → broadcast with the payload verified
+against what the server assembled. What remains of the transaction story is
+shared with `BE-302`/`BE-601` — one run against a real node (item 2).
+
+**Done:** `BE-601` was built and measured: the
 scope was written by running the real job against a stub node rather than
 reading the source, `DEF-020` — which that uncovered — is fixed, and the sweep
 itself was verified against the same setup across four cases. What `BE-601` and
@@ -60,11 +65,11 @@ production-`/docs` question is still undecided and is now item 4.
 
 | # | Task | Why it is next |
 |---|---|---|
-| 1 | `BE-602` — send/receive backend | `EvmAdapter.buildTransaction` already exists and nothing exposes it. The server assembles, the device signs. |
-| 2 | Node-backed acceptance run for `BE-302` **and `BE-601`** | The one unmet criterion, and it is shared: both were verified against a stub node rather than a chain. Needs a node and a funded address holding a registered token. |
-| 3 | `BE-1101` / `BE-1105` — KYC and sanctions | Legally required before selling gold for dollars regardless of custody posture, and they need no metals partner. |
-| 4 | `BE-102`'s open question — is `/docs` exposed in production? | Not decided. An API schema is a map of everything an attacker can call; the answer is a disclosure decision, not a technical one. |
-| 5 | ADR-022's build-time choices — account implementation, paymaster, EntryPoint | Gated on a vendor or a contract, same as `BE-802`. Recording them as decided would repeat the `claimBatch` mistake. |
+| 1 | `BE-1101` / `BE-1105` — KYC and sanctions | The largest build left that gates nothing external: legally required before selling gold for dollars regardless of custody posture, and it needs no metals partner. |
+| 2 | Node-backed acceptance run for `BE-302`, `BE-601` **and `BE-602`** | The shared unmet criterion: all three were verified against a stub node rather than a chain. Needs a node and a funded address holding a registered token. |
+| 3 | `BE-102`'s open question — is `/docs` exposed in production? | Not decided. An API schema is a map of everything an attacker can call; the answer is a disclosure decision, not a technical one. |
+| 4 | ADR-022's build-time choices — account implementation, paymaster, EntryPoint | Gated on a vendor or a contract, same as `BE-802`. Recording them as decided would repeat the `claimBatch` mistake. |
+| 5 | Contract entries for every write route | The two new `BE-602` routes have no `packages/contracts` entry, matching `POST /transactions` and `:id/transitions`. Whether *every* write route gets one is a sweep, not a patch. |
 
 **Still open, deliberately not scheduled:**
 
@@ -124,6 +129,25 @@ into CI, so the next one fails the build instead of shipping.
 ---
 
 ### Completed in this sprint
+
+- **`BE-602` — send/receive backend, `DONE`.** The server assembles, the
+  device signs, the server relays — and *verifies before it relays*. Three
+  commits: a module restructure so `transactions → blockchain` is acyclic
+  (the indexer moved home; every `Transaction` writer now shares the module
+  that owns the lifecycle); the adapter half, where `buildTransaction` learned
+  to be signable at all (it returned no nonce and no fee caps — a device
+  filling those in would be doing its own assembly) and gained ERC-20
+  encoding plus a pure `assemblePayload` and a `decodeSignedTransaction`
+  that **recovers the signer from the signature**; and the service half,
+  where `assemble` records the exact fee the account holder was shown and
+  `relay` checks signer, chain and `to`/`value`/`data` against the
+  assembled intent before any network call. Failures split 503/400 so a
+  retryable outage is not billed to the caller as their mistake, and the
+  400 path redacts — `summariseError`'s comment always promised that and
+  only truncation delivered; `redact()` gained a URL rule. 35 tests across
+  four packages, **11 mutations all killed**, one survivor found and the
+  redundant guard it exposed removed rather than the test weakened.
+  Receive needed nothing: a registered address is the receive side.
 
 - **`BE-1703`'s headline item — `RolesGuard`, tested at two layers.** Eleven
   unit tests pin the guard's decisions (hierarchy both ways, unknown held

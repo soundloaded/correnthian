@@ -1,11 +1,13 @@
 import {
-  createPublicClient, defineChain, formatUnits, http, TransactionNotFoundError,
-  type Address, type Hex, type PublicClient,
+  createPublicClient, defineChain, formatUnits, http, parseTransaction,
+  recoverTransactionAddress, TransactionNotFoundError,
+  type Address, type Hex, type PublicClient, type TransactionSerialized,
 } from 'viem';
-import { erc20Abi, getAbiItem } from 'viem';
+import { encodeFunctionData, erc20Abi, getAbiItem } from 'viem';
 import type {
   Balance, BlockchainAdapter, BuildTransactionRequest, ChainDescriptor,
-  FeeEstimate, ObservedTokenTransfer, TransactionRecord, UnsignedTransaction,
+  FeeEstimate, ObservedTokenTransfer, SignedTransactionFacts, TransactionRecord,
+  UnsignedTransaction,
 } from './adapter.js';
 import { RpcAbsent, RpcPool, type RpcEndpoint } from './rpc.js';
 import type { AddressFamily } from './address.js';
@@ -133,26 +135,82 @@ export class EvmAdapter implements BlockchainAdapter {
     };
   }
 
-  async buildTransaction(req: BuildTransactionRequest): Promise<UnsignedTransaction> {
-    // `account` is only included when we know it. Passing a zero address
-    // instead would silently estimate against a balance nobody holds.
-    const gas = await this.read((c) =>
-      // estimateGas is the raw-transaction estimator; estimateContractGas is
-      // typed for ABI calls and rejects a plain value transfer.
-      c.estimateGas({
-        ...(req.from ? { account: req.from as `0x${string}` } : {}),
-        to: req.to as `0x${string}` as Address,
-        value: BigInt(req.value ?? '0'),
-        data: (req.data ?? '0x') as Hex,
+  assemblePayload(req: BuildTransactionRequest): { to: string; value: string; data: string } {
+    if (req.token === undefined) {
+      return { to: req.to, value: req.value ?? '0', data: req.data ?? '0x' };
+    }
+
+    if (req.data !== undefined) {
+      // Both is ambiguous: either the caller means the contract call they
+      // wrote, or the transfer they asked for. Refusing beats picking.
+      throw new Error('a token transfer cannot be combined with explicit data');
+    }
+    // Base units, integer: `parseUnits`-style fractions of a base unit
+    // cannot be encoded into a uint256, and rounding them silently would
+    // move an amount the caller never asked for.
+    if (!req.amount || !/^[1-9]\d*$/.test(req.amount)) {
+      throw new Error('amount must be a positive integer in base units');
+    }
+    return {
+      to: req.token,
+      value: '0',
+      data: encodeFunctionData({
+        abi: erc20Abi,
+        functionName: 'transfer',
+        args: [req.to as Address, BigInt(req.amount)],
       }),
-    );
+    };
+  }
+
+  async buildTransaction(req: BuildTransactionRequest): Promise<UnsignedTransaction> {
+    const { to, value, data } = this.assemblePayload(req);
+
+    // All three in one `read`, so failover retries the assembly as a unit —
+    // a nonce from one endpoint and gas from a quarantined one is how a
+    // payload gets assembled from two different views of the chain.
+    //
+    // Fee estimation is `estimateFeesPerGas` with no fallback: on a chain
+    // where it cannot be answered, building fails rather than returning a
+    // payload with an invented ceiling. A device signing a fee nobody
+    // calculated is worse than a request that errored.
+    const { gas, nonce, fees } = await this.read(async (c) => {
+      const [gasEstimate, nonceEstimate, feeEstimate] = await Promise.all([
+        // estimateGas is the raw-transaction estimator; estimateContractGas is
+        // typed for ABI calls and rejects a plain value transfer.
+        c.estimateGas({
+          ...(req.from ? { account: req.from as `0x${string}` } : {}),
+          to: to as `0x${string}` as Address,
+          value: BigInt(value),
+          data: data as Hex,
+        }),
+        // `pending`, not `latest`: two sends from one wallet in flight would
+        // otherwise be handed the same nonce, and the second would replace
+        // the first.
+        req.from
+          ? c.getTransactionCount({
+              address: req.from as `0x${string}`,
+              blockTag: 'pending',
+            })
+          : Promise.resolve(undefined),
+        c.estimateFeesPerGas(),
+      ]);
+
+      return {
+        gas: gasEstimate,
+        nonce: nonceEstimate,
+        fees: feeEstimate,
+      };
+    });
 
     return {
-      to: req.to,
-      value: req.value ?? '0',
-      data: req.data ?? '0x',
+      to,
+      value,
+      data,
       chainId: Number(this.descriptor.chainId),
       gas: gas.toString(),
+      ...(nonce !== undefined ? { nonce } : {}),
+      maxFeePerGas: fees.maxFeePerGas.toString(),
+      maxPriorityFeePerGas: fees.maxPriorityFeePerGas.toString(),
     };
   }
 
@@ -162,6 +220,31 @@ export class EvmAdapter implements BlockchainAdapter {
    * Correnthian never produces this value. If a signed payload cannot be
    * produced, that is the architecture working as designed, not a limitation.
    */
+  async decodeSignedTransaction(signed: string): Promise<SignedTransactionFacts> {
+    if (!/^0x[0-9a-fA-F]+$/.test(signed)) {
+      throw new Error('Not a hex-encoded payload');
+    }
+
+    // `parseTransaction` is positional in this viem: an object argument is
+    // handed to the type sniffer as if it were bytes.
+    const parsed = parseTransaction(signed as TransactionSerialized);
+    const from = await recoverTransactionAddress({
+      serializedTransaction: signed as TransactionSerialized,
+    });
+
+    return {
+      // A payload with no chain id is not "any chain" — it is a payload this
+      // platform's assemblies never produce, and 0 fails every comparison a
+      // caller makes against a configured chain.
+      chainId: parsed.chainId ?? 0,
+      from,
+      to: parsed.to ?? null,
+      value: (parsed.value ?? 0n).toString(),
+      nonce: parsed.nonce ?? 0,
+      data: parsed.data ?? '0x',
+    };
+  }
+
   async broadcastTransaction(signed: string): Promise<string> {
     const hash = await this.read((c) => c.sendRawTransaction({ serializedTransaction: signed as `0x${string}` }));
     return hash;

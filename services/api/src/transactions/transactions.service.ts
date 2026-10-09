@@ -1,5 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { validateAddress } from '@correnthian/blockchain';
+import { redact } from '@correnthian/security';
+import { validateAddress, type BuildTransactionRequest, type UnsignedTransaction } from '@correnthian/blockchain';
+import { BlockchainService } from '../blockchain/blockchain.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { AppError } from '../common/errors.js';
 import { decodeCursor, encodeCursor, KEYSET_ORDER, keysetAfter } from '../common/keyset.js';
@@ -147,6 +149,7 @@ export class TransactionsService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(BlockchainService) private readonly blockchain: BlockchainService,
   ) {}
 
   // --- creation ------------------------------------------------------------
@@ -296,6 +299,241 @@ export class TransactionsService {
         : {}),
       ...(input.txHash ? { txHash: input.txHash } : {}),
     }, input.reason);
+  }
+
+  // --- BE-602: the server assembles, the device signs ----------------------
+
+  /**
+   * Assemble an unsigned intent into something a device can sign.
+   *
+   * Read-only with respect to the lifecycle: the row stays in `created`,
+   * because assembling is not signing and nothing exists on the network
+   * until the owner's device says so. What *is* written is the fee this
+   * account holder was shown — `feeRaw` as gas × fee cap, exact, in base
+   * units — because a fee reconstructed later from a different fee market
+   * is a fee the user never agreed to.
+   *
+   * Encoding happens behind the adapter: a service that hand-built ERC-20
+   * calldata would have reached past `BlockchainAdapter` and picked up
+   * knowledge that belongs to a chain family.
+   */
+  async assemble(id: string, userId: string) {
+    const tx = await this.load(id);
+    if (tx.state !== 'created') {
+      throw AppError.conflict(
+        `This transaction is "${tx.state}"; only an unsigned intent can be assembled`,
+      );
+    }
+    if (tx.direction === 'in') {
+      // An inbound transfer arrived on its own. There is no device holding a
+      // key on that side of it — offering to assemble one would invite the
+      // client to ask *who* should sign a deposit they already received.
+      throw AppError.badRequest('An inbound transfer already happened; there is nothing to sign');
+    }
+
+    const [wallet, asset] = await Promise.all([
+      this.prisma.wallet.findUnique({ where: { id: tx.walletId }, include: { chain: true } }),
+      this.prisma.asset.findUnique({ where: { id: tx.assetId } }),
+    ]);
+    // Not "forbidden": a caller probing another account's ids should not learn
+    // the id exists — same rule as `create`. The wallet is the ownership
+    // authority (`Transaction.userId` is denormalised from it), so this single
+    // check is the whole authorisation: an earlier one on the row itself would
+    // have said the same thing in a second place to keep correct.
+    if (!wallet || wallet.userId !== userId) throw AppError.notFound('Transaction not found');
+    if (!asset || !tx.destination) throw AppError.notFound('Transaction not found');
+
+    const adapter = await this.blockchain.forChain(tx.chainId);
+    const request = this.intentRequest(tx, wallet.address, asset.contractAddress);
+
+    let unsigned: UnsignedTransaction;
+    try {
+      unsigned = await adapter.buildTransaction(request);
+    } catch (err) {
+      throw this.assemblyFailure(err);
+    }
+
+    const feeRaw =
+      unsigned.gas && unsigned.maxFeePerGas
+        ? (BigInt(unsigned.gas) * BigInt(unsigned.maxFeePerGas)).toString()
+        : null;
+
+    const previous = (tx.metadata as Record<string, unknown> | null) ?? {};
+    await this.prisma.transaction.update({
+      where: { id: tx.id },
+      data: {
+        ...(feeRaw ? { feeRaw } : {}),
+        metadata: {
+          ...previous,
+          build: {
+            nonce: unsigned.nonce ?? null,
+            gas: unsigned.gas ?? null,
+            maxFeePerGas: unsigned.maxFeePerGas ?? null,
+            maxPriorityFeePerGas: unsigned.maxPriorityFeePerGas ?? null,
+            builtAt: new Date().toISOString(),
+          },
+        },
+      },
+    });
+
+    await this.audit.record({
+      actorId: userId,
+      action: 'transaction.assembled',
+      targetType: 'Transaction',
+      targetId: tx.id,
+      metadata: {
+        chainId: tx.chainId,
+        feeRaw,
+        nonce: unsigned.nonce ?? null,
+      },
+    });
+
+    return {
+      id: tx.id,
+      state: tx.state,
+      chainId: tx.chainId,
+      walletAddress: wallet.address,
+      assetId: asset.assetId,
+      destination: tx.destination,
+      amountRaw: tx.amountRaw,
+      unsigned,
+      fee: feeRaw ? { raw: feeRaw, nativeSymbol: wallet.chain.nativeSymbol } : null,
+    };
+  }
+
+  /**
+   * Relay a payload the device signed, after checking it is the one this
+   * server assembled.
+   *
+   * The relay itself never touches a key — the payload arrives already
+   * signed, which is the whole shape of the boundary (ADR-001). But a relay
+   * that would send *any* bytes it is handed would make the ledger's
+   * destination and amount columns decoration: the row says what the intent
+   * said, the chain does what the bytes said, and nothing connects them.
+   *
+   * So three facts are checked against the intent before anything reaches
+   * the network — who signed (recovered from the signature, so a payload
+   * edited after signing recovers someone else), which chain, and whether
+   * `to`/`value`/`data` equal the payload `assemblePayload` derives from
+   * this same intent. The node gets the last word on validity; this is the
+   * server's word on *identity*.
+   *
+   * A failed relay leaves the row in `signed`, so the device can retry.
+   */
+  async relay(id: string, userId: string, signed: string) {
+    const tx = await this.load(id);
+    if (tx.userId !== userId) throw AppError.notFound('Transaction not found');
+    if (tx.state !== 'signed') {
+      throw AppError.conflict(
+        tx.state === 'created'
+          ? 'Report the signature first: this transaction has not been reported as signed'
+          : `This transaction is "${tx.state}" and can no longer be broadcast`,
+      );
+    }
+
+    const [wallet, asset] = await Promise.all([
+      this.prisma.wallet.findUnique({ where: { id: tx.walletId } }),
+      this.prisma.asset.findUnique({ where: { id: tx.assetId } }),
+    ]);
+    if (!wallet || !asset) throw AppError.notFound('Transaction not found');
+    const destination = tx.destination;
+    if (!destination) throw AppError.notFound('Transaction not found');
+
+    const adapter = await this.blockchain.forChain(tx.chainId);
+
+    let facts: Awaited<ReturnType<typeof adapter.decodeSignedTransaction>>;
+    try {
+      facts = await adapter.decodeSignedTransaction(signed);
+    } catch (err) {
+      throw this.assemblyFailure(err);
+    }
+
+    if (facts.chainId !== Number(tx.chainId)) {
+      throw AppError.badRequest(
+        `This payload was signed for chain ${facts.chainId}, not ${tx.chainId}`,
+      );
+    }
+    if (facts.from.toLowerCase() !== wallet.address.toLowerCase()) {
+      throw AppError.badRequest(
+        'This payload was signed by a different account than the wallet it is filed against',
+      );
+    }
+
+    const expected = adapter.assemblePayload(this.intentRequest(tx, wallet.address, asset.contractAddress));
+    if (
+      facts.to?.toLowerCase() !== expected.to.toLowerCase() ||
+      facts.value !== expected.value ||
+      facts.data.toLowerCase() !== expected.data.toLowerCase()
+    ) {
+      throw AppError.badRequest(
+        'This payload does not match the transaction it is filed against — ' +
+          'the destination, amount or token transfer differ from what was assembled',
+      );
+    }
+
+    let hash: string;
+    try {
+      hash = await adapter.broadcastTransaction(signed);
+    } catch (err) {
+      throw this.assemblyFailure(err);
+    }
+
+    return this.reportBroadcast(tx.id, { id: userId, role: 'user' }, {
+      to: 'broadcast',
+      txHash: hash,
+    });
+  }
+
+  /** The chain-neutral request this intent assembles to. */
+  private intentRequest(
+    tx: Transaction,
+    from: string,
+    contractAddress: string,
+  ): BuildTransactionRequest {
+    if (!tx.destination) {
+      throw AppError.badRequest('This transaction has no destination to assemble');
+    }
+    // A native asset is the empty contract address — the registry's spelling
+    // for "no contract", and the one branch that decides value vs calldata.
+    if (contractAddress === '') {
+      return {
+        chainId: tx.chainId,
+        from,
+        to: tx.destination,
+        value: tx.amountRaw,
+      };
+    }
+    return {
+      chainId: tx.chainId,
+      from,
+      to: tx.destination,
+      token: contractAddress,
+      amount: tx.amountRaw,
+    };
+  }
+
+  /**
+   * An assembly or relay failure, split into the two kinds a client acts on
+   * differently.
+   *
+   * Transport (pool exhausted, endpoint down) is not the caller's problem:
+   * 503, retry later, and no detail — the pool's message carries our RPC
+   * endpoints, which are a metered quota this API never returns.
+   *
+   * Everything else is the node declining the request — an estimateGas
+   * revert, bytes that are not a transaction — and the caller can act on it:
+   * 400 with the reason, through `summariseError`, which strips endpoints
+   * and truncates. Viem's standard failure body is `URL: http://…` on its
+   * second line, so this is the path where redaction has to be real.
+   */
+  private assemblyFailure(err: unknown): AppError {
+    const message = err instanceof Error ? err.message : String(err);
+    if (/All \d+ RPC endpoint\(s\) failed/.test(message)) {
+      return AppError.providerUnavailable(
+        'The chain could not be reached while processing this transaction',
+      );
+    }
+    return AppError.badRequest(this.summariseError(message));
   }
 
   // --- observation ---------------------------------------------------------
@@ -844,7 +1082,11 @@ export class TransactionsService {
    * failure is recorded; the internals are not.
    */
   private summariseError(message: string): string {
-    return message.length > 200 ? `${message.slice(0, 197)}...` : message;
+    // Redact first, then truncate: the order matters, because truncation
+    // only hides an endpoint that happens to sit past the cut — and viem
+    // puts `URL: http://…` in the first two lines of a failure.
+    const safe = redact(message);
+    return safe.length > 200 ? `${safe.slice(0, 197)}...` : safe;
   }
 
   private moneyPatch(input: TransitionDto): Record<string, unknown> {

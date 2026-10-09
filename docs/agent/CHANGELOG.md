@@ -13,6 +13,56 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-09
 
+### `BE-602` — send/receive backend: assemble, sign, relay, verify
+- **The endpoint existed in spirit but could not have been used.**
+  `buildTransaction` returned `{to, value, data, chainId, gas}` — no nonce,
+  no fee caps — so nothing could sign what the server assembled, and a device
+  that filled those in itself would have been doing its own assembly. It now
+  asks for the `pending` nonce (two sends in flight would otherwise be handed
+  the same one) and EIP-1559 caps, and encodes ERC-20 transfers: amount in
+  calldata against the contract, zero value.
+- **Three commits, one architectural move first.** `TransactionsService`
+  needs `BlockchainService`, and `BlockchainModule` already imported
+  `TransactionsModule` for the indexer — a cycle Nest resolves into
+  `undefined` dependencies, which compiles. Rather than `forwardRef`, the
+  indexer moved into `transactions`: one module now owns every write to the
+  `Transaction` table, and the graph is one-directional.
+- **Relaying without verifying would make the ledger decorative.** The
+  endpoint accepts bytes the server never saw signed; without checks, the
+  row would say what the intent said while the chain did what the bytes said,
+  with nothing connecting them. `decodeSignedTransaction` parses the payload
+  and **recovers the signer from the signature** — a payload edited after
+  signing recovers someone else — and the relay compares signer, chain and
+  `to`/`value`/`data` against `assemblePayload` derived from the same intent,
+  all before any network call. `assemblePayload` exists because that
+  comparison needs the encoding without a second `eth_estimateGas` per
+  broadcast, and because the comparison should not be able to fail because
+  the chain was having a moment.
+- **The fee shown is the fee recorded** — gas × cap, exact bigint, written
+  at build time, because reconstructed later it would be a fee from a
+  different fee market than the one the account holder agreed to.
+- **Failure routing was a real decision:** transport failures are 503 with
+  no detail (the pool's message carries our RPC endpoints, which are a
+  metered quota), node declines are 400 with the reason. The 400 path runs
+  through `summariseError`, whose comment has always claimed it strips
+  endpoints while doing nothing but truncating — and viem puts
+  `URL: http://…` in the first two lines of a failure. `redact()` in
+  `@correnthian/security` gained a URL rule (7 tests) rather than the
+  comment being edited to match the gap.
+- **Verification:** TDD throughout — every production line watched failing
+  first, including the adapter's. 602 API tests, 57 blockchain, 7 security,
+  all seven repo checks green; **11 mutations, all killed**. The one
+  survivor was instructive: removing assemble's ownership check changed
+  nothing because a second check said the same thing — so the redundancy
+  was removed rather than the test weakened, and the surviving check was
+  then killed on its own.
+- **Not done, stated:** no `packages/contracts` entries for the two new
+  routes (matching `POST /transactions`, which has none either) — that
+  sweep belongs with the contract registry work. `viem` is a test-only
+  devDependency of the API.
+
+**17 of 49 tasks are `DONE`; 20 of 21 defects.**
+
 ### `BE-1703` — `RolesGuard` gets its first tests, and `DEF-021` falls out
 - **Two layers, because one cannot prove the other.** Eleven unit tests pin
   the guard's decisions — the hierarchy in both directions with literal

@@ -7,8 +7,8 @@ import { CurrentUser, type AuthenticatedUser } from '../common/decorators/curren
 import { Roles } from '../common/guards/roles.guard.js';
 import { zodPipe } from '../common/pipes/zod-validation.pipe.js';
 import {
-  createTransactionSchema, observationSchema, transitionSchema,
-  type CreateTransactionDto, type ObservationDto, type TransitionDto,
+  broadcastSchema, createTransactionSchema, observationSchema, transitionSchema,
+  type BroadcastDto, type CreateTransactionDto, type ObservationDto, type TransitionDto,
 } from './dto/create-transaction.dto.js';
 import {
   listMyTransactionsSchema, listTransactionsSchema, type ListTransactionsDto,
@@ -66,6 +66,36 @@ export class TransactionsController {
   @ApiOperation({ summary: 'Every transaction, for the operator console' })
   listAll(@Query(zodPipe(listTransactionsSchema)) query: ListTransactionsDto) {
     return this.transactions.listAll(query);
+  }
+
+  @Post(':id/build')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Assemble the unsigned transaction for an intent',
+    description:
+      'Returns the payload the account holder\'s device signs, plus the fee it was shown. ' +
+      'The API has no key and performs no signature: it assembles, the device signs. ' +
+      'The intent stays in `created` — assembling is not signing.',
+  })
+  assemble(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.transactions.assemble(id, user.id);
+  }
+
+  @Post(':id/broadcast')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Relay a payload the device signed',
+    description:
+      'Decodes the payload, checks its signer, chain and destination against the intent this ' +
+      'API assembled, and only then submits it. The payload arrives already signed; nothing ' +
+      'here holds or reconstructs a key.',
+  })
+  broadcast(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body(zodPipe(broadcastSchema)) dto: BroadcastDto,
+  ) {
+    return this.transactions.relay(id, user.id, dto.signed);
   }
 
   @Get(':id')

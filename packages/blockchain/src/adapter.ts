@@ -97,6 +97,27 @@ export interface TransactionRecord {
   valueRaw: string;
 }
 
+/**
+ * What a signed payload says, recovered without submitting it.
+ *
+ * `from` comes from the signature, not from a field in the payload — the
+ * signature covers `chainId`, `to`, `value`, `nonce` and the fees, so a
+ * payload edited after signing recovers a *different* address. That is what
+ * makes this a verification seam rather than a parser: the caller compares
+ * `from` against the account that was supposed to sign, and the comparison
+ * fails loudly on tampering.
+ */
+export interface SignedTransactionFacts {
+  chainId: number;
+  /** The account that authorised this payload, recovered from its signature. */
+  from: string;
+  to: string | null;
+  /** Base units, decimal string. Never a float. */
+  value: string;
+  nonce: number;
+  data: string;
+}
+
 export interface ChainDescriptor {
   chainId: string;
   family: AddressFamily;
@@ -128,6 +149,32 @@ export interface BlockchainAdapter {
    * no key, so a signed payload here would be a lie about the architecture.
    */
   buildTransaction(req: BuildTransactionRequest): Promise<UnsignedTransaction>;
+
+  /**
+   * Read a signed payload back without submitting it.
+   *
+   * The pair of `broadcastTransaction`: one puts bytes on the network, this
+   * one says what those bytes are and who authorised them. A relay that can
+   * do the first and not the second is filing any bytes it is handed as if
+   * they were the transaction it assembled.
+   *
+   * Throws on bytes that are not a transaction — absence of a signature over
+   * these fields is not a fact to return, it is an invalid input.
+   */
+  /**
+   * What a payload assembled from this request must say — derived from the
+   * request alone, with no RPC: where the value goes and what calldata it
+   * carries.
+   *
+   * `buildTransaction` = this, plus answers from a node (gas, nonce, fees).
+   * Splitting them lets the relay path re-derive the expected payload when
+   * checking a device's signature, without a second estimateGas per
+   * broadcast — and without the comparison being able to fail because the
+   * chain was having a moment.
+   */
+  assemblePayload(req: BuildTransactionRequest): { to: string; value: string; data: string };
+
+  decodeSignedTransaction(signed: string): Promise<SignedTransactionFacts>;
 
   /** Submit a payload the client already signed. */
   broadcastTransaction(signed: string): Promise<string>;
@@ -171,10 +218,27 @@ export interface BlockchainAdapter {
 
 export interface BuildTransactionRequest {
   chainId: string;
+  /** Destination of the *value*: the recipient for a native transfer, and
+   *  the account receiving the tokens when `token` is set. */
   to: string;
   value?: string;
   data?: string;
+  /** The signer's address. Included when known: it is what a nonce is
+   *  counted from, and a zero address would estimate against a balance
+   *  nobody holds. */
   from?: string;
+  /**
+   * Set to assemble an ERC-20 transfer instead of a value transfer: no value
+   * moves, the amount travels in calldata against the token contract.
+   *
+   * Encoding that calldata is chain-specific knowledge, which is why it
+   * happens behind this interface rather than at the caller — a service that
+   * hand-builds an ABI call has reached past the adapter and picked up
+   * knowledge that belongs to a family.
+   */
+  token?: string;
+  /** Base units as a positive integer string. Required with `token`. */
+  amount?: string;
 }
 
 /** Narrowing helper so callers cannot pass an EVM adapter where Bitcoin is meant. */

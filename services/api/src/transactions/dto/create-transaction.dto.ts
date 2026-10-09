@@ -105,3 +105,19 @@ export const observationSchema = z.object({
 });
 
 export type ObservationDto = z.infer<typeof observationSchema>;
+
+/**
+ * A payload the account holder's device already signed.
+ *
+ * Hex and nothing else — RLP is validated by decoding it, not by this shape:
+ * `decodeSignedTransaction` is where "bytes that are a transaction" is
+ * decided, because only there does the rest of the platform's chain
+ * knowledge live.
+ */
+export const broadcastSchema = z.object({
+  signed: z
+    .string()
+    .regex(/^0x[0-9a-fA-F]+$/, 'A signed payload is hex-prefixed'),
+});
+
+export type BroadcastDto = z.infer<typeof broadcastSchema>;

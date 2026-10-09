@@ -1056,13 +1056,62 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
   four-case run above.
 - **Status:** `PARTIAL`
 
-### BE-602 — Send/receive backend · `BACKLOG`
-- **Description:** assemble an unsigned transaction for the client to sign.
-  `EvmAdapter.buildTransaction` and `BlockchainAdapter` already support this.
-  No endpoint exposes it.
-- **Security:** the server assembles, the device signs. A signed payload produced
-  server-side would break ADR-001.
-- **Status:** `BACKLOG`
+### BE-602 — Send/receive backend · `DONE`
+- **The send path now exists end to end:** `POST /transactions` records the
+  intent → `POST /transactions/:id/build` returns what the device must sign →
+  the device signs → `POST /transactions/:id/transitions {to: signed}` →
+  `POST /transactions/:id/broadcast` relays it. Confirmations were already
+  covered by `BE-601`'s sweep, so a broadcast transaction now walks the whole
+  lifecycle without any further work.
+- **`buildTransaction` previously returned a sketch.** It had no nonce and no
+  fee caps, so nothing could have signed it: a device filling those in itself
+  would be doing its own assembly. It now queries `pending` nonce (two sends
+  in flight would otherwise share one) and EIP-1559 caps, and it encodes
+  ERC-20 transfers — the amount in calldata against the contract, zero value
+  — because calldata encoding is chain knowledge that belongs behind the
+  adapter, the same reason log decoding does. `assemblePayload` is the pure
+  half of it (no RPC), split out because verification needs the same encoding
+  without a second `eth_estimateGas` per broadcast.
+- **The relay verifies before it relays.** `decodeSignedTransaction` parses
+  the payload and **recovers the signer from the signature**, so a payload
+  edited after signing recovers someone else. Three checks against the
+  intent: signer (the wallet), chain id, and `to`/`value`/`data` against
+  `assemblePayload`'s output. A mismatch is a 400 before any network call.
+  The node gets the last word on validity; the server's word is on identity.
+  Without this the endpoint would be "submit any bytes and we will file them
+  as if they matched the intent" — the ledger's destination column as
+  decoration.
+- **The fee the account holder was shown is recorded** — `feeRaw` = gas ×
+  fee cap, exact bigint, written at build time. Reconstructed later it would
+  be a fee from a different fee market than the one the user agreed to.
+- **Failures split honestly:** transport (pool exhausted, endpoint down) is
+  503 with no detail, because the pool's message carries our RPC endpoints;
+  a node decline (estimate revert, undecodable bytes) is 400 with the reason,
+  through `summariseError` — which now actually redacts. Its comment always
+  claimed endpoints were stripped; the mechanism only truncated, and viem
+  puts `URL: http://…` in its first two lines. `@correnthian/security`'s
+  `redact()` gained a URL pattern for this (`packages/security` 7 tests).
+- **The module graph changed to allow this** (`eefd555`): the transaction
+  indexer moved into `transactions`, so `transactions` → `blockchain` is
+  acyclic and every `Transaction` writer lives in the module that owns the
+  lifecycle. Nest resolves a circular module graph into `undefined`.
+- **Receive** needed no new endpoint: a registered address *is* the receive
+  side, and `BE-302`/`BE-601` record what arrives.
+- **Tests:** 14 service tests, 7 HTTP tests (`test/send.spec.ts`, real
+  adapter against a stub node, payload signed by the wallet's throwaway key),
+  11 new tests in `packages/blockchain` (assembly, wire, decode),
+  3 in `packages/security`. **11 mutations, all killed** — including each
+  refusal in the relay chain, the fee formula, the redaction, and the
+  token-assembly branch. `viem` is a devDependency of the API, test-only.
+- **Not covered:** no `packages/contracts` entries for the two new routes,
+  matching `POST /transactions` and `:id/transitions`, which have none
+  either. Whether every write route gets a contract belongs with the
+  contract-registry sweep, not here.
+- **Security:** the server assembles and relays; it holds no key and never
+  produces a signature (ADR-001). Relaying bytes the client already signed
+  moves nothing across the boundary — there is nothing to move. `wallet-core`
+  untouched; `key-boundary` check green.
+- **Status:** `DONE`
 
 ---
 
@@ -1360,13 +1409,13 @@ lived in its body rather than its heading, and nothing reads both.
 
 | Status | Tasks | Defects |
 |---|---|---|
-| `DONE` | 16 | 20 |
+| `DONE` | 17 | 20 |
 | `PARTIAL` | 14 | 1 |
-| `BACKLOG` | 17 | 0 |
+| `BACKLOG` | 16 | 0 |
 | `BLOCKED` | 2 | 0 |
 | **Total** | **49** | **21** |
 
-**16 of 49 tasks are complete; 20 of 21 defects are done and 1 (`DEF-009`) is
+**17 of 49 tasks are complete; 20 of 21 defects are done and 1 (`DEF-009`) is
 half fixed — no defect is left in `BACKLOG`.** The plan's §68 dependency chain
 is most of the way built at the infrastructure layer and not started at the
 layer that moves money.
