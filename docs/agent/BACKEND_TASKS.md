@@ -64,13 +64,15 @@ the location the entry names.
 
 | Status | Defects | Count |
 |---|---|---|
-| `DONE` | `DEF-001` … `DEF-008`, `DEF-010` … `DEF-020` | 19 |
+| `DONE` | `DEF-001` … `DEF-008`, `DEF-010` … `DEF-021` | 20 |
 | `PARTIAL` | `DEF-009` | 1 |
 | `BACKLOG` | *none* | 0 |
 
 `DEF-020` was found on 2026-10-08 while scoping `BE-601`, by asking the
 adapter a question over the wire rather than reading its source, and fixed the
-same day for the same reason.
+same day for the same reason. `DEF-021` was found on 2026-10-09 while building
+`BE-1703`'s HTTP suite, and likewise fixed the same day — it hid one of the
+API's 87 routes from both guard suites.
 
 `DEF-018` was found while re-verifying the others, and `DEF-019` while fixing
 `DEF-004` / `DEF-005`. Both were recorded rather than assumed, because tracking
@@ -546,6 +548,42 @@ kept for the record; it does not describe the current code._
 - **Tests:** 10 in `packages/blockchain/src/__tests__/get-transaction.test.ts`,
   all seven mutations killed — including one that reverts the defect outright
   and one that skips the receipt so a revert reads as a confirmation.
+- **Status:** `DONE`
+
+### DEF-021 — Route discovery skipped every route past a 400-character window · `DONE`
+- **Found by:** building the `@Roles` HTTP suite (`BE-1703`). The `@Roles`
+  count in source (36 decorators: 34 handler-level + 2 class-level, covering
+  40 routes) did not match what the route discovery returned.
+- **The defect:** all three copies of the controller parser (one per spec)
+  located the handler's signature with a **fixed 400-character look-ahead**
+  after the route decorator. `jobs.controller.ts` puts an `@ApiOperation` with
+  a long `description` between its `@Get()` and `list()`, so the window closed
+  first and **`GET /jobs` was discovered by nothing** — invisible to the
+  anonymous-401 guard over the whole route table, to the public-route pin and
+  to the no-500 check. The file's other route kept the per-file "found at
+  least one" check green, and `discovered.routes.length > 50` stayed green at
+  86 of 87.
+- **Also latent:** because the parsers were copied per file, the same window
+  was wrong three times over; and the window's *end* was computed without the
+  handler's offset inside the look-ahead slice, cutting decorators mid-token
+  (`@Roles('ad`).
+- **Fixed by** one shared parser (`test/discover.ts`) whose handler lookup is
+  a walk over lines — decorators, blanks and comment lines skipped, first
+  signature line wins, no length anywhere — used by both HTTP suites.
+- **The regression guard** is an invariant, not a count:
+  `countRouteDecorators()` counts `@Get(`-shaped tokens with a deliberately
+  *looser* regex, and discovery must return exactly that many. A decorator
+  form the parser cannot read then fails the build instead of shrinking
+  coverage silently. Assertion added to `routes.spec.ts`.
+- **A second, self-inflicted case of the same failure** is pinned by mutation:
+  the admission control in the new roles suite filtered
+  `method === 'GET'` while discovery emits `Get` — the loop ran **zero**
+  iterations and passed. It ran zero iterations for as long as it existed,
+  and only a mutation run (`exact match instead of hierarchy` surviving when
+  it should die) exposed it. The loop now asserts its own iteration count is
+  above zero before it starts.
+- **Tests:** `test/discover.ts` consumers — 14 tests across `routes.spec.ts`
+  (8, one new) and `roles.spec.ts` (6); 8 mutations, all killed.
 - **Status:** `DONE`
 
 ---
@@ -1227,9 +1265,12 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
   `pnpm test:e2e`. Both suites are gated on a database and both *throw* in CI
   rather than skipping, so a green build cannot be a run that checked nothing.
 - **New — HTTP coverage of the whole route table** (`test/routes.spec.ts`,
-  `3f0ca1f`): all **86 routes** across 23 controllers, discovered from the
+  `3f0ca1f`): all **87 routes** across 23 controllers, discovered from the
   controller files at run time so a controller added tomorrow is exercised
-  tomorrow. Asserts every non-`@Public` route answers 401 anonymously, every
+  tomorrow. (Was 86: `DEF-021` found `GET /jobs` skipped by a fixed-size
+  look-ahead. Discovery is now shared by this suite and the roles suite in
+  `test/discover.ts`, and a decorator-count invariant fails the build if
+  discovery ever parses a subset again.) Asserts every non-`@Public` route answers 401 anonymously, every
   `@Public` route does not, and nothing answers 500. The public set is pinned
   to a reviewed list, because discovery alone cannot catch a route *becoming*
   public — it would simply be discovered as public and everything else passes.
@@ -1257,9 +1298,23 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 - **Exists:** key-boundary guard (both directions verified), credential scan,
   redaction tests, EIP-55 vectors, deny-by-default jurisdiction tests, issuer
   evidence gating, redemption refusal tests.
-- **Does not exist:** SAST, dependency audit, secret scanning beyond env files,
-  authorisation fuzzing, rate-limit bypass testing, no test that a `user` role
-  cannot reach an admin route (it is enforced by `RolesGuard`, untested).
+- **New — `RolesGuard` is no longer untested.** Two suites, and the reason
+  there are two: a unit spec (11 tests) pins the guard's own decisions — the
+  hierarchy in both directions, an unknown held role denied, an unknown
+  *requirement* denied for everyone including `owner`, absent identity denied
+  rather than crashing — and an HTTP suite (`test/roles.spec.ts`, 6 tests)
+  proves over all **40 role-gated routes** that a real `user` session gets
+  **403** (not 401, not 200, not 500), that the gated set is pinned so a route
+  *losing* its `@Roles()` fails, and that an `admin` session is admitted where
+  the hierarchy admits it — the control that would otherwise let a
+  blanket-deny guard pass. The customer session is made the honest way:
+  `POST /auth/register`, `role: user` by default.
+- **`routes.spec.ts` grew the companion invariant** that would have caught
+  `DEF-021`: discovery must return exactly as many routes as there are route
+  decorators, counted with an independent looser regex.
+- **Still missing:** SAST, dependency audit, secret scanning beyond env files,
+  rate-limit bypass testing beyond the bucketing covered by
+  `rate-limit.live.spec.ts`.
 - **Status:** `PARTIAL`
 
 ### BE-1704 — CI/CD · `PARTIAL`
@@ -1290,7 +1345,7 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 
 ## 21. Summary counts
 
-**49 tracked tasks plus 20 defects.** Recomputed from the `Status` of every
+**49 tracked tasks plus 21 defects.** Recomputed from the `Status` of every
 entry — and now checked by one, because this section has been wrong three
 times running. The version before last claimed 56 tasks and "17 defects, all
 BACKLOG"; the last claimed 61 tasks and 19 defects while telling the reader it
@@ -1305,13 +1360,13 @@ lived in its body rather than its heading, and nothing reads both.
 
 | Status | Tasks | Defects |
 |---|---|---|
-| `DONE` | 16 | 19 |
+| `DONE` | 16 | 20 |
 | `PARTIAL` | 14 | 1 |
 | `BACKLOG` | 17 | 0 |
 | `BLOCKED` | 2 | 0 |
-| **Total** | **49** | **20** |
+| **Total** | **49** | **21** |
 
-**16 of 49 tasks are complete; 19 of 20 defects are done and 1 (`DEF-009`) is
+**16 of 49 tasks are complete; 20 of 21 defects are done and 1 (`DEF-009`) is
 half fixed — no defect is left in `BACKLOG`.** The plan's §68 dependency chain
 is most of the way built at the infrastructure layer and not started at the
 layer that moves money.

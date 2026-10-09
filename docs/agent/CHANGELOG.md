@@ -13,6 +13,53 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-09
 
+### `BE-1703` — `RolesGuard` gets its first tests, and `DEF-021` falls out
+- **Two layers, because one cannot prove the other.** Eleven unit tests pin
+  the guard's decisions — the hierarchy in both directions with literal
+  ranks (not `ROLE_RANK`, so a wrong table cannot agree with itself), an
+  unknown held role denied, an unknown *requirement* denied for everyone
+  including `owner`, an absent identity denied rather than crashing into a
+  500. The HTTP suite then proves over all **40 role-gated routes** that a
+  real `user` session gets **403** — not 401 (it is authenticated), not 200
+  (it is unauthorised), not 500. `routes.spec.ts` never got past
+  `SessionGuard`, so none of this was covered anywhere.
+- **The session is made the honest way**: `POST /auth/register` creates
+  `role: user` by default and opens a session. No minted tokens, no direct
+  database writes.
+- **The admission control is the load-bearing test, and it was broken when
+  written.** It filtered `method === 'GET'` while discovery emits `Get`, so
+  the loop ran **zero iterations** and passed in 1ms. Nothing in the suite
+  could have noticed: an empty loop asserts nothing. The mutation run named
+  the fix (`exact match instead of hierarchy` survived when it should have
+  died) exposed it, and the loop now asserts its own iteration count above
+  zero before it starts. This is the second time in this repository that
+  mutation testing has found a test that was not testing.
+- **`DEF-021`, found on the way and fixed the same day.** All three copies of
+  the controller parser located handlers with a fixed 400-character
+  look-ahead; `jobs.controller.ts`'s `@ApiOperation` block sits beyond it, so
+  **`GET /jobs` was discovered by nothing** — excluded from the anonymous-401
+  guard, the public pin and the no-500 check, while the per-file "found at
+  least one" check stayed green because the file's *other* route was found,
+  and the total stayed green at 86 > 50. Replaced with one shared
+  `test/discover.ts` that walks lines to the handler with no length anywhere,
+  and an **invariant** rather than a pinned number: discovery must return
+  exactly as many routes as there are `@Get(`-shaped tokens, counted by an
+  independent looser regex, so a decorator form the parser cannot read fails
+  the build instead of shrinking coverage quietly.
+- **Verification:** 581 API tests; all seven checks green; **8 mutations,
+  all killed** — including the re-introduced 400-char window, class-level
+  `@Roles` ignored, the guard admitting everyone, both fail-closed directions
+  of `roles.ts`, exact-match instead of hierarchy, a controller losing its
+  `@Roles`, and the admission control going empty again.
+- **One environment trap, recorded where it will be read:** a Redis index
+  outside 0–15 (there are 16 databases) does not error — `SELECT` fails,
+  ioredis retries, and `app.init()` **hangs forever with nothing in the log**.
+  That is how this suite first failed; the spec's comment names the index it
+  chose and why.
+
+**20 of 21 defects are now `DONE`;** `DEF-009` remains the only one that is
+not, and it is gated on a decision outside code.
+
 ### The `PARTIAL` pass — sorting fifteen entries, and finding the tracker wrong
 - Every `PARTIAL` entry was read with its claims checked against the code
   rather than against itself. Four groups fell out: **six with real work left

@@ -84,7 +84,7 @@ into four groups, and only the first is a queue.
 
 | Task | What is actually left |
 |---|---|
-| `BE-1703` | **`RolesGuard` has no test.** Verified: no spec references it. `routes.spec.ts` proves an anonymous request gets 401 — it does not prove a `user` session gets 403. A route that lost its `@Roles()` would pass the whole suite while being open. Also missing: SAST, dependency audit, authorisation fuzzing. |
+| `BE-1703` | ~~**`RolesGuard` has no test.**~~ **Done 2026-10-09** — 11 unit tests plus an HTTP suite over all 40 gated routes (customer → 403, pinned gate list, admin-admission control). Building it found `DEF-021`. Still missing: SAST, dependency audit, secret scanning beyond env files, rate-limit bypass testing. |
 | `BE-1702` | Controller/service specs. The gap `DEF-001` fell through. |
 | `BE-1701` | `QuoteState` has six states; `swaps.service.ts:215` writes `quoted` and nothing else. |
 | `BE-501` | Allocation, history charting, scheduled snapshots. `capture` is only reached by its own endpoint. |
@@ -124,6 +124,28 @@ into CI, so the next one fails the build instead of shipping.
 ---
 
 ### Completed in this sprint
+
+- **`BE-1703`'s headline item — `RolesGuard`, tested at two layers.** Eleven
+  unit tests pin the guard's decisions (hierarchy both ways, unknown held
+  role denied, unknown *requirement* denied for everyone including `owner`,
+  absent identity denied rather than crashing). An HTTP suite
+  (`test/roles.spec.ts`) then proves over all **40 role-gated routes** that a
+  real registered `user` session gets 403 — not 401, not 200, not 500 — that
+  the gated set is pinned so a route *losing* its `@Roles()` fails, and that
+  an `admin` session is admitted where the hierarchy admits it. That last
+  control is why the suite is trustworthy, and it was **itself broken when
+  written**: it filtered `method === 'GET'` against discovery's `Get`, ran
+  zero iterations, and passed. A mutation run caught it; the loop now asserts
+  its own iteration count first. 8 mutations, all killed.
+- **`DEF-021`** — discovered while building the above: the controller parser
+  (copied into three specs) located handlers with a fixed 400-character
+  look-ahead, and `GET /jobs`'s long `@ApiOperation` sat beyond it. One of the
+  API's 87 routes was invisible to the anonymous-401 guard, the public pin
+  and the no-500 check — with the per-file and total-count checks green.
+  Replaced by one shared `test/discover.ts` whose handler lookup is a line
+  walk with no length limit, plus an invariant: discovery must return exactly
+  as many routes as there are route decorators, counted by an independent
+  looser regex. Fixed and mutation-checked the same day.
 
 - **`BE-601` — the confirmation sweep, built and measured.** `sweepByHash`
   asks the chain about the transactions no log can describe: native-coin

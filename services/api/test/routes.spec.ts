@@ -1,11 +1,10 @@
 import 'dotenv/config';
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../src/app.module.js';
+import { countRouteDecorators, discoverRoutes } from './discover.js';
 import { applyApiVersioning } from '../src/versioning/apply-versioning.js';
 
 /**
@@ -46,72 +45,6 @@ import { applyApiVersioning } from '../src/versioning/apply-versioning.js';
  */
 const HAS_DB = Boolean(process.env.DATABASE_URL);
 const CI = Boolean(process.env.CI);
-const CONTROLLERS = join(process.cwd(), 'src');
-
-interface Discovered {
-  file: string;
-  method: string;
-  path: string;
-  isPublic: boolean;
-}
-
-/**
- * Read the routes out of every controller.
- *
- * `@Public()` is allowed to appear *before* the method decorator (the health
- * controller writes it that way) as well as after, so the window runs from the
- * decorator to the method signature rather than in one direction only.
- */
-function discoverRoutes(): { routes: Discovered[]; byFile: Map<string, number> } {
-  const files = readdirSync(CONTROLLERS, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
-    .flatMap((d) =>
-      readdirSync(join(CONTROLLERS, d.name))
-        .filter((f) => f.endsWith('.controller.ts'))
-        .map((f) => join(CONTROLLERS, d.name, f)),
-    )
-    .sort();
-
-  const routes: Discovered[] = [];
-  const byFile = new Map<string, number>();
-
-  for (const file of files) {
-    const src = readFileSync(file, 'utf-8');
-    const pm = src.match(/@Controller\(['"]([^'"]*)['"]\)/);
-    const prefix = pm?.[1] ?? '';
-    let found = 0;
-
-    for (const m of src.matchAll(/@(Get|Post|Patch|Put|Delete)\(\s*['"]?([^'")]*)['"]?\s*\)/g)) {
-      const method = m[1];
-      if (!method) continue;
-      const path = m[2] ?? '';
-      const rest = src.slice(m.index + m[0].length, m.index + m[0].length + 400);
-      const nameMatch = rest.match(/\n\s*(?:public |private |async )*(\w+)\s*\(/);
-      if (!nameMatch) continue;
-
-      const before = src.slice(Math.max(0, m.index - 500), m.index);
-      const after = src.slice(m.index, m.index + m[0].length + nameMatch[0].length);
-      // Only the decorator block for *this* handler: cut the lookback at the
-      // previous method's body so another handler's `@Public()` is not counted.
-      const boundary = Math.max(before.lastIndexOf('}'), before.lastIndexOf('return '));
-      const span = before.slice(boundary + 1) + after;
-
-      const full = '/' + [prefix.replace(/^\/|\/$/g, ''), path.replace(/^\//g, '')]
-        .filter(Boolean)
-        .join('/');
-
-      routes.push({
-        file: file.slice(CONTROLLERS.length + 1),
-        method,
-        path: full,
-        isPublic: /@Public\(\)/.test(span),
-      });
-      found += 1;
-    }
-    byFile.set(file.slice(CONTROLLERS.length + 1), found);
-  }
-  return { routes, byFile };
-}
 
 /**
  * The routes this API exposes without a session.
@@ -179,6 +112,17 @@ describe.skipIf(!HAS_DB && !CI)('every route refuses an anonymous caller', () =>
       );
     }
     expect(discovered.routes.length).toBeGreaterThan(50);
+  });
+
+  it('reads every route decorator, not a parseable subset', () => {
+    // The failure this catches: discovery *skips* what it cannot parse, and
+    // every other test then passes over the remaining routes. `GET /jobs` sat
+    // outside a fixed look-ahead window for as long as the window existed —
+    // invisible to the 401 guard, the public pin and the 500 check alike —
+    // while the per-file "at least one" check stayed green because the file's
+    // other route was found.
+    const decorators = countRouteDecorators();
+    expect(discovered.routes.length).toBe(decorators);
   });
 
   it('reads at least one route out of every controller file', () => {
