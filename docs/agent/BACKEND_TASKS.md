@@ -557,9 +557,22 @@ kept for the record; it does not describe the current code._
   health, connect/disconnect lifecycle, and a `raw` accessor that throws if not
   ready. Local dev via `infrastructure/docker/compose.yml` (Redis 7, appendonly,
   `allkeys-lru`, 256 MB).
-- **What does not exist:** any queue. `BE-004`'s plan scope covers queues and
-  event architecture; there is no BullMQ, no worker, no job runner.
-- **Dependencies:** none.
+- **Also exists, and this entry previously said it did not:** `JobScheduler`.
+  It ticks on an interval, takes a **distributed lease in Redis** so only one
+  instance runs a job, renews it with a Lua script, records every run in
+  `JobRun`, and currently drives six scheduled jobs including
+  `blockchain.index-transactions`. The old wording — "no BullMQ, no worker, no
+  job runner" — was true when written and had not been revisited since the
+  scheduler landed; a reader would have concluded there was no background-job
+  machinery at all and been tempted to build a second one beside it.
+- **What does not exist:** a **queue**. Nothing enqueues work for someone else
+  to consume: there is no BullMQ, no producer, no fan-out, no retry-with-
+  backoff, no dead-lettering. `BE-004`'s plan scope covers queues and event
+  architecture, and that half is genuinely unbuilt — the scheduler dispatches
+  *time*, not *work*.
+- **Dependencies:** none, and nothing currently waits on it: `notifications`
+  writes rows to Postgres rather than to a queue, and jobs are scheduled
+  rather than enqueued.
 - **Acceptance criteria for `DONE`:** a queue abstraction with at least one
   consumer, and a documented statement of what is a source of truth versus a
   cache. The current rule — Redis is a cache and a rate-limit counter, never a
@@ -926,13 +939,18 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 
 ## 8. Portfolio and pricing (plan §19–§20)
 
-### BE-501 — Portfolio engine · `PARTIAL` (see DEF-007, DEF-008)
+### BE-501 — Portfolio engine · `PARTIAL`
 - **What exists:** `GET /portfolio`, `/wallets/:walletId`,
   `/wallets/:walletId/history`, `POST /wallets/:walletId/snapshot`. Unpriced
   holdings are marked unpriced and excluded; the total is explicitly a floor with
   `unpricedCount` alongside.
 - **What does not exist:** allocation by category or by asset, history charting,
-  and any scheduled snapshot. `capture` is only invoked by its own endpoint.
+  and any scheduled snapshot. `capture` is only invoked by its own endpoint —
+  so a portfolio has no history between two humans pressing a button.
+- **Not blocked on anything external.** The heading used to carry
+  `(see DEF-007, DEF-008)`; both of those are `DONE`, and this status rests on
+  the three things above. A pointer to fixed defects read as though the entry
+  were waiting on them.
 - **Status:** `PARTIAL`
 
 ### BE-502 — Price engine · `PARTIAL`
@@ -941,9 +959,12 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
   threshold 300 s. See ADR-014.
 - **What does not exist:** a feed adapter, a scheduler, and the executable price
   itself. `executablePriceUsd` is always `null` with a sentence saying why.
-  **No price is ever recorded by any code** — the local database has an empty
-  `AssetPrice` table unless a human POSTs to it, which is why the portfolio reads
-  everything as unpriced.
+  **No price is ever recorded automatically.** `PricingService.record()` writes
+  an `AssetPrice` row, but its only caller is `POST /pricing/record` — so the
+  local database has an empty `AssetPrice` table unless a human POSTs to it,
+  which is why the portfolio reads everything as unpriced. The earlier wording,
+  "no price is ever recorded by any code", contradicted the endpoint described
+  two bullets above.
 - **Dependencies:** `PRICE_FEED_API_KEY` / `METAL_SPOT_FEED_API_KEY` in
   `.env.example`, read by nothing.
 - **Status:** `PARTIAL`
@@ -1269,29 +1290,36 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 
 ## 21. Summary counts
 
-**61 tracked tasks plus 19 defects.** Recomputed from the `Status` field on
-every entry, not from memory — the previous version of this section claimed 56
-tasks and "17 defects, all BACKLOG", and both were wrong by the time anyone
-read them.
+**49 tracked tasks plus 20 defects.** Recomputed from the `Status` of every
+entry — and now checked by one, because this section has been wrong three
+times running. The version before last claimed 56 tasks and "17 defects, all
+BACKLOG"; the last claimed 61 tasks and 19 defects while telling the reader it
+had been recomputed "not from memory". A summary that disagrees with the file
+it sits inside reads as a check someone already ran, which is worse than having
+no summary at all.
+
+`node scripts/check-task-counts.mjs` recomputes these from the entries and
+fails the build on a mismatch, and on an entry carrying no status at all — the
+reason `BE-1600` was missing from every count until now was that its status
+lived in its body rather than its heading, and nothing reads both.
 
 | Status | Tasks | Defects |
 |---|---|---|
-| `DONE` | 18 | 18 |
-| `PARTIAL` | 19 | 0 |
-| `PARTIAL` | 0 | 1 |
-| `BACKLOG` | 18 | 0 |
-| `BLOCKED` | 6 | 0 |
-| `OPEN` | 1 | 0 |
-| **Total** | **61** | **19** |
+| `DONE` | 16 | 19 |
+| `PARTIAL` | 14 | 1 |
+| `BACKLOG` | 17 | 0 |
+| `BLOCKED` | 2 | 0 |
+| **Total** | **49** | **20** |
 
-**18 of 61 tasks are complete; 18 of 19 defects are done and 1 is half fixed — no defect is left in `BACKLOG`.** The plan's §68 dependency
-chain is most of the way built at the infrastructure layer and not started at
-the layer that moves money.
+**16 of 49 tasks are complete; 19 of 20 defects are done and 1 (`DEF-009`) is
+half fixed — no defect is left in `BACKLOG`.** The plan's §68 dependency chain
+is most of the way built at the infrastructure layer and not started at the
+layer that moves money.
 
-Six of the `BACKLOG` entries are new as of 2026-10-07 — `BE-204`, `BE-205`,
-`BE-402`, `BE-603`, `BE-1106`, `BE-1506` — raised by the owner's product
-document rather than by the plan. Their scope conflicts are recorded in
+Five of the `BACKLOG` entries are new as of 2026-10-07 — `BE-204`, `BE-205`,
+`BE-402`, `BE-1106`, `BE-1506` — raised by the owner's product document rather
+than by the plan. Their scope conflicts are recorded in
 [`DECISIONS.md` ADR-021](DECISIONS.md); two of them must not be started until
-that is called.
+that is called. (`BE-603` was on that list and is now `DONE` as ADR-022.)
 
 See [`BACKEND_ROADMAP.md`](BACKEND_ROADMAP.md) for the order.

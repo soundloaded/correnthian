@@ -125,6 +125,13 @@ jobs:
         # a check nobody wires up is a comment.
         run: node scripts/check-prisma-writes.mjs
 
+      - name: The task summary must agree with the task entries
+        # `BACKEND_TASKS.md` §21 has been wrong three times running, including
+        # in a version that told the reader it had been recomputed "not from
+        # memory". The counts are recoverable from the entries, so they are
+        # recomputed here rather than trusted.
+        run: node scripts/check-task-counts.mjs
+
   credential-scan:
     name: No credentials in env files
     runs-on: ubuntu-latest

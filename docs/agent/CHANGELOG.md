@@ -11,7 +11,44 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ---
 
-## 2026-10-08
+## 2026-10-09
+
+### The `PARTIAL` pass — sorting fifteen entries, and finding the tracker wrong
+- Every `PARTIAL` entry was read with its claims checked against the code
+  rather than against itself. Four groups fell out: **six with real work left
+  and no external gate**, two needing only a node (`BE-302`, `BE-601`), six
+  gated by a decision or on the do-not-start list, and one — `BE-004` — where
+  nothing waits on the missing piece at all.
+- **`BE-1703` is the one to act on.** `RolesGuard` has no test: verified by
+  searching for any spec that references it. `routes.spec.ts` proves an
+  anonymous request is refused; it does not prove a `user` session is refused
+  on an admin route, so a controller that lost its `@Roles()` would pass the
+  entire suite. That is the same shape as `DEF-001`, which is why that entry
+  stays `PARTIAL`.
+- **Three tracker claims were false:**
+  - `BE-004` said "no BullMQ, no worker, no job runner" while `JobScheduler`
+    was driving six scheduled jobs off a Redis lease with Lua renewal and a
+    `JobRun` ledger. A reader would have concluded there was no
+    background-job machinery and been tempted to build a second one beside it.
+    What is genuinely missing is a **queue** — nothing enqueues;
+    `notifications.enqueue()` writes a row to Postgres.
+  - `BE-501`'s heading pointed at `DEF-007` and `DEF-008`, both `DONE`, which
+    read as though the entry were waiting on them.
+  - `BE-502` said "no price is ever recorded by any code", two bullets after
+    describing the endpoint that records one.
+- **§21's summary was wrong for the third time and disagreed with §2 of the
+  same file**: it claimed 61 tasks and 19 defects against an actual 49 and 20,
+  and every per-status figure was off. Its own preamble boasts that it had been
+  recomputed "not from memory" — so this is the second time that boast was
+  false, which is what prompted the fix below rather than another correction.
+- **`scripts/check-task-counts.mjs`, wired into CI.** It recomputes the counts
+  from the `Status` of every entry and fails on a mismatch, and on an entry
+  carrying no status at all. That last case is real: `BE-1600` kept its status
+  in its body rather than its heading and had been missing from every count as
+  a result — my own count of it was wrong twice before reading the body. It
+  also sums duplicate table rows instead of overwriting them, because §21
+  carried `PARTIAL` on two rows and a parser that assigned would silently drop
+  the first.
 
 ### `BE-601` — the confirmation sweep, and what it is for
 - The scoping pass found that `eth_getTransactionByHash` was called by nothing
@@ -380,6 +417,8 @@ not, and it is gated on a decision outside code.
 - The stale-docs inventory in `docs/agent/README.md` is empty now, kept as a
   record of what was wrong and of the failure mode so the next one is fixed
   where it is read.
+
+---
 
 ## 2026-10-08
 

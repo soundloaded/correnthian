@@ -4,7 +4,7 @@ Read this every time before starting work. It is deliberately short: it names
 the task, what is finished, what is next, and — most importantly — what must
 not be started.
 
-Last updated: 2026-10-08.
+Last updated: 2026-10-09.
 
 ---
 
@@ -71,6 +71,55 @@ production-`/docs` question is still undecided and is now item 4.
 | | Why it waits |
 |---|---|
 | `DEF-009` | `PARTIAL`. The comment is honest; the claim mechanism needs a column, a lease with a timeout and a requeue path — design questions belonging to ADR-020's transport decision, not a patch for a method nothing calls. |
+
+---
+
+### The `PARTIAL` pass — 15 entries, sorted
+
+Every `PARTIAL` entry was read and its claims checked against the code, rather
+than taken from the tracker — which is what this pass exists for. The 15 sort
+into four groups, and only the first is a queue.
+
+**Not blocked. Real remaining code work (6).**
+
+| Task | What is actually left |
+|---|---|
+| `BE-1703` | **`RolesGuard` has no test.** Verified: no spec references it. `routes.spec.ts` proves an anonymous request gets 401 — it does not prove a `user` session gets 403. A route that lost its `@Roles()` would pass the whole suite while being open. Also missing: SAST, dependency audit, authorisation fuzzing. |
+| `BE-1702` | Controller/service specs. The gap `DEF-001` fell through. |
+| `BE-1701` | `QuoteState` has six states; `swaps.service.ts:215` writes `quoted` and nothing else. |
+| `BE-501` | Allocation, history charting, scheduled snapshots. `capture` is only reached by its own endpoint. |
+| `BE-105` | Metrics, traces, error reporting. `SENTRY_DSN` and `OTEL_EXPORTER_OTLP_ENDPOINT` are in `.env.example` and read by nothing — verified. |
+| `SEC-001` | The threat model document itself. Scoped to API + admin, and writable now; nothing external gates it. |
+
+**Verification only — needs a node (2):** `BE-302`, `BE-601`. One run covers
+both; both were proven against a stub node speaking real JSON-RPC.
+
+**Gated by a decision outside code, or on the do-not-start list (6):**
+
+| Task | Gate |
+|---|---|
+| `DEF-009` | ADR-020 transport decision |
+| `BE-1201` | Deliberately not sending — ADR-020 |
+| `BE-1104` | "Do not write a fee number that is not in code" |
+| `BE-502` | Pricing feed — "no provider is contracted" |
+| `BE-401` | Counsel-reviewed verification criteria |
+| `BE-1704` | The repository has no remote and no environment to deploy to |
+
+**Nothing waits on it (1):** `BE-004`. Its status says a queue is missing, and
+it is — but no producer exists either: `notifications.enqueue()` writes a row
+to Postgres, jobs are scheduled rather than enqueued. Building BullMQ now
+would be building against no consumer. Its entry was also wrong about
+something else: it claimed "no job runner" while `JobScheduler` was driving six
+of them off a Redis lease.
+
+**Three tracker claims corrected while sorting:** `BE-004` above; `BE-501`'s
+heading pointed at `DEF-007`/`DEF-008`, both of which are `DONE`; and
+`BE-502` said "no price is ever recorded by any code" when `PricingService.record()`
+exists and is called by `POST /pricing/record`.
+
+**§21 was wrong for the third time**, and disagreed with §2 of the same file.
+`scripts/check-task-counts.mjs` now recomputes it from the entries and is wired
+into CI, so the next one fails the build instead of shipping.
 
 ---
 
