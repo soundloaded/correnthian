@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { assertReason } from '../audit/audit.service.js';
 import type { ObservedTokenTransfer } from '@correnthian/blockchain';
-import { TransactionsService } from '../transactions/transactions.service.js';
+import { TransactionsService } from './transactions.service.js';
 import { TransactionIndexingService, type ChainIndexReport } from './transaction-indexing.service.js';
 
 /**

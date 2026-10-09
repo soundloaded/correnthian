@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ChainIndexReport } from '../blockchain/transaction-indexing.service.js';
+import type { ChainIndexReport } from '../transactions/transaction-indexing.service.js';
 import { IndexTransactionsJob } from './index-transactions.job.js';
 import type { JobRunView as RunView } from './job-run.store.js';
 import type { JobContext } from './job.js';

@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { TransactionIndexingService } from '../blockchain/transaction-indexing.service.js';
+import { TransactionIndexingService } from '../transactions/transaction-indexing.service.js';
 import { JobRunStore } from './job-run.store.js';
 import type { JobContext, JobOutcome, ScheduledJob } from './job.js';
 

@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { BlockchainModule } from '../blockchain/blockchain.module.js';
 import { PricingModule } from '../pricing/pricing.module.js';
 import { ProvidersModule } from '../providers/providers.module.js';
 import { TransactionsModule } from '../transactions/transactions.module.js';
@@ -46,7 +45,7 @@ const JOB_CLASSES = [
 
 @Module({
   controllers: [JobsController],
-  imports: [ProvidersModule, TransactionsModule, PricingModule, BlockchainModule],
+  imports: [ProvidersModule, TransactionsModule, PricingModule],
   providers: [
     { provide: CLOCK, useClass: SystemClock },
     JobLockService,

@@ -1,8 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { ObservedTokenTransfer } from '@correnthian/blockchain';
-import { TransactionsService } from '../transactions/transactions.service.js';
+import { TransactionsService } from './transactions.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { BlockchainService } from './blockchain.service.js';
+import { BlockchainService } from '../blockchain/blockchain.service.js';
 
 /**
  * How far behind the last completed head a run re-scans.
