@@ -131,6 +131,34 @@ export class WalletsService {
     return this.findById(userId, walletId);
   }
 
+  /**
+   * Replace the guardian list on a smart wallet. Guardians are public
+   * recovery addresses on the wallet's account contract — replacing them
+   * here only changes Correnthian's record of the intent; the on-chain
+   * contract update is a separate user-signed transaction, same as every
+   * other state change in this service.
+   */
+  async setGuardians(userId: string, walletId: string, guardians: string[]) {
+    const wallet = await this.prisma.wallet.findFirst({ where: { id: walletId, userId } });
+    if (!wallet) throw AppError.notFound('Wallet not found');
+    // Mirrors the registration rule: a seed account has no contract to hold
+    // guardians, so there is nothing to update.
+    if (wallet.kind !== 'smart') {
+      throw AppError.badRequest('Seed accounts cannot have guardians — they have no account contract');
+    }
+    for (const g of guardians) {
+      const check = validateAddress(g, 'evm');
+      if (!check.valid) {
+        throw AppError.badRequest(`Invalid guardian address: ${check.reason ?? 'malformed'}`);
+      }
+    }
+    await this.prisma.wallet.update({
+      where: { id: walletId },
+      data: { guardians: guardians.map((g) => g.toLowerCase()) },
+    });
+    return this.findById(userId, walletId);
+  }
+
   async setPrimary(userId: string, walletId: string) {
     const wallet = await this.prisma.wallet.findFirst({ where: { id: walletId, userId } });
     if (!wallet) throw AppError.notFound('Wallet not found');

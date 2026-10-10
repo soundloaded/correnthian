@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../src/app.module.js';
 import { applyApiVersioning } from '../src/versioning/apply-versioning.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
+import { CONTRACT_REGISTRY } from '@correnthian/contracts';
 
 /**
  * Wallets over HTTP, as two account holders — BE-1702.
@@ -138,6 +139,34 @@ describe.skipIf(!HAS_DB && !CI)('wallets isolate accounts over HTTP', () => {
     const list = await get('/wallets', tokenA);
     const primaries = list.body.filter((w: { isPrimary: boolean }) => w.isPrimary);
     expect(primaries.map((w: { id: string }) => w.id)).toEqual([walletA2]);
+  });
+
+  it('the owner replaces guardians on a smart wallet, lowercased', async () => {
+    // A valid EIP-55 checksummed address: mixed case in, lowercase stored.
+    const mixed = '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed';
+    const res = await patch(`/wallets/${walletA}/guardians`, { guardians: [mixed] }, tokenA);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.guardians).toEqual([mixed.toLowerCase()]);
+    // The route returns the wallet detail shape the registry pins.
+    expect(CONTRACT_REGISTRY['PATCH /api/v1/wallets/:id/guardians'].safeParse(res.body).success).toBe(true);
+  });
+
+  it('guardians on a foreign wallet is 404, not 403', async () => {
+    expect((await patch(`/wallets/${walletA}/guardians`, { guardians: [] }, tokenB)).status).toBe(404);
+  });
+
+  it('seed wallets cannot have guardians', async () => {
+    const seedAddr = `0x${'e'.repeat(32)}${process.pid.toString(16).padStart(8, '0')}`;
+    const reg = await post('/wallets', { chainId: CHAIN_ID, address: seedAddr, kind: 'seed' }, tokenA);
+    expect(reg.status).toBe(201);
+    expect(
+      (await patch(`/wallets/${reg.body.id}/guardians`, { guardians: [`0x${'f'.repeat(40)}`] }, tokenA)).status,
+    ).toBe(400);
+  });
+
+  it('malformed guardians are 422 at the shape pipe, invalid addresses 400 in the service', async () => {
+    expect((await patch(`/wallets/${walletA}/guardians`, { guardians: 'not-an-array' }, tokenA)).status).toBe(422);
+    expect((await patch(`/wallets/${walletA}/guardians`, { guardians: ['not-an-address'] }, tokenA)).status).toBe(400);
   });
 
   it('refuses a malformed recorded balance', async () => {

@@ -14,6 +14,7 @@ const registerSchema = z.object({
 });
 
 const balanceSchema = z.object({ balanceRaw: z.string().regex(/^\d+(\.\d+)?$/) });
+const guardiansSchema = z.object({ guardians: z.array(z.string().max(128)).max(10) });
 const labelSchema = z.object({ label: z.string().max(64) });
 const assetParam = z.object({ assetId: z.string().min(1) });
 
@@ -51,6 +52,16 @@ export class WalletsController {
   @ApiOperation({ summary: 'Relabel a wallet' })
   setLabel(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Body(zodPipe(labelSchema)) dto: z.infer<typeof labelSchema>) {
     return this.wallets.setLabel(user.id, id, dto.label);
+  }
+
+  @Patch(':id/guardians')
+  @ApiOperation({ summary: 'Replace the guardian list. Smart wallets only.' })
+  setGuardians(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body(zodPipe(guardiansSchema)) dto: z.infer<typeof guardiansSchema>,
+  ) {
+    return this.wallets.setGuardians(user.id, id, dto.guardians);
   }
 
   @Patch(':id/primary')

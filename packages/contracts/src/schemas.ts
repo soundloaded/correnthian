@@ -403,6 +403,25 @@ export const quoteListSchema = z.object({
 });
 
 /** The single-quote projection, which deliberately differs from the list row. */
+/**
+ * Wallet detail as `findById` returns it: the row plus per-asset accounts
+ * and a display abbreviation. `guardians` is present because the guardians
+ * endpoint returns this same shape — a contract that omitted it would pass
+ * over the field the route exists to change.
+ */
+export const walletDetailSchema = z.object({
+  id: z.string(),
+  address: z.string(),
+  chainId: z.string(),
+  kind: z.enum(['smart', 'seed']),
+  label: z.string().nullable(),
+  deployed: z.boolean(),
+  isPrimary: z.boolean(),
+  guardians: z.array(z.string()),
+  createdAt: z.string(),
+  display: z.string(),
+});
+
 export const quoteDetailSchema = z.object({
   id: z.string(),
   rail: z.object({ kind: railKindSchema, id: z.string() }),
@@ -815,6 +834,7 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/swaps/quotes/stats': quoteStatsSchema,
   'GET /api/v1/swaps/quotes': quoteListSchema,
   'GET /api/v1/swaps/quotes/:id': quoteDetailSchema,
+  'PATCH /api/v1/wallets/:id/guardians': walletDetailSchema,
   // Fees. The preview is open to any signed account; the rule table is not.
   'POST /api/v1/fees/preview': feeBreakdownSchema,
   'GET /api/v1/fees/rules': feeRuleListSchema,
