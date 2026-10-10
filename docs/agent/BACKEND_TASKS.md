@@ -1505,6 +1505,34 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 - **Status:** `PARTIAL`
 
 
+### BE-1705 — v1 contract freeze checklist · `OPEN` (Phase 4 entry criterion, not met)
+
+Checked 2026-10-10 against the controller tree (`@(Get|Post|Patch|Delete|Put)`
+across `*.controller.ts`, ~98 routes) versus `CONTRACT_REGISTRY` (38 success
+keys): **~61 routes have no contract entry**, so v1 is not frozen and client
+builds (web/mobile) stay gated. The openapi suite is green and no route carries
+a `deprecated` marker, but those are the easy two of three conditions.
+- **Covered (38):** assets list/stats, users list/stats/detail, devices
+  all/stats, issuers list, chains list, providers list, swaps quotes
+  (+stats/detail/mine), fees preview/rules/diagnostics/rule, audit list/detail,
+  transactions list/stats/mine/detail, redemptions request/transition/mine/
+  stats/operator-list, compliance reviews/decide, notifications
+  operator-list/mine, jobs status/run, meta versions, plus error envelopes.
+- **Missing (~61):** every auth route, wallets (all 7), devices register/
+  revoke, chains detail, issuers detail/stats/writes, providers detail/health,
+  pricing (all 3), portfolio (all 6), onramp availability/quote, swaps create,
+  transactions build/broadcast/observe/transition, compliance start/eligibility/
+  webhook, blockchain health/sync, redemptions mine (covered) vs rest, audit
+  actor view, health checks, notification enqueue. Full list reproducible with
+  the one-off script in the plan workspace (deleted with it); re-derive, do
+  not trust this paragraph's count.
+- **Unblock condition:** one contract entry per route with a live-response
+  parse in `contracts.spec.ts` ENDPOINTS, following the redemptions/
+  notifications pattern (route → schema → registry → parse assertion).
+  Estimated as its own slice when Phase 4 approaches; not started now
+  because no client consumes the registry yet.
+- **Status:** `OPEN`
+
 ### BE-1703 — Security testing · `PARTIAL`
 - **Exists:** key-boundary guard (both directions verified), credential scan,
   redaction tests, EIP-55 vectors, deny-by-default jurisdiction tests, issuer
@@ -1575,7 +1603,7 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 
 ## 21. Summary counts
 
-**49 tracked tasks plus 21 defects.** Recomputed from the `Status` of every
+**50 tracked tasks plus 21 defects.** Recomputed from the `Status` of every
 entry — and now checked by one, because this section has been wrong three
 times running. The version before last claimed 56 tasks and "17 defects, all
 BACKLOG"; the last claimed 61 tasks and 19 defects while telling the reader it
@@ -1594,9 +1622,10 @@ lived in its body rather than its heading, and nothing reads both.
 | `PARTIAL` | 16 | 1 |
 | `BACKLOG` | 14 | 0 |
 | `BLOCKED` | 2 | 0 |
-| **Total** | **49** | **22** |
+| `OPEN` | 1 | 0 |
+| **Total** | **50** | **22** |
 
-**17 of 49 tasks are complete and 16 partially built; 21 of 22 defects are done and 1 (`DEF-009`) is
+**17 of 50 tasks are complete and 16 partially built; 21 of 22 defects are done and 1 (`DEF-009`) is
 half fixed — no defect is left in `BACKLOG`.** The plan's §68 dependency chain
 is most of the way built at the infrastructure layer and not started at the
 layer that moves money.
