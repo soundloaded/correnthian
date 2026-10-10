@@ -985,7 +985,18 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 - **What does not exist:** allocation by category or by asset, history charting,
   and any scheduled snapshot. `capture` is only invoked by its own endpoint —
   so a portfolio has no history between two humans pressing a button.
-- **Not blocked on anything external.** The heading used to carry
+- **Scheduled snapshots deliberately deferred, not overlooked** (2026-10-10):
+  every capture reads balances over RPC per wallet, and with no price feed
+  (BE-502, gated on a contracted provider) there is nothing to value them
+  with — a nightly job today would spend metered RPC quota writing `$0`
+  rows on schedule. The fan-out also needs cursor/throttle design that
+  belongs with the pricing decision, not before it. When BE-502 lands, the
+  job is a `take`-bounded sweep in the shape of the rescreen job, with the
+  cursor in `JobRun.detail` the way the indexer keeps its own.
+- **Partly blocked, honestly:** allocation and history charting need no
+  provider and are plain unbuilt work. Snapshot scheduling waits on BE-502
+  for the reason above — running it now spends quota to record zeros.
+  The heading used to carry
   `(see DEF-007, DEF-008)`; both of those are `DONE`, and this status rests on
   the three things above. A pointer to fixed defects read as though the entry
   were waiting on them.
