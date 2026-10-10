@@ -168,3 +168,123 @@ function format(units: bigint): string {
   const digits = units.toString().padStart(9, '0');
   return `${digits.slice(0, -8)}.${digits.slice(-8)}`;
 }
+
+describe('allocation — by category, then by asset, in exact arithmetic', () => {
+  beforeEach(() => {
+    prisma.wallet.findMany.mockReset().mockResolvedValue([{ id: 'wallet-1' }, { id: 'wallet-2' }]);
+  });
+
+  function holdingsCase() {
+    // wallet-1: 2.0 XAUT @ $3000 + 5.0 USDC @ $1. wallet-2: unpriced metal.
+    prisma.wallet.findFirst
+      .mockResolvedValueOnce(
+        wallet([
+          account({ assetId: 's-xaut', balanceRaw: '2000000', asset: { assetId: '1:xaut:i', symbol: 'XAUT', name: 'Gold', category: 'metal', decimals: 6 } }),
+          account({ assetId: 's-usdc', balanceRaw: '5000000', asset: { assetId: '1:usdc:i', symbol: 'USDC', name: 'Dollar', category: 'stablecoin', decimals: 6 } }),
+        ]),
+      )
+      .mockResolvedValueOnce(
+        wallet([
+          account({ assetId: 's-paxg', balanceRaw: '1000000', asset: { assetId: '1:paxg:i', symbol: 'PAXG', name: 'Gold 2', category: 'metal', decimals: 6 } }),
+        ]),
+      );
+    pricing.latestMap
+      .mockResolvedValueOnce({ 's-xaut': 3000, 's-usdc': 1 })
+      .mockResolvedValueOnce({});
+  }
+
+  it('groups priced value by category with integer shares that cannot drift', async () => {
+    holdingsCase();
+    const out = await svc.allocation('u1');
+
+    // $6000 metal + $5 stablecoin. Shares are integer basis points of the
+    // priced total, truncated — never floats, so two readers cannot
+    // disagree by a cent about who holds what fraction.
+    expect(out.pricedValueUsd).toBe('6005.00000000');
+    expect(out.unpricedCount).toBe(1);
+    expect(out.byCategory.map((c) => [c.category, c.valueUsd, c.shareBps])).toEqual([
+      ['metal', '6000.00000000', 9991],
+      ['stablecoin', '5.00000000', 8],
+    ]);
+    // Truncation means shares need not sum to exactly 10000 — documented
+    // on the response, not hidden by fudging the last bucket.
+    const total = out.byCategory.reduce((n, c) => n + c.shareBps, 0);
+    expect(total).toBeLessThanOrEqual(10000);
+  });
+
+  it('nests assets inside their category, unpriced holdings excluded', async () => {
+    holdingsCase();
+    const out = await svc.allocation('u1');
+
+    const metal = out.byCategory.find((c) => c.category === 'metal');
+    expect(metal?.assets.map((a) => [a.symbol, a.valueUsd])).toEqual([['XAUT', '6000.00000000']]);
+    // PAXG has no price: excluded from every figure, counted once.
+    expect(JSON.stringify(out)).not.toContain('PAXG');
+  });
+
+  it('is empty but honest when nothing can be priced', async () => {
+    prisma.wallet.findMany.mockResolvedValue([{ id: 'wallet-1' }]);
+    prisma.wallet.findFirst.mockResolvedValue(
+      wallet([account({ assetId: 's-x', balanceRaw: '1000000' })]),
+    );
+    pricing.latestMap.mockResolvedValue({});
+    const out = await svc.allocation('u1');
+
+    expect(out.byCategory).toEqual([]);
+    expect(out.pricedValueUsd).toBe('0.00000000');
+    expect(out.unpricedCount).toBe(1);
+  });
+});
+
+describe('historySeries — one point per bucket for charts', () => {
+  function snapshots(rows: Array<{ totalUsd: string; unpricedCount: number; capturedAt: string }>) {
+    prisma.portfolioSnapshot.findMany.mockResolvedValue(
+      rows.map((r) => ({
+        totalUsd: r.totalUsd,
+        breakdown: { unpricedCount: r.unpricedCount },
+        capturedAt: new Date(r.capturedAt),
+      })),
+    );
+  }
+
+  it('takes the latest snapshot in each UTC day, ascending', async () => {
+    snapshots([
+      { totalUsd: '100.00', unpricedCount: 0, capturedAt: '2026-10-08T18:00:00.000Z' },
+      { totalUsd: '90.00', unpricedCount: 0, capturedAt: '2026-10-08T09:00:00.000Z' },
+      { totalUsd: '80.00', unpricedCount: 1, capturedAt: '2026-10-07T12:00:00.000Z' },
+    ]);
+    const out = await svc.historySeries('u1', 'wallet-1', 'day');
+
+    expect(out).toEqual([
+      { bucketStart: '2026-10-07T00:00:00.000Z', totalUsd: '80.00', unpricedCount: 1 },
+      { bucketStart: '2026-10-08T00:00:00.000Z', totalUsd: '100.00', unpricedCount: 0 },
+    ]);
+  });
+
+  it('buckets by ISO week starting Monday', async () => {
+    // 2026-10-08 is a Thursday; the week opened Monday 2026-10-05.
+    snapshots([
+      { totalUsd: '100.00', unpricedCount: 0, capturedAt: '2026-10-08T18:00:00.000Z' },
+      { totalUsd: '70.00', unpricedCount: 0, capturedAt: '2026-10-06T09:00:00.000Z' },
+      { totalUsd: '50.00', unpricedCount: 0, capturedAt: '2026-10-04T09:00:00.000Z' },
+    ]);
+    const out = await svc.historySeries('u1', 'wallet-1', 'week');
+
+    expect(out).toEqual([
+      { bucketStart: '2026-09-28T00:00:00.000Z', totalUsd: '50.00', unpricedCount: 0 },
+      { bucketStart: '2026-10-05T00:00:00.000Z', totalUsd: '100.00', unpricedCount: 0 },
+    ]);
+  });
+
+  it('reads nothing outside the caller wallet', async () => {
+    snapshots([]);
+    await svc.historySeries('u1', 'wallet-1', 'day');
+    // Both halves: the wallet id selects, the user id confines. A query
+    // scoped by wallet alone answers for whoever asks.
+    expect(prisma.portfolioSnapshot.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ walletId: 'wallet-1', wallet: { userId: 'u1' } }),
+      }),
+    );
+  });
+});

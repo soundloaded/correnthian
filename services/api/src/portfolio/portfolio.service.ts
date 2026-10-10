@@ -150,8 +150,7 @@ export class PortfolioService {
   }
 
   /** Every wallet a user has registered, valued. */
-  async forUser(userId: string): Promise<{ wallets: Portfolio[]; combinedUsd: string; unpricedCount: number }> {
-    const wallets = await this.prisma.wallet.findMany({
+  async forUser(userId: string): Promise<{ wallets: Portfolio[]; combinedUsd: string; unpricedCount: number }> {    const wallets = await this.prisma.wallet.findMany({
       where: { userId },
       select: { id: true },
       orderBy: { createdAt: 'asc' },
@@ -197,4 +196,128 @@ export class PortfolioService {
       select: { totalUsd: true, breakdown: true, capturedAt: true },
     });
   }
+
+  /**
+   * Allocation across every registered address: priced value grouped by
+   * category, assets nested inside, each with an integer share.
+   *
+   * Shares are basis points of the priced total, truncated — never floats.
+   * Truncation means shares can sum below 10000; that is documented on the
+   * response rather than hidden by fudging the last bucket, because a
+   * fudged bucket is a bucket that lies about one asset to flatter the
+   * arithmetic. Unpriced holdings are excluded from every figure (an
+   * unknown cannot be allocated) and counted, the same rule as valuation.
+   */
+  async allocation(userId: string): Promise<{
+    pricedValueUsd: string;
+    unpricedCount: number;
+    byCategory: Array<{
+      category: string;
+      valueUsd: string;
+      /** Truncated basis points of the priced total. See above. */
+      shareBps: number;
+      assets: Array<{ assetId: string; symbol: string; valueUsd: string; shareBps: number }>;
+    }>;
+    generatedAt: string;
+  }> {
+    const { wallets } = await this.forUser(userId);
+    const priced = wallets
+      .flatMap((w) => w.holdings)
+      // `unpriced` is derived from `valueUsd === null` where holdings are
+      // built, so one predicate covers both — a second would assert on a
+      // distinction the producer never makes.
+      .filter((h) => h.valueUsd !== null);
+
+    const total = sumUsd(priced.map((h) => parseUsd(h.valueUsd as string)));
+    const shareOf = (value: Usd): number => {
+      if (total === 0n) return 0;
+      return Number((value * 10_000n) / total);
+    };
+
+    const categories = new Map<string, { value: Usd; assets: Map<string, { symbol: string; value: Usd }> }>();
+    for (const h of priced) {
+      const value = parseUsd(h.valueUsd as string);
+      let group = categories.get(h.category);
+      if (!group) {
+        group = { value: 0n as Usd, assets: new Map() };
+        categories.set(h.category, group);
+      }
+      group.value = (group.value + value) as Usd;
+      const asset = group.assets.get(h.assetId);
+      if (asset) asset.value = (asset.value + value) as Usd;
+      else group.assets.set(h.assetId, { symbol: h.symbol, value });
+    }
+
+    const byCategory = [...categories.entries()]
+      .map(([category, group]) => ({
+        category,
+        valueUsd: formatUsd(group.value),
+        shareBps: shareOf(group.value),
+        assets: [...group.assets.entries()]
+          .map(([assetId, asset]) => ({
+            assetId,
+            symbol: asset.symbol,
+            valueUsd: formatUsd(asset.value),
+            shareBps: shareOf(asset.value),
+          }))
+          .sort((a, b) => (a.valueUsd === b.valueUsd ? 0 : a.valueUsd > b.valueUsd ? -1 : 1)),
+      }))
+      .sort((a, b) => (a.valueUsd === b.valueUsd ? 0 : a.valueUsd > b.valueUsd ? -1 : 1));
+
+    return {
+      pricedValueUsd: formatUsd(total),
+      unpricedCount: wallets.reduce((n, w) => n + w.unpricedCount, 0),
+      byCategory,
+      generatedAt: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Snapshot history reduced to one point per UTC bucket, ascending — the
+   * shape a chart renders directly. Latest snapshot in each bucket wins;
+   * empty buckets are absent rather than zero-filled, because a zero would
+   * claim a valuation that was never taken.
+   */
+  async historySeries(
+    userId: string,
+    walletId: string,
+    bucket: 'day' | 'week',
+    limit = 90,
+  ): Promise<Array<{ bucketStart: string; totalUsd: string; unpricedCount: number }>> {
+    const rows = await this.prisma.portfolioSnapshot.findMany({
+      where: { walletId, wallet: { userId } },
+      orderBy: { capturedAt: 'desc' },
+      take: Math.min(limit, 365),
+      select: { totalUsd: true, breakdown: true, capturedAt: true },
+    });
+
+    const seen = new Map<string, { bucketStart: string; totalUsd: string; unpricedCount: number }>();
+    for (const row of rows) {
+      const at = new Date(row.capturedAt);
+      const start =
+        bucket === 'day'
+          ? new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate()))
+          : startOfUtcWeek(at);
+      const key = start.toISOString();
+      // Rows arrive newest-first, so the first row per bucket is its latest
+      // snapshot. Later rows in the same bucket are older readings, skipped.
+      if (seen.has(key)) continue;
+      const breakdown = (row.breakdown ?? {}) as { unpricedCount?: unknown };
+      seen.set(key, {
+        bucketStart: key,
+        // Decimal serialises exactly; String() keeps whatever the column
+        // holds rather than reformatting it into a new claim.
+        totalUsd: String(row.totalUsd),
+        unpricedCount: typeof breakdown.unpricedCount === 'number' ? breakdown.unpricedCount : 0,
+      });
+    }
+    return [...seen.values()].reverse();
+  }
+}
+
+/** Monday 00:00 UTC of the week containing `at`. */
+function startOfUtcWeek(at: Date): Date {
+  const day = new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate()));
+  const mondayOffset = (day.getUTCDay() + 6) % 7;
+  return new Date(day.getTime() - mondayOffset * 86_400_000);
 }

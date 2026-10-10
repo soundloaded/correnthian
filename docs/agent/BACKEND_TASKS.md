@@ -1020,9 +1020,19 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
   `/wallets/:walletId/history`, `POST /wallets/:walletId/snapshot`. Unpriced
   holdings are marked unpriced and excluded; the total is explicitly a floor with
   `unpricedCount` alongside.
-- **What does not exist:** allocation by category or by asset, history charting,
-  and any scheduled snapshot. `capture` is only invoked by its own endpoint —
-  so a portfolio has no history between two humans pressing a button.
+- **Built 2026-10-10 — allocation and chartable history:** `GET
+  /portfolio/allocation` groups priced value by category with assets nested
+  inside, shares as truncated integer basis points (documented as not
+  summing to exactly 10000 rather than fudged), unpriced holdings excluded
+  and counted — the valuation rule, extended. `GET
+  /portfolio/wallets/:walletId/history-series` reduces snapshots to one
+  point per UTC day or ISO week (latest per bucket wins, ascending, empty
+  buckets absent rather than zero-filled). 6 tests, 5 mutations killed —
+  including one that removed a redundant predicate the suite could not
+  distinguish, so the predicate went instead of the test being weakened.
+- **What does not exist:** any scheduled snapshot. `capture` is only invoked
+  by its own endpoint — so a portfolio has no history between two humans
+  pressing a button.
 - **Scheduled snapshots deliberately deferred, not overlooked** (2026-10-10):
   every capture reads balances over RPC per wallet, and with no price feed
   (BE-502, gated on a contracted provider) there is nothing to value them
