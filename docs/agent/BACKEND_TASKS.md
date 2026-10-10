@@ -1449,7 +1449,7 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 
 ### BE-1702 — Testing strategy · `PARTIAL`
 
-- **593 tests across 7 workspaces** in `pnpm test` (api 520, admin 21,
+- **890 tests across 7 workspaces** in `pnpm test` (api 817, admin 21,
   blockchain 25, config 10, assets 7, swaps 6, security 4), plus **5** under
   `pnpm test:e2e`. Both suites are gated on a database and both *throw* in CI
   rather than skipping, so a green build cannot be a run that checked nothing.
@@ -1471,11 +1471,23 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
     not success — a success path needs fixtures. Covered since: `health`,
     `redemption`, `transactions` (10 tests, two sessions — found DEF-022),
     `wallets` (6), `swaps` (3, found the same IDOR shape in `findById`),
-    `users` tiers (5). This is the half DEF-001 fell through, and it is
-    still falling through everywhere else.
-  - **Service specs** for `assets.service`, `blockchain`/`indexing`,
-    `chains.service`, `providers.service` (only `provider-health` is covered),
-    `redis.service`, `notifications.service`, `swaps.service`, `job-lock`.
+    `users` tiers (5). Covered 2026-10-10, batch A: `assets` (6),
+    `issuers` (6), `providers` (5), `pricing` (6) — which exposed a real
+    bug: `history()` queried `AssetPrice` by domain assetId while the
+    column holds the surrogate FK, so every history read came back empty.
+    Fixed by resolving the asset first (unknown → 404, same as `latest`);
+    the new tests failed before and pass after. Batch B: `devices` (5),
+    `chains` (4), `audit` (3), `jobs` (3), `blockchain` (3), `portfolio`
+    (5), `onramp` (4), `fees` (4), `compliance-extra` (5: verification
+    idempotent re-entry, decide latch semantics). Full API suite: 817
+    tests, 73 files, green.
+  - **Service specs** for `blockchain`/`indexing` (only
+    `transaction-indexing` is covered), `notifications.service`.
+    Covered 2026-10-10: `assets.service`, `chains.service`,
+    `providers.service` (only `provider-health` was covered),
+    `redis.service` (boolean-only health contract), `swaps.service`
+    (refusal order + owner-or-operator scoping, mutants killed), `job-lock`
+    (fail-closed acquire/extend, mutants killed).
   - `packages/contracts`, `packages/types`, `packages/ui`, `packages/api-client`,
     `packages/integrations`, `packages/transactions` still have no tests.
 - **Note on the fixture races:** three suites flush `correnthian:rate:*` and

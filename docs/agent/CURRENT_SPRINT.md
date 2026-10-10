@@ -140,6 +140,13 @@ into CI, so the next one fails the build instead of shipping.
   allocation and bucketed history-series built (exact arithmetic,
   documented truncation). Nine checks green, 729 API tests.
 
+- **Controller-spec batches A+B (BE-1702).** Ten new HTTP suites (60 tests)
+  and six service specs (24 tests) across assets, issuers, providers,
+  pricing, devices, chains, audit, jobs, blockchain, portfolio, onramp,
+  fees and compliance decisions. Found and fixed the pricing-history
+  surrogate-FK bug (RED→GREEN witnessed). Full suite 817 tests green,
+  typecheck clean.
+
 - **Autonomous PARTIAL sweep (2026-10-10).** BE-1703 (dep + secret gates,
   both in CI with failing-proof specs), BE-105 (Sentry/OTel wired
   optionally), SEC-001 (threat model document, practice open by design),

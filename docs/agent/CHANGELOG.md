@@ -13,6 +13,28 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-10
 
+### Controller-spec batches A+B: ten HTTP suites, six service specs, one real bug — BE-1702
+- **Batch A** (`assets`, `issuers`, `providers`, `pricing` — 23 tests):
+  role-tiered writes, unknown-row 404s, shape-pipe 422s.
+- **The pricing history test exposed a real bug:** `history()` queried
+  `AssetPrice` with the domain assetId while the column holds the surrogate
+  FK, so every history read answered empty while `quote` (via `latest`)
+  worked. Fixed by resolving the asset first; unknown assets 404 like
+  `latest`. RED→GREEN witnessed on the new tests.
+- **Batch B HTTP** (`devices`, `chains`, `audit`, `jobs`, `blockchain`,
+  `portfolio`, `onramp`, `fees`, `compliance-extra` — 37 tests): device
+  404-not-403 on foreign rows, chains/providers health carry no endpoints
+  or credentials surface, audit confined to compliance, jobs board shape
+  pinned without firing runs, onramp honest 503s with no provider, fee
+  three-tier preview/admin/owner+reason, verification re-entry asks the
+  vendor exactly once, approval clears the latch while rejection keeps it.
+- **Batch B service specs** (24 tests): swaps refusal order + scoping,
+  asset identity derivation, chain select keys (no `rpcUrls` by
+  construction), provider status stamp, redis boolean health, job-lock
+  fail-closed. Scoping and lock mutants killed.
+- **Verification:** full API suite 73 files / 817 tests green; typecheck
+  exit 0. Gated tasks 1.2–1.4 untouched (user-track triggers outstanding).
+
 ### Autonomous controller-spec run: two IDORs, one shared lesson — BE-1702
 - **`test/transactions.spec.ts` (10 tests, two sessions) found DEF-022:**
   `GET /transactions/:id` answered any authenticated account with the row —
