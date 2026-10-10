@@ -30,6 +30,7 @@ const NAV: Array<{ title: string; href: string; icon: LucideIcon }> = [
   { title: 'Providers', href: '/providers', icon: Coins },
   { title: 'Quotes', href: '/quotes', icon: Coins },
   { title: 'Redemptions', href: '/redemptions', icon: Landmark },
+  { title: 'Reviews', href: '/reviews', icon: FileClock },
   { title: 'Audit log', href: '/audit', icon: FileClock },
 ];
 

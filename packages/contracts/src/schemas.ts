@@ -642,6 +642,25 @@ export const redemptionOperatorListSchema = z.object({
   nextCursor: z.string().nullable(),
 });
 
+/** `GET /compliance/reviews`: profiles parked for a human decision,
+ * oldest first. Pointers only — the inquiry id opens the vendor record;
+ * documents were never stored and cannot appear here. */
+export const reviewQueueSchema = z.array(
+  z.object({
+    userId: z.string(),
+    email: z.string(),
+    status: kycStatusSchema,
+    provider: z.string(),
+    providerRef: z.string().nullable(),
+    sanctionsResult: z.enum(['clean', 'hit']).nullable(),
+    sanctionsScreenedAt: z.string().nullable(),
+    updatedAt: z.string(),
+  }),
+);
+
+/** `POST /compliance/reviews/:userId/decide` answers the written status. */
+export const decideResultSchema = z.object({ status: z.string() });
+
 export const redemptionStatsSchema = z.object({
   total: z.number().int(),
   byState: z.record(z.string(), z.number()),
@@ -867,6 +886,8 @@ export const CONTRACT_REGISTRY = {
   'POST /api/v1/redemptions': redemptionRequestSchema,
   'PATCH /api/v1/redemptions/:id/transition': redemptionRequestSchema,
   'GET /api/v1/redemptions': redemptionOperatorListSchema,
+  'GET /api/v1/compliance/reviews': reviewQueueSchema,
+  'POST /api/v1/compliance/reviews/:userId/decide': decideResultSchema,
   'GET /api/v1/redemptions/mine': myRedemptionsSchema,
   'GET /api/v1/redemptions/stats': redemptionStatsSchema,
   'GET /api/v1/jobs': jobsStatusSchema,

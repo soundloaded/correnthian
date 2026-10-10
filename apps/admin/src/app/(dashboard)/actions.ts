@@ -211,3 +211,33 @@ export async function setChainEnabledAction(
   if (state.ok) revalidatePath('/chains');
   return state;
 }
+
+// --- compliance reviews ------------------------------------------------------
+
+export async function decideReviewAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const allowed = await guard('compliance');
+  if (allowed !== true) return allowed;
+
+  const userId = String(formData.get('userId') ?? '');
+  const decision = String(formData.get('decision') ?? '');
+  const reason = String(formData.get('reason') ?? '').trim();
+  if (!userId || (decision !== 'approve' && decision !== 'reject')) {
+    return { error: 'Missing user or decision.' };
+  }
+  // Mirrors the server's `assertReason`: a decision without a stated reason
+  // never fires. The server remains the real gate; this keeps the operator
+  // from writing a reason into a rejected call.
+  if (reason.length < 8) return { error: 'A reason of at least 8 characters is required.' };
+
+  const result = await apiSend(
+    `/compliance/reviews/${encodeURIComponent(userId)}/decide`,
+    'POST',
+    { decision, reason },
+  );
+  const state = toState(result);
+  if (state.ok) revalidatePath('/reviews');
+  return state;
+}
