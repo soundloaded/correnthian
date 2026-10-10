@@ -76,4 +76,42 @@ describe('config parsing', () => {
   it('throws with actionable guidance when loaded and invalid', () => {
     expect(() => loadConfig({})).toThrow(/Copy \.env\.example/);
   });
+
+  it('leaves Persona unconfigured when no Persona variables are set', () => {
+    // No vendor is contracted in every environment. Absent credentials must
+    // parse to an explicitly unconfigured provider — never to a half-filled
+    // one — so the gate can fail closed on "no screening available" instead
+    // of failing open on a client that cannot authenticate.
+    const r = parseConfig(valid);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.config.persona.apiKey).toBeUndefined();
+      expect(r.config.persona.webhookSecret).toBeUndefined();
+      expect(r.config.persona.configured).toBe(false);
+    }
+  });
+
+  it('reads Persona credentials when they are set', () => {
+    const r = parseConfig({
+      ...valid,
+      PERSONA_API_KEY: 'persona_key_123',
+      PERSONA_WEBHOOK_SECRET: 'whsec_456',
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.config.persona.apiKey).toBe('persona_key_123');
+      expect(r.config.persona.webhookSecret).toBe('whsec_456');
+      expect(r.config.persona.configured).toBe(true);
+    }
+  });
+
+  it('refuses a half-configured Persona rather than running impaired', () => {
+    // An API key with no webhook secret would verify inquiries but accept
+    // unsigned webhooks; a secret with no key is the mirror. Either half
+    // alone is worse than neither, because the provider would look
+    // configured while one direction was unauthenticated.
+    const r = parseConfig({ ...valid, PERSONA_API_KEY: 'persona_key_123' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.issues.join(' ')).toContain('PERSONA_WEBHOOK_SECRET');
+  });
 });

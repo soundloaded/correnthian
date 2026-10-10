@@ -76,6 +76,28 @@ const schema = z.object({
     pretty: boolish('false'),
   }),
 
+  persona: z
+    .object({
+      apiKey: z.string().min(1).optional(),
+      webhookSecret: z.string().min(1).optional(),
+      /** Verify-against-docs: base path for inquiry and watchlist calls. */
+      baseUrl: z.string().default('https://withpersona.com/api/v1'),
+    })
+    .superRefine((v, ctx) => {
+      // Half-configured is worse than unconfigured: a key with no secret
+      // would verify inquiries but accept unsigned webhooks, and the
+      // provider would look configured while one direction ran
+      // unauthenticated. Refuse to boot impaired instead.
+      if ((v.apiKey === undefined) !== (v.webhookSecret === undefined)) {
+        ctx.addIssue({
+          code: 'custom',
+          message:
+            'PERSONA_API_KEY and PERSONA_WEBHOOK_SECRET must be set together; refusing a half-configured Persona',
+        });
+      }
+    })
+    .transform((v) => ({ ...v, configured: v.apiKey !== undefined })),
+
   rateLimit: z.object({
     windowSeconds: z.coerce.number().int().min(1).default(60),
     /** The general API budget. */
@@ -125,6 +147,11 @@ export function parseConfig(source: NodeJS.ProcessEnv = process.env): ParseResul
       sessionTtlHours: source['SESSION_TTL_HOURS'],
     },
     log: { level: source['LOG_LEVEL'], pretty: source['LOG_PRETTY'] },
+    persona: {
+      apiKey: source['PERSONA_API_KEY'],
+      webhookSecret: source['PERSONA_WEBHOOK_SECRET'],
+      baseUrl: source['PERSONA_BASE_URL'],
+    },
     rateLimit: {
       windowSeconds: source['RATE_LIMIT_WINDOW_SECONDS'],
       maxRequests: source['RATE_LIMIT_MAX_REQUESTS'],
