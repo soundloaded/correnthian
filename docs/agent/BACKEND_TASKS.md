@@ -38,7 +38,7 @@ a test, or the test cannot fail, the status is `PARTIAL` and the gap is named.
 | `BE-002` | Environment configuration | **DONE** as `packages/config` | Zod schema, 6 tests, fails at boot |
 | `BE-003` | PostgreSQL schema foundation | **DONE** | 19 models, 19 enums, 2 migrations |
 | `BE-004` | Redis infrastructure | **PARTIAL** | Client + health + rate-limit counters. **No queue, no worker, no BullMQ.** |
-| `SEC-001` | Threat model | **PARTIAL** | Boundary enforced in CI. No formal threat model document; see `docs/architecture/key-boundary.md` |
+| `SEC-001` | Threat model | **PARTIAL** | Boundary enforced in CI. Document at `docs/architecture/threat-model.md`; practice (cadence, per-feature intake) open |
 | `AUTH-001` | Authentication foundation | **DONE** as `auth` module | Argon2id + SHA-256 session digests, 7 tests |
 | `USER-001` | User/device model | **DONE** as `users` + `devices` | Keyset-ish pagination, role mutation, soft revoke |
 | `WALLET-001` | Wallet metadata architecture | **DONE** as `wallets` module | Public addresses only, address validation, guardians |
@@ -619,18 +619,20 @@ kept for the record; it does not describe the current code._
 - **Status:** `PARTIAL`
 
 ### SEC-001 — Threat model · `PARTIAL`
-- **What exists:** `scripts/check-key-boundary.mjs` enforced by CI job
-  `key-boundary`; `credential-scan` job greps `*.env*` for
-  assignments to `PRIVATE_KEY`, `MNEMONIC` or `SEED_PHRASE`; the invariant header in `services/api/prisma/schema.prisma`;
-  `docs/architecture/key-boundary.md`.
-- **What does not exist:** a threat model covering anything other than the key
-  boundary. There is no analysis of account takeover, session theft, admin
-  compromise, provider credential leakage, or supply chain.
-- **Expected output:** a threat model document with assets, adversaries,
-  abuse cases, and mitigations — scoped to the API and admin, since the client
-  layer does not exist.
+- **The document exists:** `docs/architecture/threat-model.md` — assets,
+  four adversaries, 20+ abuse cases each naming code and tests, the four
+  assumptions the model breaks without, and eight accepted gaps with an
+  owner. Every claim re-verified against the tree 2026-10-10 (append-only
+  audit, no rpcUrls in responses, httpOnly cookie flags, absent reset
+  flow, argon2id floors, frozen-lockfile installs, 32-byte session
+  randomness).
+- **What remains is practice, not paper:** no review cadence and no
+  per-feature intake — §6 of the document states both rules, but nothing
+  enforces the second one yet. (The credential-scan description above
+  already reflects `check-secrets.mjs` since the BE-1703 slice.)
 - **Acceptance criteria:** every mitigation either exists in code with a test,
-  or is listed as an accepted gap with an owner.
+  or is listed as an accepted gap with an owner. Met as of this writing;
+  the criteria rots without §6, which is why §6 exists.
 - **Status:** `PARTIAL`
 
 ---
