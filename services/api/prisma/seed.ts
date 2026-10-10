@@ -13,6 +13,7 @@ import 'dotenv/config';
 import { hash } from '@node-rs/argon2';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client.js';
+import { resolveSeedRpcUrls } from '../src/chains/chain-rpc.js';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({
@@ -31,10 +32,20 @@ async function main() {
   ] as const;
 
   for (const chain of chains) {
+    // Fill-if-empty: env seeds the gap on first run, operator edits in the
+    // DB are never overwritten by re-seeding.
+    const existing =
+      (await prisma.chain.findUnique({ where: { id: chain.id }, select: { rpcUrls: true } }))?.rpcUrls ?? [];
     await prisma.chain.upsert({
       where: { id: chain.id },
-      update: { name: chain.name, family: chain.family, nativeSymbol: chain.nativeSymbol, decimals: chain.decimals },
-      create: { ...chain, rpcUrls: [] },
+      update: {
+        name: chain.name,
+        family: chain.family,
+        nativeSymbol: chain.nativeSymbol,
+        decimals: chain.decimals,
+        rpcUrls: resolveSeedRpcUrls(chain.id, existing, process.env),
+      },
+      create: { ...chain, rpcUrls: resolveSeedRpcUrls(chain.id, [], process.env) },
     });
   }
   console.log(`  chains: ${chains.length}`);
