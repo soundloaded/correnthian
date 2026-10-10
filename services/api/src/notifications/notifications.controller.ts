@@ -1,10 +1,17 @@
-import { Body, Controller, Get, Inject, Post } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import { CurrentUser, type AuthenticatedUser } from '../common/decorators/current-user.decorator.js';
 import { Roles } from '../common/guards/roles.guard.js';
 import { zodPipe } from '../common/pipes/zod-validation.pipe.js';
 import { NotificationsService } from './notifications.service.js';
+
+const listSchema = z.object({
+  state: z.enum(['pending', 'sent', 'failed']).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(25),
+  /** Opaque. Encodes the keyset position — see `NotificationsService.listAll`. */
+  cursor: z.string().max(400).optional(),
+});
 
 const enqueueSchema = z.object({
   channel: z.enum(['email', 'push', 'in_app']),
@@ -17,6 +24,13 @@ const enqueueSchema = z.object({
 @Controller('notifications')
 export class NotificationsController {
   constructor(@Inject(NotificationsService) private readonly notifications: NotificationsService) {}
+
+  @Get()
+  @Roles('support')
+  @ApiOperation({ summary: 'Every queued notification, for the operator console' })
+  listAll(@Query(zodPipe(listSchema)) query: z.infer<typeof listSchema>) {
+    return this.notifications.listAll(query);
+  }
 
   @Get('mine')
   @ApiOperation({ summary: 'Notifications for the current account' })

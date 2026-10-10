@@ -661,6 +661,32 @@ export const reviewQueueSchema = z.array(
 /** `POST /compliance/reviews/:userId/decide` answers the written status. */
 export const decideResultSchema = z.object({ status: z.string() });
 
+/** `GET /notifications/stats`: delivery counters over the queue. */
+export const notificationStatsSchema = z.object({
+  total: z.number().int(),
+  pending: z.number().int(),
+  sent: z.number().int(),
+  failed: z.number().int(),
+});
+
+/** `GET /notifications`: the operator table. State is derived from the
+ * timestamps — pending means neither sent nor failed — and `error` travels
+ * with failed rows so the console can say why, not just that. */
+export const notificationOperatorListSchema = z.object({
+  items: z.array(
+    z.object({
+      id: z.string(),
+      createdAt: z.string(),
+      channel: z.string(),
+      template: z.string(),
+      state: z.enum(['pending', 'sent', 'failed']),
+      error: z.string().nullable(),
+      user: z.object({ id: z.string(), email: z.string() }),
+    }),
+  ),
+  nextCursor: z.string().nullable(),
+});
+
 export const redemptionStatsSchema = z.object({
   total: z.number().int(),
   byState: z.record(z.string(), z.number()),
@@ -888,6 +914,8 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/redemptions': redemptionOperatorListSchema,
   'GET /api/v1/compliance/reviews': reviewQueueSchema,
   'POST /api/v1/compliance/reviews/:userId/decide': decideResultSchema,
+  'GET /api/v1/notifications': notificationOperatorListSchema,
+  'GET /api/v1/notifications/stats': notificationStatsSchema,
   'GET /api/v1/redemptions/mine': myRedemptionsSchema,
   'GET /api/v1/redemptions/stats': redemptionStatsSchema,
   'GET /api/v1/jobs': jobsStatusSchema,

@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { decodeCursor, encodeCursor, keysetAfter } from '../common/keyset.js';
 
 export type Channel = 'email' | 'push' | 'in_app';
 
@@ -33,6 +34,74 @@ export class NotificationsService {
         payload: (input.payload ?? {}) as object,
       },
     });
+  }
+
+  /**
+   * The operator's notification table — every account's queued rows.
+   *
+   * State is derived from the timestamps, not stored: pending means
+   * neither sent nor failed. Keyset on `createdAt` tie-broken by `id`,
+   * following the swaps table. No resend action lives here or anywhere:
+   * a button that claimed to send without a transport would be the
+   * ADR-020 lie in UI form.
+   */
+  async listAll(query: { state?: 'pending' | 'sent' | 'failed'; limit?: number; cursor?: string }) {
+    const limit = Math.min(query.limit ?? 25, 100);
+    const after = query.cursor ? decodeCursor(query.cursor) : null;
+
+    const stateFilter =
+      query.state === 'pending'
+        ? { sentAt: null, failedAt: null }
+        : query.state === 'sent'
+          ? { sentAt: { not: null } }
+          : query.state === 'failed'
+            ? { failedAt: { not: null } }
+            : {};
+
+    const rows = await this.prisma.notification.findMany({
+      where: {
+        ...stateFilter,
+        ...keysetAfter(after, 'createdAt'),
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      select: {
+        id: true,
+        userId: true,
+        createdAt: true,
+        channel: true,
+        template: true,
+        sentAt: true,
+        failedAt: true,
+        error: true,
+      },
+    });
+
+    // `Notification.userId` is a bare string, not a relation — there is no
+    // join to select. Resolve emails in one batch rather than per row.
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: [...new Set(rows.map((r) => r.userId))] } },
+      select: { id: true, email: true },
+    });
+    const emails = new Map(users.map((u) => [u.id, u.email]));
+
+    const hasMore = rows.length > limit;
+    const page = hasMore ? rows.slice(0, limit) : rows;
+    const last = page.at(-1);
+
+    return {
+      items: page.map((r) => ({
+        id: r.id,
+        createdAt: r.createdAt.toISOString(),
+        channel: r.channel,
+        template: r.template,
+        state: (r.failedAt !== null ? 'failed' : r.sentAt !== null ? 'sent' : 'pending') as
+          'pending' | 'sent' | 'failed',
+        error: r.error,
+        user: { id: r.userId, email: emails.get(r.userId) ?? 'unknown' },
+      })),
+      nextCursor: hasMore && last ? encodeCursor({ id: last.id, at: last.createdAt }) : null,
+    };
   }
 
   async listForUser(userId: string, limit = 50) {
