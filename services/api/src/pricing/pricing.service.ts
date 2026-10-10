@@ -134,8 +134,15 @@ export class PricingService {
   }
 
   async history(assetId: string, limit = 100) {
+    // AssetPrice.assetId is the surrogate FK, not the domain assetId callers
+    // know. Querying the raw param matched nothing — every history read came
+    // back empty while quote (via latest) worked. Resolve first, same as
+    // latest, so unknown assets 404 here too instead of answering [].
+    const asset = await this.prisma.asset.findUnique({ where: { assetId } });
+    if (!asset) throw AppError.notFound('Asset not in the registry');
+
     return this.prisma.assetPrice.findMany({
-      where: { assetId },
+      where: { assetId: asset.id },
       orderBy: { capturedAt: 'desc' },
       take: Math.min(limit, 1000),
       select: { priceUsd: true, source: true, capturedAt: true },
