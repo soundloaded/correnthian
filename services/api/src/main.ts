@@ -10,6 +10,7 @@ import helmet from 'helmet';
 import { Logger } from '@nestjs/common';
 import { AppModule } from './app.module.js';
 import { ConfigService } from './config/config.service.js';
+import { startObservability } from './observability/observability.js';
 import { applyApiVersioning } from './versioning/apply-versioning.js';
 
 async function bootstrap(): Promise<void> {
@@ -20,6 +21,19 @@ async function bootstrap(): Promise<void> {
   // nothing on routes that never read it.
   const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
   const config = app.get(ConfigService);
+
+  // Error reporting and tracing, before anything else that can fail. Each
+  // starts only from its own variable; unset means off, and a tracing build
+  // that throws leaves tracing off rather than refusing traffic.
+  const observability = startObservability({
+    sentryDsn: config.value.observability.sentryDsn,
+    otelEndpoint: config.value.observability.otelEndpoint,
+  });
+  if (observability.sentry || observability.tracing) {
+    new Logger('Observability').log(
+      `sentry=${observability.sentry ? 'on' : 'off'} tracing=${observability.tracing ? 'on' : 'off'}`,
+    );
+  }
 
   // Structured logging. Anything reaching a log must already be redacted.
   app.useLogger(app.get(PinoLogger));

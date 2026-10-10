@@ -124,6 +124,38 @@ describe('config parsing', () => {
     if (r.ok) expect(r.config.persona.baseUrl).toBe('https://api.withpersona.com/api/v1');
   });
 
+  it('leaves observability unconfigured when no DSN or endpoint is set', () => {
+    // SENTRY_DSN and OTEL_EXPORTER_OTLP_ENDPOINT were read by nothing for
+    // the whole project history. Absent means explicitly off — never a
+    // half-initialised SDK phoning nowhere.
+    const r = parseConfig(valid);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.config.observability.sentryDsn).toBeUndefined();
+      expect(r.config.observability.otelEndpoint).toBeUndefined();
+      expect(r.config.observability.enabled).toBe(false);
+    }
+  });
+
+  it('reads observability endpoints independently of each other', () => {
+    // Either may be set alone: error reporting without tracing and tracing
+    // without error reporting are both coherent deployments. Coupling them
+    // would force an operator to buy both to get either.
+    const sentryOnly = parseConfig({ ...valid, SENTRY_DSN: 'https://x@sentry.io/1' });
+    expect(sentryOnly.ok).toBe(true);
+    if (sentryOnly.ok) {
+      expect(sentryOnly.config.observability.sentryDsn).toBe('https://x@sentry.io/1');
+      expect(sentryOnly.config.observability.otelEndpoint).toBeUndefined();
+      expect(sentryOnly.config.observability.enabled).toBe(true);
+    }
+    const otelOnly = parseConfig({ ...valid, OTEL_EXPORTER_OTLP_ENDPOINT: 'http://collector:4318' });
+    expect(otelOnly.ok).toBe(true);
+    if (otelOnly.ok) {
+      expect(otelOnly.config.observability.otelEndpoint).toBe('http://collector:4318');
+      expect(otelOnly.config.observability.sentryDsn).toBeUndefined();
+    }
+  });
+
   it('reads the inquiry template id when set, and stays unconfigured without it', () => {
     // Inquiry creation requires a template; without one the adapter cannot
     // open inquiries, so configured-ness includes it. Credentials alone

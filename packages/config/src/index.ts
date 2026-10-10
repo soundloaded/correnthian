@@ -109,6 +109,19 @@ const schema = z.object({
       configured: v.apiKey !== undefined && v.templateId !== undefined,
     })),
 
+  observability: z
+    .object({
+      sentryDsn: z.string().min(1).optional(),
+      otelEndpoint: z.string().min(1).optional(),
+    })
+    .transform((v) => ({
+      ...v,
+      // Either alone is a coherent deployment: error reporting without
+      // tracing and tracing without error reporting. Absent entirely
+      // means explicitly off, never half-initialised.
+      enabled: v.sentryDsn !== undefined || v.otelEndpoint !== undefined,
+    })),
+
   rateLimit: z.object({
     windowSeconds: z.coerce.number().int().min(1).default(60),
     /** The general API budget. */
@@ -158,6 +171,10 @@ export function parseConfig(source: NodeJS.ProcessEnv = process.env): ParseResul
       sessionTtlHours: source['SESSION_TTL_HOURS'],
     },
     log: { level: source['LOG_LEVEL'], pretty: source['LOG_PRETTY'] },
+    observability: {
+      sentryDsn: source['SENTRY_DSN'],
+      otelEndpoint: source['OTEL_EXPORTER_OTLP_ENDPOINT'],
+    },
     persona: {
       apiKey: source['PERSONA_API_KEY'],
       webhookSecret: source['PERSONA_WEBHOOK_SECRET'],

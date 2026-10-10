@@ -720,8 +720,21 @@ kept for the record; it does not describe the current code._
 - **What exists:** `nestjs-pino` structured logging with transport-layer
   redaction of `authorization`, `cookie`, `password`. Confirmed against a real
   500 trace.
-- **What does not exist:** metrics, traces, error reporting. `SENTRY_DSN` and
-  `OTEL_EXPORTER_OTLP_ENDPOINT` are in `.env.example` and read by nothing.
+- **New — the two unread variables are read** (`src/observability/`,
+  wired in `main.ts` before anything else that can fail): `SENTRY_DSN`
+  starts Sentry error reporting, `OTEL_EXPORTER_OTLP_ENDPOINT` starts
+  OpenTelemetry tracing (HTTP instrumentation) and metrics (60s OTLP
+  export). Each starts only from its own variable and each may be set
+  alone; unset means off, never a client pointed at nowhere. A tracing
+  build that throws leaves tracing off rather than refusing traffic —
+  observability is never load-bearing. Sentry runs errors-only (no
+  `tracesSampleRate`): spans belong to OTel, and two tracers would emit
+  everything twice.
+- **Deliberately not built:** Sentry performance tracing, log shipping
+  (pino structures; where logs go is deployment, not code), sampling
+  policy (defaults until traffic says otherwise). And neither sink has an
+  account behind it, so delivery itself is unproven — the suites prove
+  which initialisers run, not that anyone receives.
 - **Status:** `PARTIAL`
 
 
