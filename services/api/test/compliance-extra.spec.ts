@@ -94,8 +94,11 @@ describe.skipIf(!HAS_DB && !CI)('compliance decisions hold their shape over HTTP
   it('eligibility is public and unmatched locations are denied', async () => {
     const us = await request(app.getHttpServer()).get('/api/v1/compliance/eligibility?country=US');
     expect(us.status).toBe(200);
-    const zz = await request(app.getHttpServer()).get('/api/v1/compliance/eligibility?country=ZZ');
-    expect(zz.body.allowed ?? zz.body.eligible ?? false).toBe(false);
+    // 'AQ' is unmatched by every suite: contracts.spec upserts a 'ZZ' rule
+    // on the shared table, so asserting on ZZ would couple this suite to
+    // another file's fixtures and flake under parallel workers.
+    const aq = await request(app.getHttpServer()).get('/api/v1/compliance/eligibility?country=AQ');
+    expect(aq.body.allowed).toBe(false);
   });
 
   it('starting verification twice returns the live inquiry, not a second one', async () => {
