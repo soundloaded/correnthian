@@ -69,7 +69,7 @@ export default async function FeesPage() {
       <ApiState
         result={rules}
         emptyTitle="No fee rules"
-        emptyDescription="Without rules every preview shows an explicit $0 Correnthian line — never a spread hidden in the rate."
+        emptyDescription="Without rules every preview shows explicit unknown lines — never a $0 passed off as priced, never a spread hidden in the rate."
         emptyWhen={(d) => d.length === 0}
         render={(d) => (
           <Card>
