@@ -1210,7 +1210,15 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
   report on inquiry completed", whose Run Report step fires on completion
   for the template. So the operational requirement is that this workflow
   stays published and covering the template — no watchlist workflow, no
-  screen ever, and the gate denies everyone forever.
+  screen ever, and the gate denies everyone forever. Vendor-side
+  confirmation 2026-10-10: workflow `wfl_AXt5CjgKBKh7GpqYT6QKqXM1KeQa5d`
+  is published, triggers on `inquiry.completed` for our template, and the
+  step fires when the end user reaches the Completed screen. Sharp edge
+  recorded: **manual dashboard approval does NOT fire the workflow** —
+  approval moves the inquiry to `approved` without passing through
+  completion, yielding approved-with-zero-reports (exactly what the first
+  completed inquiry showed). Do not "verify" screening by approving in
+  the dashboard; it proves nothing about screening.
 - **`compliance.rescreen-stale` runs nightly:** approved, unfrozen, stale
   (or never-screened — the OR matters, because a flat `lt` skips NULLs in
   Postgres) users re-screen; hits latch through the same path; one user's
