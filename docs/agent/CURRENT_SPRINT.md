@@ -132,6 +132,14 @@ into CI, so the next one fails the build instead of shipping.
 
 ### Completed in this sprint
 
+- **Autonomous controller-spec run (BE-1702 + BE-501).** Four new HTTP
+  suites (transactions, wallets, swaps, user tiers — 24 tests) found two
+  cross-account read leaks (DEF-022 on transactions, same shape on
+  quotes), both fixed with the stranger rule and mutation-killed, plus a
+  shared-fixture collision fixed with pid-unique addresses. Portfolio
+  allocation and bucketed history-series built (exact arithmetic,
+  documented truncation). Nine checks green, 729 API tests.
+
 - **Autonomous PARTIAL sweep (2026-10-10).** BE-1703 (dep + secret gates,
   both in CI with failing-proof specs), BE-105 (Sentry/OTel wired
   optionally), SEC-001 (threat model document, practice open by design),

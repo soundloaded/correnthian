@@ -13,6 +13,32 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-10
 
+### Autonomous controller-spec run: two IDORs, one shared lesson — BE-1702
+- **`test/transactions.spec.ts` (10 tests, two sessions) found DEF-022:**
+  `GET /transactions/:id` answered any authenticated account with the row —
+  amounts, destinations, wallet addresses, the owner's email. Both guard
+  suites passed over it because the route carries no `@Roles`. Fixed with
+  the stranger rule (non-operator on a foreign row learns nothing, not
+  even existence) in `detail`, `apply` and `observe` — transitions moved
+  403→404 on foreign rows while own-row 403s keep their diagnostics.
+  Actor required, not optional. 3 mutations, one per entry point, killed.
+- **`test/swaps.spec.ts` found the same shape in `findById`** (quote
+  amounts, pairs, fees) — fixed identically, null-owner rows failing
+  closed to operators-only. Mutation-killed.
+- **`test/wallets.spec.ts` (6) and `test/users.spec.ts` (5)** pin correct
+  behavior: per-verb 404s, primary singularity, tiering between support
+  and admin, self-promotion refused, unknown roles rejected by validation.
+- **One shared-suite collision fixed:** two files registered the same
+  fixed address on the shared wallet table; fixtures now carry the worker
+  pid like the emails already did. DEF-019's failure mode, again.
+- **BE-501 allocation + history-series built** (6 unit tests, 5 mutations
+  killed): integer-basis-point shares documented as non-summing, latest
+  snapshot per UTC day/week bucket, empty buckets absent not zeroed.
+  Snapshots stay manual until pricing exists — quota spent on `$0` rows
+  otherwise.
+- **Verification:** all nine checks green; 729 API tests; lint below
+  baseline. Commits per slice, tree clean.
+
 ### Autonomous PARTIAL sweep: five entries closed or corrected
 - **`BE-1703` — dependencies and secrets now gated.** `check-deps.mjs`
   fails on untriaged high/critical prod advisories (keyed by GHSA id with
