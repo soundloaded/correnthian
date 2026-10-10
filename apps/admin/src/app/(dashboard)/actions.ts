@@ -293,3 +293,21 @@ export async function setFeeRuleActiveAction(
   if (state.ok) revalidatePath('/fees');
   return state;
 }
+
+// --- jobs --------------------------------------------------------------------
+
+export async function runJobAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const allowed = await guard('admin');
+  if (allowed !== true) return allowed;
+
+  const name = String(formData.get('name') ?? '');
+  if (!name) return { error: 'Missing job.' };
+
+  const result = await apiSend(`/jobs/${encodeURIComponent(name)}/run`, 'POST', {});
+  const state = toState(result);
+  if (state.ok) revalidatePath('/jobs');
+  return state;
+}
