@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { deriveAssetId } from '@correnthian/assets';
 import { AppError } from '../common/errors.js';
+import { isOperatorRole } from '../common/roles.js';
 import { decodeCursor, encodeCursor, KEYSET_ORDER, keysetAfter } from '../common/keyset.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { FeesService } from '../fees/fees.service.js';
@@ -220,9 +221,18 @@ export class SwapsService {
     return this.present(quote);
   }
 
-  async findById(id: string) {
+  /**
+   * One quote. Scoped to owner-or-operator like transaction detail: quotes
+   * carry amounts, asset pairs and fee breakdowns — another account's
+   * trading intent, not a public listing. A null owner (no account filed
+   * it) is operators-only: with no one to claim it, fail closed.
+   */
+  async findById(id: string, actor: { id: string; role: string }) {
     const quote = await this.prisma.swapQuote.findUnique({ where: { id } });
     if (!quote) throw AppError.notFound('Quote not found');
+    if (quote.userId !== actor.id && !isOperatorRole(actor.role)) {
+      throw AppError.notFound('Quote not found');
+    }
     return this.present(quote);
   }
 

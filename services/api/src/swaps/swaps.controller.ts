@@ -59,7 +59,7 @@ export class SwapsController {
   @Get('quotes/:id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Quote detail' })
-  findOne(@Param('id') id: string) {
-    return this.swaps.findById(id);
+  findOne(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.swaps.findById(id, user);
   }
 }
