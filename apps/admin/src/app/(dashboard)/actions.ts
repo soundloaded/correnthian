@@ -241,3 +241,55 @@ export async function decideReviewAction(
   if (state.ok) revalidatePath('/reviews');
   return state;
 }
+
+// --- fee rules ---------------------------------------------------------------
+
+export async function createFeeRuleAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const allowed = await guard('owner');
+  if (allowed !== true) return allowed;
+
+  const str = (k: string) => String(formData.get(k) ?? '').trim();
+  const operation = str('operation');
+  const kind = str('kind');
+  const basis = str('basis');
+  const label = str('label');
+  const reason = str('reason');
+  if (!operation || !kind || !basis || !label) return { error: 'Operation, kind, basis and label are required.' };
+  if (reason.length < 8) return { error: 'A reason of at least 8 characters is required.' };
+
+  const body: Record<string, unknown> = { operation, kind, basis, label, reason };
+  const rateBps = str('rateBps');
+  const fixedUsd = str('fixedUsd');
+  if (rateBps !== '') body.rateBps = Number(rateBps);
+  if (fixedUsd !== '') body.fixedUsd = fixedUsd;
+
+  const result = await apiSend('/fees/rules', 'POST', body);
+  const state = toState(result);
+  if (state.ok) revalidatePath('/fees');
+  return state;
+}
+
+export async function setFeeRuleActiveAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const allowed = await guard('owner');
+  if (allowed !== true) return allowed;
+
+  const id = String(formData.get('id') ?? '');
+  const reason = String(formData.get('reason') ?? '').trim();
+  if (!id) return { error: 'Missing rule.' };
+  if (reason.length < 8) return { error: 'A reason of at least 8 characters is required.' };
+
+  const result = await apiSend(
+    `/fees/rules/${encodeURIComponent(id)}`,
+    'PATCH',
+    { active: String(formData.get('active')) === 'true', reason },
+  );
+  const state = toState(result);
+  if (state.ok) revalidatePath('/fees');
+  return state;
+}
