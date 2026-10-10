@@ -1204,9 +1204,13 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
   replacement under investigation: list the latest watchlist report by
   reference and re-run it (`POST /reports/{id}/run`), which needs no new
   inputs — untested, because no report exists until a verification with a
-  watchlist step completes. This also makes a template-level requirement
-  explicit: the GovID+Selfie template must run a Watchlist step, or no
-  screen exists to re-run and the gate denies everyone forever.
+  watchlist step completes. Correction 2026-10-10 (my earlier "add a
+  Watchlist step to the template" was not docs-supported — owned here so it
+  does not get repeated): the report comes from the **workflow** "Watchlist
+  report on inquiry completed", whose Run Report step fires on completion
+  for the template. So the operational requirement is that this workflow
+  stays published and covering the template — no watchlist workflow, no
+  screen ever, and the gate denies everyone forever.
 - **`compliance.rescreen-stale` runs nightly:** approved, unfrozen, stale
   (or never-screened — the OR matters, because a flat `lt` skips NULLs in
   Postgres) users re-screen; hits latch through the same path; one user's
