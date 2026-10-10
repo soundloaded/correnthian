@@ -69,6 +69,12 @@ export class ScreeningUnavailableError extends Error {
   }
 }
 
+/** The DI token. The scheduler, the gate and the services take the list
+ *  position, not each implementation — same shape as the `JOBS` token, so a
+ *  new provider is one entry in the module factory rather than a new
+ *  dependency everywhere it is used. */
+export const SCREENING_PROVIDER = 'correnthian:screening';
+
 export abstract class ScreeningProvider {
   abstract readonly name: string;
   /** Open an inquiry for the user. Idempotent per user: a second call

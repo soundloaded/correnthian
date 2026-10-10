@@ -13,7 +13,12 @@ import { ConfigService } from './config/config.service.js';
 import { applyApiVersioning } from './versioning/apply-versioning.js';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  // `rawBody: true` keeps the untouched request bytes on `req.rawBody`.
+  // JSON parsing consumes the stream, and the Persona webhook verifies its
+  // HMAC over the raw bytes — without this the signature input is gone and
+  // every signature fails, including valid ones. Attaching the buffer costs
+  // nothing on routes that never read it.
+  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
   const config = app.get(ConfigService);
 
   // Structured logging. Anything reaching a log must already be redacted.
