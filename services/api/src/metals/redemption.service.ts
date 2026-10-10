@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { AppError } from '../common/errors.js';
 import { AuditService } from '../audit/audit.service.js';
 import { ComplianceGate, FiatDeniedError } from '../compliance/compliance-gate.service.js';
+import { decodeCursor, encodeCursor, keysetAfter } from '../common/keyset.js';
 import { JurisdictionService } from '../compliance/jurisdiction.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
@@ -119,6 +120,52 @@ export class RedemptionService {
     });
 
     return request;
+  }
+
+  /**
+   * The operator's redemption table — every account's requests, newest first.
+   *
+   * Keyset on `requestedAt`, tie-broken by `id`, following the swaps table:
+   * `requestedAt` alone is not unique and a bare `< cursor` predicate would
+   * skip or repeat a row at every page boundary. The state filter spreads
+   * inside `where`, never beside the keyset's own AND.
+   */
+  async listAll(query: { state?: string; limit?: number; cursor?: string }) {
+    const limit = Math.min(query.limit ?? 25, 100);
+    const after = query.cursor ? decodeCursor(query.cursor) : null;
+
+    const rows = await this.prisma.redemptionRequest.findMany({
+      where: {
+        ...(query.state ? { state: query.state as never } : {}),
+        ...keysetAfter(after, 'requestedAt'),
+      },
+      orderBy: [{ requestedAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      select: {
+        id: true,
+        requestedAt: true,
+        state: true,
+        amountRaw: true,
+        asset: { select: { assetId: true, symbol: true } },
+        provider: { select: { slug: true, name: true } },
+      },
+    });
+
+    const hasMore = rows.length > limit;
+    const page = hasMore ? rows.slice(0, limit) : rows;
+    const last = page.at(-1);
+
+    return {
+      items: page.map((r) => ({
+        id: r.id,
+        requestedAt: r.requestedAt.toISOString(),
+        state: r.state,
+        amountRaw: r.amountRaw,
+        asset: r.asset,
+        provider: r.provider,
+      })),
+      nextCursor: hasMore && last ? encodeCursor({ id: last.id, at: last.requestedAt }) : null,
+    };
   }
 
   listForUser(userId: string) {

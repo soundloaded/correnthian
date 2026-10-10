@@ -626,6 +626,22 @@ export const myRedemptionsSchema = z.array(
   }),
 );
 
+/** `GET /redemptions`: the operator table. Resolves asset and provider
+ * names so the console never joins, and carries the keyset cursor. */
+export const redemptionOperatorListSchema = z.object({
+  items: z.array(
+    z.object({
+      id: z.string(),
+      requestedAt: z.string(),
+      state: redemptionStateSchema,
+      amountRaw: z.string(),
+      asset: z.object({ assetId: z.string(), symbol: z.string() }),
+      provider: z.object({ slug: z.string(), name: z.string() }),
+    }),
+  ),
+  nextCursor: z.string().nullable(),
+});
+
 export const redemptionStatsSchema = z.object({
   total: z.number().int(),
   byState: z.record(z.string(), z.number()),
@@ -850,6 +866,7 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/transactions/:id': transactionDetailSchema,
   'POST /api/v1/redemptions': redemptionRequestSchema,
   'PATCH /api/v1/redemptions/:id/transition': redemptionRequestSchema,
+  'GET /api/v1/redemptions': redemptionOperatorListSchema,
   'GET /api/v1/redemptions/mine': myRedemptionsSchema,
   'GET /api/v1/redemptions/stats': redemptionStatsSchema,
   'GET /api/v1/jobs': jobsStatusSchema,

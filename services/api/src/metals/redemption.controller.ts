@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import { CurrentUser, type AuthenticatedUser } from '../common/decorators/current-user.decorator.js';
@@ -12,6 +12,16 @@ const requestSchema = z.object({
   amountRaw: z.string().regex(/^\d+(\.\d+)?$/, 'Must be a positive decimal string'),
   providerSlug: z.string().min(1),
   destination: z.record(z.string(), z.unknown()).optional(),
+});
+
+const listSchema = z.object({
+  state: z.enum([
+    'requested', 'kyc_pending', 'approved', 'in_production', 'shipped',
+    'delivered', 'rejected', 'cancelled',
+  ]).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(25),
+  /** Opaque. Encodes the keyset position — see `RedemptionService.listAll`. */
+  cursor: z.string().max(400).optional(),
 });
 
 const transitionSchema = z.object({
@@ -42,6 +52,13 @@ export class RedemptionController {
       providerSlug: dto.providerSlug,
       destination: dto.destination,
     });
+  }
+
+  @Get()
+  @Roles('support')
+  @ApiOperation({ summary: "Every redemption, for the operator console" })
+  listAll(@Query(zodPipe(listSchema)) query: z.infer<typeof listSchema>) {
+    return this.redemptions.listAll(query);
   }
 
   @Get('mine')
