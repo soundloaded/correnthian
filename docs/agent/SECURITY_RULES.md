@@ -271,7 +271,7 @@ claim uncheckable, which is the one thing the claim cannot survive.
 | Never | Where the rule lives |
 |---|---|
 | Seed phrases, private keys, signing shares | `services/api/prisma/schema.prisma` invariant; `.env.example` header; CI `credential-scan` |
-| In any `.env*` file | CI greps `*.env*` for `PRIVATE_KEY\|MNEMONIC\|SEED_PHRASE=` |
+| In any `.env*` file | CI greps `*.env*` for assignments to `PRIVATE_KEY`, `MNEMONIC` or `SEED_PHRASE` |
 | Identity documents or biometric data | `KycProfile` stores `providerRef`, an opaque pointer, and nothing else |
 | Provider API credentials in the database | `Provider` has no credential field. Only a health-probe payload. |
 | Chain RPC URLs in any API response | `ChainsService` and `BlockchainService` select explicit field lists that omit `rpcUrls` |

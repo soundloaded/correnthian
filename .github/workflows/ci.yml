@@ -132,15 +132,22 @@ jobs:
         # recomputed here rather than trusted.
         run: node scripts/check-task-counts.mjs
 
+      - name: Production dependencies must have no untriaged high/critical
+        # `pnpm audit` reports severity, not reachability — the four current
+        # highs are all build/dev-tooling chains. Gating on "any high" would
+        # fail forever and get disabled; gating on untriaged ones fails only
+        # when a human has not looked yet. Triage lives in the script.
+        run: node scripts/check-deps.mjs
+
   credential-scan:
     name: No credentials in env files
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Ensure no key material can reach the server environment
-        run: |
-          if grep -rInE '(PRIVATE_KEY|MNEMONIC|SEED_PHRASE)\s*=' --include='*.env*' .; then
-            echo "FAIL: key material found in an environment file. This breaks the key boundary."
-            exit 1
-          fi
-          echo "OK: no key material in environment files"
+      - name: Ensure no secret-shaped values outside test fixtures
+        # Subsumes the old inline grep over *.env*: PEM blocks anywhere,
+        # key-material assignments in any file, vendor token shapes outside
+        # specs. Four doc lines were reworded to describe the pattern
+        # without writing it, rather than excluded — an exclusion for docs/
+        # would let a pasted key sit in markdown forever.
+        run: node scripts/check-secrets.mjs

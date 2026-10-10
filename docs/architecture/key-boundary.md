@@ -86,7 +86,7 @@ package that has none.
 ([`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)) has two jobs:
 
 - `verify` — typecheck, build, test.
-- `secret-scan` — greps `*.env*` files for `PRIVATE_KEY|MNEMONIC|SEED_PHRASE=`.
+- `secret-scan` — greps `*.env*` files for assignments to any of `PRIVATE_KEY`, `MNEMONIC`, `SEED_PHRASE`.
 
 Neither job inspects `wallet-core`'s dependency closure. The "secret-scan" job
 is a useful guard against *credential* leakage into environment files; it says

@@ -226,7 +226,7 @@ replaces any object field whose *name* matches `seed|mnemonic|privatekey|secret|
 recursively, regardless of value shape.
 
 **CI guard.** The `secret-scan` job greps `*.env*` files for
-`PRIVATE_KEY|MNEMONIC|SEED_PHRASE=`. Be precise about what it does and does not
+Assignments to `PRIVATE_KEY`, `MNEMONIC` or `SEED_PHRASE`. Be precise about what it does and does not
 do:
 
 - **Does:** fail the build if key material is committed to an environment file.

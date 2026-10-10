@@ -621,7 +621,7 @@ kept for the record; it does not describe the current code._
 ### SEC-001 — Threat model · `PARTIAL`
 - **What exists:** `scripts/check-key-boundary.mjs` enforced by CI job
   `key-boundary`; `credential-scan` job greps `*.env*` for
-  `PRIVATE_KEY|MNEMONIC|SEED_PHRASE=`; the invariant header in `services/api/prisma/schema.prisma`;
+  assignments to `PRIVATE_KEY`, `MNEMONIC` or `SEED_PHRASE`; the invariant header in `services/api/prisma/schema.prisma`;
   `docs/architecture/key-boundary.md`.
 - **What does not exist:** a threat model covering anything other than the key
   boundary. There is no analysis of account takeover, session theft, admin
@@ -1431,9 +1431,28 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 - **`routes.spec.ts` grew the companion invariant** that would have caught
   `DEF-021`: discovery must return exactly as many routes as there are route
   decorators, counted with an independent looser regex.
-- **Still missing:** SAST, dependency audit, secret scanning beyond env files,
-  rate-limit bypass testing beyond the bucketing covered by
-  `rate-limit.live.spec.ts`.
+- **New — dependency audit gates on untriaged, not on severe**
+  (`scripts/check-deps.mjs`, in CI). `pnpm audit` reports severity, not
+  reachability: all four current prod highs are build/dev-tooling chains
+  (Prisma CLI internals, expo and shadcn scaffolding) that never process
+  remote input, and gating on "any high" would fail forever until disabled.
+  Every high/critical carries a triage entry naming its chain and why it
+  cannot reach production traffic; a new one fails the build until a human
+  looks. Keyed by GHSA id — the node-forge advisory taught us one advisory
+  can wear two ids, and the allowlist names both.
+- **New — secret scan covers the whole tree** (`scripts/check-secrets.mjs`,
+  replacing the inline env-only grep it subsumes): PEM blocks anywhere with
+  no exclusions, key-material assignments in any file, vendor token shapes
+  outside specs. Four doc lines were reworded to describe the pattern
+  without writing it, rather than excluded — an exclusion for docs/ would
+  let a pasted key sit in markdown, and the first run proved it by flagging
+  exactly those lines plus stale agent worktrees (`.claude/` is skipped:
+  session scratch, not product).
+- **Accepted gaps, with owner (maintainer):** SAST tooling (no scanner
+  configured; the type-aware linter plus the four static guards are what
+  runs), authorisation fuzzing beyond the role suites, rate-limit bypass
+  testing beyond the bucketing covered by `rate-limit.live.spec.ts`. Each
+  is recorded here rather than silently absent.
 - **Status:** `PARTIAL`
 
 ### BE-1704 — CI/CD · `PARTIAL`
