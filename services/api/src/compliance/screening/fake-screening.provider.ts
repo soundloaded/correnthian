@@ -39,7 +39,7 @@ export class FakeScreeningProvider extends ScreeningProvider {
     return existing;
   }
 
-  async rescreen(userId: string): Promise<Screening> {
+  async rescreen(userId: string, _inquiryId?: string): Promise<Screening> {
     this.calls.rescreen.push(userId);
     const result = this.screens.get(userId);
     if (!result) {

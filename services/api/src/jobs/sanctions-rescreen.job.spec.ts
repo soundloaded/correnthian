@@ -160,7 +160,11 @@ describe('SanctionsRescreenJob', () => {
     expect(kyc.rescreen).toHaveBeenCalledTimes(3);
     expect(out.affected).toBe(2);
     expect(out.detail).toMatchObject({ screened: 2, hits: 0 });
-    expect((out.detail?.['errors'] as string[]).join(' ')).toContain('u2');
+    // Read after the shape assertion above: the detail exists by then, and
+    // an optional chain here would throw TypeError instead of failing the
+    // assertion if it ever did not.
+    const errors = (out.detail as Record<string, unknown>)['errors'] as string[];
+    expect(errors.join(' ')).toContain('u2');
   });
 
   it('stops at the budget instead of running past it', async () => {

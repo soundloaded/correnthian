@@ -46,6 +46,12 @@ function makePrisma() {
         const row = profiles.get(where.userId);
         return row ? { ...row } : null;
       },
+      findFirst: async ({ where }: { where: { providerRef?: string } }) => {
+        // The inquiry-id reverse lookup: inquiry ids are vendor-unique and
+        // each profile holds at most one, so first is only.
+        const found = [...profiles.values()].find((r) => r['providerRef'] === where.providerRef);
+        return found ? { ...found } : null;
+      },
       upsert: async ({ where, create, update }: { where: { userId: string }; create: Row; update: Row }) => {
         const existing = profiles.get(where.userId);
         if (existing) {
@@ -296,6 +302,81 @@ describe('applyWebhookEvent', () => {
   });
 });
 
+describe('documented shapes, applied independently', () => {
+  async function pending() {
+    const ctx = setup();
+    ctx.screening.scriptCreate('u1', { inquiryId: 'inq_1', sessionToken: 'sess_1' });
+    await ctx.svc.startVerification('u1');
+    audit.record.mockClear();
+    return ctx;
+  }
+
+  it('an approval with no list signal approves without inventing a screen', async () => {
+    const { store, svc } = await pending();
+
+    const out = await svc.applyWebhookEvent(decisionEvent({
+      decision: { verdict: 'passed', watchlist: null, codes: ['inquiry.approved'], occurredAt: T0 },
+    }));
+
+    expect(out).toEqual({ applied: true, status: 'approved' });
+    expect(store.profiles.get('u1')).toMatchObject({ status: 'approved' });
+    // No list fact arrived, so none is written: a clean screen here would
+    // be invented, and the gate would trust it for 24 hours.
+    expect(store.profiles.get('u1')?.['sanctionsResult']).toBeNull();
+    expect(store.users.get('u1')?.['kycStatus']).toBe('approved');
+  });
+
+  it('binds by inquiry id when the event carries no reference', async () => {
+    const { store, svc } = await pending();
+
+    const out = await svc.applyWebhookEvent(decisionEvent({
+      eventId: 'evt_noref',
+      referenceId: null,
+      decision: { verdict: 'passed', watchlist: null, codes: ['inquiry.approved'], occurredAt: T0 },
+    }));
+
+    expect(out).toEqual({ applied: true, status: 'approved' });
+    expect(store.users.get('u1')?.['kycStatus']).toBe('approved');
+  });
+
+  it('notes a dismissal without deciding: only our operator clears a latch', async () => {
+    const { store, svc } = await pending();
+    await svc.applyWebhookEvent(decisionEvent({
+      eventId: 'evt_hit',
+      occurredAt: new Date(T0.getTime() + 1000),
+      decision: { verdict: null, watchlist: 'hit', codes: ['report/watchlist.matched'], occurredAt: new Date(T0.getTime() + 1000) },
+    }));
+    expect(store.profiles.get('u1')?.['sanctionsResult']).toBe('hit');
+
+    const out = await svc.applyWebhookEvent(decisionEvent({
+      eventId: 'evt_dis',
+      occurredAt: new Date(T0.getTime() + 2000),
+      decision: { verdict: null, watchlist: null, codes: ['report/watchlist.dismissed'], occurredAt: new Date(T0.getTime() + 2000) },
+    }));
+
+    expect(out).toEqual({ applied: true, status: 'pending' });
+    // Still latched. A dismissal in Persona's dashboard is a human act, but
+    // not ours: no operator, no reason, no clearing.
+    expect(store.profiles.get('u1')).toMatchObject({ sanctionsResult: 'hit', needsReview: true });
+    expect(audit.record).toHaveBeenCalledWith(expect.objectContaining({ action: 'webhook.noted' }));
+  });
+
+  it('notes unknown future event names instead of breaking on them', async () => {
+    const { svc } = await pending();
+
+    const out = await svc.applyWebhookEvent(decisionEvent({
+      eventId: 'evt_future',
+      decision: { verdict: null, watchlist: null, codes: ['inquiry.something-new'], occurredAt: T0 },
+    }));
+
+    // Acknowledged, named in the audit trail, applied to nothing. Persona
+    // warns new values arrive without versioning; throwing would retry
+    // forever on an event that will never apply.
+    expect(out).toEqual({ applied: true, status: 'pending' });
+    expect(audit.record).toHaveBeenCalledWith(expect.objectContaining({ action: 'webhook.noted' }));
+  });
+});
+
 describe('rescreen', () => {
   it('records a clean screen without touching verification status', async () => {
     const { store, screening, svc } = setup();
@@ -318,6 +399,30 @@ describe('rescreen', () => {
     await svc.rescreen('u1', new Date(T0.getTime() + 100_000));
 
     expect(store.profiles.get('u1')).toMatchObject({ sanctionsResult: 'hit', needsReview: true });
+  });
+});
+
+describe('rescreen plumbing', () => {
+  it('links the report to the profile inquiry rather than screening nobody', async () => {
+    const { store } = setup();
+    const rescreen = vi.fn(async () => ({ result: 'clean' as const, screenedAt: new Date() }));
+    const scoped = new KycService(store.prisma as never, { rescreen } as never, audit as never);
+    store.profiles.set('u1', {
+      id: 'kyc_u1', userId: 'u1', status: 'approved', providerRef: 'inq_linked',
+      sanctionsResult: 'clean', sanctionsScreenedAt: new Date(T0.getTime() - 100_000),
+      needsReview: false,
+    });
+
+    await scoped.rescreen('u1', T0);
+
+    // The report must name its inquiry: an unlinked screen answers about
+    // nobody, and the gate would file it against the wrong question.
+    expect(rescreen).toHaveBeenCalledWith('u1', 'inq_linked');
+  });
+
+  it('refuses to screen a user with no profile instead of inventing one', async () => {
+    const { svc } = setup();
+    await expect(svc.rescreen('ghost', T0)).rejects.toThrow(/no verification profile/i);
   });
 });
 

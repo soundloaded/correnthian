@@ -1154,12 +1154,21 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 - **Pointer-only holds:** providerRef is the inquiry id; no document,
   biometric or vendor-payload field crosses the port, the service, or the
   audit rows (decision codes only).
-- **Not `DONE`:** every Persona literal (signature header scheme, creation
-  path, event/status vocabularies) is marked VERIFY-AGAINST-DOCS — the docs
-  were unreachable when this was built — and no credentials exist, so the
-  vendor path has never run against Persona. Closing it is a docs pass plus
-  a sandbox run, not a redesign: the port, machine and gates do not depend
-  on the literals.
+- **Not `DONE`:** no credentials exist, so the vendor path has never run
+  against Persona — closing it is a sandbox run. The docs pass is done
+  (2026-10-10, against the versioned index): the api host, JSON:API
+  envelopes, real event names, inquiry/report endpoints and field
+  vocabularies are verified and the code corrected to them. What moved:
+  base URL to api.withpersona.com, inquiry creation with template +
+  auto-create session/reference meta, verdict and list signals applied as
+  independent halves (an approval no longer doubles as a clean screen),
+  binding by reference with inquiry-id reverse-lookup fallback, re-screen
+  via a linked watchlist report with bounded polling. Residuals: the
+  inquiry-approval payload's exact attribute layout (inferred, not seen
+  verbatim) and reference-id presence on every event — both covered by the
+  fallback. Known simplifications, stated: inquiry expiry is noted, not
+  acted on (no liveness tracking), and document expiry post-approval has
+  no source. Neither invents permission; both deny by default.
 - **Security requirements from this entry:** pointer stored (yes), documents
   never stored (yes — nothing to store them in), review operator recorded
   (reviewedBy/reviewedAt + audit actor), screen at onboarding and before

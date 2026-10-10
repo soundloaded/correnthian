@@ -109,17 +109,37 @@ export class KycService {
       throw err;
     }
 
-    if (!event.referenceId) return { applied: false, reason: 'unbound' };
+    if (!event.referenceId) {
+      // No reference on the event: fall back to the inquiry-id reverse
+      // lookup. Inquiry ids are vendor-unique and each profile holds at
+      // most one live inquiry, so at most one profile can claim an event —
+      // but "at most one" is a property of our writes, verified below by
+      // matching the user when both sides exist.
+      const bound = await this.prisma.kycProfile.findFirst({
+        where: { providerRef: event.inquiryId },
+      });
+      if (!bound) return { applied: false, reason: 'unbound' };
+      return this.applyBound(bound.userId, bound, event);
+    }
     const user = await this.prisma.user.findUnique({ where: { id: event.referenceId } });
     if (!user) return { applied: false, reason: 'unknown_user' };
 
     const profile = await this.prisma.kycProfile.findUnique({ where: { userId: user.id } });
     // Signature proves the event came from the vendor, not that it is ours:
-    // the inquiry must be the one this profile holds.
+    // the inquiry must be the one this profile holds. Both sides agreeing
+    // is the binding; either side alone is not.
     if (!profile || profile.providerRef !== event.inquiryId) {
       return { applied: false, reason: 'unbound' };
     }
 
+    return this.applyBound(user.id, profile, event);
+  }
+
+  private async applyBound(
+    userId: string,
+    profile: { id: string; status: string; providerRef: string | null; lastDecisionAt: Date | null },
+    event: ParsedWebhookEvent,
+  ): Promise<{ applied: boolean; status?: string; reason?: string }> {
     // Stale events lose to newer decisions. Webhooks reorder; applying an
     // older verdict over a newer one would un-approve an approval.
     if (profile.lastDecisionAt && event.occurredAt <= new Date(profile.lastDecisionAt)) {
@@ -128,7 +148,7 @@ export class KycService {
 
     if (!event.decision) return { applied: true, status: profile.status };
 
-    const status = await this.applyDecision(user.id, profile.id, event);
+    const status = await this.applyDecision(userId, profile.id, event);
     return { applied: true, status };
   }
 
@@ -142,7 +162,10 @@ export class KycService {
    * and the recorded time is the time the decision was made.
    */
   async rescreen(userId: string, now: Date): Promise<{ result: 'clean' | 'hit'; screenedAt: Date }> {
-    const screening = await this.screening.rescreen(userId);
+    const profile = await this.prisma.kycProfile.findUnique({ where: { userId } });
+    if (!profile) throw AppError.notFound('No verification profile for this account');
+
+    const screening = await this.screening.rescreen(userId, profile.providerRef ?? undefined);
 
     if (screening.result === 'hit') {
       await this.latchHit(userId, 'rescreen', now);
@@ -248,6 +271,11 @@ export class KycService {
     // are how a stale event gets applied "because its decision was newer".
     const at = event.occurredAt;
 
+    // The halves apply independently: verification and lists arrive on
+    // different events (inquiry.approved carries no watchlist signal, and a
+    // watchlist report carries no verdict), so neither half may assume the
+    // other. An approval must not double as a clean screen, and a list
+    // signal must not move verification status.
     if (decision.watchlist === 'hit') {
       await this.latchHit(userId, event.eventId, at);
       await this.audit.record({
@@ -257,7 +285,28 @@ export class KycService {
         targetId: profileId,
         metadata: { eventId: event.eventId, verdict: decision.verdict, codes: decision.codes, reason: 'watchlist hit' },
       });
+      // A hit ends the event: verification does not advance on a verdict
+      // that arrived holding a list match. "Approved" must mean approved
+      // with nothing outstanding — an approved-but-frozen row tells two
+      // stories, and the gate would have to explain which one it believes.
+      // The identity fact is not lost: the codes carry the verdict, and
+      // review decides both halves together.
       return 'pending';
+    } else if (decision.watchlist === 'clean') {
+      // A clean list signal records without unfreezing (see rescreen):
+      // the latch guard below is what keeps matching jitter from
+      // quietly opening through this path.
+      const profile = await this.prisma.kycProfile.findUnique({ where: { userId } });
+      if (profile && profile.sanctionsResult !== 'hit') {
+        await this.prisma.kycProfile.update({
+          where: { userId },
+          data: { sanctionsResult: 'clean', sanctionsScreenedAt: at },
+        });
+      }
+      if (decision.verdict === null) {
+        await this.prisma.kycProfile.update({ where: { userId }, data: { lastDecisionAt: at } });
+        return profile?.status ?? 'pending';
+      }
     }
 
     if (decision.verdict === 'passed') {
@@ -266,6 +315,9 @@ export class KycService {
       // not clear the second. The profile advances to approved (the gate
       // still denies on the latch), the freeze and the review flag stay, and
       // only a human decision clears them.
+      //
+      // And an approval with no list signal writes no list fact: inquiry
+      // events carry none, so a `clean` written here would be invented.
       const latched =
         (await this.prisma.kycProfile.findUnique({ where: { userId } }))?.sanctionsResult === 'hit';
       const [updated] = await this.prisma.$transaction([
@@ -279,8 +331,9 @@ export class KycService {
               }
             : {
                 status: 'approved',
-                sanctionsResult: 'clean',
-                sanctionsScreenedAt: at,
+                ...(decision.watchlist === 'clean'
+                  ? { sanctionsResult: 'clean' as const, sanctionsScreenedAt: at }
+                  : {}),
                 needsReview: false,
                 reviewedBy: null,
                 lastDecisionAt: at,
@@ -300,18 +353,37 @@ export class KycService {
 
     // needs_review or declined: park. A machine decline never finalises a
     // rejection — the operator confirms, or the user retries.
-    await this.prisma.kycProfile.update({
-      where: { userId },
-      data: { needsReview: true, lastDecisionAt: at },
-    });
-    await this.audit.record({
-      actorId: 'system',
-      action: 'kyc.parked',
-      targetType: 'KycProfile',
-      targetId: profileId,
-      metadata: { eventId: event.eventId, verdict: decision.verdict, codes: decision.codes },
-    });
-    return 'pending';
+    if (decision.verdict === 'declined' || decision.verdict === 'needs_review') {
+      await this.prisma.kycProfile.update({
+        where: { userId },
+        data: { needsReview: true, lastDecisionAt: at },
+      });
+      await this.audit.record({
+        actorId: 'system',
+        action: 'kyc.parked',
+        targetType: 'KycProfile',
+        targetId: profileId,
+        metadata: { eventId: event.eventId, verdict: decision.verdict, codes: decision.codes },
+      });
+      return 'pending';
+    }
+
+    // Neither half says anything (a dismissal, an unknown future event, a
+    // lifecycle note): the watermark still moves so ordering keeps working,
+    // and a dismissal is audited because a human acted — just not ours, so
+    // the latch stays for our operator to decide.
+    await this.prisma.kycProfile.update({ where: { userId }, data: { lastDecisionAt: at } });
+    if (decision.codes.length > 0) {
+      await this.audit.record({
+        actorId: 'system',
+        action: 'webhook.noted',
+        targetType: 'KycProfile',
+        targetId: profileId,
+        metadata: { eventId: event.eventId, codes: decision.codes },
+      });
+    }
+    const current = await this.prisma.kycProfile.findUnique({ where: { userId } });
+    return current?.status ?? 'pending';
   }
 
   private async latchHit(userId: string, source: string, at: Date): Promise<void> {

@@ -80,8 +80,13 @@ const schema = z.object({
     .object({
       apiKey: z.string().min(1).optional(),
       webhookSecret: z.string().min(1).optional(),
-      /** Verify-against-docs: base path for inquiry and watchlist calls. */
-      baseUrl: z.string().default('https://withpersona.com/api/v1'),
+      /** Inquiry creation requires a template; verified against the docs
+       *  (create-an-inquiry: pass one of template-id /
+       *  inquiry-template-id / inquiry-template-version-id). */
+      templateId: z.string().min(1).optional(),
+      /** Verified against the docs: the API lives on api.withpersona.com,
+       *  not on withpersona.com. */
+      baseUrl: z.string().default('https://api.withpersona.com/api/v1'),
     })
     .superRefine((v, ctx) => {
       // Half-configured is worse than unconfigured: a key with no secret
@@ -96,7 +101,13 @@ const schema = z.object({
         });
       }
     })
-    .transform((v) => ({ ...v, configured: v.apiKey !== undefined })),
+    .transform((v) => ({
+      ...v,
+      // Credentials without a template can verify webhooks but cannot open
+      // inquiries — half-capable, which reads as ready and fails at the
+      // first real user. Configured means able to operate fully.
+      configured: v.apiKey !== undefined && v.templateId !== undefined,
+    })),
 
   rateLimit: z.object({
     windowSeconds: z.coerce.number().int().min(1).default(60),
@@ -150,6 +161,7 @@ export function parseConfig(source: NodeJS.ProcessEnv = process.env): ParseResul
     persona: {
       apiKey: source['PERSONA_API_KEY'],
       webhookSecret: source['PERSONA_WEBHOOK_SECRET'],
+      templateId: source['PERSONA_TEMPLATE_ID'],
       baseUrl: source['PERSONA_BASE_URL'],
     },
     rateLimit: {

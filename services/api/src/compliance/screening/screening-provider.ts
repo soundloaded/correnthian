@@ -29,8 +29,14 @@ export type ScreeningVerdict = 'passed' | 'declined' | 'needs_review';
 export type WatchlistResult = 'clean' | 'hit';
 
 export interface InquiryDecision {
-  verdict: ScreeningVerdict;
-  watchlist: WatchlistResult;
+  /** Null when the event says nothing about verification (e.g. a watchlist
+   *  report). The consumer applies each non-null half independently, so a
+   *  list signal can never smuggle a verification verdict and vice versa. */
+  verdict: ScreeningVerdict | null;
+  /** Null when the event says nothing about lists (e.g. an inquiry
+   *  approval). An approval must not double as a clean screen: the two
+   *  facts arrive on different events. */
+  watchlist: WatchlistResult | null;
   /** Vendor decision codes only. Never PII. */
   codes: string[];
   occurredAt: Date;
@@ -80,8 +86,10 @@ export abstract class ScreeningProvider {
   /** Open an inquiry for the user. Idempotent per user: a second call
    *  while one is live returns the live one rather than spawning another. */
   abstract createInquiry(userId: string): Promise<CreatedInquiry>;
-  /** A fresh list check for the user, outside any inquiry flow. */
-  abstract rescreen(userId: string): Promise<Screening>;
+  /** A fresh list check for the user, outside any inquiry flow. The inquiry
+   *  id links the screen to the verification it belongs to; vendors that
+   *  screen accounts rather than inquiries may ignore it. */
+  abstract rescreen(userId: string, inquiryId?: string): Promise<Screening>;
   /** Constant-time check of the vendor's signature over the raw body. */
   abstract verifyWebhookSignature(rawBody: Buffer, signature: string): boolean;
   /** Strict parse: unknown shapes throw rather than guess. */

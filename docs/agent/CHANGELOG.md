@@ -13,6 +13,46 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-10
 
+### Persona docs pass: assumptions corrected against the real shapes
+- Five doc pages (signature best-practices, create/retrieve inquiry,
+  create/retrieve report, the event envelopes and watchlist names) replaced
+  every significant assumption from the build session:
+- **Base URL was wrong:** `withpersona.com/api/v1` → `api.withpersona.com/api/v1`.
+  Guessing the host wrong fails every call at once — config default and env
+  example corrected, with a test pinning the default.
+- **Inquiry creation needs a template** and returns the session token only
+  when asked (`meta.auto-create-inquiry-session`), at `meta.session-token`;
+  binding uses `meta.auto-create-account-reference-id` (`reference-id` is
+  deprecated). `configured` now requires key + secret + template: credentials
+  without a template look ready and fail at the first real user.
+- **Verdict and list signals are independent halves now.** Persona sends
+  inquiry lifecycle events (`inquiry.approved/declined/marked-for-review`)
+  with no watchlist content, and watchlist reports (`report/watchlist.*`)
+  with no verdict. The old combined decision would have approved on one half
+  while asserting the other — an approval doubling as a clean screen. The
+  port carries both halves nullable; the service applies each non-null half;
+  approvals write no list fact they were not given.
+- **Binding falls back, strictly:** reference-id when present and agreeing,
+  else reverse lookup by inquiry id (vendor-unique, one live inquiry per
+  user). Either side alone is not a binding.
+- **Re-screen is a linked watchlist report** (`POST /reports` with the
+  inquiry relationship — our PII never crosses), polled bounded (4 × 500ms)
+  then fail-closed. Missing `has-match` reads as hit: a shape change in the
+  match field must not become clean by omission.
+- **Rotation pairs accepted:** the signature header carries two pairs during
+  secret rotation; either may verify. Timestamp tolerance stays ours (the
+  docs specify none) and is stated as such.
+- **Verification:** 680 API tests, all seven repo checks green; second
+  mutation round on the new logic (12/12 killed, including approval
+  inventing a screen, hit+passed advancing, dismissal clearing, unknown
+  names throwing, binding fallback removal, and pending resolving clean).
+  One invalid round in the middle — two "survivors" that were no-op comment
+  edits by the mutator, redone properly and killed.
+- **Still `PARTIAL`:** sandbox credentials do not exist, so the vendor path
+  is stub-verified only. Residuals narrowed to two inferences; known
+  simplifications (inquiry expiry, post-approval document expiry) recorded
+  in the entry rather than built half-understood.
+
 ### `BE-1101` / `BE-1105` — KYC and sanctions: built against Persona, behind a port
 - **Decisions (user, 2026-10-10):** Persona as vendor · auto-approve on clean
   pass, humans only on flags · sanctions screen cached with 24h TTL · all

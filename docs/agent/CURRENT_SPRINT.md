@@ -67,7 +67,7 @@ production-`/docs` question is still undecided and is now item 4.
 
 | # | Task | Why it is next |
 |---|---|---|
-| 1 | Node-backed acceptance run for `BE-302`, `BE-601`, `BE-602` **and the KYC webhook shapes** | The shared unmet criterion: stub-node verified throughout, plus Persona literals marked VERIFY-AGAINST-DOCS and no vendor credentials anywhere. Needs a node, a funded address, and — for the KYC half — Persona sandbox credentials plus a docs pass. |
+| 1 | Sandbox run for the KYC vendor path + node-backed acceptance for `BE-302`, `BE-601`, `BE-602` | Persona literals verified against the docs; what remains is credentials (Persona sandbox key, secret, template id) and a live run, plus a node and funded address for the chain half. |
 | 2 | `BE-1102` — risk engine, if it is v1 | Explicitly out of the KYC scope; velocity/structuring detection is the remaining unbuilt compliance piece. |
 | 3 | `BE-102`'s open question — is `/docs` exposed in production? | Not decided. An API schema is a map of everything an attacker can call; the answer is a disclosure decision, not a technical one. |
 | 4 | ADR-022's build-time choices — account implementation, paymaster, EntryPoint | Gated on a vendor or a contract, same as `BE-802`. Recording them as decided would repeat the `claimBatch` mistake. |

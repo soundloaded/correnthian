@@ -37,18 +37,31 @@ function signed(body: unknown, atSeconds = Math.floor(Date.now() / 1000)): { raw
   return { raw, header: `t=${atSeconds},v1=${sig}` };
 }
 
-function decisionBody(over: Record<string, unknown> = {}): Record<string, unknown> {
+function decisionBody(opts: { inquiryId?: string; referenceId?: string } = {}): Record<string, unknown> {
+  // JSON:API event envelope, per the retrieve-an-event example: the name
+  // selects the mapping, payload.data carries the inquiry. The reference
+  // rides in the inquiry attributes when present; when it is not, the
+  // service binds by the inquiry id instead — both paths are exercised
+  // below, because the reference's presence is the vendor's choice.
+  const attributes: Record<string, unknown> = { status: 'approved' };
+  if (opts.referenceId !== undefined) attributes['reference-id'] = opts.referenceId;
   return {
-    id: 'evt_http_1',
-    type: 'inquiry.passed',
-    created_at: new Date().toISOString(),
     data: {
-      id: 'inq_http_1',
-      reference_id: '',
-      status: 'passed',
-      watchlist: 'clear',
-      codes: ['pass'],
-      ...over,
+      id: 'evt_http_1',
+      type: 'event',
+      attributes: {
+        name: 'inquiry.approved',
+        payload: {
+          data: {
+            type: 'inquiry',
+            id: opts.inquiryId ?? 'inq_http_1',
+            attributes,
+            relationships: {},
+          },
+        },
+        'created-at': new Date().toISOString(),
+        context: {},
+      },
     },
   };
 }
@@ -112,7 +125,7 @@ describe.skipIf(!HAS_DB && !CI)('POST /compliance/webhooks/persona', () => {
   });
 
   it('applies a signed decision for our inquiry', async () => {
-    const { raw, header } = signed(decisionBody({ reference_id: userId }));
+    const { raw, header } = signed(decisionBody({ referenceId: userId }));
 
     const res = await request(app.getHttpServer())
       .post('/api/v1/compliance/webhooks/persona')
@@ -130,7 +143,7 @@ describe.skipIf(!HAS_DB && !CI)('POST /compliance/webhooks/persona', () => {
   });
 
   it('answers 401 when the signature is forged, and touches no state', async () => {
-    const { raw } = signed(decisionBody({ reference_id: userId }));
+    const { raw } = signed(decisionBody({ referenceId: userId }));
 
     const res = await request(app.getHttpServer())
       .post('/api/v1/compliance/webhooks/persona')
@@ -144,7 +157,7 @@ describe.skipIf(!HAS_DB && !CI)('POST /compliance/webhooks/persona', () => {
   });
 
   it('acknowledges a replay without applying it twice', async () => {
-    const { raw, header } = signed(decisionBody({ reference_id: userId }));
+    const { raw, header } = signed(decisionBody({ referenceId: userId }));
 
     const res = await request(app.getHttpServer())
       .post('/api/v1/compliance/webhooks/persona')
@@ -160,7 +173,7 @@ describe.skipIf(!HAS_DB && !CI)('POST /compliance/webhooks/persona', () => {
 
   it('does not retry-bait on a validly signed event for an unknown inquiry', async () => {
     const { raw, header } = signed(
-      decisionBody({ reference_id: userId, id: 'inq_someone_elses' }),
+      decisionBody({ referenceId: userId, inquiryId: 'inq_someone_elses' }),
     );
 
     const res = await request(app.getHttpServer())

@@ -96,6 +96,7 @@ describe('config parsing', () => {
       ...valid,
       PERSONA_API_KEY: 'persona_key_123',
       PERSONA_WEBHOOK_SECRET: 'whsec_456',
+      PERSONA_TEMPLATE_ID: 'itmpl_123',
     });
     expect(r.ok).toBe(true);
     if (r.ok) {
@@ -113,5 +114,40 @@ describe('config parsing', () => {
     const r = parseConfig({ ...valid, PERSONA_API_KEY: 'persona_key_123' });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.issues.join(' ')).toContain('PERSONA_WEBHOOK_SECRET');
+  });
+
+  it('defaults the Persona base URL to the documented API host', () => {
+    // api.withpersona.com, not withpersona.com — the docs put the API on
+    // its own host, and guessing the host wrong fails every call at once.
+    const r = parseConfig(valid);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.config.persona.baseUrl).toBe('https://api.withpersona.com/api/v1');
+  });
+
+  it('reads the inquiry template id when set, and stays unconfigured without it', () => {
+    // Inquiry creation requires a template; without one the adapter cannot
+    // open inquiries, so configured-ness includes it. Credentials alone
+    // with no template would look ready and fail at the first real user.
+    const credsOnly = parseConfig({
+      ...valid,
+      PERSONA_API_KEY: 'persona_key_123',
+      PERSONA_WEBHOOK_SECRET: 'whsec_456',
+    });
+    expect(credsOnly.ok).toBe(true);
+    if (credsOnly.ok) {
+      expect(credsOnly.config.persona.templateId).toBeUndefined();
+      expect(credsOnly.config.persona.configured).toBe(false);
+    }
+    const full = parseConfig({
+      ...valid,
+      PERSONA_API_KEY: 'persona_key_123',
+      PERSONA_WEBHOOK_SECRET: 'whsec_456',
+      PERSONA_TEMPLATE_ID: 'itmpl_123',
+    });
+    expect(full.ok).toBe(true);
+    if (full.ok) {
+      expect(full.config.persona.templateId).toBe('itmpl_123');
+      expect(full.config.persona.configured).toBe(true);
+    }
   });
 });

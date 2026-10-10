@@ -25,6 +25,7 @@ function screeningProvider(config: ConfigService) {
       apiKey: persona.apiKey,
       webhookSecret: persona.webhookSecret,
       baseUrl: persona.baseUrl,
+      templateId: persona.templateId,
     });
   }
   // Unconfigured in development and test — and, until credentials
