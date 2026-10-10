@@ -101,8 +101,8 @@ export class TransactionsController {
   @Get(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'One transaction' })
-  findOne(@Param('id') id: string) {
-    return this.transactions.detail(id);
+  findOne(@Req() req: Request & { user?: AuthenticatedUser }, @Param('id') id: string) {
+    return this.transactions.detail(id, actorOf(req));
   }
 
   /**

@@ -688,6 +688,11 @@ export class TransactionsService {
     at: Date = new Date(),
   ) {
     const current = await this.load(id);
+    // Same stranger rule as `apply`: observations bind a row to a hash for
+    // life, so a foreign id must not even resolve.
+    if (actor.role !== SYSTEM_ROLE && !isOperatorRole(actor.role) && current.userId !== actor.id) {
+      throw AppError.notFound('Transaction not found');
+    }
     this.assertOperator(actor, current, 'observe');
 
     // A row is bound to one hash for life. Two hashes on one row means one of
@@ -814,10 +819,18 @@ export class TransactionsService {
    *
    * `metadata` is the exception: it is arbitrary chain data, so it is read one
    * row at a time rather than put in a table.
+   *
+   * Scoped to owner-or-operator: the row carries amounts, destinations and
+   * the owner's email, so an unscoped read is a cross-account leak, not a
+   * missing filter. A stranger gets 404 rather than 403, so probing ids
+   * learns nothing — the same rule as `create`.
    */
-  async detail(id: string): Promise<TransactionDetail> {
+  async detail(id: string, actor: TransactionActor): Promise<TransactionDetail> {
     const row = await this.prisma.transaction.findUnique({ where: { id }, include: ROW_INCLUDE });
     if (!row) throw AppError.notFound('Transaction not found');
+    if (row.userId !== actor.id && !isOperatorRole(actor.role)) {
+      throw AppError.notFound('Transaction not found');
+    }
     return { ...this.presentRow(row), metadata: row.metadata ?? null };
   }
 
@@ -928,6 +941,14 @@ export class TransactionsService {
   ): Promise<Transaction> {
     const current = await this.load(id);
     const from = current.state;
+
+    // A non-operator asking about another account's row learns nothing —
+    // not even that it exists. Same rule as `create` and `detail`, and it
+    // sits ahead of entitlement so the 403s below keep their reasons for
+    // callers with a legitimate row to ask about.
+    if (actor.role !== SYSTEM_ROLE && !isOperatorRole(actor.role) && current.userId !== actor.id) {
+      throw AppError.notFound('Transaction not found');
+    }
 
     this.assertEntitled(actor, current, to);
 

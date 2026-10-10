@@ -64,7 +64,7 @@ the location the entry names.
 
 | Status | Defects | Count |
 |---|---|---|
-| `DONE` | `DEF-001` … `DEF-008`, `DEF-010` … `DEF-021` | 20 |
+| `DONE` | `DEF-001` … `DEF-008`, `DEF-010` … `DEF-022` | 21 |
 | `PARTIAL` | `DEF-009` | 1 |
 | `BACKLOG` | *none* | 0 |
 
@@ -584,6 +584,29 @@ kept for the record; it does not describe the current code._
   above zero before it starts.
 - **Tests:** `test/discover.ts` consumers — 14 tests across `routes.spec.ts`
   (8, one new) and `roles.spec.ts` (6); 8 mutations, all killed.
+- **Status:** `DONE`
+
+### DEF-022 — `GET /transactions/:id` answered any session with the row · `DONE`
+- **Found by:** writing the transactions controller suite (`BE-1702`) with
+  two sessions instead of one. `routes.spec.ts` proves a stranger gets 401
+  and `roles.spec.ts` proves a customer gets 403 on operator routes — but
+  `GET :id` carries no `@Roles`, so both suites passed over it while any
+  authenticated account read any transaction: amounts, destinations,
+  wallet addresses, and the owner's email (all in the row projection).
+- **The defect:** `detail(id)` took no actor and checked no ownership. The
+  service specs called it directly with an id, so the controller layer was
+  never on any test's path — DEF-001's shape exactly, one layer over.
+- **Fixed by** owner-or-operator scoping in `detail`, plus the same
+  stranger rule (non-operator on a foreign row learns nothing, not even
+  existence) at the head of `apply` and `observe`: transitions on foreign
+  rows moved from 403-with-reasons to 404, while own-row entitlement
+  failures keep their diagnostic messages. Actor is required, not
+  optional — an optional actor is a future caller omitting it and
+  reopening the leak by default.
+- **Tests:** `test/transactions.spec.ts` (10 tests, two sessions, real HTTP);
+  one unit test updated (foreign-row report is now 404, own-row 403s
+  unchanged), one added (observe tells strangers nothing). 3 mutations,
+  all killed — one per entry point.
 - **Status:** `DONE`
 
 ---
@@ -1535,13 +1558,13 @@ lived in its body rather than its heading, and nothing reads both.
 
 | Status | Tasks | Defects |
 |---|---|---|
-| `DONE` | 17 | 20 |
+| `DONE` | 17 | 21 |
 | `PARTIAL` | 16 | 1 |
 | `BACKLOG` | 14 | 0 |
 | `BLOCKED` | 2 | 0 |
-| **Total** | **49** | **21** |
+| **Total** | **49** | **22** |
 
-**17 of 49 tasks are complete and 16 partially built; 20 of 21 defects are done and 1 (`DEF-009`) is
+**17 of 49 tasks are complete and 16 partially built; 21 of 22 defects are done and 1 (`DEF-009`) is
 half fixed — no defect is left in `BACKLOG`.** The plan's §68 dependency chain
 is most of the way built at the infrastructure layer and not started at the
 layer that moves money.

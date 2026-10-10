@@ -271,8 +271,11 @@ describe('TransactionsService — the lifecycle', () => {
       expect(store.rows.get('tx1')?.['signedAt']).toBeInstanceOf(Date);
     });
 
-    it("refuses another account's report on this wallet", async () => {
-      await expect(svc.markSigned('tx1', OTHER)).rejects.toThrow(/its owner or support/);
+    it("another account learns nothing, not even that the row exists", async () => {
+      // 404, not the 403 below: the entitlement messages name edges and
+      // roles, which is guidance for a caller with a legitimate row — not
+      // for a stranger, who gets nothing to probe with.
+      await expect(svc.markSigned('tx1', OTHER)).rejects.toThrow(/not found/i);
       expect(store.rows.get('tx1')?.['state']).toBe('created');
     });
 
@@ -627,6 +630,15 @@ describe('TransactionsService — the lifecycle', () => {
   describe('drops and reappearance', () => {
     beforeEach(async () => {
       seed({ state: 'broadcast', txHash: '0x' + 'c'.repeat(64), confirmations: 0 });
+    });
+
+    it('tells a stranger nothing, even on the observation path', async () => {
+      // The route guard already refuses customers, but the service must
+      // not depend on the route: an observation binds a row to a hash for
+      // life, so a foreign id must not even resolve here.
+      await expect(
+        svc.observe('tx1', OTHER, { txHash: '0x' + 'c'.repeat(64), confirmations: 1, outcome: 'seen' }),
+      ).rejects.toThrow(/not found/i);
     });
 
     it('promotes to pending when the node sees it', async () => {
