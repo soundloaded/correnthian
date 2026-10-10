@@ -1192,6 +1192,21 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
   no endpoints — onramp only quotes (and refuses without a provider), no
   buy flow exists — so their doors live in the gate's movement type, not
   in pretended routes. Crypto-only moves never import the gate.
+- **Live sandbox run 2026-10-10 (create + retrieve verified; re-screen
+  mechanism refuted):** inquiry creation, session token, `reference-id`
+  binding location and status vocabulary all confirmed live through our
+  adapter code — but creating a watchlist report demands
+  `name_first/middle/last or term`, i.e. PII our servers deliberately do
+  not hold (`data.attributes is missing` → named-field 400, confirmed over
+  three shapes: bare link, account link, empty attributes). API-created
+  re-screens are therefore incompatible with the pointer-only constraint,
+  and the current `rescreen` implementation would 400 on every call. The
+  replacement under investigation: list the latest watchlist report by
+  reference and re-run it (`POST /reports/{id}/run`), which needs no new
+  inputs — untested, because no report exists until a verification with a
+  watchlist step completes. This also makes a template-level requirement
+  explicit: the GovID+Selfie template must run a Watchlist step, or no
+  screen exists to re-run and the gate denies everyone forever.
 - **`compliance.rescreen-stale` runs nightly:** approved, unfrozen, stale
   (or never-screened — the OR matters, because a flat `lt` skips NULLs in
   Postgres) users re-screen; hits latch through the same path; one user's
