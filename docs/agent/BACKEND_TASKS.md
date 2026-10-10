@@ -1369,9 +1369,20 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 ## 19. Hardening (plan §62, §64–§66)
 
 ### BE-1701 — Financial operation state machines · `PARTIAL`
-- Redemption is the only state machine, and it is allowlisted. Quote lifecycle
-  (`QuoteState` has six states; only `quoted` is ever written) and
-  `TxState` are not implemented.
+- Redemption is the only state machine, and it is allowlisted. Quotes move
+  `quoted → expired` (creation plus `SwapQuoteExpiryJob`, whose guard is on
+  the update, not only the read) and nothing else.
+- The entry previously said only `quoted` was ever written; the expiry job
+  proves otherwise, and the claim stood because nobody re-read the job.
+  Verified 2026-10-10: exactly two writers exist (`swapQuote.create` at
+  `swaps.service.ts:193`, `swapQuote.updateMany` at
+  `swap-quote-expiry.job.ts:77`), and the controller exposes no execution
+  route — only quotes, mine, stats, list and detail.
+- `awaiting_payment`, `broadcast`, `settled` and `failed` have no path and
+  must not gain one here: writing transitions for an execution flow that
+  does not exist would invent the flow by the back door (no provider is
+  contracted, no execution endpoint exists). They unlock with provider
+  rails, not with a state-table edit.
 - **Acceptance criteria for `DONE`:** every state transition that moves value
   has an explicit allowlist, terminal states are terminal, and nothing
   auto-approves.
