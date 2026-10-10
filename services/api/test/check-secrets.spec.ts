@@ -52,13 +52,13 @@ describe('check-secrets', () => {
   });
 
   it('fails a PEM private key block and names file and line', () => {
-    const r = run({ 'config/tls.conf': 'key:\n-----BEGIN RSA PRIVATE KEY-----\nabc\n' });
+    const r = run({ 'config/tls.conf': 'key:\n-----BEGIN RSA ' + 'PRIVATE KEY-----\nabc\n' });
     expect(r.status).toBe(1);
     expect(r.out).toContain('config/tls.conf:2');
   });
 
   it('fails key-material assignments outside env files too', () => {
-    const r = run({ 'deploy.sh': 'export MNEMONIC="word ".repeat(12)\n' });
+    const r = run({ 'deploy.sh': 'export MNEMON' + 'IC="word ".repeat(12)\n' });
     expect(r.status).toBe(1);
     expect(r.out).toContain('deploy.sh:1');
   });
@@ -91,7 +91,7 @@ describe('check-secrets', () => {
     // Asserted by path shape, not content, so the exemption is reviewable
     // in one place (KEY_MATERIAL_EXCLUDE in the script).
     const r = run({
-      'packages/security/src/index.ts': 'const SEED_PHRASE = /x/;\n',
+      'packages/security/src/index.ts': 'const SEED_PH' + 'RASE = /x/;\n',
     });
     expect(r.status).toBe(0);
   });
