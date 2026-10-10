@@ -199,6 +199,31 @@ describe.skipIf(!HAS_DB && !CI)('POST /redemptions through the controller', () =
       where: { id: permittedUserId },
       data: { country: PERMITTED, region: '' },
     });
+    // Verified, with a fresh clean screen: redemption now passes the
+    // compliance gate, and the fixture for the success path must satisfy
+    // the product rule rather than predate it. Written directly, like the
+    // chain/asset/provider fixtures above — the point under test is the
+    // controller layer, not the verification flow that produces this row.
+    await prisma.kycProfile.upsert({
+      where: { userId: permittedUserId },
+      create: {
+        userId: permittedUserId,
+        status: 'approved',
+        providerRef: `redemption-spec-${process.pid}`,
+        provider: 'spec',
+        sanctionsResult: 'clean',
+        sanctionsScreenedAt: new Date(),
+      },
+      update: {
+        status: 'approved',
+        sanctionsResult: 'clean',
+        sanctionsScreenedAt: new Date(),
+      },
+    });
+    await prisma.user.update({
+      where: { id: permittedUserId },
+      data: { kycStatus: 'approved' },
+    });
     await prisma.user.update({
       where: { email: emails.blocked },
       data: { country: UNMATCHED, region: '' },

@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { AppError } from '../common/errors.js';
 import { AuditService } from '../audit/audit.service.js';
+import { ComplianceGate, FiatDeniedError } from '../compliance/compliance-gate.service.js';
 import { JurisdictionService } from '../compliance/jurisdiction.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
@@ -32,6 +33,7 @@ export class RedemptionService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(JurisdictionService) private readonly jurisdiction: JurisdictionService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(ComplianceGate) private readonly gate: ComplianceGate,
   ) {}
 
   async request(input: RedemptionRequestInput) {
@@ -83,6 +85,18 @@ export class RedemptionService {
     await this.jurisdiction.assertEligible(country, region, 'redeem');
     if (await this.jurisdiction.isProviderBlocked(country, region, input.providerSlug)) {
       throw AppError.jurisdictionBlocked('This redemption provider is not available in your jurisdiction.');
+    }
+
+    // After jurisdiction, before anything is created: selling gold for
+    // dollars triggers AML and sanctions obligations regardless of custody
+    // posture, so an unverified or frozen account cannot open a payout.
+    // The denial is the gate's single generic 403 — the typed reason never
+    // reaches the client (tipping-off), and support reads it server-side.
+    try {
+      await this.gate.assertFiatAllowed(input.userId, 'redemption');
+    } catch (err) {
+      if (err instanceof FiatDeniedError) throw err.toHttpError();
+      throw err;
     }
 
     const request = await this.prisma.redemptionRequest.create({

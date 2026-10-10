@@ -421,6 +421,30 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
       where: { id: admin.id },
       data: { country: 'ZZ', region: '', role: 'compliance' },
     });
+    // And redemption passes the compliance gate, so the redeemer is a
+    // verified account with a fresh clean screen — the product rule, not a
+    // way around it. The gate reads the profile row, not just the mirrored
+    // status, so both are written.
+    await prisma.kycProfile.upsert({
+      where: { userId: admin.id },
+      create: {
+        userId: admin.id,
+        status: 'approved',
+        providerRef: `contractspec-rx-${process.pid}`,
+        provider: 'spec',
+        sanctionsResult: 'clean',
+        sanctionsScreenedAt: new Date(),
+      },
+      update: {
+        status: 'approved',
+        sanctionsResult: 'clean',
+        sanctionsScreenedAt: new Date(),
+      },
+    });
+    await prisma.user.update({
+      where: { id: admin.id },
+      data: { kycStatus: 'approved' },
+    });
     fixtureRedeemerToken = reg.body.token as string;
   }
 

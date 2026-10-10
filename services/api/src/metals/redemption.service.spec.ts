@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { FiatDeniedError } from '../compliance/compliance-gate.service.js';
 import { RedemptionService } from './redemption.service.js';
 
 const metal = (over: Record<string, unknown> = {}) => ({
@@ -12,6 +13,7 @@ describe('RedemptionService.request', () => {
   let user: { findUnique: ReturnType<typeof vi.fn> };
   let create: ReturnType<typeof vi.fn>;
   let jurisdiction: { assertEligible: ReturnType<typeof vi.fn>; isProviderBlocked: ReturnType<typeof vi.fn> };
+  let gate: { assertFiatAllowed: ReturnType<typeof vi.fn> };
   let svc: RedemptionService;
 
   beforeEach(() => {
@@ -22,10 +24,12 @@ describe('RedemptionService.request', () => {
     user = { findUnique: vi.fn().mockResolvedValue({ country: 'US', region: 'US-CA' }) };
     create = vi.fn().mockResolvedValue({ id: 'r1' });
     jurisdiction = { assertEligible: vi.fn(), isProviderBlocked: vi.fn().mockResolvedValue(false) };
+    gate = { assertFiatAllowed: vi.fn().mockResolvedValue(undefined) };
     svc = new RedemptionService(
       { asset, provider, user, redemptionRequest: { create } } as never,
       jurisdiction as never,
       { record: vi.fn() } as never,
+      gate as never,
     );
   });
 
@@ -94,6 +98,30 @@ describe('RedemptionService.request', () => {
       expect.objectContaining({ data: expect.objectContaining({ state: 'requested' }) }),
     );
   });
+
+  it('checks the compliance gate after jurisdiction, before creating anything', async () => {
+    await svc.request(input);
+    expect(gate.assertFiatAllowed).toHaveBeenCalledWith('u1', 'redemption');
+    expect(create).toHaveBeenCalled();
+  });
+
+  it("denies an unverified account with the gate's generic 403 and creates nothing", async () => {
+    gate.assertFiatAllowed.mockRejectedValue(new FiatDeniedError('kyc_required'));
+    const err = await svc.request(input).catch((e) => e);
+    expect(err.code).toBe('forbidden');
+    expect(err.status).toBe(403);
+    // Generic: the typed reason never reaches the client.
+    expect(err.message).not.toMatch(/kyc_required/i);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('denies a sanctions-frozen account the same generic way', async () => {
+    gate.assertFiatAllowed.mockRejectedValue(new FiatDeniedError('sanctions_review'));
+    const err = await svc.request(input).catch((e) => e);
+    expect(err.code).toBe('forbidden');
+    expect(err.message).not.toMatch(/sanction/i);
+    expect(create).not.toHaveBeenCalled();
+  });
 });
 
 describe('RedemptionService.transition', () => {
@@ -108,6 +136,7 @@ describe('RedemptionService.transition', () => {
       } as never,
       {} as never,
       { record: vi.fn() } as never,
+      { assertFiatAllowed: vi.fn() } as never,
     );
     return { svc, update };
   };

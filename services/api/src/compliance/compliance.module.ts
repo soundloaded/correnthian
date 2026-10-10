@@ -1,6 +1,7 @@
 import { Inject, Module } from '@nestjs/common';
 import { Logger } from '@nestjs/common';
 import { ComplianceController } from './compliance.controller.js';
+import { ComplianceGate } from './compliance-gate.service.js';
 import { JurisdictionService } from './jurisdiction.service.js';
 import { KycService } from './kyc.service.js';
 import { PersonaWebhookController } from './persona-webhook.controller.js';
@@ -51,12 +52,13 @@ function screeningProvider(config: ConfigService) {
   providers: [
     JurisdictionService,
     KycService,
+    ComplianceGate,
     {
       provide: SCREENING_PROVIDER,
       useFactory: (config: ConfigService) => screeningProvider(config),
       inject: [ConfigService],
     },
   ],
-  exports: [JurisdictionService, KycService, SCREENING_PROVIDER],
+  exports: [JurisdictionService, KycService, ComplianceGate, SCREENING_PROVIDER],
 })
 export class ComplianceModule {}
