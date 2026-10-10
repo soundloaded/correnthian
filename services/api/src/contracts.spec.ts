@@ -1163,6 +1163,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
       // this list only by mistake — the row it would add is the one that says
       // whether deposits are being filed at all.
       'blockchain.index-transactions',
+      'compliance.rescreen-stale',
       'idempotency.purge',
       'price.flag-stale',
       'provider.health-probe',

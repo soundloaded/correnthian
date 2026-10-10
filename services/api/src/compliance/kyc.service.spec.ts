@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { assertReason } from '../audit/audit.service.js';
 import { KycService } from './kyc.service.js';
 import { FakeScreeningProvider } from './screening/fake-screening.provider.js';
 import type { ParsedWebhookEvent } from './screening/screening-provider.js';
@@ -24,6 +25,7 @@ type Row = Record<string, unknown>;
 function makePrisma() {
   const users = new Map<string, Row>([
     ['u1', { id: 'u1', email: 'u1@example.test', kycStatus: 'not_started' }],
+    ['u2', { id: 'u2', email: 'u2@example.test', kycStatus: 'not_started' }],
   ]);
   const profiles = new Map<string, Row>();
   const events = new Set<string>();
@@ -69,8 +71,27 @@ function makePrisma() {
       update: async ({ where, data }: { where: { userId: string }; data: Row }) => {
         const row = profiles.get(where.userId);
         if (!row) throw new Error('record not found');
-        Object.assign(row, data);
+        // The real table bumps this on every write (@updatedAt); the fake
+        // must too, or ordering tests assert on a clock that never moves.
+        Object.assign(row, data, { updatedAt: new Date() });
         return { ...row };
+      },
+      findMany: async (args?: { where?: Row; orderBy?: Row; take?: number }) => {
+        let out = [...profiles.values()];
+        if (args?.where?.needsReview !== undefined) {
+          out = out.filter((r) => r['needsReview'] === args?.where?.['needsReview']);
+        }
+        out = [...out].sort(
+          (a, b) =>
+            new Date(a['updatedAt'] as string ?? 0).getTime() -
+            new Date(b['updatedAt'] as string ?? 0).getTime(),
+        );
+        if (args?.take) out = out.slice(0, args.take);
+        return out.map((r) => ({
+          ...r,
+          user: { id: r['userId'], email: users.get(r['userId'] as string)?.['email'] },
+          updatedAt: new Date(),
+        }));
       },
     },
     webhookEvent: {
@@ -98,7 +119,12 @@ function makePrisma() {
   return { prisma, users, profiles, events };
 }
 
-const audit = { record: vi.fn(async () => {}) };
+const audit = {
+  record: vi.fn(async () => {}),
+  // The real one, not a stub: "a reason is required" is the property under
+  // test and a `vi.fn()` would assert nothing.
+  assertReason,
+};
 
 function setup() {
   const store = makePrisma();
@@ -108,6 +134,7 @@ function setup() {
 }
 
 const T0 = new Date('2026-10-10T10:00:00.000Z');
+const HOUR = 3_600_000;
 
 function decisionEvent(over: Partial<ParsedWebhookEvent> = {}): ParsedWebhookEvent {
   return {
@@ -291,5 +318,124 @@ describe('rescreen', () => {
     await svc.rescreen('u1', new Date(T0.getTime() + 100_000));
 
     expect(store.profiles.get('u1')).toMatchObject({ sanctionsResult: 'hit', needsReview: true });
+  });
+});
+
+describe('decide — the only path that rejects or clears a hit', () => {
+  async function parked() {
+    const ctx = setup();
+    ctx.screening.scriptCreate('u1', { inquiryId: 'inq_1', sessionToken: 'sess_1' });
+    await ctx.svc.startVerification('u1');
+    await ctx.svc.applyWebhookEvent(decisionEvent({
+      eventId: 'evt_park',
+      decision: { verdict: 'needs_review', watchlist: 'clean', codes: ['review'], occurredAt: T0 },
+    }));
+    audit.record.mockClear();
+    return ctx;
+  }
+
+  it('approve clears the flag, mirrors approved, and records who decided and why', async () => {
+    const { store, svc } = await parked();
+
+    const out = await svc.decide('u1', 'op1', 'approve', 'Documents verified against issuer records.');
+
+    expect(out).toEqual({ status: 'approved' });
+    expect(store.profiles.get('u1')).toMatchObject({
+      status: 'approved',
+      needsReview: false,
+      reviewedBy: 'op1',
+    });
+    expect(store.profiles.get('u1')?.['reviewedAt']).toBeInstanceOf(Date);
+    expect(store.users.get('u1')?.['kycStatus']).toBe('approved');
+    expect(audit.record).toHaveBeenCalledWith(expect.objectContaining({
+      actorId: 'op1',
+      action: 'kyc.approved',
+      reason: 'Documents verified against issuer records.',
+    }));
+  });
+
+  it('approve is the one human act that clears a latched sanctions hit', async () => {
+    const { store, svc } = await parked();
+    await svc.applyWebhookEvent(decisionEvent({
+      eventId: 'evt_hit',
+      occurredAt: new Date(T0.getTime() + 1000),
+      decision: { verdict: 'passed', watchlist: 'hit', codes: ['watchlist'], occurredAt: new Date(T0.getTime() + 1000) },
+    }));
+    expect(store.profiles.get('u1')?.['sanctionsResult']).toBe('hit');
+
+    await svc.decide('u1', 'op1', 'approve', 'Confirmed false positive with the vendor.');
+
+    expect(store.profiles.get('u1')).toMatchObject({ sanctionsResult: 'clean', needsReview: false });
+  });
+
+  it('reject finalises a rejection and leaves the sanctions latch in place', async () => {
+    const { store, svc } = await parked();
+    // A hit latched before the decision: rejecting the verification must
+    // not clear it. The account cannot move fiat either way, and a later
+    // review starts from frozen — a rejection quietly unfreezing would let
+    // the next approve path skip over a hit nobody re-examined.
+    store.profiles.get('u1')!['sanctionsResult'] = 'hit';
+
+    const out = await svc.decide('u1', 'op1', 'reject', 'Identity documents do not match the account holder.');
+
+    expect(out).toEqual({ status: 'rejected' });
+    expect(store.profiles.get('u1')).toMatchObject({
+      status: 'rejected',
+      needsReview: false,
+      reviewedBy: 'op1',
+      sanctionsResult: 'hit',
+    });
+    expect(store.users.get('u1')?.['kycStatus']).toBe('rejected');
+  });
+
+  it('refuses without a reason: an unexplained decision is not a decision', async () => {
+    const { svc } = await parked();
+    await expect(svc.decide('u1', 'op1', 'approve', '')).rejects.toThrow(/reason/i);
+    await expect(svc.decide('u1', 'op1', 'reject', '  ')).rejects.toThrow(/reason/i);
+  });
+
+  it('refuses a profile that is not awaiting review', async () => {
+    const { svc } = setup();
+    await expect(
+      svc.decide('u1', 'op1', 'approve', 'No flag to clear here.'),
+    ).rejects.toThrow(/not awaiting review|no verification profile/i);
+  });
+});
+
+describe('reviewQueue', () => {
+  it('lists only flagged profiles, oldest first, without identity documents', async () => {
+    const { store, screening, svc } = setup();
+    for (const userId of ['u1', 'u2']) {
+      screening.scriptCreate(userId, { inquiryId: `inq_${userId}`, sessionToken: 'sess' });
+      await svc.startVerification(userId);
+      await svc.applyWebhookEvent({
+        eventId: `evt_park_${userId}`,
+        inquiryId: `inq_${userId}`,
+        referenceId: userId,
+        occurredAt: T0,
+        decision: { verdict: 'needs_review', watchlist: 'clean', codes: [], occurredAt: T0 },
+      });
+    }
+    // u1 parked earlier. Set explicitly: the fake bumps updatedAt on write
+    // like the real table, but both parks happened "now", so the test
+    // states the order rather than racing the clock.
+    store.profiles.get('u1')!['updatedAt'] = new Date(T0.getTime() - HOUR);
+    store.profiles.get('u2')!['updatedAt'] = new Date(T0.getTime());
+
+    const rows = await svc.reviewQueue();
+    expect(rows.map((r) => r['userId'])).toEqual(['u1', 'u2']);
+    expect(rows[0]).toMatchObject({
+      userId: 'u1',
+      email: 'u1@example.test',
+      status: 'pending',
+    });
+    // No providerRef? It is the inquiry id — operational, not PII, and the
+    // operator needs it to open the vendor record. Documents never appear:
+    // we never stored any.
+    expect(rows[0]?.['providerRef']).toBe('inq_u1');
+    expect(JSON.stringify(rows[0])).not.toMatch(/document|biometric|image/i);
+
+    const empty = setup();
+    expect(await empty.svc.reviewQueue()).toEqual([]);
   });
 });

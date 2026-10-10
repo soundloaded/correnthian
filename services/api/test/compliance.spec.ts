@@ -8,6 +8,8 @@ import { AppModule } from '../src/app.module.js';
 import { applyApiVersioning } from '../src/versioning/apply-versioning.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import { PERSONA_SIGNATURE_HEADER } from '../src/compliance/screening/persona-screening.provider.js';
+import { FakeScreeningProvider } from '../src/compliance/screening/fake-screening.provider.js';
+import { KycService } from '../src/compliance/kyc.service.js';
 import { PersonaScreeningProvider } from '../src/compliance/screening/persona-screening.provider.js';
 import { SCREENING_PROVIDER } from '../src/compliance/screening/screening-provider.js';
 
@@ -315,5 +317,146 @@ describe.skipIf(!HAS_DB && !CI)('the compliance gate on redemption', () => {
     expect(JSON.stringify(res.body)).not.toMatch(/sanction|kyc_required|kyc_pending|screening_unavailable/i);
     const after = await prisma.redemptionRequest.count({ where: { assetId: { in: created.assets } } });
     expect(after).toBe(before);
+  });
+});
+
+describe.skipIf(!HAS_DB && !CI)('verification start and the review queue', () => {
+  let app: INestApplication;
+  let prisma: PrismaService;
+  let screening: FakeScreeningProvider;
+  let kyc: KycService;
+  let userToken = '';
+  let userId = '';
+  let operatorToken = '';
+  let operatorId = '';
+
+  beforeAll(async () => {
+    process.env['RATE_LIMIT_MAX_REQUESTS'] = '100000';
+    process.env['RATE_LIMIT_AUTH_MAX_REQUESTS'] = '100000';
+    const redisBase = (process.env['REDIS_URL'] ?? 'redis://localhost:6380').replace(/\/\d+$/, '');
+    process.env['REDIS_URL'] = `${redisBase}/10`;
+
+    screening = new FakeScreeningProvider();
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(SCREENING_PROVIDER)
+      .useValue(screening)
+      .compile();
+    app = moduleRef.createNestApplication();
+    applyApiVersioning(app);
+    await app.init();
+    prisma = app.get(PrismaService);
+    kyc = app.get(KycService);
+
+    const mkUser = async (tag: string, role: 'user' | 'compliance') => {
+      const email = `kyc-review-${tag}-${process.pid}@example.test`;
+      const reg = await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({ email, password: 'correct-horse-battery-staple' });
+      expect(reg.status).toBe(201);
+      const user = await prisma.user.findUniqueOrThrow({ where: { email } });
+      if (role !== 'user') {
+        await prisma.user.update({ where: { id: user.id }, data: { role } });
+      }
+      return { token: reg.body.token as string, id: user.id };
+    };
+    ({ token: userToken, id: userId } = await mkUser('user', 'user'));
+    ({ token: operatorToken, id: operatorId } = await mkUser('operator', 'compliance'));
+
+    screening.scriptCreate(userId, { inquiryId: `kyc-review-${process.pid}`, sessionToken: 'sess_review' });
+  }, 90_000);
+
+  afterAll(async () => {
+    if (prisma) {
+      const users = await prisma.user.findMany({
+        where: { email: { startsWith: 'kyc-review-' } },
+        select: { id: true },
+      });
+      const ids = users.map((u) => u.id);
+      if (ids.length > 0) {
+        await prisma.session.deleteMany({ where: { userId: { in: ids } } });
+        await prisma.user.deleteMany({ where: { id: { in: ids } } });
+      }
+    }
+    await app?.close();
+    delete process.env['RATE_LIMIT_MAX_REQUESTS'];
+    delete process.env['RATE_LIMIT_AUTH_MAX_REQUESTS'];
+    delete process.env['REDIS_URL'];
+  });
+
+  it('opens verification for the caller and hands back the vendor session', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/compliance/verification/start')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({});
+
+    expect(res.status, JSON.stringify(res.body)).toBe(201);
+    expect(res.body).toMatchObject({
+      status: 'pending',
+      inquiryId: `kyc-review-${process.pid}`,
+      sessionToken: 'sess_review',
+    });
+  });
+
+  it('lists parked profiles to an operator, and refuses a customer', async () => {
+    // Park the user through the service: the webhook path is covered in
+    // the first block, and the point here is what the queue shows.
+    await kyc.applyWebhookEvent({
+      eventId: `evt_park_http_${process.pid}`,
+      inquiryId: `kyc-review-${process.pid}`,
+      referenceId: userId,
+      occurredAt: new Date(),
+      decision: { verdict: 'needs_review', watchlist: 'clean', codes: [], occurredAt: new Date() },
+    });
+
+    const asOperator = await request(app.getHttpServer())
+      .get('/api/v1/compliance/reviews')
+      .set('Authorization', `Bearer ${operatorToken}`);
+    expect(asOperator.status, JSON.stringify(asOperator.body)).toBe(200);
+    const row = (asOperator.body as Array<Record<string, unknown>>).find((r) => r['userId'] === userId);
+    expect(row).toMatchObject({ status: 'pending' });
+    expect(row?.['email']).toContain('kyc-review-user-');
+
+    const asCustomer = await request(app.getHttpServer())
+      .get('/api/v1/compliance/reviews')
+      .set('Authorization', `Bearer ${userToken}`);
+    expect(asCustomer.status).toBe(403);
+  });
+
+  it('an operator decision approves with a reason, and rejects without one', async () => {
+    const good = await request(app.getHttpServer())
+      .post(`/api/v1/compliance/reviews/${userId}/decide`)
+      .set('Authorization', `Bearer ${operatorToken}`)
+      .send({ decision: 'approve', reason: 'Documents verified against issuer records.' });
+    expect(good.status, JSON.stringify(good.body)).toBe(201);
+    expect(good.body).toMatchObject({ status: 'approved' });
+    // The decision records *who*, not just what: a review queue that cannot
+    // name its reviewer is an audit trail with the names redacted.
+    const decided = await prisma.kycProfile.findUniqueOrThrow({ where: { userId } });
+    expect(decided.reviewedBy).toBe(operatorId);
+
+    // Park again for the refusal cases.
+    await prisma.kycProfile.update({ where: { userId }, data: { needsReview: true, status: 'pending' } });
+
+    // Two layers refuse an unexplained decision: the shape pipe rejects an
+    // empty reason (422), and `assertReason` rejects a reason too short to
+    // say anything (400). Both are asserted — a test that only sent ''
+    // would never reach the service rule.
+    const emptyReason = await request(app.getHttpServer())
+      .post(`/api/v1/compliance/reviews/${userId}/decide`)
+      .set('Authorization', `Bearer ${operatorToken}`)
+      .send({ decision: 'approve', reason: '' });
+    expect(emptyReason.status).toBe(422);
+
+    const shortReason = await request(app.getHttpServer())
+      .post(`/api/v1/compliance/reviews/${userId}/decide`)
+      .set('Authorization', `Bearer ${operatorToken}`)
+      .send({ decision: 'approve', reason: 'ok' });
+    expect(shortReason.status).toBe(400);
+
+    const customer = await request(app.getHttpServer())
+      .post(`/api/v1/compliance/reviews/${userId}/decide`)
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({ decision: 'approve', reason: 'Let me in, I insist at length.' });
+    expect(customer.status).toBe(403);
   });
 });

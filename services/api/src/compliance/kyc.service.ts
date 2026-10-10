@@ -135,12 +135,17 @@ export class KycService {
   /**
    * A fresh list check outside any inquiry flow — the fiat gate's inline
    * re-screen and the nightly job's early warning share this path.
+   *
+   * Stamped with the caller's `now`, not the wall clock and not the
+   * vendor's timestamp: scheduled work takes its time from the caller so a
+   * test can put a screen one second past the TTL without waiting a second,
+   * and the recorded time is the time the decision was made.
    */
   async rescreen(userId: string, now: Date): Promise<{ result: 'clean' | 'hit'; screenedAt: Date }> {
     const screening = await this.screening.rescreen(userId);
 
     if (screening.result === 'hit') {
-      await this.latchHit(userId, 'rescreen', screening.screenedAt);
+      await this.latchHit(userId, 'rescreen', now);
     } else {
       // Records without unfreezing: if a hit latched earlier, only a human
       // clears it. The update is conditional on no latched hit for exactly
@@ -150,7 +155,7 @@ export class KycService {
       if (profile && profile.sanctionsResult !== 'hit') {
         await this.prisma.kycProfile.update({
           where: { userId },
-          data: { sanctionsResult: 'clean', sanctionsScreenedAt: screening.screenedAt },
+          data: { sanctionsResult: 'clean', sanctionsScreenedAt: now },
         });
       }
     }
@@ -163,7 +168,7 @@ export class KycService {
       metadata: { result: screening.result },
     });
 
-    return screening;
+    return { result: screening.result, screenedAt: now };
   }
 
   /**
@@ -211,7 +216,9 @@ export class KycService {
     return { status: updated.status };
   }
 
-  /** Profiles waiting on a human, oldest first. */
+  /** Profiles waiting on a human, oldest first. Operational fields only:
+   *  the operator needs the inquiry id to open the vendor record; identity
+   *  documents never appear because they were never stored. */
   async reviewQueue(limit = 100): Promise<Array<Record<string, unknown>>> {
     const rows = await this.prisma.kycProfile.findMany({
       where: { needsReview: true },

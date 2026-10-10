@@ -11,7 +11,59 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ---
 
-## 2026-10-09
+## 2026-10-10
+
+### `BE-1101` / `BE-1105` — KYC and sanctions: built against Persona, behind a port
+- **Decisions (user, 2026-10-10):** Persona as vendor · auto-approve on clean
+  pass, humans only on flags · sanctions screen cached with 24h TTL · all
+  fiat-touching movements gated, crypto-only moves untouched · Approach A
+  (server-created inquiry + webhook-driven machine) · §§1–4 approved as
+  recommended, §5 (below) built on the same principles without a further round.
+- **§5, recorded rather than asked:** the review queue is exactly the profiles
+  with `needsReview` set, oldest first, operational fields only (inquiry id
+  included — the operator needs it to open the vendor record; documents never
+  appear because they were never stored). `decide` requires compliance role
+  and a reason of real length, mirrors status to the user row in the same
+  transaction, and approve is the one human act that clears a latched hit —
+  reject leaves the latch, so a later review starts from frozen.
+- **The state machine's three load-bearing properties, all tested:** mirror in
+  the same transaction (gate and console cannot disagree), machine output
+  parks but never finalises, and a latched hit survives a later passing
+  verification — the last one found by a failing test, not by reading: the
+  approved branch overwrote the latch until the suite said otherwise. One
+  clock for webhook ordering (envelope time compared and stored; the decision
+  timestamp rides in audit metadata), so a stale event cannot apply "because
+  its decision was newer".
+- **The gate is honest about what it cannot see:** `redemption.request` is
+  the only wired door because it is the only movement row any code creates —
+  onramp has no execution path and no buy flow exists, so those doors live in
+  the gate's movement type rather than in pretended routes. The two suites
+  that proved the redemption success path had to become verified users; that
+  is the product rule changing the fixtures.
+- **Fail-closed stack, top to bottom:** fake throws unscripted, unconfigured
+  production warns at boot and denies fiat, stale screens re-screen inline,
+  vendor-down denies, hits latch, denials are one generic 403 (tipping-off
+  asserted per code), and the nightly `compliance.rescreen-stale` skips the
+  frozen and isolates per-user failures.
+- **The Persona literals are assumptions, marked as such:** every header
+  scheme, path, event name and status word carries VERIFY-AGAINST-DOCS, and
+  the specs pin the implemented shape so corrections break loudly. Both
+  entries stay `PARTIAL` until a docs pass plus a sandbox run — same rule as
+  the indexer work, which stayed `PARTIAL` for want of a node.
+- **Verification:** TDD throughout (two Iron-Law resets: `decide`/`reviewQueue`
+  written before their tests were deleted and re-derived; a bad spec edit
+  repaired immediately). 664 API tests, all seven repo checks green;
+  **17/17 mutations killed** — including each relay-chain refusal, the latch
+  surviving approval, staleness, idempotency, binding, mirror, reason, and
+  the frozen-skip. Two suite fixes on the way: the role pin and public pin
+  gained the three new routes, and the public-401 test carves out the signed
+  webhook (unsigned bytes must 401, or the test would force accepting them).
+- **Not done, stated:** BE-1102 (risk engine) explicitly out of scope;
+  onramp/metals doors unwired for want of endpoints; Persona docs + creds.
+
+**17 of 49 tasks are `DONE`, 16 `PARTIAL`; 20 of 21 defects.**
+
+---
 
 ### `BE-602` — send/receive backend: assemble, sign, relay, verify
 - **The endpoint existed in spirit but could not have been used.**
@@ -62,6 +114,10 @@ abbreviated. Read the full message with `git show <hash>`.
   devDependency of the API.
 
 **17 of 49 tasks are `DONE`; 20 of 21 defects.**
+
+---
+
+## 2026-10-09
 
 ### `BE-1703` — `RolesGuard` gets its first tests, and `DEF-021` falls out
 - **Two layers, because one cannot prove the other.** Eleven unit tests pin

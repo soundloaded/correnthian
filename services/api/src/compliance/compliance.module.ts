@@ -1,4 +1,4 @@
-import { Inject, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { Logger } from '@nestjs/common';
 import { ComplianceController } from './compliance.controller.js';
 import { ComplianceGate } from './compliance-gate.service.js';

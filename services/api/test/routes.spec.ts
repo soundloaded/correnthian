@@ -66,6 +66,7 @@ const EXPECTED_PUBLIC = [
   'GET /onramp/availability',
   'POST /auth/login',
   'POST /auth/register',
+  'POST /compliance/webhooks/persona',
 ].sort();
 
 /** `/health` is unversioned on purpose; everything else is behind `/api/v1`. */
@@ -164,6 +165,15 @@ describe.skipIf(!HAS_DB && !CI)('every route refuses an anonymous caller', () =>
       const res = await (route.method === 'GET' ? request(app.getHttpServer()).get(urlFor(placeholder(route.path))) : request(app.getHttpServer())[route.method.toLowerCase() as 'post'](urlFor(placeholder(route.path))).send({}));
 
       seen.push(`${route.method} ${route.path}`);
+      // Except the signed webhook: it is @Public because no session exists
+      // for a vendor callback, but its authentication is the HMAC signature,
+      // not the absence of auth — an unsigned call is a forgery probe, and
+      // 401 is the correct answer. Without the carve-out this test would
+      // force the webhook to accept unsigned bytes.
+      if (route.path === '/compliance/webhooks/persona') {
+        expect(res.status, 'unsigned webhook must be refused').toBe(401);
+        continue;
+      }
       if (res.status === 401) failures.push(`${route.method} ${route.path} -> 401`);
     }
 

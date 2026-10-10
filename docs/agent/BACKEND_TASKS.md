@@ -1142,22 +1142,56 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
   provider/contract choice, as `BE-802` is.
 
 
-### BE-1101 — KYC / AML · `BACKLOG`
-- **What exists:** the `KycProfile` model, `User.kycStatus`, an admin filter and
-  display. `providerRef` stores an opaque pointer; the schema comment says
-  explicitly that identity documents and biometric data are never stored.
-- **What does not exist:** the flow. No provider, no webhook, no review queue,
-  no screening. `KycProfile` rows are never created by any code path.
-- **Security requirements:** store a pointer, never documents. Screen at
-  onboarding and before every fiat movement. Record the reviewing operator.
-- **Status:** `BACKLOG`
+### BE-1101 — KYC / AML · `PARTIAL` (built; vendor literals unverified)
+- **Built, against Persona (user decision 2026-10-10):** `KycService` owns
+  the §1 state machine — `startVerification` is idempotent while pending,
+  `applyWebhookEvent` auto-approves clean passes and parks everything else
+  (a machine decline never finalises a rejection), `User.kycStatus` mirrors
+  the profile in the same transaction. `POST /compliance/verification/start`
+  opens verification; `POST /compliance/webhooks/persona` applies signed
+  verdicts with HMAC-before-parse-before-apply, idempotent event ids,
+  reference binding, and stale-event tolerance.
+- **Pointer-only holds:** providerRef is the inquiry id; no document,
+  biometric or vendor-payload field crosses the port, the service, or the
+  audit rows (decision codes only).
+- **Not `DONE`:** every Persona literal (signature header scheme, creation
+  path, event/status vocabularies) is marked VERIFY-AGAINST-DOCS — the docs
+  were unreachable when this was built — and no credentials exist, so the
+  vendor path has never run against Persona. Closing it is a docs pass plus
+  a sandbox run, not a redesign: the port, machine and gates do not depend
+  on the literals.
+- **Security requirements from this entry:** pointer stored (yes), documents
+  never stored (yes — nothing to store them in), review operator recorded
+  (reviewedBy/reviewedAt + audit actor), screen at onboarding and before
+  every fiat movement (gate + rescreen job; onboarding = startVerification,
+  fiat = ComplianceGate).
+- **Tests:** 19 service + 14 adapter/fake + HTTP webhook/start/review
+  suites; mutation-checked with the rest (17/17 on the KYC round).
+- **Status:** `PARTIAL`
 
-### BE-1105 — Sanctions screening · `BACKLOG`
-- `ProviderCategory` includes `sanctions`. Nothing uses it.
-- **Security requirement:** selling gold to consumers with dollars triggers AML
-  and sanctions obligations **regardless of custody posture**. This is
-  load-bearing for v1 and is not implemented.
-- **Status:** `BACKLOG`
+### BE-1105 — Sanctions screening · `PARTIAL` (built; same vendor caveat as BE-1101)
+- **Built:** `sanctionsResult`/`sanctionsScreenedAt` on the profile, 24h TTL
+  in one exported constant the gate and the nightly job both read.
+  `ComplianceGate.assertFiatAllowed` enforces approved-KYC + clean-and-fresh
+  screen with inline re-screen when stale; a hit latches (only a human
+  `decide approve` clears it — never a later clean screen, never a
+  rejection); vendor-down denies as `screening_unavailable`. Denials are
+  typed internally, one generic 403 externally (tipping-off: no reason
+  words reach the client).
+- **Wired into one real door:** `redemption.request`, after jurisdiction
+  and before the row is created. Onramp execution and metals purchase have
+  no endpoints — onramp only quotes (and refuses without a provider), no
+  buy flow exists — so their doors live in the gate's movement type, not
+  in pretended routes. Crypto-only moves never import the gate.
+- **`compliance.rescreen-stale` runs nightly:** approved, unfrozen, stale
+  (or never-screened — the OR matters, because a flat `lt` skips NULLs in
+  Postgres) users re-screen; hits latch through the same path; one user's
+  failure never aborts the batch.
+- **Load-bearing for v1 per this entry's own security requirement, and now
+  enforced rather than stated.**
+- **Tests:** 10 gate + 6 job + redemption wiring (service, controller,
+  contracts) + HTTP gate shape; mutation-checked (17/17).
+- **Status:** `PARTIAL`
 
 ### BE-1102 — Risk engine · `BACKLOG`
 - `Asset.riskFlags` and `Issuer.riskFlags` exist as `String[]` and are set
@@ -1410,12 +1444,12 @@ lived in its body rather than its heading, and nothing reads both.
 | Status | Tasks | Defects |
 |---|---|---|
 | `DONE` | 17 | 20 |
-| `PARTIAL` | 14 | 1 |
-| `BACKLOG` | 16 | 0 |
+| `PARTIAL` | 16 | 1 |
+| `BACKLOG` | 14 | 0 |
 | `BLOCKED` | 2 | 0 |
 | **Total** | **49** | **21** |
 
-**17 of 49 tasks are complete; 20 of 21 defects are done and 1 (`DEF-009`) is
+**17 of 49 tasks are complete and 16 partially built; 20 of 21 defects are done and 1 (`DEF-009`) is
 half fixed — no defect is left in `BACKLOG`.** The plan's §68 dependency chain
 is most of the way built at the infrastructure layer and not started at the
 layer that moves money.

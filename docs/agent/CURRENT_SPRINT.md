@@ -4,7 +4,7 @@ Read this every time before starting work. It is deliberately short: it names
 the task, what is finished, what is next, and — most importantly — what must
 not be started.
 
-Last updated: 2026-10-09.
+Last updated: 2026-10-10.
 
 ---
 
@@ -22,7 +22,9 @@ recorded (`DEF-001` … `DEF-021`); **twenty are done, one is half fixed, none a
 
 ### Current task
 
-**Next: `BE-1101` / `BE-1105` — KYC and sanctions.** `BE-602` is done: the
+**Next: the node-backed acceptance run (now covering BE-302, BE-601, BE-602
+plus the KYC webhook shapes), then `BE-1102` if risk scoring is wanted for v1.**
+`BE-1101` / `BE-1105` are built and measured: the
 send path walks intent → build → sign → broadcast with the payload verified
 against what the server assembled. What remains of the transaction story is
 shared with `BE-302`/`BE-601` — one run against a real node (item 2).
@@ -65,8 +67,8 @@ production-`/docs` question is still undecided and is now item 4.
 
 | # | Task | Why it is next |
 |---|---|---|
-| 1 | `BE-1101` / `BE-1105` — KYC and sanctions | The largest build left that gates nothing external: legally required before selling gold for dollars regardless of custody posture, and it needs no metals partner. |
-| 2 | Node-backed acceptance run for `BE-302`, `BE-601` **and `BE-602`** | The shared unmet criterion: all three were verified against a stub node rather than a chain. Needs a node and a funded address holding a registered token. |
+| 1 | Node-backed acceptance run for `BE-302`, `BE-601`, `BE-602` **and the KYC webhook shapes** | The shared unmet criterion: stub-node verified throughout, plus Persona literals marked VERIFY-AGAINST-DOCS and no vendor credentials anywhere. Needs a node, a funded address, and — for the KYC half — Persona sandbox credentials plus a docs pass. |
+| 2 | `BE-1102` — risk engine, if it is v1 | Explicitly out of the KYC scope; velocity/structuring detection is the remaining unbuilt compliance piece. |
 | 3 | `BE-102`'s open question — is `/docs` exposed in production? | Not decided. An API schema is a map of everything an attacker can call; the answer is a disclosure decision, not a technical one. |
 | 4 | ADR-022's build-time choices — account implementation, paymaster, EntryPoint | Gated on a vendor or a contract, same as `BE-802`. Recording them as decided would repeat the `claimBatch` mistake. |
 | 5 | Contract entries for every write route | The two new `BE-602` routes have no `packages/contracts` entry, matching `POST /transactions` and `:id/transitions`. Whether *every* write route gets one is a sweep, not a patch. |
