@@ -401,6 +401,7 @@ export const ModelName = {
   Session: 'Session',
   Device: 'Device',
   KycProfile: 'KycProfile',
+  WebhookEvent: 'WebhookEvent',
   Wallet: 'Wallet',
   WalletAccount: 'WalletAccount',
   Issuer: 'Issuer',
@@ -434,7 +435,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "session" | "device" | "kycProfile" | "wallet" | "walletAccount" | "issuer" | "asset" | "chain" | "provider" | "swapQuote" | "transaction" | "portfolioSnapshot" | "assetPrice" | "redemptionRequest" | "feeRule" | "jurisdictionRule" | "auditLog" | "notification" | "featureFlag" | "idempotencyRecord" | "jobRun"
+    modelProps: "user" | "session" | "device" | "kycProfile" | "webhookEvent" | "wallet" | "walletAccount" | "issuer" | "asset" | "chain" | "provider" | "swapQuote" | "transaction" | "portfolioSnapshot" | "assetPrice" | "redemptionRequest" | "feeRule" | "jurisdictionRule" | "auditLog" | "notification" | "featureFlag" | "idempotencyRecord" | "jobRun"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -731,6 +732,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.KycProfileCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.KycProfileCountAggregateOutputType> | number
+        }
+      }
+    }
+    WebhookEvent: {
+      payload: Prisma.$WebhookEventPayload<ExtArgs>
+      fields: Prisma.WebhookEventFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.WebhookEventFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.WebhookEventFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload>
+        }
+        findFirst: {
+          args: Prisma.WebhookEventFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.WebhookEventFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload>
+        }
+        findMany: {
+          args: Prisma.WebhookEventFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload>[]
+        }
+        create: {
+          args: Prisma.WebhookEventCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload>
+        }
+        createMany: {
+          args: Prisma.WebhookEventCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.WebhookEventCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload>[]
+        }
+        delete: {
+          args: Prisma.WebhookEventDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload>
+        }
+        update: {
+          args: Prisma.WebhookEventUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload>
+        }
+        deleteMany: {
+          args: Prisma.WebhookEventDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.WebhookEventUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.WebhookEventUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload>[]
+        }
+        upsert: {
+          args: Prisma.WebhookEventUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload>
+        }
+        aggregate: {
+          args: Prisma.WebhookEventAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateWebhookEvent>
+        }
+        groupBy: {
+          args: Prisma.WebhookEventGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WebhookEventGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.WebhookEventCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WebhookEventCountAggregateOutputType> | number
         }
       }
     }
@@ -2164,11 +2239,25 @@ export const KycProfileScalarFieldEnum = {
   jurisdiction: 'jurisdiction',
   reviewedBy: 'reviewedBy',
   reviewedAt: 'reviewedAt',
+  sanctionsResult: 'sanctionsResult',
+  sanctionsScreenedAt: 'sanctionsScreenedAt',
+  needsReview: 'needsReview',
+  lastDecisionAt: 'lastDecisionAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type KycProfileScalarFieldEnum = (typeof KycProfileScalarFieldEnum)[keyof typeof KycProfileScalarFieldEnum]
+
+
+export const WebhookEventScalarFieldEnum = {
+  id: 'id',
+  provider: 'provider',
+  eventId: 'eventId',
+  receivedAt: 'receivedAt'
+} as const
+
+export type WebhookEventScalarFieldEnum = (typeof WebhookEventScalarFieldEnum)[keyof typeof WebhookEventScalarFieldEnum]
 
 
 export const WalletScalarFieldEnum = {
@@ -2653,6 +2742,27 @@ export type ListEnumDevicePlatformFieldRefInput<$PrismaModel> = FieldRefInputTyp
 
 
 /**
+ * Reference to a field of type 'SanctionsResult'
+ */
+export type EnumSanctionsResultFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SanctionsResult'>
+    
+
+
+/**
+ * Reference to a field of type 'SanctionsResult[]'
+ */
+export type ListEnumSanctionsResultFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SanctionsResult[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+/**
  * Reference to a field of type 'AccountKind'
  */
 export type EnumAccountKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AccountKind'>
@@ -2663,13 +2773,6 @@ export type EnumAccountKindFieldRefInput<$PrismaModel> = FieldRefInputType<$Pris
  * Reference to a field of type 'AccountKind[]'
  */
 export type ListEnumAccountKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AccountKind[]'>
-    
-
-
-/**
- * Reference to a field of type 'Boolean'
- */
-export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -3191,6 +3294,7 @@ export type GlobalOmitConfig = {
   session?: Prisma.SessionOmit
   device?: Prisma.DeviceOmit
   kycProfile?: Prisma.KycProfileOmit
+  webhookEvent?: Prisma.WebhookEventOmit
   wallet?: Prisma.WalletOmit
   walletAccount?: Prisma.WalletAccountOmit
   issuer?: Prisma.IssuerOmit

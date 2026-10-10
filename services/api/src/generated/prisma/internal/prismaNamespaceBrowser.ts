@@ -55,6 +55,7 @@ export const ModelName = {
   Session: 'Session',
   Device: 'Device',
   KycProfile: 'KycProfile',
+  WebhookEvent: 'WebhookEvent',
   Wallet: 'Wallet',
   WalletAccount: 'WalletAccount',
   Issuer: 'Issuer',
@@ -150,11 +151,25 @@ export const KycProfileScalarFieldEnum = {
   jurisdiction: 'jurisdiction',
   reviewedBy: 'reviewedBy',
   reviewedAt: 'reviewedAt',
+  sanctionsResult: 'sanctionsResult',
+  sanctionsScreenedAt: 'sanctionsScreenedAt',
+  needsReview: 'needsReview',
+  lastDecisionAt: 'lastDecisionAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type KycProfileScalarFieldEnum = (typeof KycProfileScalarFieldEnum)[keyof typeof KycProfileScalarFieldEnum]
+
+
+export const WebhookEventScalarFieldEnum = {
+  id: 'id',
+  provider: 'provider',
+  eventId: 'eventId',
+  receivedAt: 'receivedAt'
+} as const
+
+export type WebhookEventScalarFieldEnum = (typeof WebhookEventScalarFieldEnum)[keyof typeof WebhookEventScalarFieldEnum]
 
 
 export const WalletScalarFieldEnum = {

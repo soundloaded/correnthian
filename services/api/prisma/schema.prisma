@@ -305,10 +305,57 @@ model KycProfile {
   reviewedBy String?
   reviewedAt DateTime?
 
+  /// Watchlist screening outcome. Null means never screened. A `hit` latches:
+  /// only a human decision clears it — a later clean screen records but does
+  /// not unfreeze, because list matching jitters and jitter must not decide
+  /// who can buy gold. See BE-1105.
+  sanctionsResult SanctionsResult?
+  /// When the recorded `sanctionsResult` was produced. The fiat gate treats
+  /// a clean result as valid for 24h, then re-screens inline.
+  sanctionsScreenedAt DateTime?
+
+  /// Raised when a webhook verdict is anything but a clean pass, or when a
+  /// sanctions screen hits. The review queue is exactly the profiles with
+  /// this set. Cleared only by an operator decision.
+  needsReview Boolean @default(false)
+  /// Persona timestamp of the last decision event applied. Webhook events
+  /// older than this are stale replays: acknowledged, never applied.
+  lastDecisionAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([status])
+  @@index([needsReview])
+}
+
+/// Outcome of a sanctions/watchlist screen. Kept as its own enum so a
+/// widening (e.g. distinguishing PEP from sanctions) is a schema change
+/// reviewed on purpose, not a string somebody typed.
+enum SanctionsResult {
+  clean
+  hit
+}
+
+/**
+ * One processed third-party event, by provider and event id.
+ *
+ * Webhooks retry. "Approved then approved again" must not double-write, so
+ * the pair is unique and a repeat is acknowledged without applying. This is
+ * deliberately separate from `IdempotencyRecord`: that table is client keys
+ * with leases and replayable responses, and bending it to hold vendor event
+ * ids would mix two trust domains in one uniqueness constraint.
+ */
+model WebhookEvent {
+  id String @id @default(cuid())
+
+  provider String
+  eventId  String
+
+  receivedAt DateTime @default(now())
+
+  @@unique([provider, eventId])
+  @@index([provider, receivedAt])
 }
 
 // ---------------------------------------------------------------------------

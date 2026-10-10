@@ -535,10 +535,6 @@ export type EnumAccountKindFieldUpdateOperationsInput = {
   set?: $Enums.AccountKind
 }
 
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
-}
-
 export type WalletUpdateguardiansInput = {
   set?: string[]
   push?: string | string[]

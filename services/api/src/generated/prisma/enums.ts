@@ -217,6 +217,14 @@ export const IdempotencyState = {
 export type IdempotencyState = (typeof IdempotencyState)[keyof typeof IdempotencyState]
 
 
+export const SanctionsResult = {
+  clean: 'clean',
+  hit: 'hit'
+} as const
+
+export type SanctionsResult = (typeof SanctionsResult)[keyof typeof SanctionsResult]
+
+
 export const FeeOperation = {
   swap: 'swap',
   buy: 'buy',

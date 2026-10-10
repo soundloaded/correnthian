@@ -62,6 +62,18 @@ export type Device = Prisma.DeviceModel
  */
 export type KycProfile = Prisma.KycProfileModel
 /**
+ * Model WebhookEvent
+ * *
+ *  * One processed third-party event, by provider and event id.
+ *  *
+ *  * Webhooks retry. "Approved then approved again" must not double-write, so
+ *  * the pair is unique and a repeat is acknowledged without applying. This is
+ *  * deliberately separate from `IdempotencyRecord`: that table is client keys
+ *  * with leases and replayable responses, and bending it to hold vendor event
+ *  * ids would mix two trust domains in one uniqueness constraint.
+ */
+export type WebhookEvent = Prisma.WebhookEventModel
+/**
  * Model Wallet
  * 
  */

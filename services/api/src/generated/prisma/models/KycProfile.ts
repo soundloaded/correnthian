@@ -33,6 +33,10 @@ export type KycProfileMinAggregateOutputType = {
   jurisdiction: string | null
   reviewedBy: string | null
   reviewedAt: Date | null
+  sanctionsResult: $Enums.SanctionsResult | null
+  sanctionsScreenedAt: Date | null
+  needsReview: boolean | null
+  lastDecisionAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -46,6 +50,10 @@ export type KycProfileMaxAggregateOutputType = {
   jurisdiction: string | null
   reviewedBy: string | null
   reviewedAt: Date | null
+  sanctionsResult: $Enums.SanctionsResult | null
+  sanctionsScreenedAt: Date | null
+  needsReview: boolean | null
+  lastDecisionAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -59,6 +67,10 @@ export type KycProfileCountAggregateOutputType = {
   jurisdiction: number
   reviewedBy: number
   reviewedAt: number
+  sanctionsResult: number
+  sanctionsScreenedAt: number
+  needsReview: number
+  lastDecisionAt: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -74,6 +86,10 @@ export type KycProfileMinAggregateInputType = {
   jurisdiction?: true
   reviewedBy?: true
   reviewedAt?: true
+  sanctionsResult?: true
+  sanctionsScreenedAt?: true
+  needsReview?: true
+  lastDecisionAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -87,6 +103,10 @@ export type KycProfileMaxAggregateInputType = {
   jurisdiction?: true
   reviewedBy?: true
   reviewedAt?: true
+  sanctionsResult?: true
+  sanctionsScreenedAt?: true
+  needsReview?: true
+  lastDecisionAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -100,6 +120,10 @@ export type KycProfileCountAggregateInputType = {
   jurisdiction?: true
   reviewedBy?: true
   reviewedAt?: true
+  sanctionsResult?: true
+  sanctionsScreenedAt?: true
+  needsReview?: true
+  lastDecisionAt?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -186,6 +210,10 @@ export type KycProfileGroupByOutputType = {
   jurisdiction: string | null
   reviewedBy: string | null
   reviewedAt: Date | null
+  sanctionsResult: $Enums.SanctionsResult | null
+  sanctionsScreenedAt: Date | null
+  needsReview: boolean
+  lastDecisionAt: Date | null
   createdAt: Date
   updatedAt: Date
   _count: KycProfileCountAggregateOutputType | null
@@ -220,6 +248,10 @@ export type KycProfileWhereInput = {
   jurisdiction?: Prisma.StringNullableFilter<"KycProfile"> | string | null
   reviewedBy?: Prisma.StringNullableFilter<"KycProfile"> | string | null
   reviewedAt?: Prisma.DateTimeNullableFilter<"KycProfile"> | Date | string | null
+  sanctionsResult?: Prisma.EnumSanctionsResultNullableFilter<"KycProfile"> | $Enums.SanctionsResult | null
+  sanctionsScreenedAt?: Prisma.DateTimeNullableFilter<"KycProfile"> | Date | string | null
+  needsReview?: Prisma.BoolFilter<"KycProfile"> | boolean
+  lastDecisionAt?: Prisma.DateTimeNullableFilter<"KycProfile"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"KycProfile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"KycProfile"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -234,6 +266,10 @@ export type KycProfileOrderByWithRelationInput = {
   jurisdiction?: Prisma.SortOrderInput | Prisma.SortOrder
   reviewedBy?: Prisma.SortOrderInput | Prisma.SortOrder
   reviewedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  sanctionsResult?: Prisma.SortOrderInput | Prisma.SortOrder
+  sanctionsScreenedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  needsReview?: Prisma.SortOrder
+  lastDecisionAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
@@ -251,6 +287,10 @@ export type KycProfileWhereUniqueInput = Prisma.AtLeast<{
   jurisdiction?: Prisma.StringNullableFilter<"KycProfile"> | string | null
   reviewedBy?: Prisma.StringNullableFilter<"KycProfile"> | string | null
   reviewedAt?: Prisma.DateTimeNullableFilter<"KycProfile"> | Date | string | null
+  sanctionsResult?: Prisma.EnumSanctionsResultNullableFilter<"KycProfile"> | $Enums.SanctionsResult | null
+  sanctionsScreenedAt?: Prisma.DateTimeNullableFilter<"KycProfile"> | Date | string | null
+  needsReview?: Prisma.BoolFilter<"KycProfile"> | boolean
+  lastDecisionAt?: Prisma.DateTimeNullableFilter<"KycProfile"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"KycProfile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"KycProfile"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -265,6 +305,10 @@ export type KycProfileOrderByWithAggregationInput = {
   jurisdiction?: Prisma.SortOrderInput | Prisma.SortOrder
   reviewedBy?: Prisma.SortOrderInput | Prisma.SortOrder
   reviewedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  sanctionsResult?: Prisma.SortOrderInput | Prisma.SortOrder
+  sanctionsScreenedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  needsReview?: Prisma.SortOrder
+  lastDecisionAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.KycProfileCountOrderByAggregateInput
@@ -284,6 +328,10 @@ export type KycProfileScalarWhereWithAggregatesInput = {
   jurisdiction?: Prisma.StringNullableWithAggregatesFilter<"KycProfile"> | string | null
   reviewedBy?: Prisma.StringNullableWithAggregatesFilter<"KycProfile"> | string | null
   reviewedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"KycProfile"> | Date | string | null
+  sanctionsResult?: Prisma.EnumSanctionsResultNullableWithAggregatesFilter<"KycProfile"> | $Enums.SanctionsResult | null
+  sanctionsScreenedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"KycProfile"> | Date | string | null
+  needsReview?: Prisma.BoolWithAggregatesFilter<"KycProfile"> | boolean
+  lastDecisionAt?: Prisma.DateTimeNullableWithAggregatesFilter<"KycProfile"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"KycProfile"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"KycProfile"> | Date | string
 }
@@ -296,6 +344,10 @@ export type KycProfileCreateInput = {
   jurisdiction?: string | null
   reviewedBy?: string | null
   reviewedAt?: Date | string | null
+  sanctionsResult?: $Enums.SanctionsResult | null
+  sanctionsScreenedAt?: Date | string | null
+  needsReview?: boolean
+  lastDecisionAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutKycInput
@@ -310,6 +362,10 @@ export type KycProfileUncheckedCreateInput = {
   jurisdiction?: string | null
   reviewedBy?: string | null
   reviewedAt?: Date | string | null
+  sanctionsResult?: $Enums.SanctionsResult | null
+  sanctionsScreenedAt?: Date | string | null
+  needsReview?: boolean
+  lastDecisionAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -322,6 +378,10 @@ export type KycProfileUpdateInput = {
   jurisdiction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sanctionsResult?: Prisma.NullableEnumSanctionsResultFieldUpdateOperationsInput | $Enums.SanctionsResult | null
+  sanctionsScreenedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  needsReview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastDecisionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutKycNestedInput
@@ -336,6 +396,10 @@ export type KycProfileUncheckedUpdateInput = {
   jurisdiction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sanctionsResult?: Prisma.NullableEnumSanctionsResultFieldUpdateOperationsInput | $Enums.SanctionsResult | null
+  sanctionsScreenedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  needsReview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastDecisionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -349,6 +413,10 @@ export type KycProfileCreateManyInput = {
   jurisdiction?: string | null
   reviewedBy?: string | null
   reviewedAt?: Date | string | null
+  sanctionsResult?: $Enums.SanctionsResult | null
+  sanctionsScreenedAt?: Date | string | null
+  needsReview?: boolean
+  lastDecisionAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -361,6 +429,10 @@ export type KycProfileUpdateManyMutationInput = {
   jurisdiction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sanctionsResult?: Prisma.NullableEnumSanctionsResultFieldUpdateOperationsInput | $Enums.SanctionsResult | null
+  sanctionsScreenedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  needsReview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastDecisionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -374,6 +446,10 @@ export type KycProfileUncheckedUpdateManyInput = {
   jurisdiction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sanctionsResult?: Prisma.NullableEnumSanctionsResultFieldUpdateOperationsInput | $Enums.SanctionsResult | null
+  sanctionsScreenedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  needsReview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastDecisionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -392,6 +468,10 @@ export type KycProfileCountOrderByAggregateInput = {
   jurisdiction?: Prisma.SortOrder
   reviewedBy?: Prisma.SortOrder
   reviewedAt?: Prisma.SortOrder
+  sanctionsResult?: Prisma.SortOrder
+  sanctionsScreenedAt?: Prisma.SortOrder
+  needsReview?: Prisma.SortOrder
+  lastDecisionAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -405,6 +485,10 @@ export type KycProfileMaxOrderByAggregateInput = {
   jurisdiction?: Prisma.SortOrder
   reviewedBy?: Prisma.SortOrder
   reviewedAt?: Prisma.SortOrder
+  sanctionsResult?: Prisma.SortOrder
+  sanctionsScreenedAt?: Prisma.SortOrder
+  needsReview?: Prisma.SortOrder
+  lastDecisionAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -418,6 +502,10 @@ export type KycProfileMinOrderByAggregateInput = {
   jurisdiction?: Prisma.SortOrder
   reviewedBy?: Prisma.SortOrder
   reviewedAt?: Prisma.SortOrder
+  sanctionsResult?: Prisma.SortOrder
+  sanctionsScreenedAt?: Prisma.SortOrder
+  needsReview?: Prisma.SortOrder
+  lastDecisionAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -454,6 +542,14 @@ export type KycProfileUncheckedUpdateOneWithoutUserNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.KycProfileUpdateToOneWithWhereWithoutUserInput, Prisma.KycProfileUpdateWithoutUserInput>, Prisma.KycProfileUncheckedUpdateWithoutUserInput>
 }
 
+export type NullableEnumSanctionsResultFieldUpdateOperationsInput = {
+  set?: $Enums.SanctionsResult | null
+}
+
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean
+}
+
 export type KycProfileCreateWithoutUserInput = {
   id?: string
   status?: $Enums.KycStatus
@@ -462,6 +558,10 @@ export type KycProfileCreateWithoutUserInput = {
   jurisdiction?: string | null
   reviewedBy?: string | null
   reviewedAt?: Date | string | null
+  sanctionsResult?: $Enums.SanctionsResult | null
+  sanctionsScreenedAt?: Date | string | null
+  needsReview?: boolean
+  lastDecisionAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -474,6 +574,10 @@ export type KycProfileUncheckedCreateWithoutUserInput = {
   jurisdiction?: string | null
   reviewedBy?: string | null
   reviewedAt?: Date | string | null
+  sanctionsResult?: $Enums.SanctionsResult | null
+  sanctionsScreenedAt?: Date | string | null
+  needsReview?: boolean
+  lastDecisionAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -502,6 +606,10 @@ export type KycProfileUpdateWithoutUserInput = {
   jurisdiction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sanctionsResult?: Prisma.NullableEnumSanctionsResultFieldUpdateOperationsInput | $Enums.SanctionsResult | null
+  sanctionsScreenedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  needsReview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastDecisionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -514,6 +622,10 @@ export type KycProfileUncheckedUpdateWithoutUserInput = {
   jurisdiction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sanctionsResult?: Prisma.NullableEnumSanctionsResultFieldUpdateOperationsInput | $Enums.SanctionsResult | null
+  sanctionsScreenedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  needsReview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastDecisionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -529,6 +641,10 @@ export type KycProfileSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   jurisdiction?: boolean
   reviewedBy?: boolean
   reviewedAt?: boolean
+  sanctionsResult?: boolean
+  sanctionsScreenedAt?: boolean
+  needsReview?: boolean
+  lastDecisionAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -543,6 +659,10 @@ export type KycProfileSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   jurisdiction?: boolean
   reviewedBy?: boolean
   reviewedAt?: boolean
+  sanctionsResult?: boolean
+  sanctionsScreenedAt?: boolean
+  needsReview?: boolean
+  lastDecisionAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -557,6 +677,10 @@ export type KycProfileSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   jurisdiction?: boolean
   reviewedBy?: boolean
   reviewedAt?: boolean
+  sanctionsResult?: boolean
+  sanctionsScreenedAt?: boolean
+  needsReview?: boolean
+  lastDecisionAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -571,11 +695,15 @@ export type KycProfileSelectScalar = {
   jurisdiction?: boolean
   reviewedBy?: boolean
   reviewedAt?: boolean
+  sanctionsResult?: boolean
+  sanctionsScreenedAt?: boolean
+  needsReview?: boolean
+  lastDecisionAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type KycProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "status" | "providerRef" | "provider" | "jurisdiction" | "reviewedBy" | "reviewedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["kycProfile"]>
+export type KycProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "status" | "providerRef" | "provider" | "jurisdiction" | "reviewedBy" | "reviewedAt" | "sanctionsResult" | "sanctionsScreenedAt" | "needsReview" | "lastDecisionAt" | "createdAt" | "updatedAt", ExtArgs["result"]["kycProfile"]>
 export type KycProfileInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
@@ -604,6 +732,29 @@ export type $KycProfilePayload<ExtArgs extends runtime.Types.Extensions.Internal
     jurisdiction: string | null
     reviewedBy: string | null
     reviewedAt: Date | null
+    /**
+     * Watchlist screening outcome. Null means never screened. A `hit` latches:
+     * only a human decision clears it — a later clean screen records but does
+     * not unfreeze, because list matching jitters and jitter must not decide
+     * who can buy gold. See BE-1105.
+     */
+    sanctionsResult: $Enums.SanctionsResult | null
+    /**
+     * When the recorded `sanctionsResult` was produced. The fiat gate treats
+     * a clean result as valid for 24h, then re-screens inline.
+     */
+    sanctionsScreenedAt: Date | null
+    /**
+     * Raised when a webhook verdict is anything but a clean pass, or when a
+     * sanctions screen hits. The review queue is exactly the profiles with
+     * this set. Cleared only by an operator decision.
+     */
+    needsReview: boolean
+    /**
+     * Persona timestamp of the last decision event applied. Webhook events
+     * older than this are stale replays: acknowledged, never applied.
+     */
+    lastDecisionAt: Date | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["kycProfile"]>
@@ -1038,6 +1189,10 @@ export interface KycProfileFieldRefs {
   readonly jurisdiction: Prisma.FieldRef<"KycProfile", 'String'>
   readonly reviewedBy: Prisma.FieldRef<"KycProfile", 'String'>
   readonly reviewedAt: Prisma.FieldRef<"KycProfile", 'DateTime'>
+  readonly sanctionsResult: Prisma.FieldRef<"KycProfile", 'SanctionsResult'>
+  readonly sanctionsScreenedAt: Prisma.FieldRef<"KycProfile", 'DateTime'>
+  readonly needsReview: Prisma.FieldRef<"KycProfile", 'Boolean'>
+  readonly lastDecisionAt: Prisma.FieldRef<"KycProfile", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"KycProfile", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"KycProfile", 'DateTime'>
 }
