@@ -75,7 +75,7 @@ describe.skipIf(!HAS_DB && !CI)('transactions isolate accounts over HTTP', () =>
       '/wallets',
       {
         chainId: CHAIN_ID,
-        address: `0x${'a'.repeat(40)}`,
+        address: `0x${'a'.repeat(32)}${process.pid.toString(16).padStart(8, '0')}`, // pid-unique: the wallet table is shared with every suite in the run
         kind: 'smart',
         label: 'tx-iso',
       },

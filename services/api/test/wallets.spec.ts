@@ -21,8 +21,8 @@ const HAS_DB = Boolean(process.env.DATABASE_URL);
 const CI = Boolean(process.env.CI);
 
 const CHAIN_ID = '1';
-const ADDR_A = `0x${'a'.repeat(40)}`;
-const ADDR_B = `0x${'b'.repeat(40)}`;
+const ADDR_A = `0x${'a'.repeat(32)}${process.pid.toString(16).padStart(8, '0')}`;
+const ADDR_B = `0x${'b'.repeat(32)}${process.pid.toString(16).padStart(8, '0')}`;
 
 describe.skipIf(!HAS_DB && !CI)('wallets isolate accounts over HTTP', () => {
   let app: INestApplication;
