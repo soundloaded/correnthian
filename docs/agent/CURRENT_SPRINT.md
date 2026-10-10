@@ -132,6 +132,17 @@ into CI, so the next one fails the build instead of shipping.
 
 ### Completed in this sprint
 
+- **Autonomous PARTIAL sweep (2026-10-10).** BE-1703 (dep + secret gates,
+  both in CI with failing-proof specs), BE-105 (Sentry/OTel wired
+  optionally), SEC-001 (threat model document, practice open by design),
+  BE-1701 (corrected: expiry writes, rest awaits execution), BE-501
+  (snapshots stay manual until pricing — quota spent on `$0` rows
+  otherwise). Nine checks green, 698 API tests, lint below baseline.
+  Deliberately not started: anything gated (BE-1104/BE-502/BE-401/BE-1201),
+  anything deferred by design (adapters, clients, microservices), and
+  large underspecified builds (BE-1102 risk engine has no rules to
+  implement — inventing scoring would be fabrication, not engineering).
+
 - **`BE-602` — send/receive backend, `DONE`.** The server assembles, the
   device signs, the server relays — and *verifies before it relays*. Three
   commits: a module restructure so `transactions → blockchain` is acyclic

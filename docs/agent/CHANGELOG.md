@@ -13,6 +13,42 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-10
 
+### Autonomous PARTIAL sweep: five entries closed or corrected
+- **`BE-1703` — dependencies and secrets now gated.** `check-deps.mjs`
+  fails on untriaged high/critical prod advisories (keyed by GHSA id with
+  the chain and remoteness argument; the node-forge advisory wears two
+  ids and the first version of the gate failed live on the alias).
+  `check-secrets.mjs` replaces the env-only grep: PEM blocks anywhere,
+  key-material assignments in any file, token shapes outside fixtures —
+  first run flagged four doc lines (reworded, not excluded) plus stale
+  agent worktrees (skipped as session scratch). Both in CI, both with
+  specs that prove they fail (13 tests). SAST/fuzzing/bypass stay open
+  as accepted gaps with an owner.
+- **`BE-105` — the two unread variables are read.** Sentry errors-only
+  plus OTel traces/metrics, each from its own variable, unset meaning
+  off, tracing failure never refusing traffic. 5 tests, 4 mutations
+  killed. Delivery unproven (no accounts) — stated, not left.
+- **`SEC-001` — the threat model exists** (`docs/architecture/threat-model.md`):
+  assets, four adversaries, 20+ abuse cases naming code and tests, four
+  load-bearing assumptions, eight accepted gaps with an owner. Every
+  claim re-verified (append-only audit, no rpcUrls in responses, httpOnly
+  cookies, absent reset flow, argon2id floors, frozen lockfile, 32-byte
+  sessions). Practice stays open by design.
+- **`BE-1701` corrected, not built:** expiry writes `expired` (two writers
+  total, verified) — the entry said only `quoted`. The other four states
+  await an execution flow that does not exist and must not be invented.
+- **`BE-501` snapshots stay manual on purpose:** nightly captures today
+  would spend metered RPC quota writing `$0` rows with no price feed.
+  Recorded with the job shape for when BE-502 lands, instead of a gap
+  that invites building it now.
+- **Process notes:** one unexplained single non-reproducible `check-task-counts`
+  failure mid-run (0/0/0 before and after across repeated runs — watched,
+  not chased); one commit landed the doc without its entry update when a
+  python anchor missed, fixed immediately after.
+- **Verification:** all nine checks green (typecheck/build/test/lint +
+  deps/secrets/explicit-di/key-boundary/task-counts); 698 API tests;
+  lint 16 warnings, below the 17 baseline.
+
 ### Persona docs pass: assumptions corrected against the real shapes
 - Five doc pages (signature best-practices, create/retrieve inquiry,
   create/retrieve report, the event envelopes and watchlist names) replaced
