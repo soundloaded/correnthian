@@ -1468,8 +1468,11 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 - **New — `test:e2e`** now runs in CI, which is why DEF-013 could exist at all.
 - **Still missing, and this is why the status stays `PARTIAL`:**
   - **Happy-path coverage per controller.** `routes.spec.ts` proves refusal,
-    not success — a success path needs fixtures, and only `health` and
-    `redemption` have controller specs. This is the half DEF-001 fell through.
+    not success — a success path needs fixtures. Covered since: `health`,
+    `redemption`, `transactions` (10 tests, two sessions — found DEF-022),
+    `wallets` (6), `swaps` (3, found the same IDOR shape in `findById`),
+    `users` tiers (5). This is the half DEF-001 fell through, and it is
+    still falling through everywhere else.
   - **Service specs** for `assets.service`, `blockchain`/`indexing`,
     `chains.service`, `providers.service` (only `provider-health` is covered),
     `redis.service`, `notifications.service`, `swaps.service`, `job-lock`.
