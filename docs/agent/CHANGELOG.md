@@ -35,6 +35,15 @@ abbreviated. Read the full message with `git show <hash>`.
 - **Verification:** full API suite 73 files / 817 tests green; typecheck
   exit 0. Gated tasks 1.2–1.4 untouched (user-track triggers outstanding).
 
+### Guardian rotation + attestation sweep — Task 2.5 steps 1–2
+- **`PATCH /wallets/:id/guardians`:** guardians were registration-only;
+  rotation after a key loss had no path. Owner-scoped, smart-only,
+  EVM-validated, contract-pinned. Kind-guard mutant killed.
+- **`assets.attestation-freshness` job:** daily read-only report of enabled
+  assets past their own cadence. Never-attested branch mutant killed.
+- Steps 3–4 (recovery intake, deployment tracking) stay gated on
+  BE-203b and ADR-022.
+
 ### Autonomous controller-spec run: two IDORs, one shared lesson — BE-1702
 - **`test/transactions.spec.ts` (10 tests, two sessions) found DEF-022:**
   `GET /transactions/:id` answered any authenticated account with the row —

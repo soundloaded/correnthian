@@ -844,9 +844,12 @@ kept for the record; it does not describe the current code._
 - **Where:** `services/api/src/wallets/`. Addresses validated on the way in via
   `validateAddress`; guardians refused on seed accounts; `@@unique([chainId,
   address])`; registration conflict does not confirm the address is already
-  registered.
+  registered. `PATCH /wallets/:id/guardians` (2026-10-10) rotates the list
+  post-registration: owner-scoped, smart-kind only, EVM-validated,
+  lowercased, contract-pinned.
 - **Security:** public addresses only. No field can express a key.
-- **Tests:** 8 in `wallets.service.spec.ts`.
+- **Tests:** 8 in `wallets.service.spec.ts`; 10 over HTTP (guardians
+  replace/404/400/422 pinned).
 - **Status:** `DONE`
 
 ### BE-202 — Session-key model · `BACKLOG`
@@ -992,6 +995,10 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 - **This is a process gap recorded as a blocker in the root `TASK.md`, and it is
   the one place the registry can lie to a customer.**
 - **Dependencies:** counsel-reviewed criteria.
+- **Freshness sweep (2026-10-10):** `assets.attestation-freshness` runs
+  daily and reports enabled assets past their own cadence (never-attested
+  under a real cadence counts as stale). Read-only verification, not
+  validation — the workflow gap above stands.
 - **Security requirement:** evidence changes are audit events. They are.
 - **Tests:** 12 in `issuers.service.spec.ts`, including four pinning
   omitted-versus-empty-array semantics.
