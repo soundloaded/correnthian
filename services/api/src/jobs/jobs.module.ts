@@ -12,6 +12,7 @@ import { JobScheduler } from './job-scheduler.service.js';
 import { JobsController } from './jobs.controller.js';
 import { ProviderHealthProbeJob } from './provider-health-probe.job.js';
 import { SanctionsRescreenJob } from './sanctions-rescreen.job.js';
+import { AttestationFreshnessJob } from './attestation-freshness.job.js';
 import { StalePriceFlagJob } from './stale-price-flag.job.js';
 import { SwapQuoteExpiryJob } from './swap-quote-expiry.job.js';
 import { TransactionIntentExpiryJob } from './transaction-intent-expiry.job.js';
@@ -44,6 +45,7 @@ const JOB_CLASSES = [
   TransactionIntentExpiryJob,
   IndexTransactionsJob,
   SanctionsRescreenJob,
+  AttestationFreshnessJob,
 ] as const;
 
 @Module({

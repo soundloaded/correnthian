@@ -1162,6 +1162,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
       // Sorted, and complete. `blockchain.index-transtransactions` is absent from
       // this list only by mistake — the row it would add is the one that says
       // whether deposits are being filed at all.
+      'assets.attestation-freshness',
       'blockchain.index-transactions',
       'compliance.rescreen-stale',
       'idempotency.purge',
