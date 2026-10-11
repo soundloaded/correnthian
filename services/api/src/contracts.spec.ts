@@ -570,6 +570,8 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     ['GET /api/v1/transactions/mine', '/api/v1/transactions/mine'],
     ['GET /api/v1/redemptions/stats', '/api/v1/redemptions/stats'],
     ['GET /api/v1/jobs', '/api/v1/jobs'],
+    ['GET /health/live', '/health/live'],
+    ['GET /health/ready', '/health/ready'],
     ['GET /api/v1/compliance/eligibility', '/api/v1/compliance/eligibility?country=US'],
     ['GET /api/v1/onramp/availability', '/api/v1/onramp/availability?direction=buy&country=US'],
   ];
@@ -907,6 +909,61 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
 
     await prisma.session.deleteMany({ where: { userId: id } });
     await prisma.user.deleteMany({ where: { id } });
+  });
+
+  it('verification start parses when the fake is scripted for the admin', async () => {
+    const { SCREENING_PROVIDER } = await import('../src/compliance/screening/screening-provider.js');
+    const { FakeScreeningProvider } = await import('../src/compliance/screening/fake-screening.provider.js');
+    const screening = app.get<FakeScreeningProvider>(SCREENING_PROVIDER);
+    if (screening instanceof FakeScreeningProvider) {
+      const me = await request(app.getHttpServer()).get('/api/v1/auth/me')
+        .set('Authorization', `Bearer ${token}`);
+      screening.scriptCreate(me.body.id, { inquiryId: `inq-c-${process.pid}`, sessionToken: 'sess-contract' });
+    }
+    const start = await request(app.getHttpServer()).post('/api/v1/compliance/verification/start')
+      .set('Authorization', `Bearer ${token}`).send({});
+    expect(start.status, JSON.stringify(start.body)).toBe(201);
+    expect(CONTRACT_REGISTRY['POST /api/v1/compliance/verification/start'].safeParse(start.body).success).toBe(true);
+    await prisma.kycProfile.deleteMany({ where: { providerRef: `inq-c-${process.pid}` } });
+  });
+
+  it('unsigned webhook and provider-less quote pin their refusal envelopes', async () => {
+    const hook = await request(app.getHttpServer()).post('/api/v1/compliance/webhooks/persona').send({ data: {} });
+    expect(hook.status).toBe(401);
+    expect(CONTRACT_REGISTRY['ERROR POST /api/v1/compliance/webhooks/persona'].safeParse(hook.body).success).toBe(true);
+
+    const quote = await request(app.getHttpServer()).post('/api/v1/onramp/quote')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ assetId: '1:0x0:gold', amountUsd: 100, country: 'US' });
+    // The registry's ERROR key for this route pins the 409 idempotency
+    // conflict, so the 503 pins against the shared envelope directly: one
+    // key cannot name two refusals, and the code assertion is the point.
+    expect(quote.status).toBe(503);
+    expect(quote.body.error.code).toBe('provider_unavailable');
+    expect(quote.body).toHaveProperty('error.message');
+    expect(quote.body).toHaveProperty('path');
+    expect(quote.body).toHaveProperty('timestamp');
+  });
+
+  it('chain sync and the safe job run parse', async () => {
+    const address = `0x${'a'.repeat(32)}${process.pid.toString(16).padStart(8, '0')}`;
+    const reg = await request(app.getHttpServer()).post('/api/v1/wallets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ chainId: '1', address, kind: 'smart', label: 'contract-fill-sync' });
+    expect(reg.status).toBe(201);
+
+    const sync = await request(app.getHttpServer()).post(`/api/v1/blockchain/wallets/${reg.body.id}/sync`)
+      .set('Authorization', `Bearer ${token}`).send({});
+    expect(sync.status, JSON.stringify(sync.body)).toBe(503);
+    expect(sync.body.error.code).toBe('provider_unavailable');
+    expect(CONTRACT_REGISTRY['ERROR POST /api/v1/blockchain/wallets/:walletId/sync'].safeParse(sync.body).success).toBe(true);
+
+    const run = await request(app.getHttpServer()).post('/api/v1/jobs/idempotency.purge/run')
+      .set('Authorization', `Bearer ${token}`).send({});
+    expect(run.status, JSON.stringify(run.body)).toBe(201);
+    expect(CONTRACT_REGISTRY['POST /api/v1/jobs/:name/run'].safeParse(run.body).success).toBe(true);
+
+    await prisma.wallet.deleteMany({ where: { id: reg.body.id } });
   });
 
   it('every failure uses the shared error envelope', async () => {

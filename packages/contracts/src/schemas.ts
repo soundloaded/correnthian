@@ -954,6 +954,27 @@ export const notificationMineRowSchema = z.object({
   createdAt: z.string(),
 });
 
+// --- verification, sync, probes ------------------------------------------------
+
+export const startVerificationSchema = z.object({
+  status: z.string(),
+  inquiryId: z.string(),
+  sessionToken: z.string(),
+});
+
+export const healthLiveSchema = z.object({
+  status: z.literal('ok'),
+  uptimeSeconds: z.number(),
+});
+
+export const healthReadySchema = z.object({
+  status: z.enum(['ok', 'degraded']),
+  dependencies: z.object({
+    database: z.object({ status: z.enum(['up', 'down']), latencyMs: z.number() }),
+    redis: z.object({ status: z.enum(['up', 'down']), latencyMs: z.number() }),
+  }),
+});
+
 // --- misc ------------------------------------------------------------------
 
 export const errorSchema = z.object({
@@ -1217,6 +1238,17 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/redemptions/mine': myRedemptionsSchema,
   'GET /api/v1/redemptions/stats': redemptionStatsSchema,
   'GET /api/v1/jobs': jobsStatusSchema,
+  'POST /api/v1/compliance/verification/start': startVerificationSchema,
+  'ERROR POST /api/v1/compliance/webhooks/persona': errorSchema,
+  /**
+   * Without node access the sync refuses before reading anything: the
+   * provider-unavailable envelope, not the result shape. The success shape
+   * gets pinned when an RPC endpoint exists (Task 0.4); until then a
+   * guessed schema would be a contract no response ever satisfied.
+   */
+  'ERROR POST /api/v1/blockchain/wallets/:walletId/sync': errorSchema,
+  'GET /health/live': healthLiveSchema,
+  'GET /health/ready': healthReadySchema,
   'GET /api/v1/portfolio': portfolioUserSchema,
   'GET /api/v1/portfolio/allocation': allocationSchema,
   'GET /api/v1/portfolio/wallets/:walletId': portfolioSchema,
