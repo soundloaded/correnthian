@@ -556,6 +556,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     ['GET /api/v1/devices/all', '/api/v1/devices/all'],
     ['GET /api/v1/devices/stats', '/api/v1/devices/stats'],
     ['GET /api/v1/issuers', '/api/v1/issuers'],
+    ['GET /api/v1/issuers/stats', '/api/v1/issuers/stats'],
     ['GET /api/v1/chains', '/api/v1/chains'],
     ['GET /api/v1/chains/:id', '/api/v1/chains/1'],
     ['GET /api/v1/providers/health', '/api/v1/providers/health'],
@@ -709,6 +710,36 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     const back = await request(app.getHttpServer()).patch('/api/v1/providers/placeholder-metals/status')
       .set('Authorization', `Bearer ${token}`).send({ status: 'disabled' });
     expect(back.body.status).toBe('disabled');
+  });
+
+  it('issuer register → licence → verify → flag parses every write contract', async () => {
+    const slug = `c-fill-${process.pid}`;
+    const created = await request(app.getHttpServer()).post('/api/v1/issuers')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ slug, name: 'Contract Fill', jurisdiction: 'US' });
+    expect(created.status, JSON.stringify(created.body)).toBe(201);
+    expect(CONTRACT_REGISTRY['POST /api/v1/issuers'].safeParse(created.body).success).toBe(true);
+
+    const detail = await request(app.getHttpServer()).get(`/api/v1/issuers/${slug}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(CONTRACT_REGISTRY['GET /api/v1/issuers/:slug'].safeParse(detail.body).success).toBe(true);
+    expect(detail.body.assets).toEqual([]);
+
+    const lic = await request(app.getHttpServer()).patch(`/api/v1/issuers/${slug}/licences`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ licenseTypes: ['trust-charter'], licenseRefs: ['ref-1'] });
+    expect(CONTRACT_REGISTRY['PATCH /api/v1/issuers/:slug/licences'].safeParse(lic.body).success).toBe(true);
+
+    const tier = await request(app.getHttpServer()).patch(`/api/v1/issuers/${slug}/verification`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ tier: 'issuer_verified', custodian: 'Fill Vault', proofOfReserves: 'https://example.test/por.pdf' });
+    expect(CONTRACT_REGISTRY['PATCH /api/v1/issuers/:slug/verification'].safeParse(tier.body).success).toBe(true);
+
+    const flag = await request(app.getHttpServer()).patch(`/api/v1/issuers/${slug}/risk-flags`)
+      .set('Authorization', `Bearer ${token}`).send({ flag: 'contract-fill' });
+    expect(CONTRACT_REGISTRY['PATCH /api/v1/issuers/:slug/risk-flags'].safeParse(flag.body).success).toBe(true);
+
+    await prisma.issuer.deleteMany({ where: { slug } });
   });
 
   it('every failure uses the shared error envelope', async () => {

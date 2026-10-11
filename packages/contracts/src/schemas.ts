@@ -191,6 +191,19 @@ export const issuerSchema = z.object({
 
 export const issuerListSchema = z.array(issuerSchema);
 
+export const issuerWriteSchema = issuerSchema.omit({ _count: true });
+
+export const issuerDetailSchema = issuerWriteSchema.extend({
+  assets: z.array(z.object({
+    assetId: z.string(), symbol: z.string(), name: z.string(), enabled: z.boolean(),
+  })),
+});
+
+export const issuerStatsSchema = z.object({
+  total: z.number().int(),
+  byTier: z.record(z.string(), z.number()),
+});
+
 export const chainSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -963,6 +976,12 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/devices/all': deviceListSchema,
   'GET /api/v1/devices/stats': deviceStatsSchema,
   'GET /api/v1/issuers': issuerListSchema,
+  'GET /api/v1/issuers/stats': issuerStatsSchema,
+  'GET /api/v1/issuers/:slug': issuerDetailSchema,
+  'POST /api/v1/issuers': issuerWriteSchema,
+  'PATCH /api/v1/issuers/:slug/verification': issuerWriteSchema,
+  'PATCH /api/v1/issuers/:slug/licences': issuerWriteSchema,
+  'PATCH /api/v1/issuers/:slug/risk-flags': issuerWriteSchema,
   'GET /api/v1/chains': chainListSchema,
   'GET /api/v1/chains/:id': chainDetailSchema,
   'PATCH /api/v1/chains/:id/enabled': chainDetailSchema,
