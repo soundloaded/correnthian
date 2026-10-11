@@ -552,6 +552,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     ['GET /api/v1/users/stats', '/api/v1/users/stats'],
     ['GET /api/v1/wallets', '/api/v1/wallets'],
     ['GET /api/v1/wallets/portfolio', '/api/v1/wallets/portfolio'],
+    ['GET /api/v1/devices', '/api/v1/devices'],
     ['GET /api/v1/devices/all', '/api/v1/devices/all'],
     ['GET /api/v1/devices/stats', '/api/v1/devices/stats'],
     ['GET /api/v1/issuers', '/api/v1/issuers'],
@@ -638,6 +639,50 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     const del = await request(app.getHttpServer()).delete(`/api/v1/wallets/${id}`)
       .set('Authorization', `Bearer ${token}`);
     expect(del.status).toBe(200);
+  });
+
+  it('device register → list → revoke parses and leaves nothing behind', async () => {
+    const reg = await request(app.getHttpServer()).post('/api/v1/devices')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ platform: 'web', label: 'contract-fill' });
+    expect(reg.status, JSON.stringify(reg.body)).toBe(201);
+    expect(CONTRACT_REGISTRY['POST /api/v1/devices'].safeParse(reg.body).success).toBe(true);
+
+    const list = await request(app.getHttpServer()).get('/api/v1/devices')
+      .set('Authorization', `Bearer ${token}`);
+    const mine = (list.body as Array<{ id: string; label: string }>).find((d) => d.label === 'contract-fill');
+    expect(mine).toBeDefined();
+
+    const del = await request(app.getHttpServer()).delete(`/api/v1/devices/${mine!.id}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(del.status).toBe(204);
+
+    const after = await request(app.getHttpServer()).get('/api/v1/devices')
+      .set('Authorization', `Bearer ${token}`);
+    expect((after.body as Array<{ id: string }>).some((d) => d.id === mine!.id)).toBe(false);
+  });
+
+  it('auth register → login → me → logout round-trips the session contract', async () => {
+    const email = `c-fill-${process.pid}@example.test`;
+    const password = 'correct-horse-battery-staple-extra';
+    const reg = await request(app.getHttpServer()).post('/api/v1/auth/register').send({ email, password });
+    expect(reg.status, JSON.stringify(reg.body)).toBe(201);
+    expect(CONTRACT_REGISTRY['POST /api/v1/auth/register'].safeParse(reg.body).success).toBe(true);
+
+    const login = await request(app.getHttpServer()).post('/api/v1/auth/login').send({ email, password });
+    expect(login.status).toBe(200);
+    expect(CONTRACT_REGISTRY['POST /api/v1/auth/login'].safeParse(login.body).success).toBe(true);
+
+    const me = await request(app.getHttpServer()).get('/api/v1/auth/me')
+      .set('Authorization', `Bearer ${login.body.token}`);
+    expect(CONTRACT_REGISTRY['GET /api/v1/auth/me'].safeParse(me.body).success).toBe(true);
+    expect(me.body.email).toBe(email);
+
+    const out = await request(app.getHttpServer()).post('/api/v1/auth/logout')
+      .set('Authorization', `Bearer ${login.body.token}`);
+    expect(out.status).toBe(204);
+
+    await prisma.user.deleteMany({ where: { email } });
   });
 
   it('every failure uses the shared error envelope', async () => {

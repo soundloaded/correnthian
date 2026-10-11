@@ -148,6 +148,18 @@ export const deviceRowSchema = z.object({
   }),
 });
 
+export const deviceMineSchema = deviceRowSchema.omit({ revokedAt: true, user: true });
+
+export const authSessionSchema = z.object({
+  user: z.object({ id: z.string(), email: z.string(), role: z.string() }),
+  token: z.string().min(1),
+  expiresAt: z.string(),
+});
+
+export const authMeSchema = z.object({
+  id: z.string(), email: z.string(), role: z.string(),
+});
+
 export const deviceListSchema = z.object({
   items: z.array(deviceRowSchema),
   nextCursor: z.string().nullable(),
@@ -928,6 +940,11 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/users': userListSchema,
   'GET /api/v1/users/stats': userStatsSchema,
   'GET /api/v1/users/:id': userDetailSchema,
+  'GET /api/v1/devices': z.array(deviceMineSchema),
+  'POST /api/v1/devices': deviceMineSchema,
+  'POST /api/v1/auth/register': authSessionSchema,
+  'POST /api/v1/auth/login': authSessionSchema,
+  'GET /api/v1/auth/me': authMeSchema,
   'GET /api/v1/devices/all': deviceListSchema,
   'GET /api/v1/devices/stats': deviceStatsSchema,
   'GET /api/v1/issuers': issuerListSchema,
