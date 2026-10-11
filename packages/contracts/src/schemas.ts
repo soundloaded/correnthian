@@ -1232,6 +1232,7 @@ export const CONTRACT_REGISTRY = {
    */
   'POST /api/v1/transactions': transactionRawRowSchema,
   'POST /api/v1/transactions/:id/transitions': transactionRawRowSchema,
+  'POST /api/v1/transactions/:id/observations': transactionRawRowSchema,
   'ERROR POST /api/v1/transactions/:id/build': errorSchema,
   'ERROR POST /api/v1/transactions/:id/broadcast': errorSchema,
   'POST /api/v1/redemptions': redemptionRequestSchema,

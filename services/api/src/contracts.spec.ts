@@ -865,6 +865,20 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     expect(CONTRACT_REGISTRY['ERROR POST /api/v1/transactions/:id/build'].safeParse(build.body).success).toBe(true);
     expect(build.body.error.code).not.toBe('internal');
 
+    // The owner reports signing, then the operator records the chain
+    // seeing it: signed→broadcast through the same apply path, answering
+    // the same raw row. Outbound `created` permits signed/failed/cancelled/
+    // expired only — `pending` is not an edge (transaction-lifecycle.ts).
+    const signed = await request(app.getHttpServer()).post(`/api/v1/transactions/${txId}/transitions`)
+      .set('Authorization', `Bearer ${token}`).send({ to: 'signed' });
+    expect(signed.status, JSON.stringify(signed.body)).toBe(201);
+
+    const seen = await request(app.getHttpServer()).post(`/api/v1/transactions/${txId}/observations`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ txHash: `0x${'a'.repeat(64)}`, confirmations: 0, outcome: 'seen' });
+    expect(seen.status, JSON.stringify(seen.body)).toBe(201);
+    expect(CONTRACT_REGISTRY['POST /api/v1/transactions/:id/observations'].safeParse(seen.body).success).toBe(true);
+
     const moved = await request(app.getHttpServer()).post(`/api/v1/transactions/${txId}/transitions`)
       .set('Authorization', `Bearer ${token}`)
       .send({ to: 'failed', errorCode: 'contract-fill', errorMessage: 'fixture, never broadcast' });
