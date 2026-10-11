@@ -863,7 +863,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
       .set('Authorization', `Bearer ${token}`).send({});
     expect(build.status).toBe(503);
     expect(CONTRACT_REGISTRY['ERROR POST /api/v1/transactions/:id/build'].safeParse(build.body).success).toBe(true);
-    expect(build.body.error.code).not.toBe('internal');
+    expect(build.body.error.code).toBe('provider_unavailable');
 
     // The owner reports signing, then the operator records the chain
     // seeing it: signed→broadcast through the same apply path, answering
@@ -957,6 +957,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
   it('unsigned webhook and provider-less quote pin their refusal envelopes', async () => {
     const hook = await request(app.getHttpServer()).post('/api/v1/compliance/webhooks/persona').send({ data: {} });
     expect(hook.status).toBe(401);
+    expect(hook.body.error.code).toBe('unauthorized');
     expect(CONTRACT_REGISTRY['ERROR POST /api/v1/compliance/webhooks/persona'].safeParse(hook.body).success).toBe(true);
 
     const quote = await request(app.getHttpServer()).post('/api/v1/onramp/quote')
