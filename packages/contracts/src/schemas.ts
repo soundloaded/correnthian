@@ -818,6 +818,66 @@ export const availabilitySchema = z.object({
   reason: z.string().nullable(),
 });
 
+// --- portfolio ---------------------------------------------------------------
+
+export const portfolioHoldingSchema = z.object({
+  assetId: z.string(),
+  symbol: z.string(),
+  name: z.string(),
+  category: z.string(),
+  balanceRaw: z.string(),
+  priceUsd: z.string().nullable(),
+  valueUsd: z.string().nullable(),
+  unpriced: z.boolean(),
+});
+
+export const portfolioSchema = z.object({
+  totalUsd: z.string(),
+  pricedValueUsd: z.string(),
+  unpricedCount: z.number().int(),
+  holdings: z.array(portfolioHoldingSchema),
+  generatedAt: z.string(),
+  caveat: z.string(),
+});
+
+export const portfolioUserSchema = z.object({
+  wallets: z.array(portfolioSchema),
+  combinedUsd: z.string(),
+  unpricedCount: z.number().int(),
+});
+
+export const allocationSchema = z.object({
+  pricedValueUsd: z.string(),
+  unpricedCount: z.number().int(),
+  byCategory: z.array(z.object({
+    category: z.string(),
+    valueUsd: z.string(),
+    shareBps: z.number().int(),
+    assets: z.array(z.object({
+      assetId: z.string(), symbol: z.string(), valueUsd: z.string(), shareBps: z.number().int(),
+    })),
+  })),
+  generatedAt: z.string(),
+});
+
+export const snapshotSchema = z.object({
+  id: z.string(),
+  totalUsd: z.union([z.string(), z.number()]),
+  capturedAt: z.string(),
+});
+
+export const historyPointSchema = z.object({
+  bucketStart: z.string(),
+  totalUsd: z.union([z.string(), z.number()]),
+  unpricedCount: z.number().int(),
+});
+
+export const snapshotHistorySchema = z.array(z.object({
+  totalUsd: z.union([z.string(), z.number()]),
+  breakdown: z.unknown(),
+  capturedAt: z.string(),
+}));
+
 // --- misc ------------------------------------------------------------------
 
 export const errorSchema = z.object({
@@ -1068,6 +1128,12 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/redemptions/mine': myRedemptionsSchema,
   'GET /api/v1/redemptions/stats': redemptionStatsSchema,
   'GET /api/v1/jobs': jobsStatusSchema,
+  'GET /api/v1/portfolio': portfolioUserSchema,
+  'GET /api/v1/portfolio/allocation': allocationSchema,
+  'GET /api/v1/portfolio/wallets/:walletId': portfolioSchema,
+  'GET /api/v1/portfolio/wallets/:walletId/history': snapshotHistorySchema,
+  'GET /api/v1/portfolio/wallets/:walletId/history-series': z.array(historyPointSchema),
+  'POST /api/v1/portfolio/wallets/:walletId/snapshot': snapshotSchema,
   'GET /api/v1/pricing/assets/:assetId': priceLatestSchema,
   'GET /api/v1/pricing/assets/:assetId/history': priceHistorySchema,
   'POST /api/v1/pricing/record': priceRecordSchema,

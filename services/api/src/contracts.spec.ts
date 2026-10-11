@@ -767,6 +767,43 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     await prisma.assetPrice.deleteMany({ where: { source: `contract-fill-${process.pid}` } });
   });
 
+  it('portfolio aggregate → wallet → snapshot → history parses every contract', async () => {
+    const address = `0x${'d'.repeat(32)}${process.pid.toString(16).padStart(8, '0')}`;
+    const reg = await request(app.getHttpServer()).post('/api/v1/wallets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ chainId: '1', address, kind: 'smart', label: 'contract-fill-portfolio' });
+    expect(reg.status).toBe(201);
+    const walletId = reg.body.id as string;
+
+    const agg = await request(app.getHttpServer()).get('/api/v1/portfolio')
+      .set('Authorization', `Bearer ${token}`);
+    expect(CONTRACT_REGISTRY['GET /api/v1/portfolio'].safeParse(agg.body).success).toBe(true);
+
+    const alloc = await request(app.getHttpServer()).get('/api/v1/portfolio/allocation')
+      .set('Authorization', `Bearer ${token}`);
+    expect(CONTRACT_REGISTRY['GET /api/v1/portfolio/allocation'].safeParse(alloc.body).success).toBe(true);
+
+    const one = await request(app.getHttpServer()).get(`/api/v1/portfolio/wallets/${walletId}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(CONTRACT_REGISTRY['GET /api/v1/portfolio/wallets/:walletId'].safeParse(one.body).success).toBe(true);
+
+    const snap = await request(app.getHttpServer()).post(`/api/v1/portfolio/wallets/${walletId}/snapshot`)
+      .set('Authorization', `Bearer ${token}`).send({});
+    expect(snap.status, JSON.stringify(snap.body)).toBe(201);
+    expect(CONTRACT_REGISTRY['POST /api/v1/portfolio/wallets/:walletId/snapshot'].safeParse(snap.body).success).toBe(true);
+
+    const hist = await request(app.getHttpServer()).get(`/api/v1/portfolio/wallets/${walletId}/history`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(CONTRACT_REGISTRY['GET /api/v1/portfolio/wallets/:walletId/history'].safeParse(hist.body).success).toBe(true);
+
+    const series = await request(app.getHttpServer()).get(`/api/v1/portfolio/wallets/${walletId}/history-series?bucket=day`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(CONTRACT_REGISTRY['GET /api/v1/portfolio/wallets/:walletId/history-series'].safeParse(series.body).success).toBe(true);
+
+    await prisma.portfolioSnapshot.deleteMany({ where: { walletId } });
+    await prisma.wallet.deleteMany({ where: { id: walletId } });
+  });
+
   it('every failure uses the shared error envelope', async () => {
     const res = await request(app.getHttpServer()).get('/api/v1/users/not-a-real-id')
       .set('Authorization', `Bearer ${token}`);
