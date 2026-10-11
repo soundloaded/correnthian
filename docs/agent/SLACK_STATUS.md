@@ -47,6 +47,7 @@
 - ✅ Task 10: built transactions page + detail view
 - ✅ Task 11: built notifications page (reads only — no send button until a transport exists)
 - ✅ Task 12: built jurisdictions page (rules table, reason-gated flag editors, dev-rules warning)
+- ✅ Task 13: hardened jurisdiction writes (reason gates before any write; mid-flight deletes answer 404)
 - ⬜ NOT STARTED: nothing else outstanding — next admin work follows future API additions
 
 ## AREA 3 — WEB wallet — status: NOT STARTED
