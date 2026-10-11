@@ -15,7 +15,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.package.json",
-    "typecheck": "tsc -p tsconfig.package.json --noEmit",
+    "typecheck": "tsc -p tsconfig.package.json --noEmit && tsc -p tsconfig.tests.json",
     "test": "vitest run --passWithNoTests",
     "clean": "rm -rf dist .turbo *.tsbuildinfo"
   },
