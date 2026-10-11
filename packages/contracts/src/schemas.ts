@@ -773,6 +773,51 @@ export const redemptionStatsSchema = z.object({
   byState: z.record(z.string(), z.number()),
 });
 
+// --- pricing -----------------------------------------------------------------
+
+export const priceLatestSchema = z.union([
+  z.object({ found: z.literal(false), assetId: z.string(), reason: z.string() }),
+  z.object({
+    found: z.literal(true),
+    assetId: z.string(),
+    priceUsd: z.number(),
+    source: z.string(),
+    capturedAt: z.string(),
+    ageSeconds: z.number(),
+    stale: z.boolean(),
+  }),
+]);
+
+export const priceHistorySchema = z.array(z.object({
+  priceUsd: z.union([z.string(), z.number()]),
+  source: z.string(),
+  capturedAt: z.string(),
+}));
+
+export const priceRecordSchema = z.object({
+  assetId: z.string(),
+  priceUsd: z.union([z.string(), z.number()]),
+  source: z.string(),
+  capturedAt: z.string(),
+});
+
+export const eligibilitySchema = z.object({
+  allowed: z.boolean(),
+  canBuyCrypto: z.boolean(),
+  canSellCrypto: z.boolean(),
+  canUseMetals: z.boolean(),
+  canRedeem: z.boolean(),
+  kycRequired: z.boolean(),
+  blockedProviders: z.array(z.string()),
+  matchedRule: z.object({ country: z.string(), region: z.string().nullable() }).nullable(),
+  unmatched: z.boolean(),
+});
+
+export const availabilitySchema = z.object({
+  available: z.boolean(),
+  reason: z.string().nullable(),
+});
+
 // --- misc ------------------------------------------------------------------
 
 export const errorSchema = z.object({
@@ -1023,6 +1068,11 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/redemptions/mine': myRedemptionsSchema,
   'GET /api/v1/redemptions/stats': redemptionStatsSchema,
   'GET /api/v1/jobs': jobsStatusSchema,
+  'GET /api/v1/pricing/assets/:assetId': priceLatestSchema,
+  'GET /api/v1/pricing/assets/:assetId/history': priceHistorySchema,
+  'POST /api/v1/pricing/record': priceRecordSchema,
+  'GET /api/v1/compliance/eligibility': eligibilitySchema,
+  'GET /api/v1/onramp/availability': availabilitySchema,
   'POST /api/v1/jobs/:name/run': jobRunSchema,
   'GET /api/v1/meta/versions': apiVersionsDocumentSchema,
   'ERROR GET /api/v2/*': apiVersionErrorSchema,

@@ -570,6 +570,8 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     ['GET /api/v1/transactions/mine', '/api/v1/transactions/mine'],
     ['GET /api/v1/redemptions/stats', '/api/v1/redemptions/stats'],
     ['GET /api/v1/jobs', '/api/v1/jobs'],
+    ['GET /api/v1/compliance/eligibility', '/api/v1/compliance/eligibility?country=US'],
+    ['GET /api/v1/onramp/availability', '/api/v1/onramp/availability?direction=buy&country=US'],
   ];
 
   it('authenticates as the seeded admin', () => {
@@ -740,6 +742,29 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     expect(CONTRACT_REGISTRY['PATCH /api/v1/issuers/:slug/risk-flags'].safeParse(flag.body).success).toBe(true);
 
     await prisma.issuer.deleteMany({ where: { slug } });
+  });
+
+  it('pricing record → latest → history parses all three contracts', async () => {
+    const assets = await request(app.getHttpServer()).get('/api/v1/assets')
+      .set('Authorization', `Bearer ${token}`);
+    const assetId = (assets.body as Array<{ asset: { assetId: string } }>)[0]?.asset.assetId;
+    if (!assetId) throw new Error('contract-fill needs at least one registry asset');
+
+    const rec = await request(app.getHttpServer()).post('/api/v1/pricing/record')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ assetId, priceUsd: 3125.5, source: `contract-fill-${process.pid}` });
+    expect(rec.status, JSON.stringify(rec.body)).toBe(201);
+    expect(CONTRACT_REGISTRY['POST /api/v1/pricing/record'].safeParse(rec.body).success).toBe(true);
+
+    const latest = await request(app.getHttpServer()).get(`/api/v1/pricing/assets/${encodeURIComponent(assetId)}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(CONTRACT_REGISTRY['GET /api/v1/pricing/assets/:assetId'].safeParse(latest.body).success).toBe(true);
+
+    const hist = await request(app.getHttpServer()).get(`/api/v1/pricing/assets/${encodeURIComponent(assetId)}/history?limit=5`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(CONTRACT_REGISTRY['GET /api/v1/pricing/assets/:assetId/history'].safeParse(hist.body).success).toBe(true);
+
+    await prisma.assetPrice.deleteMany({ where: { source: `contract-fill-${process.pid}` } });
   });
 
   it('every failure uses the shared error envelope', async () => {
