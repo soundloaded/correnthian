@@ -1,6 +1,18 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { AuditService } from '../audit/audit.service.js';
 import { AppError } from '../common/errors.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+
+export interface JurisdictionRulePatch {
+  canBuyCrypto?: boolean;
+  canSellCrypto?: boolean;
+  canUseMetals?: boolean;
+  canRedeem?: boolean;
+  kycRequired?: boolean;
+  blockedProviders?: string[];
+  notes?: string | null;
+  active?: boolean;
+}
 
 export interface Eligibility {
   allowed: boolean;
@@ -25,7 +37,54 @@ export interface Eligibility {
  */
 @Injectable()
 export class JurisdictionService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(AuditService) private readonly audit: AuditService,
+  ) {}
+
+  /** Every rule, country then region — the console table. */
+  async listRules() {
+    return this.prisma.jurisdictionRule.findMany({
+      orderBy: [{ country: 'asc' }, { region: 'asc' }],
+    });
+  }
+
+  /**
+   * Patch a rule. Omitted fields are left alone; identity (country/region)
+   * is not patchable — changing where a rule applies is a new rule, not an
+   * edit, and conflating the two would silently move coverage.
+   */
+  async updateRule(
+    id: string,
+    patch: JurisdictionRulePatch,
+    actor: { id: string; role: string; reason: string },
+  ) {
+    const before = await this.prisma.jurisdictionRule.findUnique({ where: { id } });
+    if (!before) throw AppError.notFound('Jurisdiction rule not found');
+
+    const data: Record<string, unknown> = {};
+    for (const key of [
+      'canBuyCrypto', 'canSellCrypto', 'canUseMetals', 'canRedeem',
+      'kycRequired', 'blockedProviders', 'notes', 'active',
+    ] as const) {
+      if (patch[key] !== undefined) data[key] = patch[key];
+    }
+
+    const after = await this.prisma.jurisdictionRule.update({ where: { id }, data: data as never });
+
+    await this.audit.recordChange({
+      action: 'jurisdiction.updated',
+      actorId: actor.id,
+      actorRole: actor.role,
+      targetType: 'JurisdictionRule',
+      targetId: id,
+      destructive: true,
+      reason: actor.reason,
+      before,
+      after,
+    });
+    return after;
+  }
 
   async evaluate(country: string | null, region: string | null): Promise<Eligibility> {
     if (!country || country.length !== 2) {

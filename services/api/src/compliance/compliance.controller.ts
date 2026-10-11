@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Inject, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
+import { RequireAuditReason } from '../audit/audit-reason.guard.js';
 import { CurrentUser, type AuthenticatedUser } from '../common/decorators/current-user.decorator.js';
 import { Public } from '../common/decorators/public.decorator.js';
 import { Roles } from '../common/guards/roles.guard.js';
@@ -11,6 +12,18 @@ import { KycService } from './kyc.service.js';
 const checkSchema = z.object({
   country: z.string().length(2).toUpperCase(),
   region: z.string().max(64).optional(),
+});
+
+const updateRuleSchema = z.object({
+  canBuyCrypto: z.boolean().optional(),
+  canSellCrypto: z.boolean().optional(),
+  canUseMetals: z.boolean().optional(),
+  canRedeem: z.boolean().optional(),
+  kycRequired: z.boolean().optional(),
+  blockedProviders: z.array(z.string().max(80)).max(40).optional(),
+  notes: z.string().max(2000).nullable().optional(),
+  active: z.boolean().optional(),
+  reason: z.string().min(8).max(2000),
 });
 
 const decideSchema = z.object({
@@ -48,6 +61,28 @@ export class ComplianceController {
   })
   startVerification(@CurrentUser() user: AuthenticatedUser) {
     return this.kyc.startVerification(user.id);
+  }
+
+  @Get('rules')
+  @Roles('support')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Jurisdiction rules for the operator console' })
+  rules() {
+    return this.jurisdiction.listRules();
+  }
+
+  @Patch('rules/:id')
+  @Roles('admin')
+  @ApiBearerAuth()
+  @RequireAuditReason('change a jurisdiction rule')
+  @ApiOperation({ summary: 'Change a jurisdiction rule. Admin only. Requires a reason.' })
+  updateRule(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body(zodPipe(updateRuleSchema)) dto: z.infer<typeof updateRuleSchema>,
+  ) {
+    const { reason, ...patch } = dto;
+    return this.jurisdiction.updateRule(id, patch, { id: user.id, role: user.role, reason });
   }
 
   @Get('reviews')
