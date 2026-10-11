@@ -557,6 +557,9 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     ['GET /api/v1/devices/stats', '/api/v1/devices/stats'],
     ['GET /api/v1/issuers', '/api/v1/issuers'],
     ['GET /api/v1/chains', '/api/v1/chains'],
+    ['GET /api/v1/chains/:id', '/api/v1/chains/1'],
+    ['GET /api/v1/providers/health', '/api/v1/providers/health'],
+    ['GET /api/v1/providers/:slug', '/api/v1/providers/placeholder-metals'],
     ['GET /api/v1/providers', '/api/v1/providers'],
     ['GET /api/v1/swaps/quotes/stats', '/api/v1/swaps/quotes/stats'],
     ['GET /api/v1/swaps/quotes', '/api/v1/swaps/quotes'],
@@ -683,6 +686,29 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     expect(out.status).toBe(204);
 
     await prisma.user.deleteMany({ where: { email } });
+  });
+
+  it('chain enable flips and restores in-test', async () => {
+    const on = await request(app.getHttpServer()).patch('/api/v1/chains/11155111/enabled')
+      .set('Authorization', `Bearer ${token}`).send({ enabled: true });
+    expect(on.status).toBe(200);
+    expect(CONTRACT_REGISTRY['PATCH /api/v1/chains/:id/enabled'].safeParse(on.body).success).toBe(true);
+    expect(on.body.enabled).toBe(true);
+
+    const off = await request(app.getHttpServer()).patch('/api/v1/chains/11155111/enabled')
+      .set('Authorization', `Bearer ${token}`).send({ enabled: false });
+    expect(off.body.enabled).toBe(false);
+  });
+
+  it('provider status flips and restores in-test', async () => {
+    const deg = await request(app.getHttpServer()).patch('/api/v1/providers/placeholder-metals/status')
+      .set('Authorization', `Bearer ${token}`).send({ status: 'degraded' });
+    expect(deg.status).toBe(200);
+    expect(CONTRACT_REGISTRY['PATCH /api/v1/providers/:slug/status'].safeParse(deg.body).success).toBe(true);
+
+    const back = await request(app.getHttpServer()).patch('/api/v1/providers/placeholder-metals/status')
+      .set('Authorization', `Bearer ${token}`).send({ status: 'disabled' });
+    expect(back.body.status).toBe('disabled');
   });
 
   it('every failure uses the shared error envelope', async () => {

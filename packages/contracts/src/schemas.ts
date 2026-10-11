@@ -205,6 +205,21 @@ export const chainSchema = z.object({
 
 export const chainListSchema = z.array(chainSchema);
 
+export const chainDetailSchema = chainSchema.extend({
+  _count: z.object({ assets: z.number(), wallets: z.number(), transactions: z.number() }),
+});
+
+export const providerHealthSchema = z.object({
+  counts: z.record(z.string(), z.number()),
+  providers: z.array(z.object({
+    slug: z.string(),
+    name: z.string(),
+    category: z.string(),
+    status: z.enum(['active', 'degraded', 'disabled']),
+    lastCheckedAt: z.string().nullable(),
+  })),
+});
+
 export const providerSchema = z.object({
   id: z.string(),
   slug: z.string(),
@@ -949,6 +964,11 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/devices/stats': deviceStatsSchema,
   'GET /api/v1/issuers': issuerListSchema,
   'GET /api/v1/chains': chainListSchema,
+  'GET /api/v1/chains/:id': chainDetailSchema,
+  'PATCH /api/v1/chains/:id/enabled': chainDetailSchema,
+  'GET /api/v1/providers/health': providerHealthSchema,
+  'GET /api/v1/providers/:slug': providerSchema,
+  'PATCH /api/v1/providers/:slug/status': providerSchema,
   'GET /api/v1/providers': providerListSchema,
   'GET /api/v1/swaps/quotes/stats': quoteStatsSchema,
   'GET /api/v1/swaps/quotes': quoteListSchema,
