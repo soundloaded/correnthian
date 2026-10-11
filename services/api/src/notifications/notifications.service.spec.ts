@@ -23,8 +23,19 @@ function makePrisma() {
         if (where['sentAt'] === null && where['failedAt'] === null) {
           out = out.filter((r) => r['sentAt'] === null && r['failedAt'] === null);
         }
-        if (args.take) out = out.slice(0, args.take);
-        return out;
+        // Oldest-first only when asked: without the orderBy the store
+        // returns storage order, so the fake reverses insertion order to
+        // prove the service actually passes the clause. A fake that sorted
+        // unconditionally would bless a dropped orderBy.
+        const ordered =
+          JSON.stringify(args.orderBy) === JSON.stringify({ createdAt: 'asc' })
+            ? [...out].sort((a, b) =>
+                String(a['createdAt']).localeCompare(String(b['createdAt'])) ||
+                String(a['id']).localeCompare(String(b['id'])),
+              )
+            : [...out].reverse();
+        if (args.take) return ordered.slice(0, args.take);
+        return ordered;
       }),
       update: vi.fn(async ({ where, data }: { where: { id: string }; data: Row }) => {
         const row = rows.find((r) => r['id'] === where.id);
@@ -68,8 +79,9 @@ describe('notification queue methods', () => {
     await s.enqueue({ userId: 'u1', channel: 'email', template: 'a', payload: {} });
     await s.markSent(p.rows[0]!['id'] as string);
     await s.enqueue({ userId: 'u1', channel: 'email', template: 'b', payload: {} });
+    await s.enqueue({ userId: 'u1', channel: 'email', template: 'c', payload: {} });
     const batch = await s.claimBatch();
-    expect(batch.map((r) => r['template'])).toEqual(['b']);
+    expect(batch.map((r) => r['template'])).toEqual(['b', 'c']);
     // No claim exists: a second worker receives the same rows (DEF-009).
     expect(await s.claimBatch()).toEqual(batch);
   });

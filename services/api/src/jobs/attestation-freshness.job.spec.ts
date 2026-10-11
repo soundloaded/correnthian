@@ -26,7 +26,19 @@ type Row = Record<string, unknown>;
 function makePrisma(rows: Row[]) {
   return {
     asset: {
-      findMany: vi.fn(async () => rows.map((r) => ({ ...r }))),
+      // The paged fake below owns cursor coverage; this one owns the
+      // predicates: enabled and a real cadence. A fake returning canned
+      // rows would bless a dropped filter.
+      findMany: vi.fn(async (args: { where?: Row } = {}) => {
+        const where = args.where ?? {};
+        return rows
+          .filter((r) => where['enabled'] === undefined || r['enabled'] !== false)
+          .filter((r) => {
+            const not = (where['attestationCadence'] as Row | undefined)?.['not'];
+            return not === undefined || r['attestationCadence'] !== not;
+          })
+          .map((r) => ({ ...r }));
+      }),
     },
   };
 }
@@ -48,7 +60,16 @@ describe('attestation freshness flags by cadence', () => {
       { assetId: 'a-silent', attestationCadence: 'quarterly', lastAttestedAt: null },
       { assetId: 'a-none', attestationCadence: 'none', lastAttestedAt: null },
     ]).run(ctx());
-    expect(out.detail).toMatchObject({ checked: 2, stale: ['a-silent'] });
+    // The `none` row never leaves the store: the cadence predicate filters
+    // it, so `checked` counts only rows carrying a real promise.
+    expect(out.detail).toMatchObject({ checked: 1, stale: ['a-silent'] });
+  });
+
+  it('a disabled asset is never checked, however stale', async () => {
+    const out = await svc([
+      { assetId: 'a-off', attestationCadence: 'monthly', lastAttestedAt: null, enabled: false },
+    ]).run(ctx());
+    expect(out.detail).toMatchObject({ checked: 0, stale: [] });
   });
 
   it('quarterly and annual windows are their own, not the stats 90-day rule', async () => {

@@ -121,7 +121,7 @@ export async function apiSend<T>(
     const payload = await safeJson<{ error?: { message?: string; code?: string; detail?: unknown } }>(response);
     return {
       status: response.status >= 500 ? 'unavailable' : 'error',
-      message: payload?.error?.message ?? `Request failed (${response.status})`,
+      message: describeApiError(payload, response.status),
       code: payload?.error?.code,
     };
   }
