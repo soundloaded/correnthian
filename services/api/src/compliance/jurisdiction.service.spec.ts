@@ -13,9 +13,12 @@ describe('JurisdictionService', () => {
 
   beforeEach(() => {
     findUnique = vi.fn();
-    svc = new JurisdictionService({
-      jurisdictionRule: { findUnique },
-    } as never);
+    svc = new JurisdictionService(
+      {
+        jurisdictionRule: { findUnique },
+      } as never,
+      { recordChange: vi.fn() } as never,
+    );
   });
 
   it('denies an unknown country rather than allowing by omission', async () => {
