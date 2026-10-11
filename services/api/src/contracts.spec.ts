@@ -868,6 +868,47 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     await prisma.wallet.deleteMany({ where: { id: reg.body.id } });
   });
 
+  it('notification enqueue → mine parses, then the row is deleted', async () => {
+    const template = `c-fill-${process.pid}`;
+    const enq = await request(app.getHttpServer()).post('/api/v1/notifications')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ channel: 'email', template, payload: {} });
+    expect(enq.status, JSON.stringify(enq.body)).toBe(201);
+    expect(CONTRACT_REGISTRY['POST /api/v1/notifications'].safeParse(enq.body).success).toBe(true);
+
+    const mine = await request(app.getHttpServer()).get('/api/v1/notifications/mine')
+      .set('Authorization', `Bearer ${token}`);
+    expect(CONTRACT_REGISTRY['GET /api/v1/notifications/mine'].safeParse(mine.body).success).toBe(true);
+    expect((mine.body as Array<{ template: string }>).some((n) => n.template === template)).toBe(true);
+
+    await prisma.notification.deleteMany({ where: { template } });
+  });
+
+  it('user role and status flip and restore in-test', async () => {
+    const email = `c-fill-u-${process.pid}@example.test`;
+    const reg = await request(app.getHttpServer()).post('/api/v1/auth/register')
+      .send({ email, password: 'correct-horse-battery-staple-extra' });
+    expect(reg.status).toBe(201);
+    const id = reg.body.user.id as string;
+
+    const role = await request(app.getHttpServer()).patch(`/api/v1/users/${id}/role`)
+      .set('Authorization', `Bearer ${token}`).send({ role: 'support' });
+    expect(role.status).toBe(200);
+    expect(CONTRACT_REGISTRY['GET /api/v1/users/:id'].safeParse(role.body).success).toBe(true);
+
+    const back = await request(app.getHttpServer()).patch(`/api/v1/users/${id}/role`)
+      .set('Authorization', `Bearer ${token}`).send({ role: 'user' });
+    expect(back.body.role).toBe('user');
+
+    const actor = await request(app.getHttpServer()).get(`/api/v1/audit/actor/${id}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(actor.status).toBe(200);
+    expect(CONTRACT_REGISTRY['GET /api/v1/audit'].safeParse(actor.body).success).toBe(true);
+
+    await prisma.session.deleteMany({ where: { userId: id } });
+    await prisma.user.deleteMany({ where: { id } });
+  });
+
   it('every failure uses the shared error envelope', async () => {
     const res = await request(app.getHttpServer()).get('/api/v1/users/not-a-real-id')
       .set('Authorization', `Bearer ${token}`);

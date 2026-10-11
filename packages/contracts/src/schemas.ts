@@ -940,6 +940,20 @@ export const snapshotHistorySchema = z.array(z.object({
   capturedAt: z.string(),
 }));
 
+// --- notifications (mine/enqueue) ------------------------------------------------
+
+export const notificationMineRowSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  channel: z.string(),
+  template: z.string(),
+  payload: z.record(z.string(), z.unknown()),
+  sentAt: z.string().nullable(),
+  failedAt: z.string().nullable(),
+  error: z.string().nullable(),
+  createdAt: z.string(),
+});
+
 // --- misc ------------------------------------------------------------------
 
 export const errorSchema = z.object({
@@ -1197,6 +1211,8 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/compliance/reviews': reviewQueueSchema,
   'POST /api/v1/compliance/reviews/:userId/decide': decideResultSchema,
   'GET /api/v1/notifications': notificationOperatorListSchema,
+  'GET /api/v1/notifications/mine': z.array(notificationMineRowSchema),
+  'POST /api/v1/notifications': notificationMineRowSchema,
   'GET /api/v1/notifications/stats': notificationStatsSchema,
   'GET /api/v1/redemptions/mine': myRedemptionsSchema,
   'GET /api/v1/redemptions/stats': redemptionStatsSchema,
