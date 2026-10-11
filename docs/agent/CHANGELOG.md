@@ -11,6 +11,24 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ---
 
+## 2026-10-11
+
+### v1 contract freeze closed — BE-1705 DONE
+- **Every route with a response body pinned:** 98 routes, 99 registry keys,
+  zero uncovered (re-derived, not asserted). Twelve slices: wallets, devices
+  + auth, chains + providers, issuers, pricing + public GETs, portfolio,
+  swaps, transaction intent flow + refusals, notifications + users + audit,
+  verification + probes + safe run, the eight keys re-derivation caught,
+  observations + the flip.
+- **Two real defects on the way:** pricing-style FK thinking applied to
+  `blockNumber` — observing with a block number 500'd (BigInt cannot cross
+  JSON), fixed at the read boundary (`TransactionRow`); chain sync errors
+  quoted viem verbatim including endpoint URLs (DEF-023), redacted with the
+  transaction engine's rule.
+- **Verification:** full monorepo suite green (21/21 tasks), typecheck clean,
+  DI guard 139 files, task-counts guard green. Phase 4 still gated on
+  counsel's buy-flow answers — frozen API, undecided flows.
+
 ## 2026-10-10
 
 ### Controller-spec batches A+B: ten HTTP suites, six service specs, one real bug — BE-1702
