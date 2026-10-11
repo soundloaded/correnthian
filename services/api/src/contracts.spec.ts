@@ -914,7 +914,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
   it('verification start parses when the fake is scripted for the admin', async () => {
     const { SCREENING_PROVIDER } = await import('../src/compliance/screening/screening-provider.js');
     const { FakeScreeningProvider } = await import('../src/compliance/screening/fake-screening.provider.js');
-    const screening = app.get<FakeScreeningProvider>(SCREENING_PROVIDER);
+    const screening: unknown = app.get(SCREENING_PROVIDER);
     if (screening instanceof FakeScreeningProvider) {
       const me = await request(app.getHttpServer()).get('/api/v1/auth/me')
         .set('Authorization', `Bearer ${token}`);
