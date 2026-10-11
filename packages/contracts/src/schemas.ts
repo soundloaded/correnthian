@@ -962,6 +962,15 @@ export const startVerificationSchema = z.object({
   sessionToken: z.string(),
 });
 
+export const syncResultSchema = z.object({
+  walletId: z.string(),
+  chainId: z.string(),
+  assetsChecked: z.number().int(),
+  updated: z.array(z.object({ assetId: z.string(), balanceRaw: z.string(), formatted: z.string() })),
+  errors: z.array(z.string()),
+  syncedAt: z.string(),
+});
+
 export const healthLiveSchema = z.object({
   status: z.literal('ok'),
   uptimeSeconds: z.number(),
@@ -1251,11 +1260,12 @@ export const CONTRACT_REGISTRY = {
   'ERROR POST /api/v1/compliance/webhooks/persona': errorSchema,
   /**
    * Without node access the sync refuses before reading anything: the
-   * provider-unavailable envelope, not the result shape. The success shape
-   * gets pinned when an RPC endpoint exists (Task 0.4); until then a
-   * guessed schema would be a contract no response ever satisfied.
+   * provider-unavailable envelope, not the result shape. With endpoints
+   * configured (e.g. beside suites that stub them) it answers the result
+   * shape with per-read errors — redacted summaries, never endpoints.
    */
   'ERROR POST /api/v1/blockchain/wallets/:walletId/sync': errorSchema,
+  'POST /api/v1/blockchain/wallets/:walletId/sync': syncResultSchema,
   'GET /health/live': healthLiveSchema,
   'GET /health/ready': healthReadySchema,
   'GET /api/v1/portfolio': portfolioUserSchema,

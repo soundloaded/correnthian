@@ -609,6 +609,22 @@ kept for the record; it does not describe the current code._
   all killed — one per entry point.
 - **Status:** `DONE`
 
+### DEF-023 — chain sync errors published RPC endpoint URLs · `DONE`
+- **Found by:** the BE-1705 sync pin running beside `send.spec.ts`, which
+  writes stub RPC URLs onto the shared chain row. With endpoints present
+  but failing, sync answered 201 with `errors[]` quoting viem verbatim —
+  `URL: http://127.0.0.1:…` plus request bodies — into the response and
+  audit metadata. The no-endpoints path (503) never showed it.
+- **The defect:** both `catch` blocks in `IndexingService.syncWallet`
+  pushed raw adapter messages. `redact()` alone was insufficient: it
+  replaces the URL but leaves the `URL:`/`Request body:` dump lines.
+- **Fixed by** `summariseError` in the indexing service (redact, drop
+  viem's diagnostic-dump lines, truncate at 200), mirroring the
+  transaction engine. Unit spec asserts no URL/host/method text and a
+  still-informative failure; the contracts.spec sync pin asserts no stub
+  URL on the live 201 branch either.
+- **Status:** `DONE`
+
 ---
 
 ## 3. Foundation (plan §2–§7)
@@ -1505,33 +1521,28 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 - **Status:** `PARTIAL`
 
 
-### BE-1705 — v1 contract freeze checklist · `OPEN` (Phase 4 entry criterion, not met)
+### BE-1705 — v1 contract freeze checklist · `DONE`
 
-Checked 2026-10-10 against the controller tree (`@(Get|Post|Patch|Delete|Put)`
-across `*.controller.ts`, ~98 routes) versus `CONTRACT_REGISTRY` (38 success
-keys): **~61 routes have no contract entry**, so v1 is not frozen and client
-builds (web/mobile) stay gated. The openapi suite is green and no route carries
-a `deprecated` marker, but those are the easy two of three conditions.
-- **Covered (38):** assets list/stats, users list/stats/detail, devices
-  all/stats, issuers list, chains list, providers list, swaps quotes
-  (+stats/detail/mine), fees preview/rules/diagnostics/rule, audit list/detail,
-  transactions list/stats/mine/detail, redemptions request/transition/mine/
-  stats/operator-list, compliance reviews/decide, notifications
-  operator-list/mine, jobs status/run, meta versions, plus error envelopes.
-- **Missing (~61):** every auth route, wallets (all 7), devices register/
-  revoke, chains detail, issuers detail/stats/writes, providers detail/health,
-  pricing (all 3), portfolio (all 6), onramp availability/quote, swaps create,
-  transactions build/broadcast/observe/transition, compliance start/eligibility/
-  webhook, blockchain health/sync, redemptions mine (covered) vs rest, audit
-  actor view, health checks, notification enqueue. Full list reproducible with
-  the one-off script in the plan workspace (deleted with it); re-derive, do
-  not trust this paragraph's count.
-- **Unblock condition:** one contract entry per route with a live-response
-  parse in `contracts.spec.ts` ENDPOINTS, following the redemptions/
-  notifications pattern (route → schema → registry → parse assertion).
-  Estimated as its own slice when Phase 4 approaches; not started now
-  because no client consumes the registry yet.
-- **Status:** `OPEN`
+Closed 2026-10-11: every v1 route with a response body has a registry entry
+plus a live-response parse in `contracts.spec.ts` (84 tests in that file).
+Re-derivation reports 98 routes, 99 keys, zero uncovered.
+- **Covered by task:** wallets (Task 1), devices+auth (2), chains+providers (3),
+  issuers (4), pricing+public GETs (5), portfolio (6), swaps (7), transactions
+  intent flow + refusals (8), notifications/users/audit (9), verification +
+  probes + safe run (10), assets + alias keys + rate-limit raise (12).
+- **Refusal-pinned by ERROR envelope (live behavior without vendors):**
+  transaction build (503), chain sync (503), onramp quote (503 envelope alongside
+  the existing 409 idempotency key), unsigned webhook (401), malformed broadcast
+  (422 asserted inline). Sync success shape deferred to Task 0.4 (RPC account).
+- **Bodyless 204 exceptions (status-only, no body to pin):** `DELETE
+  /wallets/:id`, `DELETE /devices/:id`, `POST /auth/logout`.
+- **Notable corrections on the way:** registration/detail/writes need three
+  different wallet schemas; issuer detail carries no `_count`; intent writes
+  answer the raw row; health lives outside versioning (`/health/*`);
+  contracts.spec needed the same rate-limit raise as other suites; observations
+  with a block number 500'd (BigInt cannot cross JSON) — fixed by mapping to
+  a decimal string at the read boundary (`TransactionRow`).
+- **Status:** `DONE`
 
 ### BE-1703 — Security testing · `PARTIAL`
 - **Exists:** key-boundary guard (both directions verified), credential scan,
@@ -1603,7 +1614,7 @@ a `deprecated` marker, but those are the easy two of three conditions.
 
 ## 21. Summary counts
 
-**50 tracked tasks plus 21 defects.** Recomputed from the `Status` of every
+**50 tracked tasks plus 22 defects.** Recomputed from the `Status` of every
 entry — and now checked by one, because this section has been wrong three
 times running. The version before last claimed 56 tasks and "17 defects, all
 BACKLOG"; the last claimed 61 tasks and 19 defects while telling the reader it
@@ -1618,14 +1629,14 @@ lived in its body rather than its heading, and nothing reads both.
 
 | Status | Tasks | Defects |
 |---|---|---|
-| `DONE` | 17 | 21 |
+| `DONE` | 18 | 22 |
 | `PARTIAL` | 16 | 1 |
 | `BACKLOG` | 14 | 0 |
 | `BLOCKED` | 2 | 0 |
-| `OPEN` | 1 | 0 |
-| **Total** | **50** | **22** |
+| `OPEN` | 0 | 0 |
+| **Total** | **50** | **23** |
 
-**17 of 50 tasks are complete and 16 partially built; 21 of 22 defects are done and 1 (`DEF-009`) is
+**18 of 50 tasks are complete and 16 partially built; 22 of 23 defects are done and 1 (`DEF-009`) is
 half fixed — no defect is left in `BACKLOG`.** The plan's §68 dependency chain
 is most of the way built at the infrastructure layer and not started at the
 layer that moves money.

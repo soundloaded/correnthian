@@ -979,11 +979,22 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
       .send({ chainId: '1', address, kind: 'smart', label: 'contract-fill-sync' });
     expect(reg.status).toBe(201);
 
+    // Either outcome pins its contract: 503 with no endpoints configured,
+    // or 200 with per-read errors when a parallel suite has stub endpoints
+    // on the shared chain row (send.spec does). Both are honest; asserting
+    // only one would flake on the other's schedule.
     const sync = await request(app.getHttpServer()).post(`/api/v1/blockchain/wallets/${reg.body.id}/sync`)
       .set('Authorization', `Bearer ${token}`).send({});
-    expect(sync.status, JSON.stringify(sync.body)).toBe(503);
-    expect(sync.body.error.code).toBe('provider_unavailable');
-    expect(CONTRACT_REGISTRY['ERROR POST /api/v1/blockchain/wallets/:walletId/sync'].safeParse(sync.body).success).toBe(true);
+    if (sync.status === 503) {
+      expect(sync.body.error.code).toBe('provider_unavailable');
+      expect(CONTRACT_REGISTRY['ERROR POST /api/v1/blockchain/wallets/:walletId/sync'].safeParse(sync.body).success).toBe(true);
+    } else {
+      expect(sync.status, JSON.stringify(sync.body)).toBe(201);
+      expect(CONTRACT_REGISTRY['POST /api/v1/blockchain/wallets/:walletId/sync'].safeParse(sync.body).success).toBe(true);
+      for (const e of sync.body.errors as string[]) {
+        expect(e).not.toContain('http://127.0.0.1');
+      }
+    }
 
     const run = await request(app.getHttpServer()).post('/api/v1/jobs/idempotency.purge/run')
       .set('Authorization', `Bearer ${token}`).send({});

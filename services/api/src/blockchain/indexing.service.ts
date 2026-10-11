@@ -1,4 +1,5 @@
 import { formatBalance } from '@correnthian/blockchain';
+import { redact } from '@correnthian/security';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { AppError } from '../common/errors.js';
 import { AuditService } from '../audit/audit.service.js';
@@ -69,7 +70,7 @@ export class IndexingService {
         });
       }
     } catch (err) {
-      errors.push(`native balance: ${err instanceof Error ? err.message : String(err)}`);
+      errors.push(`native balance: ${this.summariseError(err)}`);
     }
 
     // Then the enabled tokens on this chain.
@@ -94,7 +95,7 @@ export class IndexingService {
         });
       } catch (err) {
         // One unreadable contract must not abandon the rest of the sweep.
-        errors.push(`${asset.assetId}: ${err instanceof Error ? err.message : String(err)}`);
+        errors.push(`${asset.assetId}: ${this.summariseError(err)}`);
       }
     }
 
@@ -114,5 +115,25 @@ export class IndexingService {
       errors,
       syncedAt: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Adapter failures are viem verbatim — endpoint URLs and request bodies
+   * included. `errors[]` is returned in the response and written to audit
+   * metadata, so it is redacted and truncated here, mirroring the
+   * transaction engine: the failure is recorded, the internals are not.
+   */
+  private summariseError(err: unknown): string {
+    const message = err instanceof Error ? err.message : String(err);
+    // Redaction replaces the endpoint but leaves viem's diagnostic dump
+    // (`URL:`, `Request body:`, call arguments) — labels around nothing the
+    // operator can act on. Drop those lines; keep the summary and the cause.
+    const kept = redact(message)
+      .split('\n')
+      .filter((line) => !/^(URL|Request body|Raw Call|Contract Call|Docs|Version):/.test(line.trim()))
+      .join('\n')
+      .replace(/\n{2,}/g, '\n')
+      .trim();
+    return kept.length > 200 ? `${kept.slice(0, 197)}...` : kept;
   }
 }
