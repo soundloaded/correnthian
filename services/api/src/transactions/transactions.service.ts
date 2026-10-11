@@ -7,6 +7,16 @@ import { AppError } from '../common/errors.js';
 import { decodeCursor, encodeCursor, KEYSET_ORDER, keysetAfter } from '../common/keyset.js';
 import { isOperatorRole } from '../common/roles.js';
 import type { Transaction } from '../generated/prisma/client.js';
+
+/**
+ * A transaction row at the HTTP boundary. Identical to the Prisma row except
+ * `blockNumber`: a BigInt cannot cross `JSON.stringify` (it throws), so the
+ * service maps it to a decimal string on every read that can reach a
+ * response. Reads that never leave the process keep the raw type.
+ */
+export type TransactionRow = Omit<Transaction, 'blockNumber'> & {
+  blockNumber: string | null;
+};
 import { PrismaService } from '../prisma/prisma.service.js';
 import type {
   CreateTransactionDto, ObservationDto, TransitionDto,
@@ -486,7 +496,7 @@ export class TransactionsService {
 
   /** The chain-neutral request this intent assembles to. */
   private intentRequest(
-    tx: Transaction,
+    tx: TransactionRow,
     from: string,
     contractAddress: string,
   ): BuildTransactionRequest {
@@ -938,7 +948,7 @@ export class TransactionsService {
     actor: TransactionActor,
     patch: Record<string, unknown> = {},
     reason?: string | null,
-  ): Promise<Transaction> {
+  ): Promise<TransactionRow> {
     const current = await this.load(id);
     const from = current.state;
 
@@ -1045,7 +1055,7 @@ export class TransactionsService {
    * above. `system` means the scheduler, and is not available to a user at
    * any role — a caller cannot reach it by claiming to be something.
    */
-  private assertEntitled(actor: TransactionActor, tx: Transaction, to: TxState): void {
+  private assertEntitled(actor: TransactionActor, tx: TransactionRow, to: TxState): void {
     const required = reporterFor(to);
 
     // `system` is not a user role: no session can carry it, so a caller cannot
@@ -1065,7 +1075,7 @@ export class TransactionsService {
     );
   }
 
-  private assertOperator(actor: TransactionActor, tx: Transaction, what: string): void {
+  private assertOperator(actor: TransactionActor, tx: TransactionRow, what: string): void {
     // The same rule `assertEntitled` applies, for the same reason: `system` is
     // the scheduler, and no session can carry that role because it is not in
     // `ROLE_RANK` at all — `rankOf` would give it -1 either way. Without this
@@ -1081,10 +1091,10 @@ export class TransactionsService {
     throw AppError.forbidden('Not permitted');
   }
 
-  private async load(id: string): Promise<Transaction> {
+  private async load(id: string): Promise<TransactionRow> {
     const row = await this.prisma.transaction.findUnique({ where: { id } });
     if (!row) throw AppError.notFound('Transaction not found');
-    return row;
+    return { ...row, blockNumber: row.blockNumber?.toString() ?? null };
   }
 
   private validateDestination(destination: string, family: 'evm' | 'bitcoin' | 'solana'): string {
@@ -1140,7 +1150,7 @@ export class TransactionsService {
    * added. `diffState` trims this to what actually differs anyway; the list
    * keeps the surface predictable.
    */
-  private auditSnapshot(tx: Transaction) {
+  private auditSnapshot(tx: TransactionRow) {
     return {
       state: tx.state,
       txHash: tx.txHash,

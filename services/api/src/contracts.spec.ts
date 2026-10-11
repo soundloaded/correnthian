@@ -873,9 +873,12 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
       .set('Authorization', `Bearer ${token}`).send({ to: 'signed' });
     expect(signed.status, JSON.stringify(signed.body)).toBe(201);
 
+    // Hash carries the pid: the fixed `0xaa…` of the first draft collided
+    // with its own leftover from the run that proved the 500.
+    const probeHash = `0x${process.pid.toString(16).padStart(8, '0')}${'a'.repeat(56)}`;
     const seen = await request(app.getHttpServer()).post(`/api/v1/transactions/${txId}/observations`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ txHash: `0x${'a'.repeat(64)}`, confirmations: 0, outcome: 'seen' });
+      .send({ txHash: probeHash, confirmations: 0, outcome: 'seen', blockNumber: '12345' });
     expect(seen.status, JSON.stringify(seen.body)).toBe(201);
     expect(CONTRACT_REGISTRY['POST /api/v1/transactions/:id/observations'].safeParse(seen.body).success).toBe(true);
 

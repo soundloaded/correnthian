@@ -626,7 +626,7 @@ export const transactionRawRowSchema = z.object({
   amountUsd: z.union([z.string(), z.number()]).nullable(),
   feeRaw: z.string().nullable(),
   feeUsd: z.union([z.string(), z.number()]).nullable(),
-  blockNumber: z.union([z.string(), z.number(), z.bigint()]).nullable(),
+  blockNumber: z.union([z.string(), z.number()]).nullable(),
   confirmations: z.number().int(),
   requiredConfirmations: z.number().int(),
   droppedAt: z.string().nullable(),
