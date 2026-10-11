@@ -403,6 +403,47 @@ export const quoteListSchema = z.object({
 });
 
 /** The single-quote projection, which deliberately differs from the list row. */
+export const walletListRowSchema = z.object({
+  id: z.string(),
+  address: z.string(),
+  chainId: z.string(),
+  kind: z.enum(['smart', 'seed']),
+  label: z.string().nullable(),
+  deployed: z.boolean(),
+  isPrimary: z.boolean(),
+  guardians: z.array(z.string()),
+  createdAt: z.string(),
+  display: z.string(),
+  _count: z.object({ accounts: z.number(), transactions: z.number() }),
+});
+
+export const walletPortfolioSchema = z.object({
+  wallets: z.array(walletListRowSchema),
+  totalWallets: z.number().int(),
+  notice: z.string(),
+});
+
+/**
+ * Registration answers the created select, not the detail shape: no
+ * `deployed`, no `createdAt`, no `display`. A contract that demanded them
+ * would fail on every 201.
+ */
+export const walletRegisterSchema = z.object({
+  id: z.string(),
+  address: z.string(),
+  chainId: z.string(),
+  kind: z.enum(['smart', 'seed']),
+  label: z.string().nullable(),
+  guardians: z.array(z.string()),
+  isPrimary: z.boolean(),
+});
+
+export const walletBalanceSchema = z.object({
+  balanceRaw: z.string(),
+  lastSyncedAt: z.string(),
+  assetId: z.string(),
+});
+
 /**
  * Wallet detail as `findById` returns it: the row plus per-asset accounts
  * and a display abbreviation. `guardians` is present because the guardians
@@ -896,6 +937,13 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/swaps/quotes': quoteListSchema,
   'GET /api/v1/swaps/quotes/:id': quoteDetailSchema,
   'PATCH /api/v1/wallets/:id/guardians': walletDetailSchema,
+  'GET /api/v1/wallets': z.array(walletListRowSchema),
+  'GET /api/v1/wallets/portfolio': walletPortfolioSchema,
+  'GET /api/v1/wallets/:id': walletDetailSchema,
+  'POST /api/v1/wallets': walletRegisterSchema,
+  'PATCH /api/v1/wallets/:id/label': walletDetailSchema,
+  'PATCH /api/v1/wallets/:id/primary': walletDetailSchema,
+  'POST /api/v1/wallets/:id/balances/:assetId': walletBalanceSchema,
   // Fees. The preview is open to any signed account; the rule table is not.
   'POST /api/v1/fees/preview': feeBreakdownSchema,
   'GET /api/v1/fees/rules': feeRuleListSchema,

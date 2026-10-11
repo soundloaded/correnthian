@@ -550,6 +550,8 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     ['GET /api/v1/assets/stats', '/api/v1/assets/stats'],
     ['GET /api/v1/users', '/api/v1/users'],
     ['GET /api/v1/users/stats', '/api/v1/users/stats'],
+    ['GET /api/v1/wallets', '/api/v1/wallets'],
+    ['GET /api/v1/wallets/portfolio', '/api/v1/wallets/portfolio'],
     ['GET /api/v1/devices/all', '/api/v1/devices/all'],
     ['GET /api/v1/devices/stats', '/api/v1/devices/stats'],
     ['GET /api/v1/issuers', '/api/v1/issuers'],
@@ -601,6 +603,41 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
 
     const parsed = CONTRACT_REGISTRY['GET /api/v1/users/:id'].safeParse(res.body);
     expect(parsed.success, JSON.stringify(parsed.error?.issues ?? [], null, 2)).toBe(true);
+  });
+
+  it('wallet register → read → label → balance parses every touched contract', async () => {
+    const address = `0x${'c'.repeat(32)}${process.pid.toString(16).padStart(8, '0')}`;
+    const reg = await request(app.getHttpServer()).post('/api/v1/wallets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ chainId: '1', address, kind: 'smart', label: 'contract-fill' });
+    expect(reg.status, JSON.stringify(reg.body)).toBe(201);
+    expect(CONTRACT_REGISTRY['POST /api/v1/wallets'].safeParse(reg.body).success).toBe(true);
+    const id = reg.body.id as string;
+
+    const one = await request(app.getHttpServer()).get(`/api/v1/wallets/${id}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(CONTRACT_REGISTRY['GET /api/v1/wallets/:id'].safeParse(one.body).success).toBe(true);
+
+    const labelled = await request(app.getHttpServer()).patch(`/api/v1/wallets/${id}/label`)
+      .set('Authorization', `Bearer ${token}`).send({ label: 'renamed' });
+    expect(CONTRACT_REGISTRY['PATCH /api/v1/wallets/:id/label'].safeParse(labelled.body).success).toBe(true);
+
+    const seedAssets = await request(app.getHttpServer()).get('/api/v1/assets')
+      .set('Authorization', `Bearer ${token}`);
+    const metal = (seedAssets.body as Array<{ asset: { assetId: string } }>)[0]?.asset.assetId;
+    expect(metal).toBeTruthy();
+    const bal = await request(app.getHttpServer()).post(`/api/v1/wallets/${id}/balances/${encodeURIComponent(metal)}`)
+      .set('Authorization', `Bearer ${token}`).send({ balanceRaw: '1000000' });
+    expect(bal.status, JSON.stringify(bal.body)).toBe(201);
+    expect(CONTRACT_REGISTRY['POST /api/v1/wallets/:id/balances/:assetId'].safeParse(bal.body).success).toBe(true);
+
+    const primary = await request(app.getHttpServer()).patch(`/api/v1/wallets/${id}/primary`)
+      .set('Authorization', `Bearer ${token}`).send({});
+    expect(CONTRACT_REGISTRY['PATCH /api/v1/wallets/:id/primary'].safeParse(primary.body).success).toBe(true);
+
+    const del = await request(app.getHttpServer()).delete(`/api/v1/wallets/${id}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(del.status).toBe(200);
   });
 
   it('every failure uses the shared error envelope', async () => {
