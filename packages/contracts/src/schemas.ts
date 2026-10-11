@@ -503,6 +503,29 @@ export const walletDetailSchema = z.object({
   display: z.string(),
 });
 
+export const swapMineRowSchema = z.object({
+  id: z.string(),
+  userId: z.string().nullable(),
+  railKind: z.string(),
+  railId: z.string(),
+  fromAsset: z.object({ assetId: z.string(), symbol: z.string(), name: z.string() }),
+  toAsset: z.object({ assetId: z.string(), symbol: z.string(), name: z.string() }),
+  provider: z.object({ slug: z.string(), name: z.string(), status: z.string() }).nullable(),
+  fromAmountRaw: z.string(),
+  toAmountRaw: z.string(),
+  notionalUsd: z.union([z.string(), z.number()]).nullable(),
+  priceImpactBps: z.number().int(),
+  slippageBps: z.number().int(),
+  minReceivedRaw: z.string(),
+  fees: z.unknown(),
+  executionQuality: z.string(),
+  sizeCapUsd: z.union([z.string(), z.number()]).nullable(),
+  state: quoteStateSchema,
+  expiresAt: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
 export const quoteDetailSchema = z.object({
   id: z.string(),
   rail: z.object({ kind: railKindSchema, id: z.string() }),
@@ -1097,6 +1120,8 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/swaps/quotes/stats': quoteStatsSchema,
   'GET /api/v1/swaps/quotes': quoteListSchema,
   'GET /api/v1/swaps/quotes/:id': quoteDetailSchema,
+  'POST /api/v1/swaps/quotes': quoteDetailSchema,
+  'GET /api/v1/swaps/quotes/mine': z.array(swapMineRowSchema),
   'PATCH /api/v1/wallets/:id/guardians': walletDetailSchema,
   'GET /api/v1/wallets': z.array(walletListRowSchema),
   'GET /api/v1/wallets/portfolio': walletPortfolioSchema,

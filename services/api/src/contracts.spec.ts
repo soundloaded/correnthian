@@ -804,6 +804,28 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     await prisma.wallet.deleteMany({ where: { id: walletId } });
   });
 
+  it('swap quote create → mine parses both contracts', async () => {
+    const assets = await request(app.getHttpServer()).get('/api/v1/assets')
+      .set('Authorization', `Bearer ${token}`);
+    const ids = (assets.body as Array<{ asset: { assetId: string } }>).map((a) => a.asset.assetId);
+    expect(ids.length).toBeGreaterThanOrEqual(2);
+    const [from, to] = [ids[0]!, ids[1]!];
+
+    const q = await request(app.getHttpServer()).post('/api/v1/swaps/quotes')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ fromAssetId: from, toAssetId: to, fromAmountRaw: '1000000' });
+    expect(q.status, JSON.stringify(q.body)).toBe(201);
+    expect(CONTRACT_REGISTRY['POST /api/v1/swaps/quotes'].safeParse(q.body).success).toBe(true);
+
+    const mine = await request(app.getHttpServer()).get('/api/v1/swaps/quotes/mine')
+      .set('Authorization', `Bearer ${token}`);
+    const found = (mine.body as Array<{ id: string }>).find((r) => r.id === q.body.id);
+    expect(found).toBeDefined();
+    expect(CONTRACT_REGISTRY['GET /api/v1/swaps/quotes/mine'].safeParse(mine.body).success).toBe(true);
+
+    await prisma.swapQuote.deleteMany({ where: { id: q.body.id } });
+  });
+
   it('every failure uses the shared error envelope', async () => {
     const res = await request(app.getHttpServer()).get('/api/v1/users/not-a-real-id')
       .set('Authorization', `Bearer ${token}`);
