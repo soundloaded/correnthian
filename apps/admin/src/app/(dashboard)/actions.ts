@@ -311,3 +311,35 @@ export async function runJobAction(
   if (state.ok) revalidatePath('/jobs');
   return state;
 }
+
+// --- jurisdiction rules ------------------------------------------------------
+
+export async function updateJurisdictionRuleAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const allowed = await guard('admin');
+  if (allowed !== true) return allowed;
+
+  const id = String(formData.get('id') ?? '');
+  const reason = String(formData.get('reason') ?? '').trim();
+  if (!id) return { error: 'Missing rule.' };
+  if (reason.length < 8) return { error: 'A reason of at least 8 characters is required.' };
+
+  const bool = (k: string) => {
+    const v = formData.get(k);
+    return v === null || v === undefined || v === '' ? undefined : String(v) === 'true';
+  };
+  const body: Record<string, unknown> = { reason };
+  for (const k of ['canBuyCrypto', 'canSellCrypto', 'canUseMetals', 'canRedeem', 'kycRequired', 'active']) {
+    const v = bool(k);
+    if (v !== undefined) body[k] = v;
+  }
+  const notes = String(formData.get('notes') ?? '');
+  if (notes !== '') body.notes = notes;
+
+  const result = await apiSend(`/compliance/rules/${encodeURIComponent(id)}`, 'PATCH', body);
+  const state = toState(result);
+  if (state.ok) revalidatePath('/jurisdictions');
+  return state;
+}

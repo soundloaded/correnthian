@@ -35,6 +35,7 @@ const NAV: Array<{ title: string; href: string; icon: LucideIcon }> = [
   { title: 'Fees', href: '/fees', icon: Coins },
   { title: 'Jobs', href: '/jobs', icon: FileClock },
   { title: 'Notifications', href: '/notifications', icon: Smartphone },
+  { title: 'Jurisdictions', href: '/jurisdictions', icon: Landmark },
   { title: 'Audit log', href: '/audit', icon: FileClock },
 ];
 
