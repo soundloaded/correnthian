@@ -625,7 +625,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     const seedAssets = await request(app.getHttpServer()).get('/api/v1/assets')
       .set('Authorization', `Bearer ${token}`);
     const metal = (seedAssets.body as Array<{ asset: { assetId: string } }>)[0]?.asset.assetId;
-    expect(metal).toBeTruthy();
+    if (!metal) throw new Error('contract-fill needs at least one registry asset');
     const bal = await request(app.getHttpServer()).post(`/api/v1/wallets/${id}/balances/${encodeURIComponent(metal)}`)
       .set('Authorization', `Bearer ${token}`).send({ balanceRaw: '1000000' });
     expect(bal.status, JSON.stringify(bal.body)).toBe(201);
