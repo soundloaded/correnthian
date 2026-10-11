@@ -1505,7 +1505,9 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
     idempotent re-entry, decide latch semantics). Full API suite: 817
     tests, 73 files, green.
   - **Service specs** for `blockchain`/`indexing` (only
-    `transaction-indexing` is covered), `notifications.service`.
+    `transaction-indexing` plus sync-error redaction are covered). Covered
+    2026-10-11: `notifications.service` (enqueue, owner reads, honest
+    no-claim batch, truncation, stats — 3 mutants killed).
     Covered 2026-10-10: `assets.service`, `chains.service`,
     `providers.service` (only `provider-health` was covered),
     `redis.service` (boolean-only health contract), `swaps.service`

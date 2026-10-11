@@ -13,6 +13,16 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-11
 
+### Follow-up slice: service specs, package specs, two deferred minors
+- **`notifications.service` spec** (5 tests, 3 mutants killed) including the
+  honest no-claim batch pin for DEF-009.
+- **Contracts package specs** (8 tests) with malformed twins per schema.
+- **Attestation sweep paginates** deterministically past the batch
+  (cursor loop, abort/deadline guards; batch 200).
+- **Admin validation errors name the field** (`path — message`, values stay
+  server-side), browser-verified on a crafted filter.
+- **Verification:** full monorepo suite green (21/21), typechecks clean.
+
 ### v1 contract freeze closed — BE-1705 DONE
 - **Every route with a response body pinned:** 98 routes, 99 registry keys,
   zero uncovered (re-derived, not asserted). Twelve slices: wallets, devices
