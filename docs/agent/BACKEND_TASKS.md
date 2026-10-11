@@ -1343,6 +1343,11 @@ Raised by the owner's 2026-10-07 product document; the *engine* already exists.
 - **Why it is tracked now rather than later:** the document's point is that
   building the app around one country's assumptions is expensive to undo. The
   data model already refuses to; the *surfaces* do not yet know it exists.
+- **Admin half DONE 2026-10-11:** `GET /compliance/rules` (support) +
+  `PATCH /compliance/rules/:id` (admin, reason-required, audited) with
+  contract entries and live parses; jurisdictions console page with
+  per-row flag editors and the standing dev-rules warning. Client gate
+  still open (no clients exist). Rule content untouched (counsel).
 - **Do not confuse with KYC.** Jurisdiction decides what a location may see;
   KYC decides who a person is. `BE-1101` is separate and still `BACKLOG`.
 - **Status:** `BACKLOG`

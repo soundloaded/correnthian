@@ -13,6 +13,13 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-11
 
+### Jurisdiction rules console — BE-1106 admin half
+- **Reads + audited writes:** list ordered country/region; patch flags only
+  (identity immutable), one audit row per write carrying the reason.
+- **Console page** with reason-gated saves and the dev-rules warning,
+  browser-verified flip → audit → restore.
+- Client gate and rule content stay open (no clients; counsel).
+
 ### Follow-up slice: service specs, package specs, two deferred minors
 - **`notifications.service` spec** (5 tests, 3 mutants killed) including the
   honest no-claim batch pin for DEF-009.

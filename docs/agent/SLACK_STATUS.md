@@ -27,6 +27,7 @@
 - ⬜ NOT STARTED: live KYC verification re-run (waiting on a completed verification flow)
 - ⬜ NOT STARTED: node acceptance run (waiting on RPC vendor account)
 - ⬜ NOT STARTED: risk-scoring rules (waiting on thresholds paragraph)
+- ⬜ NOT STARTED: client-side jurisdiction gate (waiting on clients existing)
 - ⬜ NOT STARTED: price-feed job, metals-buy endpoint, on-ramp execution, mail/push transport (each waiting on its vendor)
 
 ## AREA 2 — ADMIN console (operations) — status: IN PROGRESS, all planned pages live
@@ -45,7 +46,8 @@
 - ✅ Task 9: built reviews page (approve/reject with reasons, end-to-end verified)
 - ✅ Task 10: built transactions page + detail view
 - ✅ Task 11: built notifications page (reads only — no send button until a transport exists)
-- ⬜ NOT STARTED: nothing outstanding — next admin work follows future API additions
+- ✅ Task 12: built jurisdictions page (rules table, reason-gated flag editors, dev-rules warning)
+- ⬜ NOT STARTED: nothing else outstanding — next admin work follows future API additions
 
 ## AREA 3 — WEB wallet — status: NOT STARTED
 
