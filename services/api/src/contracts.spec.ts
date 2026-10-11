@@ -826,6 +826,48 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     await prisma.swapQuote.deleteMany({ where: { id: q.body.id } });
   });
 
+  it('transaction intent → transition parses rows; build/broadcast pin their refusals', async () => {
+    const address = `0x${'e'.repeat(32)}${process.pid.toString(16).padStart(8, '0')}`;
+    const reg = await request(app.getHttpServer()).post('/api/v1/wallets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ chainId: '1', address, kind: 'smart', label: 'contract-fill-tx' });
+    expect(reg.status).toBe(201);
+
+    const assets = await request(app.getHttpServer()).get('/api/v1/assets?chainId=1')
+      .set('Authorization', `Bearer ${token}`);
+    const assetId = (assets.body as Array<{ asset: { assetId: string } }>)[0]?.asset.assetId;
+    if (!assetId) throw new Error('contract-fill needs at least one chain-1 asset');
+
+    const created = await request(app.getHttpServer()).post('/api/v1/transactions')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ walletId: reg.body.id, assetId, amountRaw: '1000', destination: `0x${'f'.repeat(40)}` });
+    expect(created.status, JSON.stringify(created.body)).toBe(201);
+    expect(CONTRACT_REGISTRY['POST /api/v1/transactions'].safeParse(created.body).success).toBe(true);
+    const txId = created.body.id as string;
+
+    // Assemble runs before the failure transition: `assemble` on a `failed`
+    // row is a 409 state refusal, which is correct but pins the wrong thing.
+    const build = await request(app.getHttpServer()).post(`/api/v1/transactions/${txId}/build`)
+      .set('Authorization', `Bearer ${token}`).send({});
+    expect(build.status).toBe(503);
+    expect(CONTRACT_REGISTRY['ERROR POST /api/v1/transactions/:id/build'].safeParse(build.body).success).toBe(true);
+    expect(build.body.error.code).not.toBe('internal');
+
+    const moved = await request(app.getHttpServer()).post(`/api/v1/transactions/${txId}/transitions`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ to: 'failed', errorCode: 'contract-fill', errorMessage: 'fixture, never broadcast' });
+    expect(moved.status, JSON.stringify(moved.body)).toBe(201);
+    expect(CONTRACT_REGISTRY['POST /api/v1/transactions/:id/transitions'].safeParse(moved.body).success).toBe(true);
+
+    const badBroadcast = await request(app.getHttpServer()).post(`/api/v1/transactions/${txId}/broadcast`)
+      .set('Authorization', `Bearer ${token}`).send({ signed: 'not-hex' });
+    expect(badBroadcast.status).toBe(422);
+    expect(badBroadcast.body.error.code).toBe('validation_failed');
+
+    await prisma.transaction.deleteMany({ where: { id: txId } });
+    await prisma.wallet.deleteMany({ where: { id: reg.body.id } });
+  });
+
   it('every failure uses the shared error envelope', async () => {
     const res = await request(app.getHttpServer()).get('/api/v1/users/not-a-real-id')
       .set('Authorization', `Bearer ${token}`);

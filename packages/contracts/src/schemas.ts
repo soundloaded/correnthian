@@ -607,6 +607,45 @@ export const txStateSchema = z.enum([
 export const txDirectionSchema = z.enum(['in', 'out', 'internal']);
 
 /**
+ * A freshly created intent: every scalar, no relations. `blockNumber` is a
+ * BigInt at storage and crosses as a string when present; Decimals cross as
+ * string-or-number; datetimes cross as ISO strings.
+ */
+export const transactionRawRowSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  walletId: z.string(),
+  assetId: z.string(),
+  chainId: z.string(),
+  providerId: z.string().nullable(),
+  destination: z.string().nullable(),
+  txHash: z.string().nullable(),
+  direction: txDirectionSchema,
+  state: txStateSchema,
+  amountRaw: z.string(),
+  amountUsd: z.union([z.string(), z.number()]).nullable(),
+  feeRaw: z.string().nullable(),
+  feeUsd: z.union([z.string(), z.number()]).nullable(),
+  blockNumber: z.union([z.string(), z.number(), z.bigint()]).nullable(),
+  confirmations: z.number().int(),
+  requiredConfirmations: z.number().int(),
+  droppedAt: z.string().nullable(),
+  dropCount: z.number().int(),
+  lastSeenAt: z.string().nullable(),
+  metadata: z.unknown().nullable().optional(),
+  errorCode: z.string().nullable(),
+  errorMessage: z.string().nullable(),
+  expiresAt: z.string().nullable(),
+  signedAt: z.string().nullable(),
+  broadcastAt: z.string().nullable(),
+  confirmedAt: z.string().nullable(),
+  failedAt: z.string().nullable(),
+  blockTime: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+/**
  * One row of the operator's transaction table.
  *
  * Every relation is resolved server-side, for the same reason the quote table
@@ -1143,6 +1182,15 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/transactions/stats': transactionStatsSchema,
   'GET /api/v1/transactions/mine': myTransactionsSchema,
   'GET /api/v1/transactions/:id': transactionDetailSchema,
+  /**
+   * Intent creation and transitions answer the raw row — relations resolve
+   * on read, not on write. A contract demanding `user`/`wallet`/`chain`/
+   * `asset` here would fail every 201.
+   */
+  'POST /api/v1/transactions': transactionRawRowSchema,
+  'POST /api/v1/transactions/:id/transitions': transactionRawRowSchema,
+  'ERROR POST /api/v1/transactions/:id/build': errorSchema,
+  'ERROR POST /api/v1/transactions/:id/broadcast': errorSchema,
   'POST /api/v1/redemptions': redemptionRequestSchema,
   'PATCH /api/v1/redemptions/:id/transition': redemptionRequestSchema,
   'GET /api/v1/redemptions': redemptionOperatorListSchema,
