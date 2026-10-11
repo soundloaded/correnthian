@@ -83,6 +83,30 @@ describe('jurisdiction rule writes', () => {
     expect(p.changes[0]).toMatchObject({ action: 'jurisdiction.updated', targetId: 'r-us', reason: 'probe reason here' });
   });
 
+  it('a short reason fails before anything is read or written', async () => {
+    const p = makePrisma();
+    const prisma = p.jurisdictionRule;
+    const err = await svc(p)
+      .updateRule('r-us', { active: false }, { id: 'op', role: 'admin', reason: 'short' })
+      .catch((e: unknown) => e);
+    expect((err as { code?: string }).code).toBe('bad_request');
+    expect(prisma.findUnique).not.toHaveBeenCalled();
+    expect(prisma.update).not.toHaveBeenCalled();
+    expect(p.changes).toHaveLength(0);
+  });
+
+  it('a row deleted mid-flight is 404, not 500', async () => {
+    // Pre-read hits, update throws P2025: the honest mid-flight race.
+    const q = makePrisma();
+    q.jurisdictionRule.update = (async () => {
+      throw Object.assign(new Error('record not found'), { code: 'P2025' });
+    }) as never;
+    const err = await svc(q)
+      .updateRule('r-us', { active: false }, { id: 'op', role: 'admin', reason: 'probe reason here' })
+      .catch((e: unknown) => e);
+    expect((err as { status?: number }).status).toBe(404);
+  });
+
   it('unknown ids are 404, writing nothing', async () => {
     const p = makePrisma();
     const err = await svc(p)

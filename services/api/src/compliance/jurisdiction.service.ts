@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { AuditService } from '../audit/audit.service.js';
+import { assertReason, AuditService } from '../audit/audit.service.js';
 import { AppError } from '../common/errors.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
@@ -59,6 +59,12 @@ export class JurisdictionService {
     patch: JurisdictionRulePatch,
     actor: { id: string; role: string; reason: string },
   ) {
+    // Asserted before the pre-read, let alone the write: a direct-service
+    // caller with a bad reason must fail with nothing changed, not with a
+    // changed row and a thrown audit. The HTTP edge guards first; this is
+    // the second gate for any path that reaches here another way.
+    assertReason('jurisdiction.updated', actor.reason);
+
     const before = await this.prisma.jurisdictionRule.findUnique({ where: { id } });
     if (!before) throw AppError.notFound('Jurisdiction rule not found');
 
@@ -70,7 +76,17 @@ export class JurisdictionService {
       if (patch[key] !== undefined) data[key] = patch[key];
     }
 
-    const after = await this.prisma.jurisdictionRule.update({ where: { id }, data: data as never });
+    // A row deleted between the pre-read and here throws P2025; that is
+    // a missing row, not a broken server.
+    let after;
+    try {
+      after = await this.prisma.jurisdictionRule.update({ where: { id }, data: data as never });
+    } catch (err) {
+      if (typeof err === 'object' && err !== null && (err as { code?: string }).code === 'P2025') {
+        throw AppError.notFound('Jurisdiction rule not found');
+      }
+      throw err;
+    }
 
     await this.audit.recordChange({
       action: 'jurisdiction.updated',
