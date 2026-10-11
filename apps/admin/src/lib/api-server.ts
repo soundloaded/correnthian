@@ -1,4 +1,5 @@
 import 'server-only';
+import { describeApiError } from './api-error';
 import { getToken } from './session';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:3000';
@@ -58,7 +59,7 @@ export async function apiFetch<T>(
     const body = await safeJson<{ error?: { message?: string; code?: string } }>(response);
     return {
       status: response.status >= 500 ? 'unavailable' : 'error',
-      message: body?.error?.message ?? `Request failed (${response.status})`,
+      message: describeApiError(body, response.status),
       code: body?.error?.code,
     };
   }
