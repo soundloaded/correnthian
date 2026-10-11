@@ -863,6 +863,20 @@ export const priceRecordSchema = z.object({
   capturedAt: z.string(),
 });
 
+export const jurisdictionRuleSchema = z.object({
+  id: z.string(),
+  country: z.string(),
+  region: z.string(),
+  canBuyCrypto: z.boolean(),
+  canSellCrypto: z.boolean(),
+  canUseMetals: z.boolean(),
+  canRedeem: z.boolean(),
+  kycRequired: z.boolean(),
+  blockedProviders: z.array(z.string()),
+  notes: z.string().nullable(),
+  active: z.boolean(),
+});
+
 export const eligibilitySchema = z.object({
   allowed: z.boolean(),
   canBuyCrypto: z.boolean(),
@@ -1278,6 +1292,8 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/pricing/assets/:assetId/history': priceHistorySchema,
   'POST /api/v1/pricing/record': priceRecordSchema,
   'GET /api/v1/compliance/eligibility': eligibilitySchema,
+  'GET /api/v1/compliance/rules': z.array(jurisdictionRuleSchema),
+  'PATCH /api/v1/compliance/rules/:id': jurisdictionRuleSchema,
   'GET /api/v1/onramp/availability': availabilitySchema,
   'POST /api/v1/jobs/:name/run': jobRunSchema,
   'GET /api/v1/meta/versions': apiVersionsDocumentSchema,

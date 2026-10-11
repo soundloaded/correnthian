@@ -583,6 +583,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     ['GET /health/live', '/health/live'],
     ['GET /health/ready', '/health/ready'],
     ['GET /api/v1/compliance/eligibility', '/api/v1/compliance/eligibility?country=US'],
+    ['GET /api/v1/compliance/rules', '/api/v1/compliance/rules'],
     ['GET /api/v1/onramp/availability', '/api/v1/onramp/availability?direction=buy&country=US'],
   ];
 
@@ -1039,6 +1040,62 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
 
     await prisma.asset.deleteMany({ where: { assetId } });
     await prisma.issuer.deleteMany({ where: { slug } });
+  });
+
+  it('jurisdiction rule flip parses, audits, and restores in-test', async () => {
+    const before = await request(app.getHttpServer()).patch('/api/v1/compliance/rules/no-such-rule')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ canRedeem: true, reason: 'contract-fill probe reason' });
+    expect(before.status).toBe(404);
+
+    const list = await request(app.getHttpServer()).get('/api/v1/compliance/rules')
+      .set('Authorization', `Bearer ${token}`);
+    const us = (list.body as Array<{ id: string; country: string; region: string; canRedeem: boolean }>).find(
+      (r) => r.country === 'US' && r.region === '',
+    );
+    expect(us).toBeDefined();
+
+    const flip = await request(app.getHttpServer()).patch(`/api/v1/compliance/rules/${us!.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ canRedeem: !us!.canRedeem, reason: 'contract-fill probe reason' });
+    expect(flip.status, JSON.stringify(flip.body)).toBe(200);
+    expect(CONTRACT_REGISTRY['PATCH /api/v1/compliance/rules/:id'].safeParse(flip.body).success).toBe(true);
+
+    const audit = await prisma.auditLog.findFirst({
+      where: { action: 'jurisdiction.updated', targetId: us!.id },
+      orderBy: { createdAt: 'desc' },
+    });
+    expect(audit?.reason).toBe('contract-fill probe reason');
+
+    const back = await request(app.getHttpServer()).patch(`/api/v1/compliance/rules/${us!.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ canRedeem: us!.canRedeem, reason: 'contract-fill restore reason' });
+    expect(back.body.canRedeem).toBe(us!.canRedeem);
+  });
+
+  it('jurisdiction writes refuse customers and reasonless calls', async () => {
+    const list = await request(app.getHttpServer()).get('/api/v1/compliance/rules')
+      .set('Authorization', `Bearer ${token}`);
+    const id = (list.body as Array<{ id: string }>)[0]?.id;
+    expect(id).toBeTruthy();
+    // A customer session: register one inline rather than borrowing.
+    const email = `c-fill-j-${process.pid}@example.test`;
+    const reg = await request(app.getHttpServer()).post('/api/v1/auth/register')
+      .send({ email, password: 'correct-horse-battery-staple-extra' });
+    const customer = reg.body.token as string;
+    expect(
+      (await request(app.getHttpServer()).patch(`/api/v1/compliance/rules/${id}`)
+        .set('Authorization', `Bearer ${customer}`)
+        .send({ canRedeem: true, reason: 'contract-fill probe reason' })).status,
+    ).toBe(403);
+    expect(
+      (await request(app.getHttpServer()).patch(`/api/v1/compliance/rules/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ canRedeem: true })).status,
+    ).toBe(400);
+    const user = await prisma.user.findUniqueOrThrow({ where: { email } });
+    await prisma.session.deleteMany({ where: { userId: user.id } });
+    await prisma.user.deleteMany({ where: { id: user.id } });
   });
 
   it('every failure uses the shared error envelope', async () => {
