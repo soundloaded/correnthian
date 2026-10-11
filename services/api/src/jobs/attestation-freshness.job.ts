@@ -2,8 +2,8 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { JobContext, JobOutcome, ScheduledJob } from './job.js';
 
-/** Rows per run. A read-only scan, so the batch is just a response size. */
-const FRESHNESS_BATCH = 500;
+/** Rows per page. Small enough to stay quick, large enough that the loop below rarely runs twice. */
+const FRESHNESS_BATCH = 200;
 
 /**
  * Days of grace per attestation cadence. `none` is absent on purpose: an
@@ -38,25 +38,42 @@ export class AttestationFreshnessJob implements ScheduledJob {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async run(ctx: JobContext): Promise<JobOutcome> {
-    const rows = await this.prisma.asset.findMany({
-      where: { enabled: true, attestationCadence: { not: 'none' } },
-      take: FRESHNESS_BATCH,
-      select: { assetId: true, attestationCadence: true, lastAttestedAt: true },
-    });
-
     const stale: string[] = [];
-    for (const row of rows) {
+    let checked = 0;
+    let cursor: string | undefined;
+
+    // Cursor pages in assetId order: deterministic, complete, and bounded
+    // per call. Stops on a short page, an abort, or a nearly spent deadline.
+    for (;;) {
       if (ctx.signal.aborted) break;
-      const windowDays = CADENCE_DAYS[row.attestationCadence];
-      if (windowDays === undefined) continue;
-      // Never attested under a real cadence is stale by definition: silence
-      // about reserves is not evidence of reserves.
-      if (!row.lastAttestedAt) {
-        stale.push(row.assetId);
-        continue;
+      if (ctx.deadline.getTime() - ctx.now.getTime() < 5_000) break;
+      const rows = await this.prisma.asset.findMany({
+        where: {
+          enabled: true,
+          attestationCadence: { not: 'none' },
+          ...(cursor === undefined ? {} : { assetId: { gt: cursor } }),
+        },
+        orderBy: [{ assetId: 'asc' }],
+        take: FRESHNESS_BATCH,
+        select: { assetId: true, attestationCadence: true, lastAttestedAt: true },
+      });
+      if (rows.length === 0) break;
+      checked += rows.length;
+      for (const row of rows) {
+        if (ctx.signal.aborted) break;
+        const windowDays = CADENCE_DAYS[row.attestationCadence];
+        if (windowDays === undefined) continue;
+        // Never attested under a real cadence is stale by definition: silence
+        // about reserves is not evidence of reserves.
+        if (!row.lastAttestedAt) {
+          stale.push(row.assetId);
+          continue;
+        }
+        const dueAt = row.lastAttestedAt.getTime() + windowDays * 86_400_000;
+        if (dueAt < ctx.now.getTime()) stale.push(row.assetId);
       }
-      const dueAt = row.lastAttestedAt.getTime() + windowDays * 86_400_000;
-      if (dueAt < ctx.now.getTime()) stale.push(row.assetId);
+      if (rows.length < FRESHNESS_BATCH) break;
+      cursor = rows[rows.length - 1]!.assetId;
     }
 
     if (stale.length > 0) {
@@ -65,7 +82,7 @@ export class AttestationFreshnessJob implements ScheduledJob {
 
     return {
       affected: stale.length,
-      detail: { checked: rows.length, stale: stale.slice(0, 50) },
+      detail: { checked, stale: stale.slice(0, 50) },
     };
   }
 }
