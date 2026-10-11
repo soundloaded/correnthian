@@ -101,6 +101,13 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
   const fixtureRedemptionIds: string[] = [];
 
   beforeAll(async () => {
+    // Raised, like every other HTTP suite: the contract additions tripled
+    // this file's request count past the default window, and a 429 on the
+    // jobs tests would assert the limiter, not the wire format. The limiter
+    // stays real (and separately specified); the once-per-run reset below
+    // stays too.
+    process.env['RATE_LIMIT_MAX_REQUESTS'] = '100000';
+    process.env['RATE_LIMIT_AUTH_MAX_REQUESTS'] = '100000';
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
     // The version prefix is configured here, not only in main.ts. This suite
@@ -508,6 +515,8 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
       await prisma.chain.deleteMany({ where: { id: fixtureRedemptionChainId } });
     }
     await app?.close();
+    delete process.env['RATE_LIMIT_MAX_REQUESTS'];
+    delete process.env['RATE_LIMIT_AUTH_MAX_REQUESTS'];
   });
 
   const get = (path: string) =>
@@ -558,6 +567,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     ['GET /api/v1/issuers', '/api/v1/issuers'],
     ['GET /api/v1/issuers/stats', '/api/v1/issuers/stats'],
     ['GET /api/v1/chains', '/api/v1/chains'],
+    ['GET /api/v1/blockchain/health', '/api/v1/blockchain/health'],
     ['GET /api/v1/chains/:id', '/api/v1/chains/1'],
     ['GET /api/v1/providers/health', '/api/v1/providers/health'],
     ['GET /api/v1/providers/:slug', '/api/v1/providers/placeholder-metals'],
@@ -896,7 +906,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     const role = await request(app.getHttpServer()).patch(`/api/v1/users/${id}/role`)
       .set('Authorization', `Bearer ${token}`).send({ role: 'support' });
     expect(role.status).toBe(200);
-    expect(CONTRACT_REGISTRY['GET /api/v1/users/:id'].safeParse(role.body).success).toBe(true);
+    expect(CONTRACT_REGISTRY['PATCH /api/v1/users/:id/role'].safeParse(role.body).success).toBe(true);
 
     const back = await request(app.getHttpServer()).patch(`/api/v1/users/${id}/role`)
       .set('Authorization', `Bearer ${token}`).send({ role: 'user' });
@@ -905,7 +915,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     const actor = await request(app.getHttpServer()).get(`/api/v1/audit/actor/${id}`)
       .set('Authorization', `Bearer ${token}`);
     expect(actor.status).toBe(200);
-    expect(CONTRACT_REGISTRY['GET /api/v1/audit'].safeParse(actor.body).success).toBe(true);
+    expect(CONTRACT_REGISTRY['GET /api/v1/audit/actor/:actorId'].safeParse(actor.body).success).toBe(true);
 
     await prisma.session.deleteMany({ where: { userId: id } });
     await prisma.user.deleteMany({ where: { id } });
@@ -964,6 +974,42 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     expect(CONTRACT_REGISTRY['POST /api/v1/jobs/:name/run'].safeParse(run.body).success).toBe(true);
 
     await prisma.wallet.deleteMany({ where: { id: reg.body.id } });
+  });
+
+  it('asset register → read → attest → disable parses every touched contract', async () => {
+    const slug = `c-fill-a-${process.pid}`;
+    const issuer = await request(app.getHttpServer()).post('/api/v1/issuers')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ slug, name: 'Contract Fill Assets', jurisdiction: 'US' });
+    expect(issuer.status).toBe(201);
+
+    const created = await request(app.getHttpServer()).post('/api/v1/assets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        chainId: '1', contractAddress: `0x${'b'.repeat(32)}${process.pid.toString(16).padStart(8, '0')}`,
+        symbol: `CF${String(process.pid % 100000)}`, name: 'Contract Fill Gold', decimals: 18,
+        category: 'metal', issuerId: slug, custodyModel: 'allocated',
+      });
+    expect(created.status, JSON.stringify(created.body)).toBe(201);
+    expect(CONTRACT_REGISTRY['POST /api/v1/assets'].safeParse(created.body).success).toBe(true);
+    const assetId = created.body.asset.assetId as string;
+
+    const one = await request(app.getHttpServer()).get(`/api/v1/assets/${encodeURIComponent(assetId)}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(CONTRACT_REGISTRY['GET /api/v1/assets/:assetId'].safeParse(one.body).success).toBe(true);
+
+    const att = await request(app.getHttpServer()).patch(`/api/v1/assets/${encodeURIComponent(assetId)}/attestation`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ attestedAt: '2026-10-01T00:00:00.000Z', proofUrl: 'https://example.test/attestation.pdf' });
+    expect(CONTRACT_REGISTRY['PATCH /api/v1/assets/:assetId/attestation'].safeParse(att.body).success).toBe(true);
+
+    const dis = await request(app.getHttpServer()).patch(`/api/v1/assets/${encodeURIComponent(assetId)}/enabled`)
+      .set('Authorization', `Bearer ${token}`).send({ enabled: false });
+    expect(CONTRACT_REGISTRY['PATCH /api/v1/assets/:assetId/enabled'].safeParse(dis.body).success).toBe(true);
+    expect(dis.body.asset.enabled).toBe(false);
+
+    await prisma.asset.deleteMany({ where: { assetId } });
+    await prisma.issuer.deleteMany({ where: { slug } });
   });
 
   it('every failure uses the shared error envelope', async () => {

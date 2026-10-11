@@ -1166,6 +1166,14 @@ export const jobsStatusSchema = z.object({
  */
 export const CONTRACT_REGISTRY = {
   'GET /api/v1/assets': assetListSchema,
+  'GET /api/v1/assets/:assetId': assetSummarySchema,
+  'POST /api/v1/assets': assetSummarySchema,
+  'PATCH /api/v1/assets/:assetId/enabled': assetSummarySchema,
+  'PATCH /api/v1/assets/:assetId/attestation': assetSummarySchema,
+  'GET /api/v1/audit/actor/:actorId': auditListSchema,
+  'GET /api/v1/blockchain/health': z.record(z.string(), z.object({ healthy: z.boolean(), enabled: z.boolean() })),
+  'PATCH /api/v1/users/:id/role': userDetailSchema,
+  'PATCH /api/v1/users/:id/status': userDetailSchema,
   'GET /api/v1/assets/stats': assetStatsSchema,
   'GET /api/v1/users': userListSchema,
   'GET /api/v1/users/stats': userStatsSchema,
