@@ -1445,11 +1445,13 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 - **Dependencies:** `BE-802`.
 - **Status:** `BLOCKED` on `BE-802`.
 
-### BE-1603 — Incident management · `BACKLOG`
-- Nothing. `docs/runbooks/` is listed in the docs index and does not exist. The
-  key-boundary document records that a boundary breach has no runbook, which is
-  the most serious gap in that list.
-- **Status:** `BACKLOG`
+### BE-1603 — Incident management · `DONE`
+- `docs/runbooks/` now holds six playbooks (key breach, RPC outage, DB
+  outage, screening-vendor incident, stuck transaction, fee conflict) plus
+  an index. Each names what the system does on its own first, then operator
+  steps with the exact endpoints, and escalation lines — verified against
+  code (scheduler health states, lifecycle edges, fee codes, guard names).
+- **Status:** `DONE`
 
 ---
 
@@ -1642,14 +1644,14 @@ lived in its body rather than its heading, and nothing reads both.
 
 | Status | Tasks | Defects |
 |---|---|---|
-| `DONE` | 18 | 22 |
+| `DONE` | 19 | 22 |
 | `PARTIAL` | 16 | 1 |
-| `BACKLOG` | 14 | 0 |
+| `BACKLOG` | 13 | 0 |
 | `BLOCKED` | 2 | 0 |
 | `OPEN` | 0 | 0 |
 | **Total** | **50** | **23** |
 
-**18 of 50 tasks are complete and 16 partially built; 22 of 23 defects are done and 1 (`DEF-009`) is
+**19 of 50 tasks are complete and 16 partially built; 22 of 23 defects are done and 1 (`DEF-009`) is
 half fixed — no defect is left in `BACKLOG`.** The plan's §68 dependency chain
 is most of the way built at the infrastructure layer and not started at the
 layer that moves money.

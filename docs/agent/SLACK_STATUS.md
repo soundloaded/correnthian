@@ -84,4 +84,6 @@
 
 **CI/CD:** GitHub Actions with 9 automated guards (tests, types, contracts, injection style, dependencies, secrets, key boundary, DB-write guard, tracker counts). Hosting platform undecided.
 
+**Docs:** incident runbooks live (key breach, RPC/DB outages, vendor incident, stuck transactions, fee conflicts) — BE-1603 done.
+
 **Custody (no vendor by design — nobody holds user funds):** guardian rotation built; attestation freshness sweep built; recovery options and smart-account deployment waiting on recorded decisions.

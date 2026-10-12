@@ -13,6 +13,12 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-12 (later)
 
+### Incident runbooks written — BE-1603 DONE
+- Six playbooks + index under `docs/runbooks/`, closing the tracker's most
+  serious docs gap (the key-breach runbook). Claims verified against code.
+
+## 2026-10-12 (later)
+
 ### Alchemy CLI checked in (reads only, wallet stays disconnected)
 - Doctor + auth healthy; Sepolia block + mainnet gas verified through the
   CLI; app networks listed (no Base — enable in dashboard).

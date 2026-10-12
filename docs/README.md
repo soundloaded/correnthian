@@ -40,7 +40,7 @@ docs/
 ├── engineering/      how to write code here — standards, API, admin
 ├── compliance/       regulatory posture and the jurisdiction engine
 ├── operations/       running, monitoring and supporting the platform
-├── runbooks/         step-by-step procedures  *(directory not yet created)*
+├── runbooks/         step-by-step procedures
 ├── specs/            design documents and decision records
 └── archive/          superseded material, kept for provenance
 ```
