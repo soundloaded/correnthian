@@ -7,9 +7,10 @@ into exactly one bucket — **Established** (in the repository, cited),
 (requires validation), or **Question** (only counsel can answer). Nothing is
 blended.
 
-> **Owner-stated, not repo-verified:** the intended entity is a Delaware
-> C-Corporation. No formation document exists in the repository; entity
-> structure itself is one of the questions below (§6.1).
+> **Entity update 2026-10-12:** the owner confirms Correnthian C-Corp is
+> registered in Delaware. Formation documents live outside the repository;
+> entity *structure review* (classes, governance, licensing posture) remains
+> a counsel question (§6.1).
 
 ---
 
@@ -90,8 +91,8 @@ blended.
 ## 6. Questions requiring counsel
 
 ### 6.1 Entity and licensing
-1. Entity form and state(s) of formation for the described activity (Delaware
-   C-Corp assumed — confirm or correct)?
+1. Entity structure review for the registered Delaware C-Corp (classes,
+   governance, qualified states) for the described activity?
 2. State money-transmitter analysis, state by state, for: (a) fiat→crypto via
    a licensed on-ramp vendor where we never touch fiat; (b) crypto→metal-token
    swaps we assemble but never execute; (c) batched physical redemptions (§6.7).

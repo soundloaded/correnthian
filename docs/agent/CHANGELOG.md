@@ -13,6 +13,11 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-12 (later)
 
+### Entity registered; API-key vs partnership split recorded
+- Owner confirms Correnthian C-Corp registered in Delaware; memo updated
+  (formation docs outside repo; structure review still counsel's).
+- Vendor split written down so procurement runs on two tracks (below).
+
 ### Counsel briefing memo + interview scorecard ready
 - Lawyer-ready intake memo (fact/proposal/assumption/question separation,
   11 counsel-only questions, prioritized first-meeting agenda, document
