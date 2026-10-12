@@ -11,6 +11,18 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ---
 
+## 2026-10-12 (later)
+
+### XAUT diligence pack + wholesale-minimum design point
+- **Diligence pack** at `docs/operations/xaut-diligence-pack.md`: 19
+  questions across standing, attestation, redemption, chains, commercial
+  and counsel — plus acceptance criteria for the builds it unblocks.
+- **Terms on record** (tether.to/fees, verified today): $100k minimum,
+  0.1% acquire, max($1000, 0.1%) redeem, $150 verify. Re-verify at signing.
+- **Design consequence:** direct redemption is wholesale-only; retail exit
+  is sell-back unless aggregation is permitted and counsel clears it.
+  Trackers updated (blockers table, BE-1701 note).
+
 ## 2026-10-12
 
 ### Pre-launch landing page ships — marketing scaffold to page

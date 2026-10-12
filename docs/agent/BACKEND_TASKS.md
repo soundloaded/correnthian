@@ -1473,6 +1473,11 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 - **Acceptance criteria for `DONE`:** every state transition that moves value
   has an explicit allowlist, terminal states are terminal, and nothing
   auto-approves.
+- **Redemption execution design point (2026-10-12):** Tether's $100k minimum
+  makes direct redemption wholesale-only. Retail exit is market sell-back
+  unless TG Commodities permits multi-user aggregation (diligence pack Q9)
+  and counsel clears any licence wrapper. The execution build waits on both
+  answers; the state machine gains no lot-formation transitions before them.
 - **Status:** `PARTIAL`
 
 ### BE-1702 — Testing strategy · `PARTIAL`
@@ -1610,11 +1615,11 @@ Re-derivation reports 98 routes, 99 keys, zero uncovered.
 
 | Item | Impact | Status |
 |---|---|---|
-| **Metals issuer / LP contract** | **Critical path.** Multi-month lead time. Blocks BE-802, and through it BE-803, BE-804, BE-805, BE-1602. | Not started |
+| **Metals issuer / LP contract** | **Critical path.** Multi-month lead time. Blocks BE-802, and through it BE-803, BE-804, BE-805, BE-1602. | In discussion: XAUT/TG Commodities via existing owner account; diligence pack at `docs/operations/xaut-diligence-pack.md` |
 | Legal counsel | Entity structure, money-transmitter analysis, CFTC vs SEC for metals. Required **before design freeze**, not before launch. | Not engaged |
 | Design freeze date | Undated. Counsel answers change how the buy flow is built. | Unset |
 | `verifiedTier` verification workflow | The registry can assert `issuer_verified` about itself with nothing checking the evidence. | No workflow |
-| Provider due diligence | Kinesis / PAXG / XAUT specifics were researched under degraded conditions and are unverified. | Open |
+| Provider due diligence | XAUT terms verified 2026-10-12 against `tether.to/en/fees` ($100k min, 0.1% acquire, max($1000, 0.1%) redeem, $150 verify — re-verify at signing). Kinesis/PAXG still unverified. | XAUT partial; rest open |
 | Seed-account recovery | Guardians have no BTC/SOL equivalent. | Decision required |
 
 ---

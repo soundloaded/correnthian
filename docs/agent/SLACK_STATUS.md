@@ -78,7 +78,7 @@
 
 **Tools & utilities:** pnpm/turbo monorepo; vitest suites per module; contract registry (client types can't drift); keyset pagination on every list; job framework with distributed leases; explicit dependency injection check.
 
-**Providers / third parties:** Persona for identity checks (chosen, sandbox live) · chain-node RPC vendor (NEEDED NOW — blocks live verification) · metals issuer (critical path, longest lead time, start first) · fiat on-ramp (open) · price feed (open) · email + push delivery (open) · database/hosting/error-tracking (shapes chosen, accounts open).
+**Providers / third parties:** Persona for identity checks (chosen, sandbox live) · chain-node RPC vendor (NEEDED NOW — blocks live verification) · metals issuer (IN DISCUSSION: XAUT via existing account, diligence pack issued; $100k minimum makes direct redemption wholesale-only — aggregation question + counsel pending) · fiat on-ramp (open) · price feed (open) · email + push delivery (open) · database/hosting/error-tracking (shapes chosen, accounts open).
 
 **CI/CD:** GitHub Actions with 9 automated guards (tests, types, contracts, injection style, dependencies, secrets, key boundary, DB-write guard, tracker counts). Hosting platform undecided.
 
