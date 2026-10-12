@@ -13,6 +13,14 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-12 (later)
 
+### Counsel briefing memo + interview scorecard ready
+- Lawyer-ready intake memo (fact/proposal/assumption/question separation,
+  11 counsel-only questions, prioritized first-meeting agenda, document
+  list) and a one-page scorecard. No facts invented; Delaware C-Corp
+  flagged as owner-stated, unverified in repo.
+
+## 2026-10-12 (later)
+
 ### Incident runbooks written — BE-1603 DONE
 - Six playbooks + index under `docs/runbooks/`, closing the tracker's most
   serious docs gap (the key-breach runbook). Claims verified against code.

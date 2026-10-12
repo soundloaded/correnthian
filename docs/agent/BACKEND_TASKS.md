@@ -1618,7 +1618,7 @@ Re-derivation reports 98 routes, 99 keys, zero uncovered.
 | Item | Impact | Status |
 |---|---|---|
 | **Metals issuer / LP contract** | **Critical path.** Multi-month lead time. Blocks BE-802, and through it BE-803, BE-804, BE-805, BE-1602. | In discussion: XAUT/TG Commodities via existing owner account; diligence pack at `docs/operations/xaut-diligence-pack.md` |
-| Legal counsel | Entity structure, money-transmitter analysis, CFTC vs SEC for metals. Required **before design freeze**, not before launch. | Not engaged |
+| Legal counsel | Entity structure, money-transmitter analysis, CFTC vs SEC for metals. Required **before design freeze**, not before launch. | Briefing memo + interview scorecard ready at `docs/compliance/`; firm not yet selected |
 | Design freeze date | Undated. Counsel answers change how the buy flow is built. | Unset |
 | `verifiedTier` verification workflow | The registry can assert `issuer_verified` about itself with nothing checking the evidence. | No workflow |
 | Provider due diligence | XAUT terms verified 2026-10-12 against `tether.to/en/fees` ($100k min, 0.1% acquire, max($1000, 0.1%) redeem, $150 verify — re-verify at signing). Kinesis/PAXG still unverified. | XAUT partial; rest open |
