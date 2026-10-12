@@ -11,6 +11,15 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ---
 
+## 2026-10-12
+
+### Pre-launch landing page ships — marketing scaffold to page
+- **Copy-honest by construction:** every claim traces to MASTER_CONTEXT;
+  no dates, fees, prices, or provider names; launch-gated items carry
+  gating notes; notify-me stores browser-only and says so.
+- **Verification:** typecheck, production build, desktop + 390px renders,
+  every control exercised.
+
 ## 2026-10-11
 
 ### Jurisdiction rules console — BE-1106 admin half

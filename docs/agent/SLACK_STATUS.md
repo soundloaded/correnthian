@@ -62,9 +62,11 @@
 - ⬜ NOT STARTED: everything past the Expo scaffold
 - ⬜ Gate: same as web, plus store accounts (Apple Developer + Google Play) — enrollment takes days, should start now
 
-## AREA 5 — MARKETING site — status: NOT STARTED (scaffold only)
+## AREA 5 — MARKETING site — status: FIRST PAGE LIVE (pre-launch landing)
 
-*Stack: Next.js. Needs no backend and no legal answers — can start any time.*
+*Stack: Next.js 16, Tailwind, system fonts. Approach: static page, no backend calls, copy-honest (nothing live promised).*
+- ✅ Task 1: landing page live — hero, trust trio, how-it-will-work, fees honesty, FAQ, browser-only notify-me
+- ⬜ NOT STARTED: launch-announcement updates, deeper pages (follow later work)
 
 ---
 
