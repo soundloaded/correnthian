@@ -46,6 +46,12 @@ order flow as their business requires, and never anything that signs.
   same head, pool health reports Ethereum healthy, chain reads leak no URLs.
   Still needed: Base + Sepolia endpoints (same keys may cover them — confirm
   in each dashboard rather than guessing URLs).
+- **Alchemy CLI verified 2026-10-12** (auth healthy, RPC + admin; wallet
+  signing deliberately unconfigured): app `correnthian-build` serves
+  eth-mainnet + eth-sepolia (+hoodi, beacons) — **Base is not enabled**,
+  enable in dashboard or via `app networks`. Gas smoke test green, no
+  AUTH_REQUIRED gap. Usage baseline: 6,660 compute units MTD ($0.00).
+  CLI reads only; wallet connect/send stays explicitly unapproved.
 
 ### 1.2 Identity verification + sanctions screening — `decided` (Persona)
 - **Why:** selling gold for dollars triggers AML/sanctions obligations

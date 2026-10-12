@@ -13,6 +13,11 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-12 (later)
 
+### Alchemy CLI checked in (reads only, wallet stays disconnected)
+- Doctor + auth healthy; Sepolia block + mainnet gas verified through the
+  CLI; app networks listed (no Base — enable in dashboard).
+- Usage baseline 6,660 CU MTD ($0.00) for future burn reporting.
+
 ### Live chain acceptance, first half (reads + assemble, no signing)
 - **Wired:** Alchemy primary + Infura failover on eth mainnet; Sepolia pair
   (enabled in dev); Base single leg. All endpoints answer the same heads.
