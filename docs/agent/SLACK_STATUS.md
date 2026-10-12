@@ -26,7 +26,8 @@
 - ✅ Task 15: fixed the two leaks the work exposed (endpoint URLs in sync errors, unscoped detail reads)
 - ⬜ NOT STARTED: live KYC verification re-run (waiting on a completed verification flow)
 - ✅ Task (acceptance, reads): RPC wired (Alchemy + Infura), pool green, Sepolia sync + assemble proven live
-- ⬜ NOT STARTED: relay/broadcast acceptance (needs funded test key + approval)
+- ✅ Task (acceptance, broadcast): session wallet funded, dust sent + confirmed live (pending 3/12); relay-submit path still unit-only
+- ⬜ NOT STARTED: relay endpoint submitting a device-signed payload (needs raw-signing path)
 - ⬜ NOT STARTED: risk-scoring rules (waiting on thresholds paragraph)
 - ⬜ NOT STARTED: client-side jurisdiction gate (waiting on clients existing)
 - ⬜ NOT STARTED: price-feed job, metals-buy endpoint, on-ramp execution, mail/push transport (each waiting on its vendor)

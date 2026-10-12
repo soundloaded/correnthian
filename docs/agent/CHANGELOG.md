@@ -29,6 +29,17 @@ abbreviated. Read the full message with `git show <hash>`.
 - **Held:** relay/broadcast pending funded test key + explicit approval.
 - Chain reads leak no URLs (verified in responses).
 
+### Live broadcast acceptance on Sepolia (reads + device-signed send)
+- **Session wallet** (Alchemy Agent Wallet, testnet-only, expires 2026-10-19)
+  funded with 0.05 Sepolia ETH via Google faucet; balance verified on-chain.
+- **Flow proven live:** intent → signed (reported) → observations bound the
+  real broadcast hash (`0xf94491…`) → 45s later `pending` at 3/12
+  confirmations counted through our pool. BE-302 + BE-601 read paths green
+  on a live chain with a real signed send (0.0001 ETH dust + gas).
+- **Explicitly not proven:** our relay submitting a device-signed payload
+  (the CLI broadcast directly; signature verification stays unit-covered
+  until a raw-signing path exists). Fixtures removed.
+
 ### XAUT diligence pack + wholesale-minimum design point
 - **Diligence pack** at `docs/operations/xaut-diligence-pack.md`: 19
   questions across standing, attestation, redemption, chains, commercial
