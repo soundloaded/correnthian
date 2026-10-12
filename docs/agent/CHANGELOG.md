@@ -13,6 +13,14 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-12 (later)
 
+### Live chain acceptance, first half (reads + assemble, no signing)
+- **Wired:** Alchemy primary + Infura failover on eth mainnet; Sepolia pair
+  (enabled in dev); Base single leg. All endpoints answer the same heads.
+- **Proven live on Sepolia:** wallet sync clean; intent → assemble returns
+  real nonce, gas estimate, fee caps and correct ERC-20 calldata.
+- **Held:** relay/broadcast pending funded test key + explicit approval.
+- Chain reads leak no URLs (verified in responses).
+
 ### XAUT diligence pack + wholesale-minimum design point
 - **Diligence pack** at `docs/operations/xaut-diligence-pack.md`: 19
   questions across standing, attestation, redemption, chains, commercial

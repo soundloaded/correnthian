@@ -1620,6 +1620,7 @@ Re-derivation reports 98 routes, 99 keys, zero uncovered.
 | Design freeze date | Undated. Counsel answers change how the buy flow is built. | Unset |
 | `verifiedTier` verification workflow | The registry can assert `issuer_verified` about itself with nothing checking the evidence. | No workflow |
 | Provider due diligence | XAUT terms verified 2026-10-12 against `tether.to/en/fees` ($100k min, 0.1% acquire, max($1000, 0.1%) redeem, $150 verify — re-verify at signing). Kinesis/PAXG still unverified. | XAUT partial; rest open |
+| Chain-node RPC (Alchemy + Infura) | Eth mainnet failover pair + Base + Sepolia wired in dev 2026-10-12; pool health green on all real chains; Sepolia assemble proven live (real nonce/gas/fee caps, ERC-20 calldata). Relay/signing held for funded-key approval. | Accounts exist; acceptance partial |
 | Seed-account recovery | Guardians have no BTC/SOL equivalent. | Decision required |
 
 ---

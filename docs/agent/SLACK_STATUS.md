@@ -25,7 +25,8 @@
 - ✅ Task 14: controller + service test suites across all modules (two real bugs found and fixed: empty price history, BigInt crash)
 - ✅ Task 15: fixed the two leaks the work exposed (endpoint URLs in sync errors, unscoped detail reads)
 - ⬜ NOT STARTED: live KYC verification re-run (waiting on a completed verification flow)
-- ⬜ NOT STARTED: node acceptance run (waiting on RPC vendor account)
+- ✅ Task (acceptance, reads): RPC wired (Alchemy + Infura), pool green, Sepolia sync + assemble proven live
+- ⬜ NOT STARTED: relay/broadcast acceptance (needs funded test key + approval)
 - ⬜ NOT STARTED: risk-scoring rules (waiting on thresholds paragraph)
 - ⬜ NOT STARTED: client-side jurisdiction gate (waiting on clients existing)
 - ⬜ NOT STARTED: price-feed job, metals-buy endpoint, on-ramp execution, mail/push transport (each waiting on its vendor)
