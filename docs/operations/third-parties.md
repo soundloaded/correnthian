@@ -48,8 +48,9 @@ order flow as their business requires, and never anything that signs.
   in each dashboard rather than guessing URLs).
 - **Alchemy CLI verified 2026-10-12** (auth healthy, RPC + admin; wallet
   signing deliberately unconfigured): app `correnthian-build` serves
-  eth-mainnet + eth-sepolia (+hoodi, beacons) — **Base is not enabled**,
-  enable in dashboard or via `app networks`. Gas smoke test green, no
+  eth-mainnet + eth-sepolia (+hoodi, beacons). **Base enabled 2026-10-12
+  via CLI** (`app networks`, dry-run first, existing allowlist preserved);
+  verified live, wired as Alchemy-first pair on chain 8453. Gas smoke test green, no
   AUTH_REQUIRED gap. Usage baseline: 6,660 compute units MTD ($0.00).
   CLI reads only; wallet connect/send stays explicitly unapproved.
 

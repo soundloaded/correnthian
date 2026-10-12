@@ -17,6 +17,9 @@ abbreviated. Read the full message with `git show <hash>`.
 - Doctor + auth healthy; Sepolia block + mainnet gas verified through the
   CLI; app networks listed (no Base — enable in dashboard).
 - Usage baseline 6,660 CU MTD ($0.00) for future burn reporting.
+- **Base enabled on the Alchemy app** (dry-run preview, then apply; prior
+  403 was propagation delay, not config). Chain 8453 now a failover pair;
+  pool health green on all real chains.
 
 ### Live chain acceptance, first half (reads + assemble, no signing)
 - **Wired:** Alchemy primary + Infura failover on eth mainnet; Sepolia pair
