@@ -41,6 +41,11 @@ order flow as their business requires, and never anything that signs.
   route) or remove; an env var nothing reads is a promise to no one.
 - **Lead time:** account signup is same-day; self-hosted sync is days to
   a week per chain. Start the account now; plan the node for later.
+- **Status 2026-10-12:** accounts exist (Alchemy + Infura). Ethereum mainnet
+  wired as failover pair (Alchemy first) and verified live: both answer the
+  same head, pool health reports Ethereum healthy, chain reads leak no URLs.
+  Still needed: Base + Sepolia endpoints (same keys may cover them — confirm
+  in each dashboard rather than guessing URLs).
 
 ### 1.2 Identity verification + sanctions screening — `decided` (Persona)
 - **Why:** selling gold for dollars triggers AML/sanctions obligations
