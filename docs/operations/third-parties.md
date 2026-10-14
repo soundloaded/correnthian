@@ -19,6 +19,7 @@ order flow as their business requires, and never anything that signs.
 ## 1. Required vendors (production does not work without these)
 
 ### 1.1 Chain node access — `named`, register now
+
 - **Why:** every balance read, gas estimate, nonce lookup, log scan,
   transaction relay and confirmation count is an RPC call. No node, no
   product — the API refuses (`No RPC endpoint is configured`, a
@@ -30,7 +31,7 @@ order flow as their business requires, and never anything that signs.
   pre-production.
 - **Options:** (a) managed vendor — Alchemy, Infura, QuickNode and kin,
   one account can serve all three chains; (b) self-hosted (Geth/Reth/Erigon
-  + Base supervisor). The pool already supports mixing both.
+  - Base supervisor). The pool already supports mixing both.
 - **Recommendation:** vendor first for time-to-production, self-hosted as
   the independence milestone. Two reasons beyond ops burden: a vendor sees
   every address our backend looks up (query-pattern privacy), and metered
@@ -55,6 +56,7 @@ order flow as their business requires, and never anything that signs.
   CLI reads only; wallet connect/send stays explicitly unapproved.
 
 ### 1.2 Identity verification + sanctions screening — `decided` (Persona)
+
 - **Why:** selling gold for dollars triggers AML/sanctions obligations
   regardless of custody posture. The fiat gate denies without it.
 - **What it touches:** `ScreeningProvider` port, `KycService`,
@@ -67,16 +69,17 @@ order flow as their business requires, and never anything that signs.
   verification closes.
 
 ### 1.3 Metals issuer / liquidity provider — `open`, longest lead time
+
 - **Why:** the gold itself. Someone must issue or redeem the tokens
   (PAXG/XAUT/KAU or equivalent), publish attestations, and settle
   physical redemption. No issuer relationship, no product — everything
   else is rails to an empty station.
 - **What it touches:** `Provider` rows (`category: metals`), `Asset.issuer`
-  + backing disclosure (custodian, vaults, proof-of-reserve URL,
-  cadence), manual attestation recording (`PATCH
-  /assets/:assetId/attestation`), redemption provider mechanics. Seed
-  carries `placeholder-metals` (disabled) as an explicit refusal to
-  invent one.
+  - backing disclosure (custodian, vaults, proof-of-reserve URL,
+    cadence), manual attestation recording (`PATCH
+/assets/:assetId/attestation`), redemption provider mechanics. Seed
+    carries `placeholder-metals` (disabled) as an explicit refusal to
+    invent one.
 - **Note:** prior Kinesis/PAXG/XAUT specifics were researched under
   degraded conditions and are unverified (tracker blockers table) — treat
   them as leads, not diligence.
@@ -84,6 +87,7 @@ order flow as their business requires, and never anything that signs.
   **This is the critical path. Start it first.**
 
 ### 1.4 Fiat on-ramp / off-ramp — `open`
+
 - **Why:** card/bank → crypto and back. `OnRampService` picks a provider
   and refuses without one; quote and execution both need it.
 - **What it touches:** `Provider` rows (`category: onramp/offramp`),
@@ -94,6 +98,7 @@ order flow as their business requires, and never anything that signs.
 - **Lead time:** commercial negotiation, typically weeks.
 
 ### 1.5 Price data — `open`, two sources not one
+
 - **Why:** every portfolio value, fee notional and swap quote needs a
   reference price younger than 300s (`PricingService.MAX_AGE_SECONDS`).
   Today the table fills only by hand (`POST /pricing/record`); without a
@@ -111,8 +116,12 @@ order flow as their business requires, and never anything that signs.
   they check each other.
 - **Lead time:** oracle integration is engineering (node access suffices);
   vendor account is same-day signup.
+- **Status 2026-10-12:** two fallback keys live and verified (goldapi.io +
+  goldprice.dev agree within ~$1 on XAU spot; goldapi.net token held spare).
+  Feed-job build unblocked — in progress.
 
 ### 1.6 Email delivery — `open`, blocks two features
+
 - **Why:** magic-link sign-in (BE-203, the design spec's target UX —
   `User.passwordDigest` is nullable specifically for it) and password
   reset (no reset flow exists today; a forgotten password is permanent
@@ -127,6 +136,7 @@ order flow as their business requires, and never anything that signs.
   days — register the sending domain early even before choosing.
 
 ### 1.7 Push delivery (when notifications get a transport) — `open`
+
 - **Why:** `Device.pushToken` is already stored. FCM (Android) and APNs
   (iOS) are free but need accounts, keys and review.
 - **Lead time:** Apple Developer enrollment involves identity verification
@@ -136,16 +146,16 @@ order flow as their business requires, and never anything that signs.
 
 ## 2. Infrastructure vendors (needed, mostly decided in shape)
 
-| Need | Shape already chosen | Still open |
-|---|---|---|
-| Postgres | **Neon** (named in `infrastructure/docker/compose.yml` comments) | Account + project + backup/retention policy (§8 of operations overview: rotation vs live sessions) |
-| Redis | Managed Redis (cache + queue, never source of truth) | Provider choice (Upstash/Memorystore/ElastiCache follow the hosting decision) |
-| API hosting | **Nothing decided** (operations overview §1) | Platform (Fly/Render/AWS/…), secret store satisfying the no-`.env` rule, TLS termination (`TRUST_PROXY` exists for it) |
-| Admin/marketing hosting | Undecided (Vercel-class platforms fit Next.js) | Same platform call as above, or split |
-| Domain + DNS + TLS | — | Registrar, sending subdomain for §1.6 |
-| Error/tracing backends | Wired, optional | Sentry project + OTel collector to prove delivery (code proves init, not receipt) |
-| CI | GitHub Actions (exists, 9 guards) | Nothing — no vendor action |
-| App stores | — | **Apple Developer + Google Play accounts now**: enrollment identity checks and first-review lead times are measured in days-to-weeks, and they gate nothing until the client exists, which is exactly why they should start early |
+| Need                    | Shape already chosen                                             | Still open                                                                                                                                                                                                                        |
+| ----------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Postgres                | **Neon** (named in `infrastructure/docker/compose.yml` comments) | Account + project + backup/retention policy (§8 of operations overview: rotation vs live sessions)                                                                                                                                |
+| Redis                   | Managed Redis (cache + queue, never source of truth)             | Provider choice (Upstash/Memorystore/ElastiCache follow the hosting decision)                                                                                                                                                     |
+| API hosting             | **Nothing decided** (operations overview §1)                     | Platform (Fly/Render/AWS/…), secret store satisfying the no-`.env` rule, TLS termination (`TRUST_PROXY` exists for it)                                                                                                            |
+| Admin/marketing hosting | Undecided (Vercel-class platforms fit Next.js)                   | Same platform call as above, or split                                                                                                                                                                                             |
+| Domain + DNS + TLS      | —                                                                | Registrar, sending subdomain for §1.6                                                                                                                                                                                             |
+| Error/tracing backends  | Wired, optional                                                  | Sentry project + OTel collector to prove delivery (code proves init, not receipt)                                                                                                                                                 |
+| CI                      | GitHub Actions (exists, 9 guards)                                | Nothing — no vendor action                                                                                                                                                                                                        |
+| App stores              | —                                                                | **Apple Developer + Google Play accounts now**: enrollment identity checks and first-review lead times are measured in days-to-weeks, and they gate nothing until the client exists, which is exactly why they should start early |
 
 ---
 
@@ -166,7 +176,7 @@ order flow as their business requires, and never anything that signs.
   quotes, ours from `FeeRule` rows. No fee vendor exists or is needed.
 - **Auth/sessions/audit/jobs/rate-limiting/KYC machinery** — all built.
   (Persona provides verdicts, not machinery.)
-- **Attestation *recording*** — operator-recorded URLs plus verification
+- **Attestation _recording_** — operator-recorded URLs plus verification
   workflow. The auditor is external (issuer's), the ledger is ours.
 
 ## 4. The client-side node question
