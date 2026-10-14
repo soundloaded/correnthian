@@ -174,7 +174,7 @@ export default async function DashboardPage() {
         />
       </section>
 
-      <section aria-label="Audit activity" className="flex flex-col gap-4">
+      <section aria-label="Audit activity" className="grid items-start gap-4 xl:grid-cols-2">
         <ApiState
           result={audit}
           emptyTitle="No audit entries yet"
@@ -210,7 +210,7 @@ export default async function DashboardPage() {
                     </Button>
                   </CardAction>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
