@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from "react"
-import { Link } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 import { AnimatePresence, motion } from "motion/react"
 import { Eye, EyeOff, GalleryVerticalEnd } from "lucide-react"
 import { FaGithub } from "react-icons/fa6"
 import { FcGoogle } from "react-icons/fc"
+
+import { login } from "@/lib/api"
 
 import { Button } from "@correnthian/ui/components/button"
 import { Input } from "@correnthian/ui/components/input"
@@ -20,12 +22,36 @@ const FOOTER_LINKS = ["Documentation", "Support", "Privacy"]
 const legalLink = "underline underline-offset-2 hover:text-foreground"
 
 export function Login() {
+  const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [message, setMessage] = useState("")
+  const [failed, setFailed] = useState(false)
+  const [busy, setBusy] = useState(false)
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setMessage("Authentication is not connected yet.")
+    const data = new FormData(e.currentTarget)
+    const email = String(data.get("email") ?? "").trim()
+    const password = String(data.get("password") ?? "")
+    if (!email || !password) {
+      setFailed(true)
+      setMessage("Enter both an email address and a password.")
+      return
+    }
+    setBusy(true)
+    setFailed(false)
+    setMessage("")
+    void login(email, password).then((r) => {
+      setBusy(false)
+      if (!r.ok) {
+        // Deliberately vague on bad credentials: this form must not confirm
+        // which addresses exist. The helper returns that shape already.
+        setFailed(true)
+        setMessage(r.error)
+        return
+      }
+      void navigate({ to: "/dashboard" })
+    })
   }
 
   return (
@@ -138,6 +164,7 @@ export function Login() {
                 <Label htmlFor="email">Work email</Label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   placeholder="you@company.com"
                   autoComplete="email"
@@ -158,6 +185,7 @@ export function Login() {
                 <div className="relative">
                   <Input
                     id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     autoComplete="current-password"
@@ -196,8 +224,8 @@ export function Login() {
               </div>
 
               <motion.div {...pressable}>
-                <Button type="submit" className="w-full">
-                  Sign in
+                <Button type="submit" className="w-full" disabled={busy}>
+                  {busy ? "Signing in…" : "Sign in"}
                 </Button>
               </motion.div>
 
@@ -211,7 +239,7 @@ export function Login() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.2 }}
-                    className="text-center text-sm text-muted-foreground"
+                    className={`text-center text-sm ${failed ? "text-destructive" : "text-muted-foreground"}`}
                   >
                     {message}
                   </motion.p>

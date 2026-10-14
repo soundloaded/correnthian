@@ -86,4 +86,20 @@ describe('api-client failure vocabulary', () => {
     await client.request('GET /api/v1/notifications/mine', { idempotencyKey: 'key-1' });
     expect((seen[0]?.init.headers as Record<string, string>)['Idempotency-Key']).toBe('key-1');
   });
+
+  it('takes the HTTP method from the registry key, so bodies ride on POST', async () => {
+    const seen: Array<{ init: RequestInit }> = [];
+    const fetchImpl = vi.fn(async (_url: string, init: RequestInit) => {
+      seen.push({ init });
+      return jsonResponse(200, { total: 0, enabled: 0, enabledMetals: 0, staleAttestations: 0, byTier: {} });
+    });
+    const client = createCorrenthianClient({ baseUrl: 'http://api.test', fetchImpl: fetchImpl as unknown as typeof fetch });
+
+    // No explicit method: the key says POST, so POST must go out. A GET
+    // default here made fetch throw on the body and every login fail as
+    // "unreachable" — this test fails against that default.
+    await client.request('POST /api/v1/auth/login', { auth: false, body: { email: 'a', password: 'b' } });
+    expect(seen[0]?.init.method).toBe('POST');
+    expect(typeof seen[0]?.init.body).toBe('string');
+  });
 });

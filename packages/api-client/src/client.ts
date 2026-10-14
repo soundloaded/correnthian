@@ -73,8 +73,12 @@ export function createCorrenthianClient(options: ClientOptions) {
     key: Path,
     reqOptions: RequestOptions = {},
   ): Promise<ApiResult<Contract<Path>>> {
-    const { method = 'GET', params, query, body, idempotencyKey, auth = true } = reqOptions;
     const space = key.indexOf(' ');
+    // The HTTP method lives in the registry key ("POST /api/v1/..."), not in
+    // the options: a caller that could send a body with a GET default would
+    // make fetch throw (GET/HEAD cannot carry a body) and every financial
+    // POST would arrive as a GET. An explicit option still wins.
+    const { method = key.slice(0, space) as NonNullable<RequestOptions['method']>, params, query, body, idempotencyKey, auth = true } = reqOptions;
     const template = key.slice(space + 1);
     const url = buildUrl(options.baseUrl, fillParams(template, params));
 
