@@ -1,6 +1,7 @@
 import type { Contract } from '@correnthian/contracts';
 import { apiFetch } from '@/lib/api-server';
 import { ApiState } from '@/components/feedback/api-state';
+import { PageTitle } from '@/components/layout/page-title';
 import { FeeRuleCreateForm, FeeRuleToggle } from '@/components/actions/fee-rule-actions';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,13 +30,12 @@ export default async function FeesPage() {
   return (
     <>
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Fees</h1>
-        <p className="text-sm text-muted-foreground">
+        <PageTitle title="Fees">
           The rule table every quote prices from. Reading takes admin;
           creating or changing a rule takes owner <em>and</em> a stated
           reason &mdash; a number that moves without a why is a number no
           investigator can explain.
-        </p>
+        </PageTitle>
       </header>
 
       <ApiState

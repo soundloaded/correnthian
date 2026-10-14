@@ -1,6 +1,7 @@
 import type { Contract } from '@correnthian/contracts';
 import { apiFetch } from '@/lib/api-server';
 import { ApiState } from '@/components/feedback/api-state';
+import { PageTitle } from '@/components/layout/page-title';
 import { JobRunButton } from '@/components/actions/job-actions';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -38,12 +39,11 @@ export default async function JobsPage() {
   return (
     <>
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Jobs</h1>
-        <p className="text-sm text-muted-foreground">
+        <PageTitle title="Jobs">
           Scheduled work and whether the schedule is keeping up. Health is
           derived from the run ledger by the API &mdash; this page displays
           it, it does not recompute it.
-        </p>
+        </PageTitle>
       </header>
 
       <ApiState

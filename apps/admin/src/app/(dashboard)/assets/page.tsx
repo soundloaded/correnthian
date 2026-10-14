@@ -3,6 +3,7 @@ import { ShieldAlert, Vault } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { apiFetch } from '@/lib/api-server';
 import { ApiState } from '@/components/feedback/api-state';
+import { PageTitle } from '@/components/layout/page-title';
 import { AssetActions } from '@/components/actions/asset-actions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -57,12 +58,9 @@ export default async function AssetsPage({ searchParams }: PageProps<'/assets'>)
   return (
     <>
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Asset registry</h1>
-          <p className="text-sm text-muted-foreground">
-            Every entry carries the disclosure shown to users, verbatim.
-          </p>
-        </div>
+        <PageTitle title="Asset registry">
+          Every entry carries the disclosure shown to users, verbatim.
+        </PageTitle>
         <ApiState result={stats} render={(d) => (
           <dl className="flex flex-wrap gap-x-5 gap-y-1 text-xs">
             <Stat label="registered" value={fmtCount(d.total)} />

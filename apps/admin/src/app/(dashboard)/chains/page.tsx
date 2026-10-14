@@ -1,5 +1,6 @@
 import { apiFetch } from '@/lib/api-server';
 import { ApiState } from '@/components/feedback/api-state';
+import { PageTitle } from '@/components/layout/page-title';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -101,11 +102,10 @@ export default async function ChainsPage() {
   return (
     <>
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Chains</h1>
-        <p className="text-sm text-muted-foreground">
+        <PageTitle title="Chains">
           RPC endpoints are never returned by the API — clients resolve chains from
           their own configuration, so there is nothing here to view or edit.
-        </p>
+        </PageTitle>
       </header>
       <ApiState
         result={result}

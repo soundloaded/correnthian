@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { apiFetch } from '@/lib/api-server';
 import { ApiState } from '@/components/feedback/api-state';
+import { PageTitle } from '@/components/layout/page-title';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -145,12 +146,9 @@ export default async function UsersPage({ searchParams }: PageProps<'/users'>) {
   return (
     <>
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Users</h1>
-          <p className="text-sm text-muted-foreground">
-            Accounts only. Correnthian holds no wallet keys for anyone.
-          </p>
-        </div>
+        <PageTitle title="Users">
+          Accounts only. Correnthian holds no wallet keys for anyone.
+        </PageTitle>
 
         {/* A GET form, so filtering is server-side and the URL is the state. */}
         <form className="flex flex-wrap items-center gap-2" action="/users" method="get">

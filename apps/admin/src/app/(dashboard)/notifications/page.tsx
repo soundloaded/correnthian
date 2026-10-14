@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Contract } from '@correnthian/contracts';
 import { apiFetch } from '@/lib/api-server';
 import { ApiState } from '@/components/feedback/api-state';
+import { PageTitle } from '@/components/layout/page-title';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -45,13 +46,10 @@ export default async function NotificationsPage({ searchParams }: PageProps<'/no
   return (
     <>
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Notifications</h1>
-          <p className="text-sm text-muted-foreground">
-            Queued records, not sent mail &mdash; delivery is recorded first
-            and flushed by a transport worker once a provider exists.
-          </p>
-        </div>
+        <PageTitle title="Notifications">
+          Queued records, not sent mail &mdash; delivery is recorded first
+          and flushed by a transport worker once a provider exists.
+        </PageTitle>
         <NotificationFilters state={state} />
       </header>
 

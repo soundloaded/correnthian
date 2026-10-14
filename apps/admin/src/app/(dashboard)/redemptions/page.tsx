@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Contract } from '@correnthian/contracts';
 import { apiFetch } from '@/lib/api-server';
 import { ApiState } from '@/components/feedback/api-state';
+import { PageTitle } from '@/components/layout/page-title';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -47,13 +48,10 @@ export default async function RedemptionsPage({ searchParams }: PageProps<'/rede
   return (
     <>
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Redemptions</h1>
-          <p className="text-sm text-muted-foreground">
-            Physical metal payouts. State advances only through explicit
-            transitions &mdash; nothing here auto-approves.
-          </p>
-        </div>
+        <PageTitle title="Redemptions">
+          Physical metal payouts. State advances only through explicit
+          transitions &mdash; nothing here auto-approves.
+        </PageTitle>
         <RedemptionFilters state={state} />
       </header>
 

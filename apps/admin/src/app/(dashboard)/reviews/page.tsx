@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Contract } from '@correnthian/contracts';
 import { apiFetch } from '@/lib/api-server';
 import { ApiState } from '@/components/feedback/api-state';
+import { PageTitle } from '@/components/layout/page-title';
 import { ReviewActions } from '@/components/actions/review-actions';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,12 +26,11 @@ export default async function ReviewsPage() {
   return (
     <>
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Reviews</h1>
-        <p className="text-sm text-muted-foreground">
+        <PageTitle title="Reviews">
           Verifications parked for a human decision, oldest first. Approving
           clears a latched sanctions hit; rejecting keeps it. Either way, say
           why &mdash; a decision without a reason never fires.
-        </p>
+        </PageTitle>
       </header>
 
       <ApiState

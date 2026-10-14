@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api-server';
 import { ApiState } from '@/components/feedback/api-state';
+import { PageTitle } from '@/components/layout/page-title';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -98,12 +99,9 @@ export default async function DevicesPage({ searchParams }: PageProps<'/devices'
   return (
     <>
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Devices</h1>
-          <p className="text-sm text-muted-foreground">
-            Platform and public key only — a device row proves nothing about custody.
-          </p>
-        </div>
+        <PageTitle title="Devices">
+          Platform and public key only — a device row proves nothing about custody.
+        </PageTitle>
 
         <form className="flex flex-wrap items-center gap-2" action="/devices" method="get">
           <Input

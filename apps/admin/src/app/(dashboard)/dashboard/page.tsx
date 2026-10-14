@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api-server';
 import { ApiState } from '@/components/feedback/api-state';
+import { PageTitle } from '@/components/layout/page-title';
 import { AuditActivityChart, type AuditActivityPoint } from '@/components/charts/audit-activity-chart';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -42,10 +43,9 @@ export default async function DashboardPage() {
   return (
     <>
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
+        <PageTitle title="Dashboard">
           Accounts, registry health, and anything needing attention.
-        </p>
+        </PageTitle>
       </header>
 
       <section aria-label="Summary" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">

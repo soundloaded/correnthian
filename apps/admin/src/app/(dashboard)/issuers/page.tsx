@@ -2,6 +2,7 @@ import { ArrowRight, FileWarning, ShieldCheck } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { apiFetch } from '@/lib/api-server';
 import { ApiState } from '@/components/feedback/api-state';
+import { PageTitle } from '@/components/layout/page-title';
 import { IssuerActions } from '@/components/actions/issuer-actions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -30,11 +31,10 @@ export default async function IssuersPage() {
   return (
     <>
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Issuers</h1>
-        <p className="text-sm text-muted-foreground">
+        <PageTitle title="Issuers">
           The entities behind tokens. A verification tier is a claim about the
           evidence shown beside it.
-        </p>
+        </PageTitle>
       </header>
 
       <ApiState

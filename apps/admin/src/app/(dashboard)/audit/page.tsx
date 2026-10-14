@@ -1,6 +1,7 @@
 import type { Contract } from '@correnthian/contracts';
 import { apiFetch } from '@/lib/api-server';
 import { ApiState } from '@/components/feedback/api-state';
+import { PageTitle } from '@/components/layout/page-title';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -87,12 +88,9 @@ export default async function AuditPage({ searchParams }: PageProps<'/audit'>) {
   return (
     <>
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Audit log</h1>
-          <p className="text-sm text-muted-foreground">
-            Append-only. Metadata is redacted before it is written.
-          </p>
-        </div>
+        <PageTitle title="Audit log">
+          Append-only. Metadata is redacted before it is written.
+        </PageTitle>
         <AuditFilters action={action} outcome={outcome} />
       </header>
 

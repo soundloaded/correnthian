@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Contract } from '@correnthian/contracts';
 import { apiFetch } from '@/lib/api-server';
 import { ApiState } from '@/components/feedback/api-state';
+import { PageTitle } from '@/components/layout/page-title';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -53,14 +54,11 @@ export default async function TransactionsPage({ searchParams }: PageProps<'/tra
   return (
     <>
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Transactions</h1>
-          <p className="text-sm text-muted-foreground">
-            Every observed and assembled transaction. Confirmations are counted
-            against the depth each row requires &mdash; a row below its depth
-            is not final.
-          </p>
-        </div>
+        <PageTitle title="Transactions">
+          Every observed and assembled transaction. Confirmations are counted
+          against the depth each row requires &mdash; a row below its depth
+          is not final.
+        </PageTitle>
         <TransactionFilters state={state} direction={direction} walletId={walletId} />
       </header>
 

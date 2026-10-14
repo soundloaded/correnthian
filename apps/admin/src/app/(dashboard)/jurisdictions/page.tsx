@@ -1,6 +1,7 @@
 import type { Contract } from '@correnthian/contracts';
 import { apiFetch } from '@/lib/api-server';
 import { ApiState } from '@/components/feedback/api-state';
+import { PageTitle } from '@/components/layout/page-title';
 import { JurisdictionRuleForm } from '@/components/actions/jurisdiction-actions';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,12 +19,11 @@ export default async function JurisdictionsPage() {
   return (
     <>
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Jurisdictions</h1>
-        <p className="text-sm text-muted-foreground">
+        <PageTitle title="Jurisdictions">
           What each location may do. Changing a rule changes the product
           everywhere it applies &mdash; admin only, and never without a
           stated reason.
-        </p>
+        </PageTitle>
       </header>
 
       <Card role="note" className="border-destructive">

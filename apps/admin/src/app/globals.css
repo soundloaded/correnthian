@@ -4,6 +4,22 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/**
+ * Brand mapping — the one place it lives.
+ *
+ * Source of truth for values: `packages/design-tokens` (obsidian surfaces,
+ * silver-neutral UI, gold reserved for signalling a metal asset). The token
+ * names below are the shadcn contract the components consume; the values are
+ * Correnthian's. The console is dark-first: `<html class="dark">` in
+ * `app/layout.tsx`, so `.dark` is the live theme and `:root` is fallback.
+ *
+ * From the Nexora template's theme: the `color-scheme` rules (native
+ * controls follow the theme). Deliberately not taken: its `hero-in`
+ * keyframes (landing-page motion), the fontsource import (Next font is
+ * used instead), and its `@source` paths (workspace-relative to its own
+ * monorepo and meaningless here).
+ */
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -23,6 +39,12 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  /* Reserved: metal-asset signalling only. Never a general accent. */
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-positive: var(--positive);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -72,6 +94,11 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
+  --gold: #8a6f1c;
+  --gold-soft: #e3c766;
+  --positive: #3fa46a;
+  --warning: #d9a441;
+  --info: #4a90d9;
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -84,37 +111,51 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #0e1013; /* obsidian.50 */
+  --foreground: #e8eaed; /* silver.100 */
+  --card: #15181c; /* obsidian.100 */
+  --card-foreground: #e8eaed;
+  --popover: #1d2126; /* obsidian.200 */
+  --popover-foreground: #e8eaed;
+  --primary: #e8eaed; /* silver.100 — primary is never gold */
+  --primary-foreground: #0e1013;
+  --secondary: #1d2126;
+  --secondary-foreground: #e8eaed;
+  --muted: #1d2126;
+  --muted-foreground: #9ba1aa; /* silver.300 */
+  --accent: #272c33; /* obsidian.300 */
+  --accent-foreground: #e8eaed;
+  --destructive: #d9534f; /* tokens negative */
+  --border: rgb(200 205 212 / 10%); /* glass.border */
+  --input: #1d2126;
+  --ring: #9ba1aa; /* silver.300 — focus must stay visible on obsidian */
+  --chart-1: #c7cbd1; /* silver ramp, lightest first for dark surfaces */
+  --chart-2: #9ba1aa;
+  --chart-3: #6e757f;
+  --chart-4: #4a5058;
+  --chart-5: #363c45;
+  --gold: #c9a227; /* tokens gold.accent — metal signalling only */
+  --gold-soft: #e3c766;
+  --positive: #3fa46a;
+  --warning: #d9a441;
+  --info: #4a90d9;
+  --sidebar: #08090b; /* obsidian.0 — a step darker than the working surface */
+  --sidebar-foreground: #c7cbd1; /* silver.200 */
+  --sidebar-primary: #e8eaed;
+  --sidebar-primary-foreground: #0e1013;
+  --sidebar-accent: #1d2126;
+  --sidebar-accent-foreground: #e8eaed;
+  --sidebar-border: rgb(200 205 212 / 10%);
+  --sidebar-ring: #9ba1aa;
+}
+
+/* Native browser controls follow the live theme. */
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 @layer base {

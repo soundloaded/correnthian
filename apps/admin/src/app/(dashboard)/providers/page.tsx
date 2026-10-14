@@ -1,5 +1,6 @@
 import { apiFetch } from '@/lib/api-server';
 import { ApiState } from '@/components/feedback/api-state';
+import { PageTitle } from '@/components/layout/page-title';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -87,12 +88,11 @@ export default async function ProvidersPage() {
   return (
     <>
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Providers</h1>
-        <p className="text-sm text-muted-foreground">
+        <PageTitle title="Providers">
           Status and health only. API credentials live in the secret store and are
           never in this table — the admin shows whether a rail is usable, not how to
           call it.
-        </p>
+        </PageTitle>
       </header>
       <ApiState
         result={result}
