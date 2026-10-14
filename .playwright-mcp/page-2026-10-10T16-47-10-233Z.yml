@@ -1,0 +1,74 @@
+- generic [active] [ref=f2e1]:
+    - generic [ref=f2e2]:
+        - generic [ref=f2e5]:
+            - list [ref=f2e7]:
+                - listitem [ref=f2e8]:
+                    - link "Correnthian Admin" [ref=f2e9] [cursor=pointer]:
+                        - /url: /dashboard
+                        - generic [ref=f2e14]:
+                            - generic [ref=f2e15]: Correnthian
+                            - generic [ref=f2e16]: Admin
+            - generic [ref=f2e18]:
+                - generic [ref=f2e19]: Operations
+                - list [ref=f2e21]:
+                    - listitem [ref=f2e22]:
+                        - link "Dashboard" [ref=f2e23] [cursor=pointer]:
+                            - /url: /dashboard
+                    - listitem [ref=f2e30]:
+                        - link "Users" [ref=f2e31] [cursor=pointer]:
+                            - /url: /users
+                    - listitem [ref=f2e37]:
+                        - link "Devices" [ref=f2e38] [cursor=pointer]:
+                            - /url: /devices
+                    - listitem [ref=f2e42]:
+                        - link "Assets" [ref=f2e43] [cursor=pointer]:
+                            - /url: /assets
+                    - listitem [ref=f2e55]:
+                        - link "Issuers" [ref=f2e56] [cursor=pointer]:
+                            - /url: /issuers
+                    - listitem [ref=f2e60]:
+                        - link "Chains" [ref=f2e61] [cursor=pointer]:
+                            - /url: /chains
+                    - listitem [ref=f2e68]:
+                        - link "Providers" [ref=f2e69] [cursor=pointer]:
+                            - /url: /providers
+                    - listitem [ref=f2e76]:
+                        - link "Quotes" [ref=f2e77] [cursor=pointer]:
+                            - /url: /quotes
+                    - listitem [ref=f2e84]:
+                        - link "Audit log" [ref=f2e85] [cursor=pointer]:
+                            - /url: /audit
+            - list [ref=f2e93]:
+                - listitem [ref=f2e94]:
+                    - button "AD admin@correnthian.local admin" [ref=f2e95]:
+                        - generic [ref=f2e96]: AD
+                        - generic [ref=f2e98]:
+                            - generic [ref=f2e99]: admin@correnthian.local
+                            - generic [ref=f2e100]: admin
+            - button "Toggle Sidebar" [ref=f2e104]
+        - main [ref=f2e105]:
+            - generic [ref=f2e106]:
+                - button "Toggle Sidebar" [ref=f2e107]
+                - paragraph [ref=f2e109]: Internal operations · changes are audited
+            - main [ref=f2e110]:
+                - generic [ref=f2e111]:
+                    - generic [ref=f2e112]:
+                        - heading "Redemptions" [level=1] [ref=f2e113]
+                        - paragraph [ref=f2e114]: Physical metal payouts. State advances only through explicit transitions — nothing here auto-approves.
+                    - generic [ref=f2e115]:
+                        - combobox "Filter by redemption state" [ref=f2e116]
+                        - combobox [aria-hidden] [ref=f2e117]
+                        - button "Clear" [ref=f2e118]
+                - region "Redemption counters" [ref=f2e119]:
+                    - generic [ref=f2e121]:
+                        - generic [ref=f2e122]: "1"
+                        - generic [ref=f2e123]: requests recorded
+                    - generic [ref=f2e125]:
+                        - paragraph [ref=f2e126]: By state
+                        - generic [ref=f2e127]:
+                            - generic [ref=f2e128]: requested
+                            - generic [ref=f2e129]: "1"
+                - generic [ref=f2e131]:
+                    - paragraph [ref=f2e135]: No redemptions match those filters
+                    - paragraph [ref=f2e136]: Adjust the filter, or clear it.
+    - button "Open Next.js Dev Tools" [ref=f2e142] [cursor=pointer]

@@ -1,0 +1,17 @@
+- generic [ref=f14e1]:
+    - button "Open Next.js Dev Tools" [ref=f14e326] [cursor=pointer]
+    - alert [ref=f14e376]
+    - generic [aria-hidden] [ref=f14e377]: "0"
+    - main [ref=f14e385]:
+        - generic [ref=f14e386]:
+            - generic [ref=f14e387]:
+                - generic [ref=f14e388]: Correnthian admin
+                - generic [ref=f14e389]: Internal operations console. Sign-in is audited.
+            - generic [ref=f14e391]:
+                - generic [ref=f14e392]:
+                    - generic [ref=f14e393]: Email
+                    - textbox "Email" [active] [ref=f14e394]
+                - generic [ref=f14e395]:
+                    - generic [ref=f14e396]: Password
+                    - textbox "Password" [ref=f14e397]
+                - button "Sign in" [ref=f14e398]

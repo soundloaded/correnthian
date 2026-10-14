@@ -1,0 +1,261 @@
+- generic [active] [ref=f27e1]:
+    - button "Open Next.js Dev Tools" [ref=f27e21] [cursor=pointer]
+    - alert [ref=f27e25]: Dashboard
+    - generic [ref=f27e26]:
+        - generic [ref=f27e29]:
+            - list [ref=f27e31]:
+                - listitem [ref=f27e32]:
+                    - link "Correnthian Admin" [ref=f27e33] [cursor=pointer]:
+                        - /url: /dashboard
+                        - generic [ref=f27e38]:
+                            - generic [ref=f27e39]: Correnthian
+                            - generic [ref=f27e40]: Admin
+            - generic [ref=f27e42]:
+                - generic [ref=f27e43]: Operations
+                - list [ref=f27e45]:
+                    - listitem [ref=f27e46]:
+                        - link "Dashboard" [ref=f27e47] [cursor=pointer]:
+                            - /url: /dashboard
+                    - listitem [ref=f27e54]:
+                        - link "Users" [ref=f27e55] [cursor=pointer]:
+                            - /url: /users
+                    - listitem [ref=f27e61]:
+                        - link "Devices" [ref=f27e62] [cursor=pointer]:
+                            - /url: /devices
+                    - listitem [ref=f27e66]:
+                        - link "Assets" [ref=f27e67] [cursor=pointer]:
+                            - /url: /assets
+                    - listitem [ref=f27e79]:
+                        - link "Issuers" [ref=f27e80] [cursor=pointer]:
+                            - /url: /issuers
+                    - listitem [ref=f27e84]:
+                        - link "Chains" [ref=f27e85] [cursor=pointer]:
+                            - /url: /chains
+                    - listitem [ref=f27e92]:
+                        - link "Providers" [ref=f27e93] [cursor=pointer]:
+                            - /url: /providers
+                    - listitem [ref=f27e100]:
+                        - link "Quotes" [ref=f27e101] [cursor=pointer]:
+                            - /url: /quotes
+                    - listitem [ref=f27e108]:
+                        - link "Redemptions" [ref=f27e109] [cursor=pointer]:
+                            - /url: /redemptions
+                    - listitem [ref=f27e113]:
+                        - link "Reviews" [ref=f27e114] [cursor=pointer]:
+                            - /url: /reviews
+                    - listitem [ref=f27e121]:
+                        - link "Transactions" [ref=f27e122] [cursor=pointer]:
+                            - /url: /transactions
+                    - listitem [ref=f27e129]:
+                        - link "Fees" [ref=f27e130] [cursor=pointer]:
+                            - /url: /fees
+                    - listitem [ref=f27e137]:
+                        - link "Jobs" [ref=f27e138] [cursor=pointer]:
+                            - /url: /jobs
+                    - listitem [ref=f27e145]:
+                        - link "Notifications" [ref=f27e146] [cursor=pointer]:
+                            - /url: /notifications
+                    - listitem [ref=f27e150]:
+                        - link "Audit log" [ref=f27e151] [cursor=pointer]:
+                            - /url: /audit
+            - list [ref=f27e159]:
+                - listitem [ref=f27e160]:
+                    - button "AD admin@correnthian.local admin" [ref=f27e161]:
+                        - generic [ref=f27e162]: AD
+                        - generic [ref=f27e164]:
+                            - generic [ref=f27e165]: admin@correnthian.local
+                            - generic [ref=f27e166]: admin
+            - button "Toggle Sidebar" [ref=f27e170]
+        - main [ref=f27e171]:
+            - generic [ref=f27e172]:
+                - button "Toggle Sidebar" [ref=f27e173]
+                - paragraph [ref=f27e175]: Internal operations · changes are audited
+            - main [ref=f27e176]:
+                - generic [ref=f27e177]:
+                    - heading "Dashboard" [level=1] [ref=f27e178]
+                    - paragraph [ref=f27e179]: Accounts, registry health, and anything needing attention.
+                - region "Summary" [ref=f27e180]:
+                    - generic [ref=f27e182]:
+                        - generic [ref=f27e183]: Accounts
+                        - generic [ref=f27e184]: "3"
+                    - generic [ref=f27e186]:
+                        - generic [ref=f27e187]: New in 7 days
+                        - generic [ref=f27e188]: "3"
+                    - generic [ref=f27e190]:
+                        - generic [ref=f27e191]: KYC pending
+                        - generic [ref=f27e192]: "1"
+                        - paragraph [ref=f27e193]: Needs attention
+                    - generic [ref=f27e197]:
+                        - generic [ref=f27e198]: Assets registered
+                        - generic [ref=f27e199]: "4"
+                    - generic [ref=f27e201]:
+                        - generic [ref=f27e202]: Enabled metals
+                        - generic [ref=f27e203]: "3"
+                    - generic [ref=f27e205]:
+                        - generic [ref=f27e206]: Stale attestations
+                        - generic [ref=f27e207]: "3"
+                        - paragraph [ref=f27e208]: Needs attention
+                - generic [ref=f27e211]:
+                    - generic [ref=f27e212]:
+                        - generic [ref=f27e213]: Needs attention
+                        - generic [ref=f27e214]: Each item links to the page where it can be resolved.
+                    - list [ref=f27e216]:
+                        - listitem [ref=f27e217]:
+                            - generic [ref=f27e218]:
+                                - generic [ref=f27e223]:
+                                    - paragraph [ref=f27e224]: 3 enabled metals without a current attestation
+                                    - paragraph [ref=f27e225]: Users are shown this metal as backing. Record a fresh attestation, or disable the asset until one exists.
+                                - link "Refresh attestations" [ref=f27e226] [cursor=pointer]:
+                                    - /url: /assets
+                        - listitem [ref=f27e227]:
+                            - generic [ref=f27e228]:
+                                - generic [ref=f27e236]:
+                                    - paragraph [ref=f27e237]: 12 providers degraded
+                                    - paragraph [ref=f27e238]: "Degraded: Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider. Quotes through these providers may be failing or stale."
+                                - link "Check providers" [ref=f27e239] [cursor=pointer]:
+                                    - /url: /providers
+                        - listitem [ref=f27e240]:
+                            - generic [ref=f27e241]:
+                                - generic [ref=f27e247]:
+                                    - paragraph [ref=f27e248]: 1 account awaiting KYC
+                                    - paragraph [ref=f27e249]: These accounts cannot transact until identity verification is decided.
+                                - link "Review KYC queue" [ref=f27e250] [cursor=pointer]:
+                                    - /url: /users
+                - region "Audit activity" [ref=f27e251]:
+                    - generic [ref=f27e252]:
+                        - generic [ref=f27e253]:
+                            - generic [ref=f27e254]: Audit activity
+                            - generic [ref=f27e255]: Entries per day over the last 14 days, derived from GET /audit. The API returns the newest 200 rows, so a busier period shows the tail of that window rather than the full history.
+                        - application [ref=f27e260]:
+                            - generic [ref=f27e271]:
+                                - generic [ref=f27e272]:
+                                    - generic [ref=f27e273]: 28 Sept
+                                    - generic [ref=f27e275]: 30 Sept
+                                    - generic [ref=f27e277]: 01 Oct
+                                    - generic [ref=f27e279]: 02 Oct
+                                    - generic [ref=f27e281]: 03 Oct
+                                    - generic [ref=f27e283]: 04 Oct
+                                    - generic [ref=f27e285]: 05 Oct
+                                    - generic [ref=f27e287]: 06 Oct
+                                    - generic [ref=f27e289]: 07 Oct
+                                    - generic [ref=f27e291]: 08 Oct
+                                    - generic [ref=f27e293]: 09 Oct
+                                    - generic [ref=f27e295]: 11 Oct
+                                - generic [ref=f27e297]:
+                                    - generic [ref=f27e298]: "0"
+                                    - generic [ref=f27e300]: "50"
+                                    - generic [ref=f27e302]: "100"
+                                    - generic [ref=f27e304]: "150"
+                                    - generic [ref=f27e306]: "200"
+                    - generic [ref=f27e308]:
+                        - generic [ref=f27e309]:
+                            - generic [ref=f27e310]: Recent activity
+                            - generic [ref=f27e311]: The 12 most recent audit entries.
+                            - link "Full audit trail" [ref=f27e313] [cursor=pointer]:
+                                - /url: /audit
+                        - table [ref=f27e316]:
+                            - rowgroup [ref=f27e317]:
+                                - row [ref=f27e318]:
+                                    - columnheader "When" [ref=f27e319]
+                                    - columnheader "Action" [ref=f27e320]
+                                    - columnheader "Actor" [ref=f27e321]
+                                    - columnheader "Outcome" [ref=f27e322]
+                                    - columnheader "Target" [ref=f27e323]
+                            - rowgroup [ref=f27e324]:
+                                - row [ref=f27e325]:
+                                    - cell "9h ago" [ref=f27e326]
+                                    - cell "POST JobsController.run" [ref=f27e327]
+                                    - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=f27e328]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=f27e329]: (admin)
+                                    - cell "failure" [ref=f27e330]
+                                    - cell "JobsController" [ref=f27e332]
+                                - row [ref=f27e333]:
+                                    - cell "9h ago" [ref=f27e334]
+                                    - cell "POST JobsController.run" [ref=f27e335]
+                                    - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=f27e336]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=f27e337]: (admin)
+                                    - cell "failure" [ref=f27e338]
+                                    - cell "JobsController" [ref=f27e340]
+                                - row [ref=f27e341]:
+                                    - cell "9h ago" [ref=f27e342]
+                                    - cell "POST JobsController.run" [ref=f27e343]
+                                    - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=f27e344]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=f27e345]: (admin)
+                                    - cell "success" [ref=f27e346]
+                                    - cell "JobsController" [ref=f27e348]
+                                - row [ref=f27e349]:
+                                    - cell "9h ago" [ref=f27e350]
+                                    - cell "PATCH AssetsController.setEnabled" [ref=f27e351]
+                                    - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=f27e352]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=f27e353]: (admin)
+                                    - cell "success" [ref=f27e354]
+                                    - cell "AssetsController" [ref=f27e356]
+                                - row [ref=f27e357]:
+                                    - cell "9h ago" [ref=f27e358]
+                                    - cell "PATCH AssetsController.recordAttestation" [ref=f27e359]
+                                    - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=f27e360]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=f27e361]: (admin)
+                                    - cell "success" [ref=f27e362]
+                                    - cell "AssetsController" [ref=f27e364]
+                                - row [ref=f27e365]:
+                                    - cell "9h ago" [ref=f27e366]
+                                    - cell "POST AssetsController.create" [ref=f27e367]
+                                    - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=f27e368]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=f27e369]: (admin)
+                                    - cell "success" [ref=f27e370]
+                                    - cell "AssetsController" [ref=f27e372]
+                                - row [ref=f27e373]:
+                                    - cell "9h ago" [ref=f27e374]
+                                    - cell "POST IssuersController.create" [ref=f27e375]
+                                    - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=f27e376]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=f27e377]: (admin)
+                                    - cell "success" [ref=f27e378]
+                                    - cell "IssuersController" [ref=f27e380]
+                                - row [ref=f27e381]:
+                                    - cell "9h ago" [ref=f27e382]
+                                    - cell "issuer.created" [ref=f27e383]
+                                    - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=f27e384]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=f27e385]: (admin)
+                                    - cell "success" [ref=f27e386]
+                                    - cell "Issuer · cmv3d5j4900270788kvbkmsmq" [ref=f27e388]
+                                - row [ref=f27e389]:
+                                    - cell "9h ago" [ref=f27e390]
+                                    - cell "POST JobsController.run" [ref=f27e391]
+                                    - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=f27e392]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=f27e393]: (admin)
+                                    - cell "success" [ref=f27e394]
+                                    - cell "JobsController" [ref=f27e396]
+                                - row [ref=f27e397]:
+                                    - cell "9h ago" [ref=f27e398]
+                                    - cell "POST BlockchainController.sync" [ref=f27e399]
+                                    - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=f27e400]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=f27e401]: (admin)
+                                    - cell "failure" [ref=f27e402]
+                                    - cell "BlockchainController" [ref=f27e404]
+                                - row [ref=f27e405]:
+                                    - cell "9h ago" [ref=f27e406]
+                                    - cell "POST WalletsController.register" [ref=f27e407]
+                                    - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=f27e408]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=f27e409]: (admin)
+                                    - cell "success" [ref=f27e410]
+                                    - cell "WalletsController" [ref=f27e412]
+                                - row [ref=f27e413]:
+                                    - cell "9h ago" [ref=f27e414]
+                                    - cell "POST OnRampController.quote" [ref=f27e415]
+                                    - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=f27e416]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=f27e417]: (admin)
+                                    - cell "failure" [ref=f27e418]
+                                    - cell "OnRampController" [ref=f27e420]
+    - generic [aria-hidden] [ref=f27e421]: "0"

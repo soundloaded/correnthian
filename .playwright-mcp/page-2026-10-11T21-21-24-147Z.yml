@@ -1,0 +1,128 @@
+- generic [active] [ref=f31e1]:
+    - generic [ref=f31e2]:
+        - generic [ref=f31e5]:
+            - list [ref=f31e7]:
+                - listitem [ref=f31e8]:
+                    - link "Correnthian Admin" [ref=f31e9] [cursor=pointer]:
+                        - /url: /dashboard
+                        - generic [ref=f31e14]:
+                            - generic [ref=f31e15]: Correnthian
+                            - generic [ref=f31e16]: Admin
+            - generic [ref=f31e18]:
+                - generic [ref=f31e19]: Operations
+                - list [ref=f31e21]:
+                    - listitem [ref=f31e22]:
+                        - link "Dashboard" [ref=f31e23] [cursor=pointer]:
+                            - /url: /dashboard
+                    - listitem [ref=f31e30]:
+                        - link "Users" [ref=f31e31] [cursor=pointer]:
+                            - /url: /users
+                    - listitem [ref=f31e37]:
+                        - link "Devices" [ref=f31e38] [cursor=pointer]:
+                            - /url: /devices
+                    - listitem [ref=f31e42]:
+                        - link "Assets" [ref=f31e43] [cursor=pointer]:
+                            - /url: /assets
+                    - listitem [ref=f31e55]:
+                        - link "Issuers" [ref=f31e56] [cursor=pointer]:
+                            - /url: /issuers
+                    - listitem [ref=f31e60]:
+                        - link "Chains" [ref=f31e61] [cursor=pointer]:
+                            - /url: /chains
+                    - listitem [ref=f31e68]:
+                        - link "Providers" [ref=f31e69] [cursor=pointer]:
+                            - /url: /providers
+                    - listitem [ref=f31e76]:
+                        - link "Quotes" [ref=f31e77] [cursor=pointer]:
+                            - /url: /quotes
+                    - listitem [ref=f31e84]:
+                        - link "Redemptions" [ref=f31e85] [cursor=pointer]:
+                            - /url: /redemptions
+                    - listitem [ref=f31e89]:
+                        - link "Reviews" [ref=f31e90] [cursor=pointer]:
+                            - /url: /reviews
+                    - listitem [ref=f31e97]:
+                        - link "Transactions" [ref=f31e98] [cursor=pointer]:
+                            - /url: /transactions
+                    - listitem [ref=f31e105]:
+                        - link "Fees" [ref=f31e106] [cursor=pointer]:
+                            - /url: /fees
+                    - listitem [ref=f31e113]:
+                        - link "Jobs" [ref=f31e114] [cursor=pointer]:
+                            - /url: /jobs
+                    - listitem [ref=f31e121]:
+                        - link "Notifications" [ref=f31e122] [cursor=pointer]:
+                            - /url: /notifications
+                    - listitem [ref=f31e126]:
+                        - link "Jurisdictions" [ref=f31e127] [cursor=pointer]:
+                            - /url: /jurisdictions
+                    - listitem [ref=f31e131]:
+                        - link "Audit log" [ref=f31e132] [cursor=pointer]:
+                            - /url: /audit
+            - list [ref=f31e140]:
+                - listitem [ref=f31e141]:
+                    - button "AD admin@correnthian.local admin" [ref=f31e142]:
+                        - generic [ref=f31e143]: AD
+                        - generic [ref=f31e145]:
+                            - generic [ref=f31e146]: admin@correnthian.local
+                            - generic [ref=f31e147]: admin
+            - button "Toggle Sidebar" [ref=f31e151]
+        - main [ref=f31e152]:
+            - generic [ref=f31e153]:
+                - button "Toggle Sidebar" [ref=f31e154]
+                - paragraph [ref=f31e156]: Internal operations · changes are audited
+            - main [ref=f31e157]:
+                - generic [ref=f31e158]:
+                    - heading "Jurisdictions" [level=1] [ref=f31e159]
+                    - paragraph [ref=f31e160]: What each location may do. Changing a rule changes the product everywhere it applies — admin only, and never without a stated reason.
+                - note [ref=f31e161]:
+                    - generic [ref=f31e162]: Development rules are not legal positions. The seeded rules are placeholders for counsel-reviewed rules. Do not treat an enabled flag here as permission to operate.
+                - table [ref=f31e166]:
+                    - rowgroup [ref=f31e167]:
+                        - row [ref=f31e168]:
+                            - columnheader "Where" [ref=f31e169]
+                            - columnheader "Status" [ref=f31e170]
+                            - columnheader "Edit flags" [ref=f31e171]
+                    - rowgroup [ref=f31e172]:
+                        - row [ref=f31e173]:
+                            - cell "US whole country DEVELOPMENT ONLY. Placeholder for counsel-reviewed rules." [ref=f31e174]:
+                                - text: US
+                                - generic [ref=f31e175]: whole country
+                                - generic [ref=f31e176]: DEVELOPMENT ONLY. Placeholder for counsel-reviewed rules.
+                            - cell "active" [ref=f31e177]
+                            - cell [ref=f31e179]:
+                                - generic [ref=f31e180]:
+                                    - generic [ref=f31e181]:
+                                        - text: Buy
+                                        - combobox "Buy" [ref=f31e182]:
+                                            - option "Yes" [selected]
+                                            - option "No"
+                                    - generic [ref=f31e183]:
+                                        - text: Sell
+                                        - combobox "Sell" [ref=f31e184]:
+                                            - option "Yes" [selected]
+                                            - option "No"
+                                    - generic [ref=f31e185]:
+                                        - text: Metals
+                                        - combobox "Metals" [ref=f31e186]:
+                                            - option "Yes" [selected]
+                                            - option "No"
+                                    - generic [ref=f31e187]:
+                                        - text: Redeem
+                                        - combobox "Redeem" [ref=f31e188]:
+                                            - option "Yes"
+                                            - option "No" [selected]
+                                    - generic [ref=f31e189]:
+                                        - text: KYC
+                                        - combobox "KYC" [ref=f31e190]:
+                                            - option "Yes" [selected]
+                                            - option "No"
+                                    - generic [ref=f31e191]:
+                                        - text: Active
+                                        - combobox "Active" [ref=f31e192]:
+                                            - option "Yes" [selected]
+                                            - option "No"
+                                    - textbox "Reason for changing this rule" [ref=f31e193]:
+                                        - /placeholder: Reason (required)
+                                    - button "Save" [disabled]
+    - button "Open Next.js Dev Tools" [ref=f31e199] [cursor=pointer]

@@ -1,0 +1,213 @@
+- generic [active] [ref=f17e1]:
+    - generic [ref=f17e2]:
+        - generic [ref=f17e5]:
+            - list [ref=f17e7]:
+                - listitem [ref=f17e8]:
+                    - link "Correnthian Admin" [ref=f17e9] [cursor=pointer]:
+                        - /url: /dashboard
+                        - generic [ref=f17e14]:
+                            - generic [ref=f17e15]: Correnthian
+                            - generic [ref=f17e16]: Admin
+            - generic [ref=f17e18]:
+                - generic [ref=f17e19]: Operations
+                - list [ref=f17e21]:
+                    - listitem [ref=f17e22]:
+                        - link "Dashboard" [ref=f17e23] [cursor=pointer]:
+                            - /url: /dashboard
+                    - listitem [ref=f17e30]:
+                        - link "Users" [ref=f17e31] [cursor=pointer]:
+                            - /url: /users
+                    - listitem [ref=f17e37]:
+                        - link "Devices" [ref=f17e38] [cursor=pointer]:
+                            - /url: /devices
+                    - listitem [ref=f17e42]:
+                        - link "Assets" [ref=f17e43] [cursor=pointer]:
+                            - /url: /assets
+                    - listitem [ref=f17e55]:
+                        - link "Issuers" [ref=f17e56] [cursor=pointer]:
+                            - /url: /issuers
+                    - listitem [ref=f17e60]:
+                        - link "Chains" [ref=f17e61] [cursor=pointer]:
+                            - /url: /chains
+                    - listitem [ref=f17e68]:
+                        - link "Providers" [ref=f17e69] [cursor=pointer]:
+                            - /url: /providers
+                    - listitem [ref=f17e76]:
+                        - link "Quotes" [ref=f17e77] [cursor=pointer]:
+                            - /url: /quotes
+                    - listitem [ref=f17e84]:
+                        - link "Redemptions" [ref=f17e85] [cursor=pointer]:
+                            - /url: /redemptions
+                    - listitem [ref=f17e89]:
+                        - link "Reviews" [ref=f17e90] [cursor=pointer]:
+                            - /url: /reviews
+                    - listitem [ref=f17e97]:
+                        - link "Transactions" [ref=f17e98] [cursor=pointer]:
+                            - /url: /transactions
+                    - listitem [ref=f17e105]:
+                        - link "Fees" [ref=f17e106] [cursor=pointer]:
+                            - /url: /fees
+                    - listitem [ref=f17e113]:
+                        - link "Audit log" [ref=f17e114] [cursor=pointer]:
+                            - /url: /audit
+            - list [ref=f17e122]:
+                - listitem [ref=f17e123]:
+                    - button "AD admin@correnthian.local owner" [ref=f17e124]:
+                        - generic [ref=f17e125]: AD
+                        - generic [ref=f17e127]:
+                            - generic [ref=f17e128]: admin@correnthian.local
+                            - generic [ref=f17e129]: owner
+            - button "Toggle Sidebar" [ref=f17e133]
+        - main [ref=f17e134]:
+            - generic [ref=f17e135]:
+                - button "Toggle Sidebar" [ref=f17e136]
+                - paragraph [ref=f17e138]: Internal operations · changes are audited
+            - main [ref=f17e139]:
+                - generic [ref=f17e140]:
+                    - heading "Fees" [level=1] [ref=f17e141]
+                    - paragraph [ref=f17e142]:
+                        - text: The rule table every quote prices from. Reading takes admin; creating or changing a rule takes owner
+                        - emphasis [ref=f17e143]: and
+                        - text: a stated reason — a number that moves without a why is a number no investigator can explain.
+                - alert [ref=f17e144]:
+                    - generic [ref=f17e145]: 1 ambiguous rule — quotes on these pairs refuse until resolved
+                    - generic [ref=f17e148]:
+                        - paragraph [ref=f17e149]:
+                            - generic [ref=f17e150]: buy / correnthian
+                            - generic [ref=f17e151]: — Two correnthian fee rules for buy can both apply and neither takes precedence. Set "priority" on the one that should win.
+                        - paragraph [ref=f17e152]: cmv2n383j0014t988el48siwq, cmv2n387j0016t988ceivuw5t
+                - table [ref=f17e156]:
+                    - rowgroup [ref=f17e157]:
+                        - row [ref=f17e158]:
+                            - columnheader "Operation" [ref=f17e159]
+                            - columnheader "Kind" [ref=f17e160]
+                            - columnheader "Basis" [ref=f17e161]
+                            - columnheader "Label" [ref=f17e162]
+                            - columnheader "Rate" [ref=f17e163]
+                            - columnheader "Priority" [ref=f17e164]
+                            - columnheader "Status" [ref=f17e165]
+                            - columnheader "Change" [ref=f17e166]
+                    - rowgroup [ref=f17e167]:
+                        - row [ref=f17e168]:
+                            - cell "buy" [ref=f17e169]
+                            - cell "correnthian" [ref=f17e170]
+                            - cell "fixed" [ref=f17e171]
+                            - cell "spec rule 33222" [ref=f17e172]
+                            - cell "$2.50000000" [ref=f17e173]
+                            - cell "0" [ref=f17e174]
+                            - cell "inactive" [ref=f17e175]
+                            - cell [ref=f17e177]:
+                                - generic [ref=f17e178]:
+                                    - textbox "Reason for changing rule cmv2lyhfj0007mu88tx3mktjf" [ref=f17e179]:
+                                        - /placeholder: Reason
+                                    - button "Enable" [disabled]
+                        - row [ref=f17e180]:
+                            - cell "buy" [ref=f17e181]
+                            - cell "correnthian" [ref=f17e182]
+                            - cell "fixed" [ref=f17e183]
+                            - cell "spec rule 34466" [ref=f17e184]
+                            - cell "$2.50000000" [ref=f17e185]
+                            - cell "0" [ref=f17e186]
+                            - cell "inactive" [ref=f17e187]
+                            - cell [ref=f17e189]:
+                                - generic [ref=f17e190]:
+                                    - textbox "Reason for changing rule cmv2lytml0007le88znslb0qj" [ref=f17e191]:
+                                        - /placeholder: Reason
+                                    - button "Enable" [disabled]
+                        - row [ref=f17e192]:
+                            - cell "buy" [ref=f17e193]
+                            - cell "correnthian" [ref=f17e194]
+                            - cell "fixed" [ref=f17e195]
+                            - cell "spec rule 36861" [ref=f17e196]
+                            - cell "$2.50000000" [ref=f17e197]
+                            - cell "0" [ref=f17e198]
+                            - cell "inactive" [ref=f17e199]
+                            - cell [ref=f17e201]:
+                                - generic [ref=f17e202]:
+                                    - textbox "Reason for changing rule cmv2m0af60007fx88p7sskmxa" [ref=f17e203]:
+                                        - /placeholder: Reason
+                                    - button "Enable" [disabled]
+                        - row [ref=f17e204]:
+                            - cell "buy" [ref=f17e205]
+                            - cell "correnthian" [ref=f17e206]
+                            - cell "fixed" [ref=f17e207]
+                            - cell "spec rule 48650" [ref=f17e208]
+                            - cell "$2.50000000" [ref=f17e209]
+                            - cell "0" [ref=f17e210]
+                            - cell "inactive" [ref=f17e211]
+                            - cell [ref=f17e213]:
+                                - generic [ref=f17e214]:
+                                    - textbox "Reason for changing rule cmv2m55430007je88b134ceay" [ref=f17e215]:
+                                        - /placeholder: Reason
+                                    - button "Enable" [disabled]
+                        - row [ref=f17e216]:
+                            - cell "buy" [ref=f17e217]
+                            - cell "correnthian" [ref=f17e218]
+                            - cell "fixed" [ref=f17e219]
+                            - cell "probe rule" [ref=f17e220]
+                            - cell "$2.50000000" [ref=f17e221]
+                            - cell "0" [ref=f17e222]
+                            - cell "active" [ref=f17e223]
+                            - cell [ref=f17e225]:
+                                - generic [ref=f17e226]:
+                                    - textbox "Reason for changing rule cmv2n383j0014t988el48siwq" [ref=f17e227]:
+                                        - /placeholder: Reason
+                                    - button "Disable" [disabled]
+                        - row [ref=f17e228]:
+                            - cell "buy" [ref=f17e229]
+                            - cell "correnthian" [ref=f17e230]
+                            - cell "percent" [ref=f17e231]
+                            - cell "probe clash" [ref=f17e232]
+                            - cell "0.50%" [ref=f17e233]
+                            - cell "0" [ref=f17e234]
+                            - cell "active" [ref=f17e235]
+                            - cell [ref=f17e237]:
+                                - generic [ref=f17e238]:
+                                    - textbox "Reason for changing rule cmv2n387j0016t988ceivuw5t" [ref=f17e239]:
+                                        - /placeholder: Reason
+                                    - button "Disable" [disabled]
+                - generic [ref=f17e240]:
+                    - generic [ref=f17e241]: New rule (owner only)
+                    - generic [ref=f17e244]:
+                        - generic [ref=f17e245]:
+                            - text: Operation
+                            - combobox "Operation" [ref=f17e246]:
+                                - option "Pick" [selected]
+                                - option "swap"
+                                - option "buy"
+                                - option "sell"
+                                - option "redeem"
+                                - option "onramp"
+                                - option "offramp"
+                        - generic [ref=f17e247]:
+                            - text: Kind
+                            - combobox "Kind" [ref=f17e248]:
+                                - option "Pick" [selected]
+                                - option "network"
+                                - option "provider"
+                                - option "correnthian"
+                        - generic [ref=f17e249]:
+                            - text: Basis
+                            - combobox "Basis" [ref=f17e250]:
+                                - option "Pick" [selected]
+                                - option "percent"
+                                - option "fixed"
+                                - option "spread"
+                        - generic [ref=f17e251]:
+                            - text: Label
+                            - textbox "Label" [ref=f17e252]:
+                                - /placeholder: Standard buy fee
+                        - generic [ref=f17e253]:
+                            - text: Rate (bps, for percent)
+                            - textbox "Rate (bps, for percent)" [ref=f17e254]:
+                                - /placeholder: "50"
+                        - generic [ref=f17e255]:
+                            - text: Fixed (USD, for fixed)
+                            - textbox "Fixed (USD, for fixed)" [ref=f17e256]:
+                                - /placeholder: "2.50"
+                        - generic [ref=f17e257]:
+                            - text: Reason (required)
+                            - textbox "Reason (required)" [ref=f17e258]:
+                                - /placeholder: Why is this fee changing?
+                        - button "Create rule" [disabled]
+    - button "Open Next.js Dev Tools" [ref=f17e264] [cursor=pointer]

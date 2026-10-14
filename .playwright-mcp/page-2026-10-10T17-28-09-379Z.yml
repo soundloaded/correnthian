@@ -1,0 +1,109 @@
+- generic [ref=f23e2]:
+    - generic [ref=f23e5]:
+        - list [ref=f23e7]:
+            - listitem [ref=f23e8]:
+                - link "Correnthian Admin" [ref=f23e9] [cursor=pointer]:
+                    - /url: /dashboard
+                    - generic [ref=f23e14]:
+                        - generic [ref=f23e15]: Correnthian
+                        - generic [ref=f23e16]: Admin
+        - generic [ref=f23e18]:
+            - generic [ref=f23e19]: Operations
+            - list [ref=f23e21]:
+                - listitem [ref=f23e22]:
+                    - link "Dashboard" [ref=f23e23] [cursor=pointer]:
+                        - /url: /dashboard
+                - listitem [ref=f23e30]:
+                    - link "Users" [ref=f23e31] [cursor=pointer]:
+                        - /url: /users
+                - listitem [ref=f23e37]:
+                    - link "Devices" [ref=f23e38] [cursor=pointer]:
+                        - /url: /devices
+                - listitem [ref=f23e42]:
+                    - link "Assets" [ref=f23e43] [cursor=pointer]:
+                        - /url: /assets
+                - listitem [ref=f23e55]:
+                    - link "Issuers" [ref=f23e56] [cursor=pointer]:
+                        - /url: /issuers
+                - listitem [ref=f23e60]:
+                    - link "Chains" [ref=f23e61] [cursor=pointer]:
+                        - /url: /chains
+                - listitem [ref=f23e68]:
+                    - link "Providers" [ref=f23e69] [cursor=pointer]:
+                        - /url: /providers
+                - listitem [ref=f23e76]:
+                    - link "Quotes" [ref=f23e77] [cursor=pointer]:
+                        - /url: /quotes
+                - listitem [ref=f23e84]:
+                    - link "Redemptions" [ref=f23e85] [cursor=pointer]:
+                        - /url: /redemptions
+                - listitem [ref=f23e89]:
+                    - link "Reviews" [ref=f23e90] [cursor=pointer]:
+                        - /url: /reviews
+                - listitem [ref=f23e97]:
+                    - link "Transactions" [ref=f23e98] [cursor=pointer]:
+                        - /url: /transactions
+                - listitem [ref=f23e105]:
+                    - link "Fees" [ref=f23e106] [cursor=pointer]:
+                        - /url: /fees
+                - listitem [ref=f23e113]:
+                    - link "Jobs" [ref=f23e114] [cursor=pointer]:
+                        - /url: /jobs
+                - listitem [ref=f23e121]:
+                    - link "Notifications" [ref=f23e122] [cursor=pointer]:
+                        - /url: /notifications
+                - listitem [ref=f23e126]:
+                    - link "Audit log" [ref=f23e127] [cursor=pointer]:
+                        - /url: /audit
+        - list [ref=f23e135]:
+            - listitem [ref=f23e136]:
+                - button "AD admin@correnthian.local owner" [ref=f23e137]:
+                    - generic [ref=f23e138]: AD
+                    - generic [ref=f23e140]:
+                        - generic [ref=f23e141]: admin@correnthian.local
+                        - generic [ref=f23e142]: owner
+        - button "Toggle Sidebar" [ref=f23e146]
+    - main [ref=f23e147]:
+        - generic [ref=f23e148]:
+            - button "Toggle Sidebar" [ref=f23e149]
+            - paragraph [ref=f23e151]: Internal operations · changes are audited
+        - main [ref=f23e152]:
+            - generic [ref=f23e153]:
+                - generic [ref=f23e154]:
+                    - heading "Notifications" [level=1] [ref=f23e155]
+                    - paragraph [ref=f23e156]: Queued records, not sent mail — delivery is recorded first and flushed by a transport worker once a provider exists.
+                - generic [ref=f23e157]:
+                    - combobox "Filter by delivery state" [ref=f23e158]
+                    - combobox [aria-hidden] [ref=f23e159]
+            - region "Delivery counters" [ref=f23e160]:
+                - generic [ref=f23e162]:
+                    - generic [ref=f23e163]: "1"
+                    - generic [ref=f23e164]: queued
+                - generic [ref=f23e166]:
+                    - generic [ref=f23e167]: "1"
+                    - generic [ref=f23e168]: pending
+                - generic [ref=f23e170]:
+                    - generic [ref=f23e171]: "0"
+                    - generic [ref=f23e172]: sent
+                - generic [ref=f23e174]:
+                    - generic [ref=f23e175]: "0"
+                    - generic [ref=f23e176]: failed
+            - table [ref=f23e180]:
+                - rowgroup [ref=f23e181]:
+                    - row [ref=f23e182]:
+                        - columnheader "When" [ref=f23e183]
+                        - columnheader "Account" [ref=f23e184]
+                        - columnheader "Channel" [ref=f23e185]
+                        - columnheader "Template" [ref=f23e186]
+                        - columnheader "State" [ref=f23e187]
+                        - columnheader "Error" [ref=f23e188]
+                - rowgroup [ref=f23e189]:
+                    - row [ref=f23e190]:
+                        - cell "2026-10-10 17:27:28" [ref=f23e191]
+                        - cell [ref=f23e192]:
+                            - link "admin@correnthian.local" [ref=f23e193] [cursor=pointer]:
+                                - /url: /users/cmuwgsuf10002z888e48ghecu
+                        - cell "email" [ref=f23e194]
+                        - cell "probe-page" [ref=f23e196]
+                        - cell "pending" [ref=f23e197]
+                        - cell "—" [ref=f23e199]

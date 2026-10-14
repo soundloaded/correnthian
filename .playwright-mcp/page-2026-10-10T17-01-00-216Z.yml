@@ -1,0 +1,221 @@
+- generic [active] [ref=f14e1]:
+    - generic [ref=f14e2]:
+        - generic [ref=f14e5]:
+            - list [ref=f14e7]:
+                - listitem [ref=f14e8]:
+                    - link "Correnthian Admin" [ref=f14e9] [cursor=pointer]:
+                        - /url: /dashboard
+                        - generic [ref=f14e14]:
+                            - generic [ref=f14e15]: Correnthian
+                            - generic [ref=f14e16]: Admin
+            - generic [ref=f14e18]:
+                - generic [ref=f14e19]: Operations
+                - list [ref=f14e21]:
+                    - listitem [ref=f14e22]:
+                        - link "Dashboard" [ref=f14e23] [cursor=pointer]:
+                            - /url: /dashboard
+                    - listitem [ref=f14e30]:
+                        - link "Users" [ref=f14e31] [cursor=pointer]:
+                            - /url: /users
+                    - listitem [ref=f14e37]:
+                        - link "Devices" [ref=f14e38] [cursor=pointer]:
+                            - /url: /devices
+                    - listitem [ref=f14e42]:
+                        - link "Assets" [ref=f14e43] [cursor=pointer]:
+                            - /url: /assets
+                    - listitem [ref=f14e55]:
+                        - link "Issuers" [ref=f14e56] [cursor=pointer]:
+                            - /url: /issuers
+                    - listitem [ref=f14e60]:
+                        - link "Chains" [ref=f14e61] [cursor=pointer]:
+                            - /url: /chains
+                    - listitem [ref=f14e68]:
+                        - link "Providers" [ref=f14e69] [cursor=pointer]:
+                            - /url: /providers
+                    - listitem [ref=f14e76]:
+                        - link "Quotes" [ref=f14e77] [cursor=pointer]:
+                            - /url: /quotes
+                    - listitem [ref=f14e84]:
+                        - link "Redemptions" [ref=f14e85] [cursor=pointer]:
+                            - /url: /redemptions
+                    - listitem [ref=f14e89]:
+                        - link "Reviews" [ref=f14e90] [cursor=pointer]:
+                            - /url: /reviews
+                    - listitem [ref=f14e97]:
+                        - link "Transactions" [ref=f14e98] [cursor=pointer]:
+                            - /url: /transactions
+                    - listitem [ref=f14e105]:
+                        - link "Fees" [ref=f14e106] [cursor=pointer]:
+                            - /url: /fees
+                    - listitem [ref=f14e113]:
+                        - link "Audit log" [ref=f14e114] [cursor=pointer]:
+                            - /url: /audit
+            - list [ref=f14e122]:
+                - listitem [ref=f14e123]:
+                    - button "AD admin@correnthian.local admin" [ref=f14e124]:
+                        - generic [ref=f14e125]: AD
+                        - generic [ref=f14e127]:
+                            - generic [ref=f14e128]: admin@correnthian.local
+                            - generic [ref=f14e129]: admin
+            - button "Toggle Sidebar" [ref=f14e133]
+        - main [ref=f14e134]:
+            - generic [ref=f14e135]:
+                - button "Toggle Sidebar" [ref=f14e136]
+                - paragraph [ref=f14e138]: Internal operations · changes are audited
+            - main [ref=f14e139]:
+                - generic [ref=f14e140]:
+                    - heading "Dashboard" [level=1] [ref=f14e141]
+                    - paragraph [ref=f14e142]: Accounts, registry health, and anything needing attention.
+                - region "Summary" [ref=f14e143]:
+                    - generic [ref=f14e145]:
+                        - generic [ref=f14e146]: Accounts
+                        - generic [ref=f14e147]: "3"
+                    - generic [ref=f14e149]:
+                        - generic [ref=f14e150]: New in 7 days
+                        - generic [ref=f14e151]: "3"
+                    - generic [ref=f14e153]:
+                        - generic [ref=f14e154]: KYC pending
+                        - generic [ref=f14e155]: "0"
+                    - generic [ref=f14e157]:
+                        - generic [ref=f14e158]: Assets registered
+                        - generic [ref=f14e159]: "4"
+                    - generic [ref=f14e161]:
+                        - generic [ref=f14e162]: Enabled metals
+                        - generic [ref=f14e163]: "3"
+                    - generic [ref=f14e165]:
+                        - generic [ref=f14e166]: Stale attestations
+                        - generic [ref=f14e167]: "3"
+                        - paragraph [ref=f14e168]: Needs attention
+                - generic [ref=f14e171]:
+                    - generic [ref=f14e172]:
+                        - generic [ref=f14e173]: Needs attention
+                        - generic [ref=f14e174]: Each item links to the page where it can be resolved.
+                    - list [ref=f14e176]:
+                        - listitem [ref=f14e177]:
+                            - generic [ref=f14e178]:
+                                - generic [ref=f14e183]:
+                                    - paragraph [ref=f14e184]: 3 enabled metals without a current attestation
+                                    - paragraph [ref=f14e185]: Users are shown this metal as backing. Record a fresh attestation, or disable the asset until one exists.
+                                - link "Refresh attestations" [ref=f14e186] [cursor=pointer]:
+                                    - /url: /assets
+                        - listitem [ref=f14e187]:
+                            - generic [ref=f14e188]:
+                                - generic [ref=f14e196]:
+                                    - paragraph [ref=f14e197]: 12 providers degraded
+                                    - paragraph [ref=f14e198]: "Degraded: Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider. Quotes through these providers may be failing or stale."
+                                - link "Check providers" [ref=f14e199] [cursor=pointer]:
+                                    - /url: /providers
+                - region "Audit activity" [ref=f14e200]:
+                    - generic [ref=f14e202]:
+                        - generic [ref=f14e203]: Audit activity
+                        - generic [ref=f14e204]: Entries per day over the last 14 days, derived from GET /audit. The API returns the newest 200 rows, so a busier period shows the tail of that window rather than the full history.
+                    - generic [ref=f14e209]:
+                        - generic [ref=f14e210]:
+                            - generic [ref=f14e211]: Recent activity
+                            - generic [ref=f14e212]: The 12 most recent audit entries.
+                            - link "Full audit trail" [ref=f14e214] [cursor=pointer]:
+                                - /url: /audit
+                        - table [ref=f14e217]:
+                            - rowgroup [ref=f14e218]:
+                                - row [ref=f14e219]:
+                                    - columnheader "When" [ref=f14e220]
+                                    - columnheader "Action" [ref=f14e221]
+                                    - columnheader "Actor" [ref=f14e222]
+                                    - columnheader "Outcome" [ref=f14e223]
+                                    - columnheader "Target" [ref=f14e224]
+                            - rowgroup [ref=f14e225]:
+                                - row [ref=f14e226]:
+                                    - cell "1m ago" [ref=f14e227]
+                                    - cell "POST FeesController.create" [ref=f14e228]
+                                    - cell "cmuwgsuf10002z888e48ghecu(owner)" [ref=f14e229]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=f14e230]: (owner)
+                                    - cell "success" [ref=f14e231]
+                                    - cell "FeesController" [ref=f14e233]
+                                - row [ref=f14e234]:
+                                    - cell "1m ago" [ref=f14e235]
+                                    - cell "feeRule.created" [ref=f14e236]
+                                    - cell "cmuwgsuf10002z888e48ghecu(owner)" [ref=f14e237]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=f14e238]: (owner)
+                                    - cell "success" [ref=f14e239]
+                                    - cell "FeeRule · cmv2n387j0016t988ceivuw5t" [ref=f14e241]
+                                - row [ref=f14e242]:
+                                    - cell "1m ago" [ref=f14e243]
+                                    - cell "POST FeesController.create" [ref=f14e244]
+                                    - cell "cmuwgsuf10002z888e48ghecu(owner)" [ref=f14e245]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=f14e246]: (owner)
+                                    - cell "success" [ref=f14e247]
+                                    - cell "FeesController" [ref=f14e249]
+                                - row [ref=f14e250]:
+                                    - cell "5m ago" [ref=f14e251]
+                                    - cell "POST WalletsController.register" [ref=f14e252]
+                                    - cell "cmv2mz24a000nt988spd8q27p(user)" [ref=f14e253]:
+                                        - text: cmv2mz24a000nt988spd8q27p
+                                        - generic [ref=f14e254]: (user)
+                                    - cell "success" [ref=f14e255]
+                                    - cell "WalletsController" [ref=f14e257]
+                                - row [ref=f14e258]:
+                                    - cell "7m ago" [ref=f14e259]
+                                    - cell "POST ComplianceController.decide" [ref=f14e260]
+                                    - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=f14e261]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=f14e262]: (admin)
+                                    - cell "success" [ref=f14e263]
+                                    - cell "ComplianceController" [ref=f14e265]
+                                - row [ref=f14e266]:
+                                    - cell "7m ago" [ref=f14e267]
+                                    - cell "kyc.approved" [ref=f14e268]
+                                    - cell "cmuwgsuf10002z888e48ghecu" [ref=f14e269]
+                                    - cell "success" [ref=f14e270]
+                                    - cell "KycProfile · probe-kyc-1" [ref=f14e272]
+                                - row [ref=f14e273]:
+                                    - cell "21m ago" [ref=f14e274]
+                                    - cell "POST JobsController.run" [ref=f14e275]
+                                    - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=f14e276]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=f14e277]: (admin)
+                                    - cell "failure" [ref=f14e278]
+                                    - cell "JobsController" [ref=f14e280]
+                                - row [ref=f14e281]:
+                                    - cell "21m ago" [ref=f14e282]
+                                    - cell "POST JobsController.run" [ref=f14e283]
+                                    - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=f14e284]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=f14e285]: (admin)
+                                    - cell "failure" [ref=f14e286]
+                                    - cell "JobsController" [ref=f14e288]
+                                - row [ref=f14e289]:
+                                    - cell "21m ago" [ref=f14e290]
+                                    - cell "POST JobsController.run" [ref=f14e291]
+                                    - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=f14e292]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=f14e293]: (admin)
+                                    - cell "success" [ref=f14e294]
+                                    - cell "JobsController" [ref=f14e296]
+                                - row [ref=f14e297]:
+                                    - cell "21m ago" [ref=f14e298]
+                                    - cell "POST WalletsController.setBalance" [ref=f14e299]
+                                    - cell "cmv2meigs00002m88ed1q8cwi(user)" [ref=f14e300]:
+                                        - text: cmv2meigs00002m88ed1q8cwi
+                                        - generic [ref=f14e301]: (user)
+                                    - cell "failure" [ref=f14e302]
+                                    - cell "WalletsController" [ref=f14e304]
+                                - row [ref=f14e305]:
+                                    - cell "21m ago" [ref=f14e306]
+                                    - cell "PATCH WalletsController.setGuardians" [ref=f14e307]
+                                    - cell "cmv2meigs00002m88ed1q8cwi(user)" [ref=f14e308]:
+                                        - text: cmv2meigs00002m88ed1q8cwi
+                                        - generic [ref=f14e309]: (user)
+                                    - cell "failure" [ref=f14e310]
+                                    - cell "WalletsController" [ref=f14e312]
+                                - row [ref=f14e313]:
+                                    - cell "21m ago" [ref=f14e314]
+                                    - cell "PATCH WalletsController.setGuardians" [ref=f14e315]
+                                    - cell "cmv2meigs00002m88ed1q8cwi(user)" [ref=f14e316]:
+                                        - text: cmv2meigs00002m88ed1q8cwi
+                                        - generic [ref=f14e317]: (user)
+                                    - cell "failure" [ref=f14e318]
+                                    - cell "WalletsController" [ref=f14e320]
+    - button "Open Next.js Dev Tools" [ref=f14e326] [cursor=pointer]

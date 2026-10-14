@@ -1,0 +1,302 @@
+- generic:
+    - generic [aria-hidden]:
+        - generic:
+            - generic:
+                - generic:
+                    - generic:
+                        - list:
+                            - listitem:
+                                - link:
+                                    - /url: /dashboard
+                                    - generic:
+                                        - generic: Correnthian
+                                        - generic: Admin
+                    - generic:
+                        - generic:
+                            - generic: Operations
+                            - generic:
+                                - list:
+                                    - listitem:
+                                        - link:
+                                            - /url: /dashboard
+                                            - generic: Dashboard
+                                    - listitem:
+                                        - link:
+                                            - /url: /users
+                                            - generic: Users
+                                    - listitem:
+                                        - link:
+                                            - /url: /devices
+                                            - generic: Devices
+                                    - listitem:
+                                        - link:
+                                            - /url: /assets
+                                            - generic: Assets
+                                    - listitem:
+                                        - link:
+                                            - /url: /issuers
+                                            - generic: Issuers
+                                    - listitem:
+                                        - link:
+                                            - /url: /chains
+                                            - generic: Chains
+                                    - listitem:
+                                        - link:
+                                            - /url: /providers
+                                            - generic: Providers
+                                    - listitem:
+                                        - link:
+                                            - /url: /quotes
+                                            - generic: Quotes
+                                    - listitem:
+                                        - link:
+                                            - /url: /redemptions
+                                            - generic: Redemptions
+                                    - listitem:
+                                        - link:
+                                            - /url: /reviews
+                                            - generic: Reviews
+                                    - listitem:
+                                        - link:
+                                            - /url: /transactions
+                                            - generic: Transactions
+                                    - listitem:
+                                        - link:
+                                            - /url: /fees
+                                            - generic: Fees
+                                    - listitem:
+                                        - link:
+                                            - /url: /audit
+                                            - generic: Audit log
+                    - generic:
+                        - list:
+                            - listitem:
+                                - button [expanded]:
+                                    - generic: AD
+                                    - generic:
+                                        - generic: admin@correnthian.local
+                                        - generic: admin
+                    - button
+        - main:
+            - generic:
+                - button:
+                    - generic: Toggle Sidebar
+                - paragraph: Internal operations · changes are audited
+            - main:
+                - generic:
+                    - heading [level=1]: Dashboard
+                    - paragraph: Accounts, registry health, and anything needing attention.
+                - region:
+                    - generic:
+                        - generic:
+                            - generic: Accounts
+                            - generic: "3"
+                    - generic:
+                        - generic:
+                            - generic: New in 7 days
+                            - generic: "3"
+                    - generic:
+                        - generic:
+                            - generic: KYC pending
+                            - generic: "0"
+                    - generic:
+                        - generic:
+                            - generic: Assets registered
+                            - generic: "4"
+                    - generic:
+                        - generic:
+                            - generic: Enabled metals
+                            - generic: "3"
+                    - generic:
+                        - generic:
+                            - generic: Stale attestations
+                            - generic: "3"
+                            - paragraph: Needs attention
+                - generic:
+                    - generic:
+                        - generic: Needs attention
+                        - generic: Each item links to the page where it can be resolved.
+                    - generic:
+                        - list:
+                            - listitem:
+                                - generic:
+                                    - generic:
+                                        - generic:
+                                            - paragraph: 3 enabled metals without a current attestation
+                                            - paragraph: Users are shown this metal as backing. Record a fresh attestation, or disable the asset until one exists.
+                                    - link:
+                                        - /url: /assets
+                                        - text: Refresh attestations
+                            - listitem:
+                                - generic:
+                                    - generic:
+                                        - generic:
+                                            - paragraph: 12 providers degraded
+                                            - paragraph: "Degraded: Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider. Quotes through these providers may be failing or stale."
+                                    - link:
+                                        - /url: /providers
+                                        - text: Check providers
+                - region:
+                    - generic:
+                        - generic:
+                            - generic: Audit activity
+                            - generic: Entries per day over the last 14 days, derived from GET /audit. The API returns the newest 200 rows, so a busier period shows the tail of that window rather than the full history.
+                        - generic:
+                            - generic:
+                                - generic:
+                                    - generic:
+                                        - application:
+                                            - generic:
+                                                - generic:
+                                                    - generic: 28 Sept
+                                                    - generic: 30 Sept
+                                                    - generic: 01 Oct
+                                                    - generic: 02 Oct
+                                                    - generic: 03 Oct
+                                                    - generic: 04 Oct
+                                                    - generic: 05 Oct
+                                                    - generic: 06 Oct
+                                                    - generic: 07 Oct
+                                                    - generic: 08 Oct
+                                                    - generic: 10 Oct
+                                                - generic:
+                                                    - generic: "0"
+                                                    - generic: "50"
+                                                    - generic: "100"
+                                                    - generic: "150"
+                                                    - generic: "200"
+                    - generic:
+                        - generic:
+                            - generic: Recent activity
+                            - generic: The 12 most recent audit entries.
+                            - generic:
+                                - link:
+                                    - /url: /audit
+                                    - text: Full audit trail
+                        - generic:
+                            - generic:
+                                - table:
+                                    - rowgroup:
+                                        - row:
+                                            - columnheader: When
+                                            - columnheader: Action
+                                            - columnheader: Actor
+                                            - columnheader: Outcome
+                                            - columnheader: Target
+                                    - rowgroup:
+                                        - row:
+                                            - cell: 1m ago
+                                            - cell: POST FeesController.create
+                                            - cell:
+                                                - text: cmuwgsuf10002z888e48ghecu
+                                                - generic: (owner)
+                                            - cell:
+                                                - generic: success
+                                            - cell: FeesController
+                                        - row:
+                                            - cell: 1m ago
+                                            - cell: feeRule.created
+                                            - cell:
+                                                - text: cmuwgsuf10002z888e48ghecu
+                                                - generic: (owner)
+                                            - cell:
+                                                - generic: success
+                                            - cell: FeeRule · cmv2n387j0016t988ceivuw5t
+                                        - row:
+                                            - cell: 1m ago
+                                            - cell: POST FeesController.create
+                                            - cell:
+                                                - text: cmuwgsuf10002z888e48ghecu
+                                                - generic: (owner)
+                                            - cell:
+                                                - generic: success
+                                            - cell: FeesController
+                                        - row:
+                                            - cell: 5m ago
+                                            - cell: POST WalletsController.register
+                                            - cell:
+                                                - text: cmv2mz24a000nt988spd8q27p
+                                                - generic: (user)
+                                            - cell:
+                                                - generic: success
+                                            - cell: WalletsController
+                                        - row:
+                                            - cell: 7m ago
+                                            - cell: POST ComplianceController.decide
+                                            - cell:
+                                                - text: cmuwgsuf10002z888e48ghecu
+                                                - generic: (admin)
+                                            - cell:
+                                                - generic: success
+                                            - cell: ComplianceController
+                                        - row:
+                                            - cell: 7m ago
+                                            - cell: kyc.approved
+                                            - cell: cmuwgsuf10002z888e48ghecu
+                                            - cell:
+                                                - generic: success
+                                            - cell: KycProfile · probe-kyc-1
+                                        - row:
+                                            - cell: 21m ago
+                                            - cell: POST JobsController.run
+                                            - cell:
+                                                - text: cmuwgsuf10002z888e48ghecu
+                                                - generic: (admin)
+                                            - cell:
+                                                - generic: failure
+                                            - cell: JobsController
+                                        - row:
+                                            - cell: 21m ago
+                                            - cell: POST JobsController.run
+                                            - cell:
+                                                - text: cmuwgsuf10002z888e48ghecu
+                                                - generic: (admin)
+                                            - cell:
+                                                - generic: failure
+                                            - cell: JobsController
+                                        - row:
+                                            - cell: 21m ago
+                                            - cell: POST JobsController.run
+                                            - cell:
+                                                - text: cmuwgsuf10002z888e48ghecu
+                                                - generic: (admin)
+                                            - cell:
+                                                - generic: success
+                                            - cell: JobsController
+                                        - row:
+                                            - cell: 21m ago
+                                            - cell: POST WalletsController.setBalance
+                                            - cell:
+                                                - text: cmv2meigs00002m88ed1q8cwi
+                                                - generic: (user)
+                                            - cell:
+                                                - generic: failure
+                                            - cell: WalletsController
+                                        - row:
+                                            - cell: 21m ago
+                                            - cell: PATCH WalletsController.setGuardians
+                                            - cell:
+                                                - text: cmv2meigs00002m88ed1q8cwi
+                                                - generic: (user)
+                                            - cell:
+                                                - generic: failure
+                                            - cell: WalletsController
+                                        - row:
+                                            - cell: 21m ago
+                                            - cell: PATCH WalletsController.setGuardians
+                                            - cell:
+                                                - text: cmv2meigs00002m88ed1q8cwi
+                                                - generic: (user)
+                                            - cell:
+                                                - generic: failure
+                                            - cell: WalletsController
+    - button "Open Next.js Dev Tools" [ref=f14e326] [cursor=pointer]
+    - alert
+    - generic [aria-hidden]: "0"
+    - menu "AD admin@correnthian.local admin" [active] [ref=f14e378]:
+        - generic [ref=f14e379]:
+            - paragraph [ref=f14e380]: Signed in as
+            - paragraph [ref=f14e381]: admin@correnthian.local
+            - generic [ref=f14e382]: admin
+        - separator [ref=f14e383]
+        - menuitem "Sign out" [ref=f14e384]

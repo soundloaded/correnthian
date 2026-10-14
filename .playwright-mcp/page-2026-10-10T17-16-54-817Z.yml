@@ -1,0 +1,222 @@
+- generic [ref=f20e2]:
+    - generic [ref=f20e5]:
+        - list [ref=f20e7]:
+            - listitem [ref=f20e8]:
+                - link "Correnthian Admin" [ref=f20e9] [cursor=pointer]:
+                    - /url: /dashboard
+                    - generic [ref=f20e14]:
+                        - generic [ref=f20e15]: Correnthian
+                        - generic [ref=f20e16]: Admin
+        - generic [ref=f20e18]:
+            - generic [ref=f20e19]: Operations
+            - list [ref=f20e21]:
+                - listitem [ref=f20e22]:
+                    - link "Dashboard" [ref=f20e23] [cursor=pointer]:
+                        - /url: /dashboard
+                - listitem [ref=f20e30]:
+                    - link "Users" [ref=f20e31] [cursor=pointer]:
+                        - /url: /users
+                - listitem [ref=f20e37]:
+                    - link "Devices" [ref=f20e38] [cursor=pointer]:
+                        - /url: /devices
+                - listitem [ref=f20e42]:
+                    - link "Assets" [ref=f20e43] [cursor=pointer]:
+                        - /url: /assets
+                - listitem [ref=f20e55]:
+                    - link "Issuers" [ref=f20e56] [cursor=pointer]:
+                        - /url: /issuers
+                - listitem [ref=f20e60]:
+                    - link "Chains" [ref=f20e61] [cursor=pointer]:
+                        - /url: /chains
+                - listitem [ref=f20e68]:
+                    - link "Providers" [ref=f20e69] [cursor=pointer]:
+                        - /url: /providers
+                - listitem [ref=f20e76]:
+                    - link "Quotes" [ref=f20e77] [cursor=pointer]:
+                        - /url: /quotes
+                - listitem [ref=f20e84]:
+                    - link "Redemptions" [ref=f20e85] [cursor=pointer]:
+                        - /url: /redemptions
+                - listitem [ref=f20e89]:
+                    - link "Reviews" [ref=f20e90] [cursor=pointer]:
+                        - /url: /reviews
+                - listitem [ref=f20e97]:
+                    - link "Transactions" [ref=f20e98] [cursor=pointer]:
+                        - /url: /transactions
+                - listitem [ref=f20e105]:
+                    - link "Fees" [ref=f20e106] [cursor=pointer]:
+                        - /url: /fees
+                - listitem [ref=f20e113]:
+                    - link "Jobs" [ref=f20e114] [cursor=pointer]:
+                        - /url: /jobs
+                - listitem [ref=f20e121]:
+                    - link "Audit log" [ref=f20e122] [cursor=pointer]:
+                        - /url: /audit
+        - list [ref=f20e130]:
+            - listitem [ref=f20e131]:
+                - button "AD admin@correnthian.local owner" [ref=f20e132]:
+                    - generic [ref=f20e133]: AD
+                    - generic [ref=f20e135]:
+                        - generic [ref=f20e136]: admin@correnthian.local
+                        - generic [ref=f20e137]: owner
+        - button "Toggle Sidebar" [ref=f20e141]
+    - main [ref=f20e142]:
+        - generic [ref=f20e143]:
+            - button "Toggle Sidebar" [ref=f20e144]
+            - paragraph [ref=f20e146]: Internal operations · changes are audited
+        - main [ref=f20e147]:
+            - generic [ref=f20e148]:
+                - heading "Dashboard" [level=1] [ref=f20e149]
+                - paragraph [ref=f20e150]: Accounts, registry health, and anything needing attention.
+            - region "Summary" [ref=f20e151]:
+                - generic [ref=f20e153]:
+                    - generic [ref=f20e154]: Accounts
+                    - generic [ref=f20e155]: "3"
+                - generic [ref=f20e157]:
+                    - generic [ref=f20e158]: New in 7 days
+                    - generic [ref=f20e159]: "3"
+                - generic [ref=f20e161]:
+                    - generic [ref=f20e162]: KYC pending
+                    - generic [ref=f20e163]: "0"
+                - generic [ref=f20e165]:
+                    - generic [ref=f20e166]: Assets registered
+                    - generic [ref=f20e167]: "4"
+                - generic [ref=f20e169]:
+                    - generic [ref=f20e170]: Enabled metals
+                    - generic [ref=f20e171]: "3"
+                - generic [ref=f20e173]:
+                    - generic [ref=f20e174]: Stale attestations
+                    - generic [ref=f20e175]: "3"
+                    - paragraph [ref=f20e176]: Needs attention
+            - generic [ref=f20e179]:
+                - generic [ref=f20e180]:
+                    - generic [ref=f20e181]: Needs attention
+                    - generic [ref=f20e182]: Each item links to the page where it can be resolved.
+                - list [ref=f20e184]:
+                    - listitem [ref=f20e185]:
+                        - generic [ref=f20e186]:
+                            - generic [ref=f20e191]:
+                                - paragraph [ref=f20e192]: 3 enabled metals without a current attestation
+                                - paragraph [ref=f20e193]: Users are shown this metal as backing. Record a fresh attestation, or disable the asset until one exists.
+                            - link "Refresh attestations" [ref=f20e194] [cursor=pointer]:
+                                - /url: /assets
+                    - listitem [ref=f20e195]:
+                        - generic [ref=f20e196]:
+                            - generic [ref=f20e204]:
+                                - paragraph [ref=f20e205]: 12 providers degraded
+                                - paragraph [ref=f20e206]: "Degraded: Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider. Quotes through these providers may be failing or stale."
+                            - link "Check providers" [ref=f20e207] [cursor=pointer]:
+                                - /url: /providers
+            - region "Audit activity" [ref=f20e208]:
+                - generic [ref=f20e210]:
+                    - generic [ref=f20e211]: Audit activity
+                    - generic [ref=f20e212]: Entries per day over the last 14 days, derived from GET /audit. The API returns the newest 200 rows, so a busier period shows the tail of that window rather than the full history.
+                - generic [ref=f20e217]:
+                    - generic [ref=f20e218]:
+                        - generic [ref=f20e219]: Recent activity
+                        - generic [ref=f20e220]: The 12 most recent audit entries.
+                        - link "Full audit trail" [ref=f20e222] [cursor=pointer]:
+                            - /url: /audit
+                    - table [ref=f20e225]:
+                        - rowgroup [ref=f20e226]:
+                            - row [ref=f20e227]:
+                                - columnheader "When" [ref=f20e228]
+                                - columnheader "Action" [ref=f20e229]
+                                - columnheader "Actor" [ref=f20e230]
+                                - columnheader "Outcome" [ref=f20e231]
+                                - columnheader "Target" [ref=f20e232]
+                        - rowgroup [ref=f20e233]:
+                            - row [ref=f20e234]:
+                                - cell "3m ago" [ref=f20e235]
+                                - cell "PATCH FeesController.update" [ref=f20e236]
+                                - cell "cmuwgsuf10002z888e48ghecu(owner)" [ref=f20e237]:
+                                    - text: cmuwgsuf10002z888e48ghecu
+                                    - generic [ref=f20e238]: (owner)
+                                - cell "success" [ref=f20e239]
+                                - cell "FeesController" [ref=f20e241]
+                            - row [ref=f20e242]:
+                                - cell "3m ago" [ref=f20e243]
+                                - cell "feeRule.changed" [ref=f20e244]
+                                - cell "cmuwgsuf10002z888e48ghecu(owner)" [ref=f20e245]:
+                                    - text: cmuwgsuf10002z888e48ghecu
+                                    - generic [ref=f20e246]: (owner)
+                                - cell "success" [ref=f20e247]
+                                - cell "FeeRule · cmv2n383j0014t988el48siwq" [ref=f20e249]
+                            - row [ref=f20e250]:
+                                - cell "3m ago" [ref=f20e251]
+                                - cell "POST FeesController.create" [ref=f20e252]
+                                - cell "cmuwgsuf10002z888e48ghecu(owner)" [ref=f20e253]:
+                                    - text: cmuwgsuf10002z888e48ghecu
+                                    - generic [ref=f20e254]: (owner)
+                                - cell "success" [ref=f20e255]
+                                - cell "FeesController" [ref=f20e257]
+                            - row [ref=f20e258]:
+                                - cell "17m ago" [ref=f20e259]
+                                - cell "POST FeesController.create" [ref=f20e260]
+                                - cell "cmuwgsuf10002z888e48ghecu(owner)" [ref=f20e261]:
+                                    - text: cmuwgsuf10002z888e48ghecu
+                                    - generic [ref=f20e262]: (owner)
+                                - cell "success" [ref=f20e263]
+                                - cell "FeesController" [ref=f20e265]
+                            - row [ref=f20e266]:
+                                - cell "17m ago" [ref=f20e267]
+                                - cell "feeRule.created" [ref=f20e268]
+                                - cell "cmuwgsuf10002z888e48ghecu(owner)" [ref=f20e269]:
+                                    - text: cmuwgsuf10002z888e48ghecu
+                                    - generic [ref=f20e270]: (owner)
+                                - cell "success" [ref=f20e271]
+                                - cell "FeeRule · cmv2n387j0016t988ceivuw5t" [ref=f20e273]
+                            - row [ref=f20e274]:
+                                - cell "17m ago" [ref=f20e275]
+                                - cell "POST FeesController.create" [ref=f20e276]
+                                - cell "cmuwgsuf10002z888e48ghecu(owner)" [ref=f20e277]:
+                                    - text: cmuwgsuf10002z888e48ghecu
+                                    - generic [ref=f20e278]: (owner)
+                                - cell "success" [ref=f20e279]
+                                - cell "FeesController" [ref=f20e281]
+                            - row [ref=f20e282]:
+                                - cell "21m ago" [ref=f20e283]
+                                - cell "POST WalletsController.register" [ref=f20e284]
+                                - cell "cmv2mz24a000nt988spd8q27p(user)" [ref=f20e285]:
+                                    - text: cmv2mz24a000nt988spd8q27p
+                                    - generic [ref=f20e286]: (user)
+                                - cell "success" [ref=f20e287]
+                                - cell "WalletsController" [ref=f20e289]
+                            - row [ref=f20e290]:
+                                - cell "23m ago" [ref=f20e291]
+                                - cell "POST ComplianceController.decide" [ref=f20e292]
+                                - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=f20e293]:
+                                    - text: cmuwgsuf10002z888e48ghecu
+                                    - generic [ref=f20e294]: (admin)
+                                - cell "success" [ref=f20e295]
+                                - cell "ComplianceController" [ref=f20e297]
+                            - row [ref=f20e298]:
+                                - cell "23m ago" [ref=f20e299]
+                                - cell "kyc.approved" [ref=f20e300]
+                                - cell "cmuwgsuf10002z888e48ghecu" [ref=f20e301]
+                                - cell "success" [ref=f20e302]
+                                - cell "KycProfile · probe-kyc-1" [ref=f20e304]
+                            - row [ref=f20e305]:
+                                - cell "36m ago" [ref=f20e306]
+                                - cell "POST JobsController.run" [ref=f20e307]
+                                - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=f20e308]:
+                                    - text: cmuwgsuf10002z888e48ghecu
+                                    - generic [ref=f20e309]: (admin)
+                                - cell "failure" [ref=f20e310]
+                                - cell "JobsController" [ref=f20e312]
+                            - row [ref=f20e313]:
+                                - cell "36m ago" [ref=f20e314]
+                                - cell "POST JobsController.run" [ref=f20e315]
+                                - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=f20e316]:
+                                    - text: cmuwgsuf10002z888e48ghecu
+                                    - generic [ref=f20e317]: (admin)
+                                - cell "failure" [ref=f20e318]
+                                - cell "JobsController" [ref=f20e320]
+                            - row [ref=f20e321]:
+                                - cell "36m ago" [ref=f20e322]
+                                - cell "POST JobsController.run" [ref=f20e323]
+                                - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=f20e324]:
+                                    - text: cmuwgsuf10002z888e48ghecu
+                                    - generic [ref=f20e325]: (admin)
+                                - cell "success" [ref=f20e326]
+                                - cell "JobsController" [ref=f20e328]

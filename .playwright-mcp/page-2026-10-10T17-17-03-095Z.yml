@@ -1,0 +1,178 @@
+- generic [active] [ref=f21e1]:
+    - generic [ref=f21e2]:
+        - generic [ref=f21e5]:
+            - list [ref=f21e7]:
+                - listitem [ref=f21e8]:
+                    - link "Correnthian Admin" [ref=f21e9] [cursor=pointer]:
+                        - /url: /dashboard
+                        - generic [ref=f21e14]:
+                            - generic [ref=f21e15]: Correnthian
+                            - generic [ref=f21e16]: Admin
+            - generic [ref=f21e18]:
+                - generic [ref=f21e19]: Operations
+                - list [ref=f21e21]:
+                    - listitem [ref=f21e22]:
+                        - link "Dashboard" [ref=f21e23] [cursor=pointer]:
+                            - /url: /dashboard
+                    - listitem [ref=f21e30]:
+                        - link "Users" [ref=f21e31] [cursor=pointer]:
+                            - /url: /users
+                    - listitem [ref=f21e37]:
+                        - link "Devices" [ref=f21e38] [cursor=pointer]:
+                            - /url: /devices
+                    - listitem [ref=f21e42]:
+                        - link "Assets" [ref=f21e43] [cursor=pointer]:
+                            - /url: /assets
+                    - listitem [ref=f21e55]:
+                        - link "Issuers" [ref=f21e56] [cursor=pointer]:
+                            - /url: /issuers
+                    - listitem [ref=f21e60]:
+                        - link "Chains" [ref=f21e61] [cursor=pointer]:
+                            - /url: /chains
+                    - listitem [ref=f21e68]:
+                        - link "Providers" [ref=f21e69] [cursor=pointer]:
+                            - /url: /providers
+                    - listitem [ref=f21e76]:
+                        - link "Quotes" [ref=f21e77] [cursor=pointer]:
+                            - /url: /quotes
+                    - listitem [ref=f21e84]:
+                        - link "Redemptions" [ref=f21e85] [cursor=pointer]:
+                            - /url: /redemptions
+                    - listitem [ref=f21e89]:
+                        - link "Reviews" [ref=f21e90] [cursor=pointer]:
+                            - /url: /reviews
+                    - listitem [ref=f21e97]:
+                        - link "Transactions" [ref=f21e98] [cursor=pointer]:
+                            - /url: /transactions
+                    - listitem [ref=f21e105]:
+                        - link "Fees" [ref=f21e106] [cursor=pointer]:
+                            - /url: /fees
+                    - listitem [ref=f21e113]:
+                        - link "Jobs" [ref=f21e114] [cursor=pointer]:
+                            - /url: /jobs
+                    - listitem [ref=f21e121]:
+                        - link "Audit log" [ref=f21e122] [cursor=pointer]:
+                            - /url: /audit
+            - list [ref=f21e130]:
+                - listitem [ref=f21e131]:
+                    - button "AD admin@correnthian.local owner" [ref=f21e132]:
+                        - generic [ref=f21e133]: AD
+                        - generic [ref=f21e135]:
+                            - generic [ref=f21e136]: admin@correnthian.local
+                            - generic [ref=f21e137]: owner
+            - button "Toggle Sidebar" [ref=f21e141]
+        - main [ref=f21e142]:
+            - generic [ref=f21e143]:
+                - button "Toggle Sidebar" [ref=f21e144]
+                - paragraph [ref=f21e146]: Internal operations · changes are audited
+            - main [ref=f21e147]:
+                - generic [ref=f21e148]:
+                    - heading "Jobs" [level=1] [ref=f21e149]
+                    - paragraph [ref=f21e150]: Scheduled work and whether the schedule is keeping up. Health is derived from the run ledger by the API — this page displays it, it does not recompute it.
+                - table [ref=f21e154]:
+                    - rowgroup [ref=f21e155]:
+                        - row [ref=f21e156]:
+                            - columnheader "Job" [ref=f21e157]
+                            - columnheader "Cadence" [ref=f21e158]
+                            - columnheader "Health" [ref=f21e159]
+                            - columnheader "Last run" [ref=f21e160]
+                            - columnheader "Affected" [ref=f21e161]
+                            - columnheader "Run" [ref=f21e162]
+                    - rowgroup [ref=f21e163]:
+                        - row [ref=f21e164]:
+                            - cell "idempotency.purge Delete idempotency records past their expiry, in bounded batches. Expired records are already treated as absent; this stops them accumulating." [ref=f21e165]:
+                                - text: idempotency.purge
+                                - generic [ref=f21e166]: Delete idempotency records past their expiry, in bounded batches. Expired records are already treated as absent; this stops them accumulating.
+                            - cell "every 15m" [ref=f21e167]
+                            - cell "ok" [ref=f21e168]
+                            - cell "2026-10-10 17:15:31 schedule · 40ms" [ref=f21e170]:
+                                - text: 2026-10-10 17:15:31
+                                - generic [ref=f21e171]: schedule · 40ms
+                            - cell "0" [ref=f21e172]
+                            - cell [ref=f21e173]:
+                                - button "Run now" [ref=f21e175]
+                        - row [ref=f21e176]:
+                            - cell "provider.health-probe Probe providers that are not disabled and write status, lastCheckedAt and the last probe result. Only a probe that reached a provider marks it active; anything else is degraded." [ref=f21e177]:
+                                - text: provider.health-probe
+                                - generic [ref=f21e178]: Probe providers that are not disabled and write status, lastCheckedAt and the last probe result. Only a probe that reached a provider marks it active; anything else is degraded.
+                            - cell "every 2m" [ref=f21e179]
+                            - cell "ok" [ref=f21e180]
+                            - cell "2026-10-10 17:16:16 schedule · 135ms" [ref=f21e182]:
+                                - text: 2026-10-10 17:16:16
+                                - generic [ref=f21e183]: schedule · 135ms
+                            - cell "12" [ref=f21e184]
+                            - cell [ref=f21e185]:
+                                - button "Run now" [ref=f21e187]
+                        - row [ref=f21e188]:
+                            - cell "swap-quote.expire Move quotes still in \"quoted\" past their expiresAt to \"expired\". Quotes with a payment or a transaction already against them are left alone." [ref=f21e189]:
+                                - text: swap-quote.expire
+                                - generic [ref=f21e190]: Move quotes still in "quoted" past their expiresAt to "expired". Quotes with a payment or a transaction already against them are left alone.
+                            - cell "every 1m" [ref=f21e191]
+                            - cell "ok" [ref=f21e192]
+                            - cell "2026-10-10 17:16:16 schedule · 60ms" [ref=f21e194]:
+                                - text: 2026-10-10 17:16:16
+                                - generic [ref=f21e195]: schedule · 60ms
+                            - cell "0" [ref=f21e196]
+                            - cell [ref=f21e197]:
+                                - button "Run now" [ref=f21e199]
+                        - row [ref=f21e200]:
+                            - 'cell "price.flag-stale Flag enabled assets with no price, or no price fresher than the freshness threshold the API applies. Writes nothing: price history is never pruned." [ref=f21e201]':
+                                - text: price.flag-stale
+                                - generic [ref=f21e202]: "Flag enabled assets with no price, or no price fresher than the freshness threshold the API applies. Writes nothing: price history is never pruned."
+                            - cell "every 5m" [ref=f21e203]
+                            - cell "ok" [ref=f21e204]
+                            - cell "2026-10-10 17:17:01 schedule · 55ms" [ref=f21e206]:
+                                - text: 2026-10-10 17:17:01
+                                - generic [ref=f21e207]: schedule · 55ms
+                            - cell "4" [ref=f21e208]
+                            - cell [ref=f21e209]:
+                                - button "Run now" [ref=f21e211]
+                        - row [ref=f21e212]:
+                            - cell "transaction.expire-intents Move transaction intents past their expiry that nobody signed or broadcast to \"expired\". A transaction already on the network is never expired by this." [ref=f21e213]:
+                                - text: transaction.expire-intents
+                                - generic [ref=f21e214]: Move transaction intents past their expiry that nobody signed or broadcast to "expired". A transaction already on the network is never expired by this.
+                            - cell "every 1m" [ref=f21e215]
+                            - cell "ok" [ref=f21e216]
+                            - cell "2026-10-10 17:16:16 schedule · 63ms" [ref=f21e218]:
+                                - text: 2026-10-10 17:16:16
+                                - generic [ref=f21e219]: schedule · 63ms
+                            - cell "0" [ref=f21e220]
+                            - cell [ref=f21e221]:
+                                - button "Run now" [ref=f21e223]
+                        - row [ref=f21e224]:
+                            - cell "blockchain.index-transactions Scan recent blocks for ERC-20 transfers to and from registered wallets, write one Transaction row per hash, and advance or demote every row on that chain to the confirmation depth its current head implies. Read-only against the chain." [ref=f21e225]:
+                                - text: blockchain.index-transactions
+                                - generic [ref=f21e226]: Scan recent blocks for ERC-20 transfers to and from registered wallets, write one Transaction row per hash, and advance or demote every row on that chain to the confirmation depth its current head implies. Read-only against the chain.
+                            - cell "every 1m" [ref=f21e227]
+                            - cell "failing" [ref=f21e228]
+                            - 'cell "2026-10-10 17:16:16 No chain could be scanned: 1: No RPC endpoint is configured for Ethereum. This is a deployment gap, not a client error.; 8453: No RPC endpoint is configured for Base. This is a deployment gap, not a client error.; redemptionspec-14973: No RPC endpoint is configured for Redemption spec chain. This is a deployment gap, not a client error.; redemptionspec-6501: No RPC endpoint is configured for Redemption spec chain. This is a deployment gap, not a client error." [ref=f21e230]':
+                                - text: 2026-10-10 17:16:16
+                                - generic [ref=f21e231]: "No chain could be scanned: 1: No RPC endpoint is configured for Ethereum. This is a deployment gap, not a client error.; 8453: No RPC endpoint is configured for Base. This is a deployment gap, not a client error.; redemptionspec-14973: No RPC endpoint is configured for Redemption spec chain. This is a deployment gap, not a client error.; redemptionspec-6501: No RPC endpoint is configured for Redemption spec chain. This is a deployment gap, not a client error."
+                            - cell "0" [ref=f21e232]
+                            - cell [ref=f21e233]:
+                                - button "Run now" [ref=f21e235]
+                        - row [ref=f21e236]:
+                            - cell "compliance.rescreen-stale Re-screen approved users whose sanctions screen is older than 24h. Hits latch into the review queue; frozen users are left to their reviewer." [ref=f21e237]:
+                                - text: compliance.rescreen-stale
+                                - generic [ref=f21e238]: Re-screen approved users whose sanctions screen is older than 24h. Hits latch into the review queue; frozen users are left to their reviewer.
+                            - cell "daily" [ref=f21e239]
+                            - cell "ok" [ref=f21e240]
+                            - cell "2026-10-10 16:45:23 schedule · 103ms" [ref=f21e242]:
+                                - text: 2026-10-10 16:45:23
+                                - generic [ref=f21e243]: schedule · 103ms
+                            - cell "0" [ref=f21e244]
+                            - cell [ref=f21e245]:
+                                - button "Run now" [ref=f21e247]
+                        - row [ref=f21e248]:
+                            - cell "assets.attestation-freshness List enabled assets past their attestation cadence without a fresh attestation. Reports only; validation criteria stay counsel-gated." [ref=f21e249]:
+                                - text: assets.attestation-freshness
+                                - generic [ref=f21e250]: List enabled assets past their attestation cadence without a fresh attestation. Reports only; validation criteria stay counsel-gated.
+                            - cell "daily" [ref=f21e251]
+                            - cell "ok" [ref=f21e252]
+                            - cell "2026-10-10 16:45:23 schedule · 107ms" [ref=f21e254]:
+                                - text: 2026-10-10 16:45:23
+                                - generic [ref=f21e255]: schedule · 107ms
+                            - cell "0" [ref=f21e256]
+                            - cell [ref=f21e257]:
+                                - button "Run now" [ref=f21e259]
+    - button "Open Next.js Dev Tools" [ref=f21e265] [cursor=pointer]

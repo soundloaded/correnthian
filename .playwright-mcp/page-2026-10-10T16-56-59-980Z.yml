@@ -1,0 +1,111 @@
+- generic [ref=f9e2]:
+    - generic [ref=f9e5]:
+        - list [ref=f9e7]:
+            - listitem [ref=f9e8]:
+                - link "Correnthian Admin" [ref=f9e9] [cursor=pointer]:
+                    - /url: /dashboard
+                    - generic [ref=f9e14]:
+                        - generic [ref=f9e15]: Correnthian
+                        - generic [ref=f9e16]: Admin
+        - generic [ref=f9e18]:
+            - generic [ref=f9e19]: Operations
+            - list [ref=f9e21]:
+                - listitem [ref=f9e22]:
+                    - link "Dashboard" [ref=f9e23] [cursor=pointer]:
+                        - /url: /dashboard
+                - listitem [ref=f9e30]:
+                    - link "Users" [ref=f9e31] [cursor=pointer]:
+                        - /url: /users
+                - listitem [ref=f9e37]:
+                    - link "Devices" [ref=f9e38] [cursor=pointer]:
+                        - /url: /devices
+                - listitem [ref=f9e42]:
+                    - link "Assets" [ref=f9e43] [cursor=pointer]:
+                        - /url: /assets
+                - listitem [ref=f9e55]:
+                    - link "Issuers" [ref=f9e56] [cursor=pointer]:
+                        - /url: /issuers
+                - listitem [ref=f9e60]:
+                    - link "Chains" [ref=f9e61] [cursor=pointer]:
+                        - /url: /chains
+                - listitem [ref=f9e68]:
+                    - link "Providers" [ref=f9e69] [cursor=pointer]:
+                        - /url: /providers
+                - listitem [ref=f9e76]:
+                    - link "Quotes" [ref=f9e77] [cursor=pointer]:
+                        - /url: /quotes
+                - listitem [ref=f9e84]:
+                    - link "Redemptions" [ref=f9e85] [cursor=pointer]:
+                        - /url: /redemptions
+                - listitem [ref=f9e89]:
+                    - link "Reviews" [ref=f9e90] [cursor=pointer]:
+                        - /url: /reviews
+                - listitem [ref=f9e97]:
+                    - link "Transactions" [ref=f9e98] [cursor=pointer]:
+                        - /url: /transactions
+                - listitem [ref=f9e105]:
+                    - link "Audit log" [ref=f9e106] [cursor=pointer]:
+                        - /url: /audit
+        - list [ref=f9e114]:
+            - listitem [ref=f9e115]:
+                - button "AD admin@correnthian.local admin" [ref=f9e116]:
+                    - generic [ref=f9e117]: AD
+                    - generic [ref=f9e119]:
+                        - generic [ref=f9e120]: admin@correnthian.local
+                        - generic [ref=f9e121]: admin
+        - button "Toggle Sidebar" [ref=f9e125]
+    - main [ref=f9e126]:
+        - generic [ref=f9e127]:
+            - button "Toggle Sidebar" [ref=f9e128]
+            - paragraph [ref=f9e130]: Internal operations · changes are audited
+        - main [ref=f9e131]:
+            - generic [ref=f9e132]:
+                - generic [ref=f9e133]:
+                    - heading "Transactions" [level=1] [ref=f9e134]
+                    - paragraph [ref=f9e135]: Every observed and assembled transaction. Confirmations are counted against the depth each row requires — a row below its depth is not final.
+                - generic [ref=f9e136]:
+                    - combobox "Filter by transaction state" [ref=f9e137]
+                    - combobox [aria-hidden] [ref=f9e138]
+                    - combobox "Filter by direction" [ref=f9e139]
+                    - combobox [aria-hidden] [ref=f9e140]
+                    - generic [ref=f9e141]:
+                        - textbox "Filter by wallet id" [ref=f9e142]:
+                            - /placeholder: Wallet id
+                        - button "Filter" [ref=f9e143]
+            - region "Transaction counters" [ref=f9e144]:
+                - generic [ref=f9e146]:
+                    - generic [ref=f9e147]: "1"
+                    - generic [ref=f9e148]: transactions tracked
+                - generic [ref=f9e150]:
+                    - paragraph [ref=f9e151]: By state
+                    - generic [ref=f9e152]:
+                        - generic [ref=f9e153]: broadcast
+                        - generic [ref=f9e154]: "1"
+                - generic [ref=f9e156]:
+                    - paragraph [ref=f9e157]: By direction
+                    - generic [ref=f9e158]:
+                        - generic [ref=f9e159]: out
+                        - generic [ref=f9e160]: "1"
+            - table [ref=f9e164]:
+                - rowgroup [ref=f9e165]:
+                    - row [ref=f9e166]:
+                        - columnheader "When" [ref=f9e167]
+                        - columnheader "Direction" [ref=f9e168]
+                        - columnheader "Asset" [ref=f9e169]
+                        - columnheader "Amount (raw)" [ref=f9e170]
+                        - columnheader "State" [ref=f9e171]
+                        - columnheader "Confirmations" [ref=f9e172]
+                        - columnheader "Drops" [ref=f9e173]
+                - rowgroup [ref=f9e174]:
+                    - row [ref=f9e175]:
+                        - cell "2026-10-10 16:56:27" [ref=f9e176]
+                        - cell "out" [ref=f9e177]
+                        - cell "RSPG" [ref=f9e179]
+                        - cell "1000000" [ref=f9e180]
+                        - cell [ref=f9e181]:
+                            - link "broadcast" [ref=f9e182] [cursor=pointer]:
+                                - /url: /transactions/probe-tx-1
+                        - cell "3 / 12" [ref=f9e184]:
+                            - text: "3"
+                            - generic [ref=f9e185]: / 12
+                        - cell "1" [ref=f9e186]

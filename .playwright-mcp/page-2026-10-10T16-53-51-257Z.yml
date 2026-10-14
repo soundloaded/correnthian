@@ -1,0 +1,67 @@
+- generic [active] [ref=f7e1]:
+    - generic [ref=f7e2]:
+        - generic [ref=f7e5]:
+            - list [ref=f7e7]:
+                - listitem [ref=f7e8]:
+                    - link "Correnthian Admin" [ref=f7e9] [cursor=pointer]:
+                        - /url: /dashboard
+                        - generic [ref=f7e14]:
+                            - generic [ref=f7e15]: Correnthian
+                            - generic [ref=f7e16]: Admin
+            - generic [ref=f7e18]:
+                - generic [ref=f7e19]: Operations
+                - list [ref=f7e21]:
+                    - listitem [ref=f7e22]:
+                        - link "Dashboard" [ref=f7e23] [cursor=pointer]:
+                            - /url: /dashboard
+                    - listitem [ref=f7e30]:
+                        - link "Users" [ref=f7e31] [cursor=pointer]:
+                            - /url: /users
+                    - listitem [ref=f7e37]:
+                        - link "Devices" [ref=f7e38] [cursor=pointer]:
+                            - /url: /devices
+                    - listitem [ref=f7e42]:
+                        - link "Assets" [ref=f7e43] [cursor=pointer]:
+                            - /url: /assets
+                    - listitem [ref=f7e55]:
+                        - link "Issuers" [ref=f7e56] [cursor=pointer]:
+                            - /url: /issuers
+                    - listitem [ref=f7e60]:
+                        - link "Chains" [ref=f7e61] [cursor=pointer]:
+                            - /url: /chains
+                    - listitem [ref=f7e68]:
+                        - link "Providers" [ref=f7e69] [cursor=pointer]:
+                            - /url: /providers
+                    - listitem [ref=f7e76]:
+                        - link "Quotes" [ref=f7e77] [cursor=pointer]:
+                            - /url: /quotes
+                    - listitem [ref=f7e84]:
+                        - link "Redemptions" [ref=f7e85] [cursor=pointer]:
+                            - /url: /redemptions
+                    - listitem [ref=f7e89]:
+                        - link "Reviews" [ref=f7e90] [cursor=pointer]:
+                            - /url: /reviews
+                    - listitem [ref=f7e97]:
+                        - link "Audit log" [ref=f7e98] [cursor=pointer]:
+                            - /url: /audit
+            - list [ref=f7e106]:
+                - listitem [ref=f7e107]:
+                    - button "AD admin@correnthian.local admin" [ref=f7e108]:
+                        - generic [ref=f7e109]: AD
+                        - generic [ref=f7e111]:
+                            - generic [ref=f7e112]: admin@correnthian.local
+                            - generic [ref=f7e113]: admin
+            - button "Toggle Sidebar" [ref=f7e117]
+        - main [ref=f7e118]:
+            - generic [ref=f7e119]:
+                - button "Toggle Sidebar" [ref=f7e120]
+                - paragraph [ref=f7e122]: Internal operations · changes are audited
+            - main [ref=f7e123]:
+                - generic [ref=f7e124]:
+                    - heading "Reviews" [level=1] [ref=f7e125]
+                    - paragraph [ref=f7e126]: Verifications parked for a human decision, oldest first. Approving clears a latched sanctions hit; rejecting keeps it. Either way, say why — a decision without a reason never fires.
+                - generic [ref=f7e128]:
+                    - paragraph [ref=f7e168]: Review queue is clear
+                    - paragraph [ref=f7e169]: Nothing is parked. New flags from verification or screening appear here.
+    - button "Open Next.js Dev Tools" [ref=f7e160] [cursor=pointer]
+    - alert [ref=f7e164]

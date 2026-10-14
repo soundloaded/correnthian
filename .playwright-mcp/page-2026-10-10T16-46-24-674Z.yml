@@ -1,0 +1,13 @@
+- main [ref=e2]:
+    - generic [ref=e3]:
+        - generic [ref=e4]:
+            - generic [ref=e5]: Correnthian admin
+            - generic [ref=e6]: Internal operations console. Sign-in is audited.
+        - generic [ref=e8]:
+            - generic [ref=e9]:
+                - generic [ref=e10]: Email
+                - textbox "Email" [active] [ref=e11]
+            - generic [ref=e12]:
+                - generic [ref=e13]: Password
+                - textbox "Password" [ref=e14]
+            - button "Sign in" [ref=e15]

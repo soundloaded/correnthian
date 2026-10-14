@@ -1,0 +1,98 @@
+- generic [ref=f33e2]:
+    - banner [ref=f33e3]:
+        - generic [ref=f33e4]:
+            - generic [ref=f33e5]: Correnthian
+            - navigation "Sections" [ref=f33e6]:
+                - link "Trust" [ref=f33e7] [cursor=pointer]:
+                    - /url: "#trust"
+                - link "How it works" [ref=f33e8] [cursor=pointer]:
+                    - /url: "#how"
+                - link "Fees" [ref=f33e9] [cursor=pointer]:
+                    - /url: "#fees"
+                - link "FAQ" [ref=f33e10] [cursor=pointer]:
+                    - /url: "#faq"
+                - link "Get notified" [ref=f33e11] [cursor=pointer]:
+                    - /url: "#notify"
+    - main [ref=f33e12]:
+        - generic [ref=f33e13]:
+            - paragraph [ref=f33e14]: For people who own gold — or want to
+            - heading "Gold you own outright." [level=1] [ref=f33e15]
+            - paragraph [ref=f33e16]: "Correnthian is a self-custodial way to hold and buy tokenized gold: metal delivered to an address only you can move, from issuers whose backing you can check, with fees stated up front. No broker holding your position. No keys leaving your hands."
+            - generic [ref=f33e18]:
+                - generic [ref=f33e19]:
+                    - generic [ref=f33e20]: Email address
+                    - textbox "Email address" [ref=f33e21]:
+                        - /placeholder: you@example.com
+                    - button "Notify me" [disabled] [ref=f33e22]
+                - paragraph [ref=f33e23]: One email at launch, nothing else. Stored in this browser only.
+        - generic [ref=f33e25]:
+            - paragraph [ref=f33e26]: The trust model
+            - heading "Three questions every gold holder should be able to answer" [level=2] [ref=f33e27]
+            - generic [ref=f33e29]:
+                - generic [ref=f33e30]:
+                    - heading "What am I holding?" [level=3] [ref=f33e31]
+                    - paragraph [ref=f33e32]: Named tokens from named issuers — registered in the open with their backing disclosed, never anonymous metal.
+                - generic [ref=f33e33]:
+                    - heading "Who backs it?" [level=3] [ref=f33e34]
+                    - paragraph [ref=f33e35]: Each issuer discloses its custodian, vault locations, and proof-of-reserve attestations, kept current and visible.
+                - generic [ref=f33e36]:
+                    - heading "Can I take it out?" [level=3] [ref=f33e37]
+                    - paragraph [ref=f33e38]: Your metal sits at your own address, and physical redemption is part of the design — exit is a feature, not a favor.
+        - generic [ref=f33e39]:
+            - paragraph [ref=f33e40]: How it will work
+            - heading "Four steps, each verifiable by you" [level=2] [ref=f33e41]
+            - generic [ref=f33e42]:
+                - list [ref=f33e43]:
+                    - listitem [ref=f33e44]:
+                        - generic [aria-hidden] [ref=f33e45]: "1"
+                        - generic [ref=f33e46]:
+                            - heading "Buy with card or bank" [level=3] [ref=f33e47]
+                            - paragraph [ref=f33e48]: At launch, through licensed conversion partners — never by handing custody to a broker.
+                    - listitem [ref=f33e49]:
+                        - generic [aria-hidden] [ref=f33e50]: "2"
+                        - generic [ref=f33e51]:
+                            - heading "Metal lands where only you can move it" [level=3] [ref=f33e52]
+                            - paragraph [ref=f33e53]: Delivery goes to an address controlled by keys that never leave your device.
+                    - listitem [ref=f33e54]:
+                        - generic [aria-hidden] [ref=f33e55]: "3"
+                        - generic [ref=f33e56]:
+                            - heading "See exactly what backs it" [level=3] [ref=f33e57]
+                            - paragraph [ref=f33e58]: Custodian, vaults, and current attestations travel with every holding.
+                    - listitem [ref=f33e59]:
+                        - generic [aria-hidden] [ref=f33e60]: "4"
+                        - generic [ref=f33e61]:
+                            - heading "Redeem the physical metal" [level=3] [ref=f33e62]
+                            - paragraph [ref=f33e63]: A defined payout path from token back to bars, tracked state by state.
+                - paragraph [ref=f33e64]: "Correnthian is in preparation: issuers, conversion partners, and approvals are being put in place. Nothing on this page is for sale yet."
+        - generic [ref=f33e66]:
+            - paragraph [ref=f33e67]: Fees
+            - heading "Stated before you pay, itemised after" [level=2] [ref=f33e68]
+            - generic [ref=f33e70]:
+                - paragraph [ref=f33e71]: Correnthian earns stated, itemised fees — one named line per charge, shown before anything is signed. There is no spread hidden inside a rate and no guess presented as a price.
+                - paragraph [ref=f33e72]: Where a fee cannot be determined, the quote says it is unknown instead of writing zero. A zero nobody computed is a claim; an explicit unknown is the truth.
+        - generic [ref=f33e73]:
+            - paragraph [ref=f33e74]: Questions
+            - heading "Asked plainly, answered plainly" [level=2] [ref=f33e75]
+            - generic [ref=f33e77]:
+                - generic [ref=f33e78]:
+                    - term [ref=f33e79]: Is Correnthian a custodian?
+                    - definition [ref=f33e80]: No. It holds no user assets and no key material. Your metal sits at addresses only you can move; compromising a Correnthian account can never yield funds.
+                - generic [ref=f33e81]:
+                    - term [ref=f33e82]: Does Correnthian issue the gold tokens?
+                    - definition [ref=f33e83]: No. Issuers issue; Correnthian registers their tokens alongside backing disclosure, and refuses to list what it cannot describe.
+                - generic [ref=f33e84]:
+                    - term [ref=f33e85]: Do my keys ever leave my device?
+                    - definition [ref=f33e86]: Never. Signing happens locally on hardware and software you control; the platform only ever sees signed transactions.
+                - generic [ref=f33e87]:
+                    - term [ref=f33e88]: What does Correnthian earn?
+                    - definition [ref=f33e89]: Stated, itemised fees disclosed before you commit. It takes no principal risk and earns nothing from mispricing.
+                - generic [ref=f33e90]:
+                    - term [ref=f33e91]: When does it open?
+                    - definition [ref=f33e92]: No date is set. Issuers, conversion partners, and approvals come first; this page will say when each lands.
+                - generic [ref=f33e93]:
+                    - term [ref=f33e94]: Which chains and tokens?
+                    - definition [ref=f33e95]: That list will be published with the launch — every entry with its issuer, backing, and redemption path attached.
+    - contentinfo [ref=f33e96]:
+        - generic [ref=f33e97]:
+            - generic [ref=f33e98]: Correnthian
+            - generic [ref=f33e99]: Self-custodial tokenized precious metals. Opening in stages — this page announces each one.

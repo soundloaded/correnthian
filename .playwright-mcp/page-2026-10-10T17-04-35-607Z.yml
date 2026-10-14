@@ -1,0 +1,240 @@
+- generic:
+    - generic [aria-hidden]:
+        - generic:
+            - generic:
+                - generic:
+                    - generic:
+                        - list:
+                            - listitem:
+                                - link:
+                                    - /url: /dashboard
+                                    - generic:
+                                        - generic: Correnthian
+                                        - generic: Admin
+                    - generic:
+                        - generic:
+                            - generic: Operations
+                            - generic:
+                                - list:
+                                    - listitem:
+                                        - link:
+                                            - /url: /dashboard
+                                            - generic: Dashboard
+                                    - listitem:
+                                        - link:
+                                            - /url: /users
+                                            - generic: Users
+                                    - listitem:
+                                        - link:
+                                            - /url: /devices
+                                            - generic: Devices
+                                    - listitem:
+                                        - link:
+                                            - /url: /assets
+                                            - generic: Assets
+                                    - listitem:
+                                        - link:
+                                            - /url: /issuers
+                                            - generic: Issuers
+                                    - listitem:
+                                        - link:
+                                            - /url: /chains
+                                            - generic: Chains
+                                    - listitem:
+                                        - link:
+                                            - /url: /providers
+                                            - generic: Providers
+                                    - listitem:
+                                        - link:
+                                            - /url: /quotes
+                                            - generic: Quotes
+                                    - listitem:
+                                        - link:
+                                            - /url: /redemptions
+                                            - generic: Redemptions
+                                    - listitem:
+                                        - link:
+                                            - /url: /reviews
+                                            - generic: Reviews
+                                    - listitem:
+                                        - link:
+                                            - /url: /transactions
+                                            - generic: Transactions
+                                    - listitem:
+                                        - link:
+                                            - /url: /fees
+                                            - generic: Fees
+                                    - listitem:
+                                        - link:
+                                            - /url: /audit
+                                            - generic: Audit log
+                    - generic:
+                        - list:
+                            - listitem:
+                                - button:
+                                    - generic: AD
+                                    - generic:
+                                        - generic: admin@correnthian.local
+                                        - generic: owner
+                    - button
+        - main:
+            - generic:
+                - button:
+                    - generic: Toggle Sidebar
+                - paragraph: Internal operations · changes are audited
+            - main:
+                - generic:
+                    - heading [level=1]: Fees
+                    - paragraph:
+                        - text: The rule table every quote prices from. Reading takes admin; creating or changing a rule takes owner
+                        - emphasis: and
+                        - text: a stated reason — a number that moves without a why is a number no investigator can explain.
+                - alert:
+                    - generic: 1 ambiguous rule — quotes on these pairs refuse until resolved
+                    - generic:
+                        - generic:
+                            - paragraph:
+                                - generic: buy / correnthian
+                                - generic: — Two correnthian fee rules for buy can both apply and neither takes precedence. Set "priority" on the one that should win.
+                            - paragraph: cmv2n383j0014t988el48siwq, cmv2n387j0016t988ceivuw5t
+                - generic:
+                    - generic:
+                        - generic:
+                            - table:
+                                - rowgroup:
+                                    - row:
+                                        - columnheader: Operation
+                                        - columnheader: Kind
+                                        - columnheader: Basis
+                                        - columnheader: Label
+                                        - columnheader: Rate
+                                        - columnheader: Priority
+                                        - columnheader: Status
+                                        - columnheader: Change
+                                - rowgroup:
+                                    - row:
+                                        - cell: buy
+                                        - cell: correnthian
+                                        - cell: fixed
+                                        - cell: spec rule 33222
+                                        - cell: $2.50000000
+                                        - cell: "0"
+                                        - cell:
+                                            - generic: inactive
+                                        - cell:
+                                            - generic:
+                                                - textbox:
+                                                    - /placeholder: Reason
+                                                - button [disabled]: Enable
+                                    - row:
+                                        - cell: buy
+                                        - cell: correnthian
+                                        - cell: fixed
+                                        - cell: spec rule 34466
+                                        - cell: $2.50000000
+                                        - cell: "0"
+                                        - cell:
+                                            - generic: inactive
+                                        - cell:
+                                            - generic:
+                                                - textbox:
+                                                    - /placeholder: Reason
+                                                - button [disabled]: Enable
+                                    - row:
+                                        - cell: buy
+                                        - cell: correnthian
+                                        - cell: fixed
+                                        - cell: spec rule 36861
+                                        - cell: $2.50000000
+                                        - cell: "0"
+                                        - cell:
+                                            - generic: inactive
+                                        - cell:
+                                            - generic:
+                                                - textbox:
+                                                    - /placeholder: Reason
+                                                - button [disabled]: Enable
+                                    - row:
+                                        - cell: buy
+                                        - cell: correnthian
+                                        - cell: fixed
+                                        - cell: spec rule 48650
+                                        - cell: $2.50000000
+                                        - cell: "0"
+                                        - cell:
+                                            - generic: inactive
+                                        - cell:
+                                            - generic:
+                                                - textbox:
+                                                    - /placeholder: Reason
+                                                - button [disabled]: Enable
+                                    - row:
+                                        - cell: buy
+                                        - cell: correnthian
+                                        - cell: fixed
+                                        - cell: probe rule
+                                        - cell: $2.50000000
+                                        - cell: "0"
+                                        - cell:
+                                            - generic: active
+                                        - cell:
+                                            - generic:
+                                                - textbox:
+                                                    - /placeholder: Reason
+                                                - button [disabled]: Disable
+                                    - row:
+                                        - cell: buy
+                                        - cell: correnthian
+                                        - cell: percent
+                                        - cell: probe clash
+                                        - cell: 0.50%
+                                        - cell: "0"
+                                        - cell:
+                                            - generic: active
+                                        - cell:
+                                            - generic:
+                                                - textbox:
+                                                    - /placeholder: Reason
+                                                - button [disabled]: Disable
+                - generic:
+                    - generic: New rule (owner only)
+                    - generic:
+                        - generic:
+                            - generic:
+                                - text: Operation
+                                - combobox:
+                                    - generic: sell
+                                - combobox [aria-hidden]
+                            - generic:
+                                - text: Kind
+                                - combobox [expanded]:
+                                    - generic: Pick
+                                - combobox [aria-hidden]
+                            - generic:
+                                - text: Basis
+                                - combobox:
+                                    - generic: Pick
+                                - combobox [aria-hidden]
+                            - generic:
+                                - text: Label
+                                - textbox:
+                                    - /placeholder: Standard buy fee
+                            - generic:
+                                - text: Rate (bps, for percent)
+                                - textbox:
+                                    - /placeholder: "50"
+                            - generic:
+                                - text: Fixed (USD, for fixed)
+                                - textbox:
+                                    - /placeholder: "2.50"
+                            - generic:
+                                - text: Reason (required)
+                                - textbox:
+                                    - /placeholder: Why is this fee changing?
+                            - button [disabled]: Create rule
+    - button "Open Next.js Dev Tools" [ref=f15e267] [cursor=pointer]
+    - alert
+    - listbox [ref=f15e291]:
+        - option "network" [active] [ref=f15e292]
+        - option "provider" [ref=f15e294]
+        - option "correnthian" [ref=f15e296]

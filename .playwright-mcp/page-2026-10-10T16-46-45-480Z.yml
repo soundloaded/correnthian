@@ -1,0 +1,236 @@
+- generic [active] [ref=e1]:
+    - button "Open Next.js Dev Tools" [ref=e22] [cursor=pointer]:
+        - generic [ref=e25]:
+            - text: Rendering
+            - generic [ref=e26]:
+                - generic [ref=e27]: .
+                - generic [ref=e28]: .
+                - generic [ref=e29]: .
+    - alert [ref=e16]: Dashboard
+    - generic [ref=e30]:
+        - generic [ref=e33]:
+            - list [ref=e35]:
+                - listitem [ref=e36]:
+                    - link "Correnthian Admin" [ref=e37] [cursor=pointer]:
+                        - /url: /dashboard
+                        - generic [ref=e42]:
+                            - generic [ref=e43]: Correnthian
+                            - generic [ref=e44]: Admin
+            - generic [ref=e46]:
+                - generic [ref=e47]: Operations
+                - list [ref=e49]:
+                    - listitem [ref=e50]:
+                        - link "Dashboard" [ref=e51] [cursor=pointer]:
+                            - /url: /dashboard
+                    - listitem [ref=e58]:
+                        - link "Users" [ref=e59] [cursor=pointer]:
+                            - /url: /users
+                    - listitem [ref=e65]:
+                        - link "Devices" [ref=e66] [cursor=pointer]:
+                            - /url: /devices
+                    - listitem [ref=e70]:
+                        - link "Assets" [ref=e71] [cursor=pointer]:
+                            - /url: /assets
+                    - listitem [ref=e83]:
+                        - link "Issuers" [ref=e84] [cursor=pointer]:
+                            - /url: /issuers
+                    - listitem [ref=e88]:
+                        - link "Chains" [ref=e89] [cursor=pointer]:
+                            - /url: /chains
+                    - listitem [ref=e96]:
+                        - link "Providers" [ref=e97] [cursor=pointer]:
+                            - /url: /providers
+                    - listitem [ref=e104]:
+                        - link "Quotes" [ref=e105] [cursor=pointer]:
+                            - /url: /quotes
+                    - listitem [ref=e112]:
+                        - link "Audit log" [ref=e113] [cursor=pointer]:
+                            - /url: /audit
+            - list [ref=e121]:
+                - listitem [ref=e122]:
+                    - button "AD admin@correnthian.local admin" [ref=e123]:
+                        - generic [ref=e124]: AD
+                        - generic [ref=e126]:
+                            - generic [ref=e127]: admin@correnthian.local
+                            - generic [ref=e128]: admin
+            - button "Toggle Sidebar" [ref=e132]
+        - main [ref=e133]:
+            - generic [ref=e134]:
+                - button "Toggle Sidebar" [ref=e135]
+                - paragraph [ref=e137]: Internal operations · changes are audited
+            - main [ref=e138]:
+                - generic [ref=e139]:
+                    - heading "Dashboard" [level=1] [ref=e140]
+                    - paragraph [ref=e141]: Accounts, registry health, and anything needing attention.
+                - region "Summary" [ref=e142]:
+                    - generic [ref=e144]:
+                        - generic [ref=e145]: Accounts
+                        - generic [ref=e146]: "3"
+                    - generic [ref=e148]:
+                        - generic [ref=e149]: New in 7 days
+                        - generic [ref=e150]: "3"
+                    - generic [ref=e152]:
+                        - generic [ref=e153]: KYC pending
+                        - generic [ref=e154]: "0"
+                    - generic [ref=e156]:
+                        - generic [ref=e157]: Assets registered
+                        - generic [ref=e158]: "4"
+                    - generic [ref=e160]:
+                        - generic [ref=e161]: Enabled metals
+                        - generic [ref=e162]: "3"
+                    - generic [ref=e164]:
+                        - generic [ref=e165]: Stale attestations
+                        - generic [ref=e166]: "3"
+                        - paragraph [ref=e167]: Needs attention
+                - generic [ref=e170]:
+                    - generic [ref=e171]:
+                        - generic [ref=e172]: Needs attention
+                        - generic [ref=e173]: Each item links to the page where it can be resolved.
+                    - list [ref=e175]:
+                        - listitem [ref=e176]:
+                            - generic [ref=e177]:
+                                - generic [ref=e182]:
+                                    - paragraph [ref=e183]: 3 enabled metals without a current attestation
+                                    - paragraph [ref=e184]: Users are shown this metal as backing. Record a fresh attestation, or disable the asset until one exists.
+                                - link "Refresh attestations" [ref=e185] [cursor=pointer]:
+                                    - /url: /assets
+                        - listitem [ref=e186]:
+                            - generic [ref=e187]:
+                                - generic [ref=e195]:
+                                    - paragraph [ref=e196]: 12 providers degraded
+                                    - paragraph [ref=e197]: "Degraded: Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider, Redemption spec provider. Quotes through these providers may be failing or stale."
+                                - link "Check providers" [ref=e198] [cursor=pointer]:
+                                    - /url: /providers
+                - region "Audit activity" [ref=e199]:
+                    - generic [ref=e200]:
+                        - generic [ref=e201]:
+                            - generic [ref=e202]: Audit activity
+                            - generic [ref=e203]: Entries per day over the last 14 days, derived from GET /audit. The API returns the newest 200 rows, so a busier period shows the tail of that window rather than the full history.
+                        - application [ref=e208]:
+                            - generic [ref=e219]:
+                                - generic [ref=e220]:
+                                    - generic [ref=e221]: 28 Sept
+                                    - generic [ref=e223]: 30 Sept
+                                    - generic [ref=e225]: 02 Oct
+                                    - generic [ref=e227]: 04 Oct
+                                    - generic [ref=e229]: 06 Oct
+                                    - generic [ref=e231]: 08 Oct
+                                    - generic [ref=e233]: 10 Oct
+                                - generic [ref=e235]:
+                                    - generic [ref=e236]: "0"
+                                    - generic [ref=e238]: "50"
+                                    - generic [ref=e240]: "100"
+                                    - generic [ref=e242]: "150"
+                                    - generic [ref=e244]: "200"
+                    - generic [ref=e246]:
+                        - generic [ref=e247]:
+                            - generic [ref=e248]: Recent activity
+                            - generic [ref=e249]: The 12 most recent audit entries.
+                            - link "Full audit trail" [ref=e251] [cursor=pointer]:
+                                - /url: /audit
+                        - table [ref=e254]:
+                            - rowgroup [ref=e255]:
+                                - row [ref=e256]:
+                                    - columnheader "When" [ref=e257]
+                                    - columnheader "Action" [ref=e258]
+                                    - columnheader "Actor" [ref=e259]
+                                    - columnheader "Outcome" [ref=e260]
+                                    - columnheader "Target" [ref=e261]
+                            - rowgroup [ref=e262]:
+                                - row [ref=e263]:
+                                    - cell "6m ago" [ref=e264]
+                                    - cell "POST JobsController.run" [ref=e265]
+                                    - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=e266]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=e267]: (admin)
+                                    - cell "failure" [ref=e268]
+                                    - cell "JobsController" [ref=e270]
+                                - row [ref=e271]:
+                                    - cell "6m ago" [ref=e272]
+                                    - cell "POST JobsController.run" [ref=e273]
+                                    - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=e274]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=e275]: (admin)
+                                    - cell "failure" [ref=e276]
+                                    - cell "JobsController" [ref=e278]
+                                - row [ref=e279]:
+                                    - cell "6m ago" [ref=e280]
+                                    - cell "POST JobsController.run" [ref=e281]
+                                    - cell "cmuwgsuf10002z888e48ghecu(admin)" [ref=e282]:
+                                        - text: cmuwgsuf10002z888e48ghecu
+                                        - generic [ref=e283]: (admin)
+                                    - cell "success" [ref=e284]
+                                    - cell "JobsController" [ref=e286]
+                                - row [ref=e287]:
+                                    - cell "6m ago" [ref=e288]
+                                    - cell "POST WalletsController.setBalance" [ref=e289]
+                                    - cell "cmv2meigs00002m88ed1q8cwi(user)" [ref=e290]:
+                                        - text: cmv2meigs00002m88ed1q8cwi
+                                        - generic [ref=e291]: (user)
+                                    - cell "failure" [ref=e292]
+                                    - cell "WalletsController" [ref=e294]
+                                - row [ref=e295]:
+                                    - cell "6m ago" [ref=e296]
+                                    - cell "PATCH WalletsController.setGuardians" [ref=e297]
+                                    - cell "cmv2meigs00002m88ed1q8cwi(user)" [ref=e298]:
+                                        - text: cmv2meigs00002m88ed1q8cwi
+                                        - generic [ref=e299]: (user)
+                                    - cell "failure" [ref=e300]
+                                    - cell "WalletsController" [ref=e302]
+                                - row [ref=e303]:
+                                    - cell "6m ago" [ref=e304]
+                                    - cell "PATCH WalletsController.setGuardians" [ref=e305]
+                                    - cell "cmv2meigs00002m88ed1q8cwi(user)" [ref=e306]:
+                                        - text: cmv2meigs00002m88ed1q8cwi
+                                        - generic [ref=e307]: (user)
+                                    - cell "failure" [ref=e308]
+                                    - cell "WalletsController" [ref=e310]
+                                - row [ref=e311]:
+                                    - cell "6m ago" [ref=e312]
+                                    - cell "PATCH WalletsController.setGuardians" [ref=e313]
+                                    - cell "cmv2meigs00002m88ed1q8cwi(user)" [ref=e314]:
+                                        - text: cmv2meigs00002m88ed1q8cwi
+                                        - generic [ref=e315]: (user)
+                                    - cell "failure" [ref=e316]
+                                    - cell "WalletsController" [ref=e318]
+                                - row [ref=e319]:
+                                    - cell "6m ago" [ref=e320]
+                                    - cell "POST WalletsController.register" [ref=e321]
+                                    - cell "cmv2meigs00002m88ed1q8cwi(user)" [ref=e322]:
+                                        - text: cmv2meigs00002m88ed1q8cwi
+                                        - generic [ref=e323]: (user)
+                                    - cell "success" [ref=e324]
+                                    - cell "WalletsController" [ref=e326]
+                                - row [ref=e327]:
+                                    - cell "6m ago" [ref=e328]
+                                    - cell "PATCH WalletsController.setGuardians" [ref=e329]
+                                    - cell "cmv2mein400022m88vjxpzg0e(user)" [ref=e330]:
+                                        - text: cmv2mein400022m88vjxpzg0e
+                                        - generic [ref=e331]: (user)
+                                    - cell "failure" [ref=e332]
+                                    - cell "WalletsController" [ref=e334]
+                                - row [ref=e335]:
+                                    - cell "6m ago" [ref=e336]
+                                    - cell "PATCH WalletsController.setGuardians" [ref=e337]
+                                    - cell "cmv2meigs00002m88ed1q8cwi(user)" [ref=e338]:
+                                        - text: cmv2meigs00002m88ed1q8cwi
+                                        - generic [ref=e339]: (user)
+                                    - cell "success" [ref=e340]
+                                    - cell "WalletsController" [ref=e342]
+                                - row [ref=e343]:
+                                    - cell "6m ago" [ref=e344]
+                                    - cell "PATCH WalletsController.setPrimary" [ref=e345]
+                                    - cell "cmv2meigs00002m88ed1q8cwi(user)" [ref=e346]:
+                                        - text: cmv2meigs00002m88ed1q8cwi
+                                        - generic [ref=e347]: (user)
+                                    - cell "success" [ref=e348]
+                                    - cell "WalletsController" [ref=e350]
+                                - row [ref=e351]:
+                                    - cell "6m ago" [ref=e352]
+                                    - cell "PATCH WalletsController.setPrimary" [ref=e353]
+                                    - cell "cmv2meigs00002m88ed1q8cwi(user)" [ref=e354]:
+                                        - text: cmv2meigs00002m88ed1q8cwi
+                                        - generic [ref=e355]: (user)
+                                    - cell "success" [ref=e356]
+                                    - cell "WalletsController" [ref=e358]
+    - generic [aria-hidden] [ref=e359]: "0"

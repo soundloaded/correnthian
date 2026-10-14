@@ -1,0 +1,87 @@
+- generic [active] [ref=f1e1]:
+    - generic [ref=f1e2]:
+        - generic [ref=f1e5]:
+            - list [ref=f1e7]:
+                - listitem [ref=f1e8]:
+                    - link "Correnthian Admin" [ref=f1e9] [cursor=pointer]:
+                        - /url: /dashboard
+                        - generic [ref=f1e14]:
+                            - generic [ref=f1e15]: Correnthian
+                            - generic [ref=f1e16]: Admin
+            - generic [ref=f1e18]:
+                - generic [ref=f1e19]: Operations
+                - list [ref=f1e21]:
+                    - listitem [ref=f1e22]:
+                        - link "Dashboard" [ref=f1e23] [cursor=pointer]:
+                            - /url: /dashboard
+                    - listitem [ref=f1e30]:
+                        - link "Users" [ref=f1e31] [cursor=pointer]:
+                            - /url: /users
+                    - listitem [ref=f1e37]:
+                        - link "Devices" [ref=f1e38] [cursor=pointer]:
+                            - /url: /devices
+                    - listitem [ref=f1e42]:
+                        - link "Assets" [ref=f1e43] [cursor=pointer]:
+                            - /url: /assets
+                    - listitem [ref=f1e55]:
+                        - link "Issuers" [ref=f1e56] [cursor=pointer]:
+                            - /url: /issuers
+                    - listitem [ref=f1e60]:
+                        - link "Chains" [ref=f1e61] [cursor=pointer]:
+                            - /url: /chains
+                    - listitem [ref=f1e68]:
+                        - link "Providers" [ref=f1e69] [cursor=pointer]:
+                            - /url: /providers
+                    - listitem [ref=f1e76]:
+                        - link "Quotes" [ref=f1e77] [cursor=pointer]:
+                            - /url: /quotes
+                    - listitem [ref=f1e84]:
+                        - link "Audit log" [ref=f1e85] [cursor=pointer]:
+                            - /url: /audit
+            - list [ref=f1e93]:
+                - listitem [ref=f1e94]:
+                    - button "AD admin@correnthian.local admin" [ref=f1e95]:
+                        - generic [ref=f1e96]: AD
+                        - generic [ref=f1e98]:
+                            - generic [ref=f1e99]: admin@correnthian.local
+                            - generic [ref=f1e100]: admin
+            - button "Toggle Sidebar" [ref=f1e104]
+        - main [ref=f1e105]:
+            - generic [ref=f1e106]:
+                - button "Toggle Sidebar" [ref=f1e107]
+                - paragraph [ref=f1e109]: Internal operations · changes are audited
+            - main [ref=f1e110]:
+                - generic [ref=f1e111]:
+                    - generic [ref=f1e112]:
+                        - heading "Redemptions" [level=1] [ref=f1e113]
+                        - paragraph [ref=f1e114]: Physical metal payouts. State advances only through explicit transitions — nothing here auto-approves.
+                    - generic [ref=f1e115]:
+                        - combobox "Filter by redemption state" [ref=f1e116]
+                        - combobox [aria-hidden] [ref=f1e117]
+                - region "Redemption counters" [ref=f1e118]:
+                    - generic [ref=f1e120]:
+                        - generic [ref=f1e121]: "1"
+                        - generic [ref=f1e122]: requests recorded
+                    - generic [ref=f1e124]:
+                        - paragraph [ref=f1e125]: By state
+                        - generic [ref=f1e126]:
+                            - generic [ref=f1e127]: requested
+                            - generic [ref=f1e128]: "1"
+                - table [ref=f1e132]:
+                    - rowgroup [ref=f1e133]:
+                        - row [ref=f1e134]:
+                            - columnheader "When" [ref=f1e135]
+                            - columnheader "Asset" [ref=f1e136]
+                            - columnheader "Amount (raw)" [ref=f1e137]
+                            - columnheader "Provider" [ref=f1e138]
+                            - columnheader "State" [ref=f1e139]
+                    - rowgroup [ref=f1e140]:
+                        - row [ref=f1e141]:
+                            - cell "2026-10-06 09:38:45" [ref=f1e142]
+                            - cell "tUSDT" [ref=f1e143]
+                            - cell "1" [ref=f1e144]
+                            - cell "placeholder-metals Metals provider (not selected)" [ref=f1e145]:
+                                - generic [ref=f1e146]: placeholder-metals
+                                - generic [ref=f1e147]: Metals provider (not selected)
+                            - cell "requested" [ref=f1e148]
+    - button "Open Next.js Dev Tools" [ref=f1e155] [cursor=pointer]
