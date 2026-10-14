@@ -14,11 +14,16 @@
     }
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.package.json --noEmit",
+    "typecheck": "tsc -p tsconfig.package.json --noEmit && tsc -p tsconfig.tests.json",
     "clean": "rm -rf dist .turbo *.tsbuildinfo",
+    "test": "vitest run",
     "build": "tsc -p tsconfig.package.json"
   },
   "dependencies": {
+    "@correnthian/contracts": "workspace:*",
     "@correnthian/types": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.8"
   }
 }
