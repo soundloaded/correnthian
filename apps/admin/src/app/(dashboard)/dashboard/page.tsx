@@ -2,10 +2,14 @@ import Link from 'next/link';
 import {
   ArrowRight,
   BadgeCheck,
+  Boxes,
   PlugZap,
   ShieldCheck,
   TriangleAlert,
   UserRoundCheck,
+  UserPlus,
+  Users,
+  Vault,
   type LucideIcon,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api-server';
@@ -51,22 +55,24 @@ export default async function DashboardPage() {
       <section aria-label="Summary" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <ApiState result={users} render={(d) => (
           <>
-            <Metric label="Accounts" value={fmtCount(d.total)} />
-            <Metric label="New in 7 days" value={fmtCount(d.newLast7d)} />
+            <Metric label="Accounts" value={fmtCount(d.total)} icon={Users} />
+            <Metric label="New in 7 days" value={fmtCount(d.newLast7d)} icon={UserPlus} />
             <Metric
               label="KYC pending"
               value={fmtCount(d.byKyc.pending ?? 0)}
+              icon={UserRoundCheck}
               alert={(d.byKyc.pending ?? 0) > 0}
             />
           </>
         )} />
         <ApiState result={assets} render={(d) => (
           <>
-            <Metric label="Assets registered" value={fmtCount(d.total)} />
-            <Metric label="Enabled metals" value={fmtCount(d.enabledMetals)} />
+            <Metric label="Assets registered" value={fmtCount(d.total)} icon={Boxes} />
+            <Metric label="Enabled metals" value={fmtCount(d.enabledMetals)} icon={Vault} metal />
             <Metric
               label="Stale attestations"
               value={fmtCount(d.staleAttestations)}
+              icon={TriangleAlert}
               alert={d.staleAttestations > 0}
             />
           </>
@@ -225,19 +231,42 @@ export default async function DashboardPage() {
   );
 }
 
-function Metric({ label, value, alert }: { label: string; value: string; alert?: boolean }) {
+/**
+ * One headline number with its icon. Adapted from the template's KPI card
+ * minus the two things it could not honestly carry here: gradient icon boxes
+ * (one accent per card spends the brand) and change-vs-previous-period
+ * badges (the API serves no previous period, so any delta would be
+ * invented). The metal card alone carries gold, for the reason the theme
+ * states. Dotted texture is a silver dot at 7% — paper, not decoration.
+ */
+function Metric({
+  label, value, icon: Icon, alert, metal,
+}: {
+  label: string; value: string; icon: LucideIcon; alert?: boolean; metal?: boolean;
+}) {
   return (
-    <Card size="sm">
-      <CardHeader>
+    <Card className="relative overflow-hidden bg-[radial-gradient(rgb(200_205_212/0.07)_1px,transparent_1px)] [background-size:16px_16px]">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
         <CardDescription>{label}</CardDescription>
-        <CardTitle className="font-mono text-2xl tabular-nums">{value}</CardTitle>
+        <div
+          className={
+            metal
+              ? 'flex size-10 shrink-0 items-center justify-center rounded-lg border border-gold/40 bg-gold/10 text-gold'
+              : 'flex size-10 shrink-0 items-center justify-center rounded-lg border bg-muted text-muted-foreground'
+          }
+        >
+          <Icon className="size-5" aria-hidden />
+        </div>
+      </CardHeader>
+      <CardContent>
+        <p className="font-mono text-2xl tabular-nums">{value}</p>
         {alert ? (
           <p className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-destructive">
             <TriangleAlert className="size-4" aria-hidden />
             Needs attention
           </p>
         ) : null}
-      </CardHeader>
+      </CardContent>
     </Card>
   );
 }
