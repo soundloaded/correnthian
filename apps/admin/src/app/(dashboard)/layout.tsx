@@ -3,7 +3,6 @@ import { canAccessConsole } from '@/lib/roles';
 import { getSession } from '@/lib/session';
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
 import { SiteHeader } from '@/components/layout/site-header';
-import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 
 /**
@@ -28,7 +27,6 @@ export default async function DashboardLayout({ children }: LayoutProps<'/'>) {
       <AdminSidebar session={session} />
       <SidebarInset>
         <SiteHeader />
-        <Separator />
         <main className="flex flex-1 flex-col gap-6 p-6">{children}</main>
       </SidebarInset>
     </SidebarProvider>

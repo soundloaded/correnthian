@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Boxes, Coins, Database, FileClock, Landmark, LayoutDashboard,
-  Network, Smartphone, type LucideIcon,
+  ArrowLeftRight, Bell, Boxes, Clock, Globe, Landmark, LayoutDashboard,
+  Link as LinkIcon, Percent, PlugZap, Receipt, ScrollText, ShieldCheck,
+  Smartphone, Users, Vault, type LucideIcon,
 } from 'lucide-react';
 import {
   SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -12,56 +13,96 @@ import {
 } from '@/components/ui/sidebar';
 
 /**
- * Flat navigation, deliberately.
+ * Flat navigation with group labels, deliberately.
  *
- * sidebar-08 shipped collapsible sub-groups. They were dropped: an operator
- * console has a dozen destinations, all one level deep, and making people
- * expand a section to find a page is friction for no gain. If a group ever
- * genuinely needs nesting, add it where it exists rather than everywhere by
- * default.
+ * Collapsible sub-groups were dropped with the old template's nesting: an
+ * operator console has sixteen destinations, all one level deep, and making
+ * people expand a section to find a page is friction for no gain. Labels
+ * alone scan without hiding anything.
+ *
+ * The raised hover/active treatment is adapted from the Nexora template's
+ * nav: muted text at rest, card surface with border and shadow on hover and
+ * when active, using only theme tokens so it follows the obsidian mapping.
  */
-const NAV: Array<{ title: string; href: string; icon: LucideIcon }> = [
-  { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { title: 'Users', href: '/users', icon: Database },
-  { title: 'Devices', href: '/devices', icon: Smartphone },
-  { title: 'Assets', href: '/assets', icon: Boxes },
-  { title: 'Issuers', href: '/issuers', icon: Landmark },
-  { title: 'Chains', href: '/chains', icon: Network },
-  { title: 'Providers', href: '/providers', icon: Coins },
-  { title: 'Quotes', href: '/quotes', icon: Coins },
-  { title: 'Redemptions', href: '/redemptions', icon: Landmark },
-  { title: 'Reviews', href: '/reviews', icon: FileClock },
-  { title: 'Transactions', href: '/transactions', icon: Network },
-  { title: 'Fees', href: '/fees', icon: Coins },
-  { title: 'Jobs', href: '/jobs', icon: FileClock },
-  { title: 'Notifications', href: '/notifications', icon: Smartphone },
-  { title: 'Jurisdictions', href: '/jurisdictions', icon: Landmark },
-  { title: 'Audit log', href: '/audit', icon: FileClock },
+const itemClasses = [
+  'border border-transparent',
+  'bg-transparent shadow-none',
+  'text-muted-foreground',
+  'transition-all duration-150',
+  'hover:bg-white dark:hover:bg-muted',
+  'hover:border-border',
+  'hover:shadow-sm',
+  'hover:text-foreground',
+  'hover:[&_svg]:text-foreground',
+  'data-[active=true]:bg-white dark:data-[active=true]:bg-muted',
+  'data-[active=true]:border-border',
+  'data-[active=true]:shadow-sm',
+  'data-[active=true]:text-foreground',
+  'data-[active=true]:font-medium',
+  'data-[active=true]:[&_svg]:text-foreground',
+];
+
+const NAV: Array<{ label: string; items: Array<{ title: string; href: string; icon: LucideIcon }> }> = [
+  {
+    label: 'Operations',
+    items: [
+      { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+      { title: 'Users', href: '/users', icon: Users },
+      { title: 'Devices', href: '/devices', icon: Smartphone },
+      { title: 'Quotes', href: '/quotes', icon: Receipt },
+      { title: 'Redemptions', href: '/redemptions', icon: Vault },
+      { title: 'Transactions', href: '/transactions', icon: ArrowLeftRight },
+      { title: 'Reviews', href: '/reviews', icon: ShieldCheck },
+      { title: 'Fees', href: '/fees', icon: Percent },
+    ],
+  },
+  {
+    label: 'Registry',
+    items: [
+      { title: 'Assets', href: '/assets', icon: Boxes },
+      { title: 'Issuers', href: '/issuers', icon: Landmark },
+      { title: 'Chains', href: '/chains', icon: LinkIcon },
+      { title: 'Providers', href: '/providers', icon: PlugZap },
+    ],
+  },
+  {
+    label: 'Oversight',
+    items: [
+      { title: 'Jobs', href: '/jobs', icon: Clock },
+      { title: 'Notifications', href: '/notifications', icon: Bell },
+      { title: 'Jurisdictions', href: '/jurisdictions', icon: Globe },
+      { title: 'Audit log', href: '/audit', icon: ScrollText },
+    ],
+  },
 ];
 
 export function NavLinks() {
   const pathname = usePathname();
 
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel>Operations</SidebarGroupLabel>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {NAV.map(({ title, href, icon: Icon }) => {
-            const active = pathname === href || pathname.startsWith(`${href}/`);
-            return (
-              <SidebarMenuItem key={href}>
-                <SidebarMenuButton asChild isActive={active} tooltip={title}>
-                  <Link href={href}>
-                    <Icon aria-hidden />
-                    <span>{title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            );
-          })}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
+    <>
+      {NAV.map((group) => (
+        <SidebarGroup key={group.label}>
+          <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {group.items.map(({ title, href, icon: Icon }) => {
+                const active = pathname === href || pathname.startsWith(`${href}/`);
+                return (
+                  <SidebarMenuItem key={href}>
+                    <SidebarMenuButton asChild isActive={active} tooltip={title} className={itemClasses.join(' ')}>
+                      <Link href={href}>
+                        <Icon aria-hidden />
+                        <span>{title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      ))}
+    </>
   );
 }
