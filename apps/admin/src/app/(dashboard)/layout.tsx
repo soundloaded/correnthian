@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { canAccessConsole } from '@/lib/roles';
 import { getSession } from '@/lib/session';
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
+import { HeaderNotifications } from '@/components/layout/header-notifications';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 
@@ -26,7 +27,7 @@ export default async function DashboardLayout({ children }: LayoutProps<'/'>) {
     <SidebarProvider>
       <AdminSidebar session={session} />
       <SidebarInset>
-        <SiteHeader />
+        <SiteHeader user={session} notices={<HeaderNotifications />} />
         <main className="flex flex-1 flex-col gap-6 p-6">{children}</main>
       </SidebarInset>
     </SidebarProvider>

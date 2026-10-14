@@ -42,7 +42,12 @@ const itemClasses = [
   'data-[active=true]:[&_svg]:text-foreground',
 ];
 
-const NAV: Array<{ label: string; items: Array<{ title: string; href: string; icon: LucideIcon }> }> = [
+export interface NavEntry {
+  label: string;
+  items: Array<{ title: string; href: string; icon: LucideIcon }>;
+}
+
+export const NAV: NavEntry[] = [
   {
     label: 'Operations',
     items: [

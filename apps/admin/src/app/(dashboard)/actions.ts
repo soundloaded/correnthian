@@ -2,7 +2,8 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { apiSend } from '@/lib/api-server';
+import type { Contract } from '@correnthian/contracts';
+import { apiFetch, apiSend } from '@/lib/api-server';
 import { apiUrl } from '@/lib/api-url';
 import { roleAtLeast } from '@/lib/roles';
 import { clearSession, getSession, getToken } from '@/lib/session';
@@ -51,6 +52,37 @@ function toState(r: { status: string; message?: string }): ActionState {
   if (r.status === 'ok') return { ok: true };
   if (r.status === 'unauthorised') return { error: 'Your session expired. Sign in again.' };
   return { error: r.message ?? 'The change was not applied.' };
+}
+
+export interface AccountHit {
+  id: string;
+  email: string;
+  role: string;
+}
+
+type UserList = Contract<'GET /api/v1/users'>;
+
+/**
+ * Live account lookup for the header palette. Read-only and scoped to the
+ * signed-in console session — the shell is already gated, and the API
+ * enforces roles on the call itself. Short queries return nothing rather
+ * than the first N accounts, so typing one letter never dumps the directory.
+ */
+export async function searchAccounts(
+  query: string,
+): Promise<{ ok: true; items: AccountHit[] } | { ok: false; error: string }> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: 'Your session expired. Sign in again.' };
+
+  const q = query.trim().slice(0, 200);
+  if (q.length < 2) return { ok: true, items: [] };
+
+  const result = await apiFetch<UserList>(`/users?search=${encodeURIComponent(q)}&limit=6`);
+  if (result.status !== 'ok') return { ok: false, error: 'Account lookup failed. Try again.' };
+  return {
+    ok: true,
+    items: result.data.items.map((u) => ({ id: u.id, email: u.email, role: u.role })),
+  };
 }
 
 // --- users -----------------------------------------------------------------
