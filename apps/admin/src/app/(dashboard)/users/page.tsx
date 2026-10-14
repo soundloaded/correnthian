@@ -1,8 +1,9 @@
 import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Search } from 'lucide-react';
 import { apiFetch } from '@/lib/api-server';
 import { ApiState } from '@/components/feedback/api-state';
 import { PageTitle } from '@/components/layout/page-title';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -37,6 +38,13 @@ const KYC_TONE = {
 } as const satisfies Record<KycStatus, 'default' | 'secondary' | 'destructive' | 'outline'>;
 
 const kycLabel = (s: KycStatus): string => s.replace('_', ' ');
+
+/** Account standing. Suspended is destructive because the account is blocked; closed is outline because it is terminal and needs nothing. */
+const STATUS_TONE = {
+  active: 'secondary',
+  suspended: 'destructive',
+  closed: 'outline',
+} as const;
 
 /** A hand-edited URL must not put the filter into a state the API rejects. */
 const isKycStatus = (v: string): v is KycStatus =>
@@ -76,8 +84,9 @@ export default async function UsersPage({ searchParams }: PageProps<'/users'>) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Email</TableHead>
+                <TableHead>Account</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>KYC</TableHead>
                 <TableHead className="text-right">Wallets</TableHead>
                 <TableHead className="text-right">Devices</TableHead>
@@ -90,20 +99,34 @@ export default async function UsersPage({ searchParams }: PageProps<'/users'>) {
               {d.items.map((u) => (
                 <TableRow key={u.id}>
                   <TableCell>
-                    <Link
-                      href={`/users/${u.id}`}
-                      title={u.email}
-                      className="group inline-flex items-center gap-1 font-medium hover:underline"
-                    >
-                      {u.email}
-                      <ChevronRight
-                        className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
-                        aria-hidden
-                      />
-                    </Link>
-                    <div className="font-mono text-xs text-muted-foreground">{u.id}</div>
+                    <div className="flex items-center gap-2.5">
+                      <Avatar className="size-8 shrink-0">
+                        <AvatarFallback className="text-xs">
+                          {u.email.slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <Link
+                          href={`/users/${u.id}`}
+                          title={u.email}
+                          className="group inline-flex items-center gap-1 font-medium hover:underline"
+                        >
+                          <span className="truncate">{u.email}</span>
+                          <ChevronRight
+                            className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                            aria-hidden
+                          />
+                        </Link>
+                        <div className="font-mono text-xs text-muted-foreground">{u.id}</div>
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell><Badge variant="outline">{u.role}</Badge></TableCell>
+                  <TableCell>
+                    <Badge variant={STATUS_TONE[u.status as keyof typeof STATUS_TONE] ?? 'outline'}>
+                      {u.status}
+                    </Badge>
+                  </TableCell>
                   <TableCell>
                     <Badge variant={KYC_TONE[u.kycStatus]}>{kycLabel(u.kycStatus)}</Badge>
                   </TableCell>
@@ -145,39 +168,46 @@ export default async function UsersPage({ searchParams }: PageProps<'/users'>) {
 
   return (
     <>
-      <header className="flex flex-wrap items-end justify-between gap-3">
+      <header>
         <PageTitle title="Users">
           Accounts only. Correnthian holds no wallet keys for anyone.
         </PageTitle>
+      </header>
 
-        {/* A GET form, so filtering is server-side and the URL is the state. */}
-        <form className="flex flex-wrap items-center gap-2" action="/users" method="get">
+      {/*
+        A GET form, so filtering is server-side and the URL is the state.
+        It sits in its own toolbar row under the heading: the heading names
+        the page, this row operates the table.
+      */}
+      <form className="flex flex-wrap items-center gap-2" action="/users" method="get">
+        <div className="relative">
+          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input
             name="search"
             type="search"
             defaultValue={search}
             placeholder="Email or display name"
             aria-label="Search accounts by email or display name"
-            className="h-8 w-56"
+            className="h-8 w-56 pl-8"
           />
-          <Select name="kycStatus" defaultValue={kycStatus || undefined}>
-            <SelectTrigger size="sm" className="w-36" aria-label="Filter by KYC status">
-              <SelectValue placeholder="Any KYC" />
-            </SelectTrigger>
-            <SelectContent>
-              {KYC_STATUSES.map((s) => (
-                <SelectItem key={s} value={s}>{kycLabel(s)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button type="submit" size="sm" variant="outline">Apply</Button>
-          {filtered ? (
-            <Button asChild size="sm" variant="ghost">
-              <Link href="/users">Clear</Link>
-            </Button>
-          ) : null}
-        </form>
-      </header>
+        </div>
+        <Select name="kycStatus" defaultValue={kycStatus || undefined}>
+          <SelectTrigger size="sm" className="w-36" aria-label="Filter by KYC status">
+            <SelectValue placeholder="Any KYC" />
+          </SelectTrigger>
+          <SelectContent>
+            {KYC_STATUSES.map((s) => (
+              <SelectItem key={s} value={s}>{kycLabel(s)}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button type="submit" size="sm" variant="outline">Apply</Button>
+        {filtered ? (
+          <Button asChild size="sm" variant="ghost">
+            <Link href="/users">Clear</Link>
+          </Button>
+        ) : null}
+      </form>
 
       <ApiState
         result={result}
