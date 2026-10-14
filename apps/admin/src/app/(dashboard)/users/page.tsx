@@ -30,18 +30,18 @@ const KYC_STATUSES = [
  * the colour is not.
  */
 const KYC_TONE = {
-  approved: 'default',
-  pending: 'secondary',
+  approved: 'success',
+  pending: 'info',
   rejected: 'destructive',
   expired: 'destructive',
   not_started: 'outline',
-} as const satisfies Record<KycStatus, 'default' | 'secondary' | 'destructive' | 'outline'>;
+} as const satisfies Record<KycStatus, 'success' | 'info' | 'destructive' | 'outline'>;
 
 const kycLabel = (s: KycStatus): string => s.replace('_', ' ');
 
 /** Account standing. Suspended is destructive because the account is blocked; closed is outline because it is terminal and needs nothing. */
 const STATUS_TONE = {
-  active: 'secondary',
+  active: 'success',
   suspended: 'destructive',
   closed: 'outline',
 } as const;
@@ -50,6 +50,9 @@ const STATUS_TONE = {
 const isKycStatus = (v: string): v is KycStatus =>
   (KYC_STATUSES as readonly string[]).includes(v);
 
+/** Page sizes the API accepts. Anything else falls back to the default. */
+const ROW_LIMITS = ['10', '25', '50'] as const;
+
 export default async function UsersPage({ searchParams }: PageProps<'/users'>) {
   const sp = await searchParams;
   const one = (v: string | string[] | undefined): string =>
@@ -57,6 +60,8 @@ export default async function UsersPage({ searchParams }: PageProps<'/users'>) {
   const search = one(sp.search);
   const rawKyc = one(sp.kycStatus);
   const kycStatus = isKycStatus(rawKyc) ? rawKyc : '';
+  const rawLimit = one(sp.limit);
+  const limit = (ROW_LIMITS as readonly string[]).includes(rawLimit) ? rawLimit : '25';
   const cursor = one(sp.cursor);
 
   // The API owns filtering and keyset pagination. The page only forwards it,
@@ -64,6 +69,7 @@ export default async function UsersPage({ searchParams }: PageProps<'/users'>) {
   const query = new URLSearchParams();
   if (search) query.set('search', search);
   if (kycStatus) query.set('kycStatus', kycStatus);
+  query.set('limit', limit);
   if (cursor) query.set('cursor', cursor);
 
   const result = await apiFetch<UserListResponse>(`/users?${query.toString()}`);
@@ -73,6 +79,7 @@ export default async function UsersPage({ searchParams }: PageProps<'/users'>) {
     const params = new URLSearchParams();
     if (search) params.set('search', search);
     if (kycStatus) params.set('kycStatus', kycStatus);
+    params.set('limit', limit);
     for (const [k, v] of Object.entries(next)) params.set(k, v);
     return `/users?${params.toString()}`;
   };
@@ -81,8 +88,7 @@ export default async function UsersPage({ searchParams }: PageProps<'/users'>) {
     <>
       <Card>
         <CardContent className="px-0">
-          <Table>
-            <TableHeader>
+          <Table>            <TableHeader>
               <TableRow>
                 <TableHead>Account</TableHead>
                 <TableHead>Role</TableHead>
@@ -150,19 +156,18 @@ export default async function UsersPage({ searchParams }: PageProps<'/users'>) {
             </TableBody>
           </Table>
         </CardContent>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
+          <p className="text-sm text-muted-foreground">
+            <span className="font-mono tabular-nums">{fmtCount(d.items.length)}</span>
+            {d.nextCursor ? ' on this page · more available' : d.items.length === 1 ? ' account' : ' accounts'}
+          </p>
+          {d.nextCursor ? (
+            <Button asChild size="sm" variant="outline">
+              <Link href={pageLink({ cursor: d.nextCursor })}>Next page</Link>
+            </Button>
+          ) : null}
+        </div>
       </Card>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          <span className="font-mono tabular-nums">{fmtCount(d.items.length)}</span>
-          {d.nextCursor ? ' on this page · more available' : d.items.length === 1 ? ' account' : ' accounts'}
-        </p>
-        {d.nextCursor ? (
-          <Button asChild size="sm" variant="outline">
-            <Link href={pageLink({ cursor: d.nextCursor })}>Next page</Link>
-          </Button>
-        ) : null}
-      </div>
     </>
   );
 
@@ -198,6 +203,16 @@ export default async function UsersPage({ searchParams }: PageProps<'/users'>) {
           <SelectContent>
             {KYC_STATUSES.map((s) => (
               <SelectItem key={s} value={s}>{kycLabel(s)}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select name="limit" defaultValue={limit}>
+          <SelectTrigger size="sm" className="w-28" aria-label="Rows per page">
+            <SelectValue placeholder="Rows" />
+          </SelectTrigger>
+          <SelectContent>
+            {ROW_LIMITS.map((n) => (
+              <SelectItem key={n} value={n}>{n} / page</SelectItem>
             ))}
           </SelectContent>
         </Select>
