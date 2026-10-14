@@ -1,6 +1,6 @@
 # Admin visual rebuild — design spec
 
-Date: 2026-10-14. Status: Phase 1 complete (theme + PageTitle); Phases 2–4 open.
+Date: 2026-10-14. Status: complete — Phases 1–4 implemented and committed.
 
 ## Outcome
 
