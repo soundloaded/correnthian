@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { apiSend } from '@/lib/api-server';
+import { apiUrl } from '@/lib/api-url';
 import { roleAtLeast } from '@/lib/roles';
 import { clearSession, getSession, getToken } from '@/lib/session';
 
@@ -11,13 +12,11 @@ export interface ActionState {
   error?: string;
 }
 
-const API_URL = process.env.API_URL ?? 'http://localhost:3000';
-
 /** Revoke server-side when possible, then drop the cookie regardless. */
 export async function logoutAction(): Promise<void> {
   const token = await getToken();
   if (token) {
-    await fetch(`${API_URL}/auth/logout`, {
+    await fetch(apiUrl('/auth/logout'), {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',

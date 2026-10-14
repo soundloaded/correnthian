@@ -1,10 +1,9 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { apiUrl } from '@/lib/api-url';
 import { canAccessConsole } from '@/lib/roles';
 import { setSession } from '@/lib/session';
-
-const API_URL = process.env.API_URL ?? 'http://localhost:3000';
 
 export interface LoginState {
   error?: string;
@@ -27,7 +26,7 @@ export async function loginAction(
 
   let response: Response;
   try {
-    response = await fetch(`${API_URL}/auth/login`, {
+    response = await fetch(apiUrl('/auth/login'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),

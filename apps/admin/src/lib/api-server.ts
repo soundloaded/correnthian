@@ -2,7 +2,7 @@ import 'server-only';
 import { describeApiError } from './api-error';
 import { getToken } from './session';
 
-const API_URL = process.env.API_URL ?? 'http://localhost:3000';
+import { apiUrl } from './api-url';
 
 /**
  * Distinct outcomes, because the UI must react differently to each:
@@ -32,7 +32,7 @@ export async function apiFetch<T>(
 
   let response: Response;
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await fetch(apiUrl(path), {
       ...rest,
       headers: {
         'Content-Type': 'application/json',
@@ -92,7 +92,7 @@ export async function apiSend<T>(
 
   let response: Response;
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await fetch(apiUrl(path), {
       method,
       headers: {
         'Content-Type': 'application/json',
