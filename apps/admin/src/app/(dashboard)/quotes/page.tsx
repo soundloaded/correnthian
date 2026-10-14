@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Contract } from '@correnthian/contracts';
 import { apiFetch } from '@/lib/api-server';
 import { ApiState } from '@/components/feedback/api-state';
+import { StatCard } from '@/components/feedback/stat-card';
 import { PageTitle } from '@/components/layout/page-title';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -159,12 +160,7 @@ export default async function QuotesPage({ searchParams }: PageProps<'/quotes'>)
         result={stats}
         render={(d) => (
           <section aria-label="Quote counters" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardContent className="flex items-baseline gap-2 py-6">
-                <span className="font-mono text-3xl tabular-nums">{fmtCount(d.total)}</span>
-                <span className="text-sm text-muted-foreground">quotes recorded</span>
-              </CardContent>
-            </Card>
+            <StatCard label="quotes recorded" value={fmtCount(d.total)} />
             <Breakdown title="By state" data={d.byState} />
             <Breakdown title="By rail" data={d.byRail} />
           </section>

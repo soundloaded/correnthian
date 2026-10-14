@@ -15,7 +15,7 @@ export const metadata = { title: 'Issuers · Correnthian admin' };
 export const dynamic = 'force-dynamic';
 
 const TIER_VARIANT = {
-  issuer_verified: 'secondary',
+  issuer_verified: 'metal',
   community_verified: 'outline',
   unverified: 'outline',
 } as const;

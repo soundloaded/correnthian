@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Contract } from '@correnthian/contracts';
 import { apiFetch } from '@/lib/api-server';
 import { ApiState } from '@/components/feedback/api-state';
+import { StatCard } from '@/components/feedback/stat-card';
 import { PageTitle } from '@/components/layout/page-title';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -65,12 +66,7 @@ export default async function NotificationsPage({ searchParams }: PageProps<'/no
                 ['failed', d.failed],
               ] as const
             ).map(([label, v]) => (
-              <Card key={label}>
-                <CardContent className="flex items-baseline gap-2 py-6">
-                  <span className="font-mono text-3xl tabular-nums">{fmtCount(v)}</span>
-                  <span className="text-sm text-muted-foreground">{label}</span>
-                </CardContent>
-              </Card>
+              <StatCard key={label} label={label} value={fmtCount(v)} />
             ))}
           </section>
         )}

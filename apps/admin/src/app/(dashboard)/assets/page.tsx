@@ -22,7 +22,7 @@ const CATEGORIES = ['metal', 'stablecoin', 'crypto', 'treasury', 'fund', 'other'
 const PAGE_LIMIT = 200;
 
 const TIER_VARIANT = {
-  'issuer-verified': 'secondary',
+  'issuer-verified': 'metal',
   'community-verified': 'outline',
   unverified: 'outline',
 } as const;
