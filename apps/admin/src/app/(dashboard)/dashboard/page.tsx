@@ -16,7 +16,8 @@ import {
 import { apiFetch } from '@/lib/api-server';
 import { ApiState } from '@/components/feedback/api-state';
 import { PageTitle } from '@/components/layout/page-title';
-import { AuditActivityChart, type AuditActivityPoint } from '@/components/charts/audit-activity-chart';
+import { ActivityBars, type ActivityPoint } from '@/components/charts/activity-bars';
+import { DistributionDonut } from '@/components/charts/distribution-donut';
 import { HealthDonut } from '@/components/charts/health-donut';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,8 +30,22 @@ import { fmtCount, fmtDateTime, relativeTime } from '@/lib/format';
 import type { AssetStats, AuditRow, Provider, UserStats } from '@/lib/types';
 
 type RedemptionStats = Contract<'GET /api/v1/redemptions/stats'>;
+type QuoteStats = Contract<'GET /api/v1/swaps/quotes/stats'>;
 type JobsStatus = Contract<'GET /api/v1/jobs'>;
 type JobRow = JobsStatus['jobs'][number];
+
+/** Rail share ring, silver ramp by rank. Rails are plumbing, not metal — no gold. */
+const RAIL_COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)'];
+
+/** Lifecycle states in metal terms: settled states carry gold, failures carry destructive, the rest are silver. */
+const REDEMPTION_STATE_COLORS: Record<string, string> = {
+  delivered: 'var(--gold)',
+  approved: 'var(--gold-soft)',
+  shipped: 'var(--gold-soft)',
+  in_production: 'var(--gold-soft)',
+  rejected: 'var(--destructive)',
+  failed: 'var(--destructive)',
+};
 
 export const metadata = { title: 'Dashboard · Correnthian admin' };
 export const dynamic = 'force-dynamic';
@@ -40,16 +55,17 @@ const CHART_DAYS = 14;
 const RECENT_ROWS = 12;
 
 export default async function DashboardPage() {
-  const [users, assets, audit, providers, redemptions, jobs] = await Promise.all([
+  const [users, assets, audit, providers, redemptions, jobs, quotes] = await Promise.all([
     apiFetch<UserStats>('/users/stats'),
     apiFetch<AssetStats>('/assets/stats'),
     apiFetch<AuditRow[]>('/audit?limit=200'),
     apiFetch<Provider[]>('/providers'),
     apiFetch<RedemptionStats>('/redemptions/stats'),
     apiFetch<JobsStatus>('/jobs'),
+    apiFetch<QuoteStats>('/swaps/quotes/stats'),
   ]);
 
-  const activity = audit.status === 'ok' ? bucketByDay(audit.data, CHART_DAYS) : [];
+  const activity = audit.status === 'ok' ? bucketActivity(audit.data, CHART_DAYS) : [];
   const attention = buildAttention({ users, assets, providers });
 
   return (
@@ -165,7 +181,7 @@ export default async function DashboardPage() {
           emptyTitle="No redemptions yet"
           emptyDescription="Physical payout requests will distribute here by state."
           emptyWhen={(d) => d.total === 0}
-          render={(d) => <StateBars title="Redemptions by state" description="Every physical payout request, by lifecycle state." href="/redemptions" linkLabel="All redemptions" states={d.byState} />}
+          render={(d) => <StateBars title="Redemptions by state" description="Every physical payout request, by lifecycle state." href="/redemptions" linkLabel="All redemptions" states={d.byState} colors={REDEMPTION_STATE_COLORS} />}
         />
 
         <ApiState
@@ -180,24 +196,41 @@ export default async function DashboardPage() {
           emptyTitle="No audit entries yet"
           emptyDescription="Every write the admin performs is recorded here. Nothing has been written yet."
           emptyWhen={(d) => d.length === 0}
-          render={(rows) => (
-            <>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Audit activity</CardTitle>
-                  <CardDescription>
-                    Entries per day over the last {CHART_DAYS} days, derived from{' '}
-                    <span className="font-mono">GET /audit</span>. The API returns
-                    the newest 200 rows, so a busier period shows the tail of that
-                    window rather than the full history.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <AuditActivityChart data={activity} />
-                </CardContent>
-              </Card>
+          render={() => <ActivityBars data={activity} />}
+        />
+        <ApiState
+          result={quotes}
+          emptyTitle="No quotes yet"
+          emptyDescription="Recorded quotes will distribute here by execution rail."
+          emptyWhen={(d) => d.total === 0}
+          render={(d) => (
+            <DistributionDonut
+              title="Quotes by rail"
+              description="Recorded quotes, by the rail that priced them."
+              href="/quotes"
+              linkLabel="All quotes"
+              total={d.total}
+              totalLabel="Quotes"
+              segments={Object.entries(d.byRail)
+                .sort((a, b) => b[1] - a[1])
+                .map(([name, value], i) => ({
+                  name,
+                  value,
+                  color: RAIL_COLORS[i % RAIL_COLORS.length] ?? 'var(--chart-2)',
+                }))}
+              insightLabel="Top rail"
+            />
+          )}
+        />
+      </section>
 
-              <Card>
+      <ApiState
+        result={audit}
+        emptyTitle="No audit entries yet"
+        emptyDescription="Every write the admin performs is recorded here. Nothing has been written yet."
+        emptyWhen={(d) => d.length === 0}
+        render={(rows) => (
+          <Card>
                 <CardHeader>
                   <CardTitle>Recent activity</CardTitle>
                   <CardDescription>The {RECENT_ROWS} most recent audit entries.</CardDescription>
@@ -256,10 +289,8 @@ export default async function DashboardPage() {
                   </Table>
                 </CardContent>
               </Card>
-            </>
           )}
         />
-      </section>
     </>
   );
 }
@@ -326,9 +357,9 @@ function RegistryHealth({ stats }: { stats: AssetStats }) {
 
 /** One record set distributed by state, as labelled bars. Widths are shares of the observed maximum — nothing is scaled against a target nobody set. */
 function StateBars({
-  title, description, href, linkLabel, states,
+  title, description, href, linkLabel, states, colors,
 }: {
-  title: string; description: string; href: string; linkLabel: string; states: Record<string, number>;
+  title: string; description: string; href: string; linkLabel: string; states: Record<string, number>; colors?: Record<string, string>;
 }) {
   const entries = Object.entries(states).sort((a, b) => b[1] - a[1]);
   const max = Math.max(...entries.map(([, v]) => v), 1);
@@ -351,15 +382,21 @@ function StateBars({
         {entries.length === 0 ? (
           <p className="text-sm text-muted-foreground">No data.</p>
         ) : (
-          entries.map(([state, n]) => (
-            <div key={state} className="grid grid-cols-[8rem_1fr_3rem] items-center gap-3">
-              <span className="truncate text-sm capitalize">{state.replaceAll('_', ' ')}</span>
-              <div className="h-2 overflow-hidden rounded-full bg-muted" role="img" aria-label={`${state}: ${n}`}>
-                <div className="h-full rounded-full bg-chart-2" style={{ width: `${Math.round((100 * n) / max)}%` }} />
+          entries.map(([state, n]) => {
+            const color = colors?.[state] ?? 'var(--chart-2)';
+            return (
+              <div key={state} className="grid grid-cols-[8rem_1fr_3rem] items-center gap-3">
+                <span className="flex min-w-0 items-center gap-2 truncate text-sm capitalize">
+                  <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: color }} aria-hidden />
+                  {state.replaceAll('_', ' ')}
+                </span>
+                <div className="h-2 overflow-hidden rounded-full bg-muted" role="img" aria-label={`${state}: ${n}`}>
+                  <div className="h-full rounded-full" style={{ width: `${Math.round((100 * n) / max)}%`, backgroundColor: color }} />
+                </div>
+                <span className="text-right font-mono text-sm tabular-nums">{fmtCount(n)}</span>
               </div>
-              <span className="text-right font-mono text-sm tabular-nums">{fmtCount(n)}</span>
-            </div>
-          ))
+            );
+          })
         )}
       </CardContent>
     </Card>
@@ -528,33 +565,35 @@ function buildAttention({
 }
 
 /**
- * Audit rows into one bucket per day for the last `days` days.
- *
- * Bucketing is by UTC date because `createdAt` is an ISO instant and the API
- * gives no local-timezone context; bucketing in the operator's zone would make
- * the same row land in a different column depending on who is looking.
+ * Audit rows into one bucket per day for the last `days` days, split by
+ * outcome. Bucketing is by UTC date because `createdAt` is an ISO instant
+ * and the API gives no local-timezone context; bucketing in the operator's
+ * zone would make the same row land in a different column depending on who
+ * is looking.
  */
-function bucketByDay(rows: AuditRow[], days: number): AuditActivityPoint[] {
-  const buckets = new Map<string, number>();
+function bucketActivity(rows: AuditRow[], days: number): ActivityPoint[] {
+  const buckets = new Map<string, { success: number; other: number }>();
   const now = new Date();
   const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
 
   for (let offset = days - 1; offset >= 0; offset -= 1) {
-    buckets.set(new Date(today - offset * 86_400_000).toISOString().slice(0, 10), 0);
+    buckets.set(new Date(today - offset * 86_400_000).toISOString().slice(0, 10), { success: 0, other: 0 });
   }
 
   for (const row of rows) {
-    const key = row.createdAt.slice(0, 10);
-    const current = buckets.get(key);
-    if (current !== undefined) buckets.set(key, current + 1);
+    const current = buckets.get(row.createdAt.slice(0, 10));
+    if (current !== undefined) {
+      if (row.outcome === 'success') current.success += 1;
+      else current.other += 1;
+    }
   }
 
-  return [...buckets.entries()].map(([day, entries]) => ({
+  return [...buckets.entries()].map(([day, counts]) => ({
     day: new Date(`${day}T00:00:00Z`).toLocaleDateString('en-GB', {
       day: '2-digit',
       month: 'short',
       timeZone: 'UTC',
     }),
-    entries,
+    ...counts,
   }));
 }
