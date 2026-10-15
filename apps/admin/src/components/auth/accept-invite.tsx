@@ -9,7 +9,7 @@ import { Label } from "@correnthian/ui/components/label"
 
 import { pressable, step } from "../landing/motion"
 
-const LOGOS = ["google", "slack", "openai", "claude"]
+const LOGOS = ["google", "slack", "openai"]
 const FOOTER_LINKS = ["Support", "Privacy", "Terms"]
 const STRENGTH = [
   { label: "Too weak", color: "bg-rose-500" },
@@ -99,7 +99,7 @@ export function AcceptInvite() {
                 {LOGOS.map((logo) => (
                   <img
                     key={logo}
-                    src={`https://store.codervent.com/logos/${logo}.svg`}
+                    src={`/logos/${logo}.svg`}
                     alt={logo}
                     className={`${logo === "google" ? "h-6" : "h-5"} w-auto object-contain grayscale dark:brightness-0 dark:invert`}
                   />

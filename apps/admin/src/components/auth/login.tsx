@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react"
+import { useRef, useState, type FormEvent } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 import { AnimatePresence, motion } from "motion/react"
 import { Eye, EyeOff, ShieldCheck } from "lucide-react"
@@ -13,7 +13,7 @@ import { Label } from "@correnthian/ui/components/label"
 
 import { pressable, step } from "../landing/motion"
 
-const LOGOS = ["google", "slack", "openai", "claude"]
+const LOGOS = ["google", "slack", "openai"]
 const SOCIALS = [
   { name: "Google", icon: FcGoogle },
   { name: "GitHub", icon: FaGithub },
@@ -26,10 +26,14 @@ export function Login() {
   const [message, setMessage] = useState("")
   const [failed, setFailed] = useState(false)
   const [busy, setBusy] = useState(false)
+  const passRef = useRef<HTMLInputElement>(null)
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    const data = new FormData(e.currentTarget)
+    // Captured synchronously: React nulls currentTarget once dispatch ends,
+    // so the async continuation below would otherwise dereference null.
+    const form = e.currentTarget
+    const data = new FormData(form)
     const email = String(data.get("email") ?? "").trim()
     const password = String(data.get("password") ?? "")
     if (!email || !password) {
@@ -46,12 +50,15 @@ export function Login() {
         if (!r.ok) {
           // Deliberately vague on bad credentials: this form must not confirm
           // which addresses exist. The helper returns that shape already.
+          // The password field alone is cleared — the secret must not sit in
+          // the DOM, but the operator should not have to retype their email.
+          if (passRef.current) passRef.current.value = ""
           setFailed(true)
           setMessage(r.error)
           return
         }
-        void navigate({ to: "/dashboard" })
-      } finally {
+        form.reset()
+        void navigate({ to: "/dashboard" })      } finally {
         setBusy(false)
       }
     })()
@@ -107,7 +114,7 @@ export function Login() {
                 {LOGOS.map((logo) => (
                   <img
                     key={logo}
-                    src={`https://store.codervent.com/logos/${logo}.svg`}
+                    src={`/logos/${logo}.svg`}
                     alt={logo}
                     className="h-5 w-auto object-contain grayscale dark:brightness-0 dark:invert"
                   />
@@ -181,6 +188,7 @@ export function Login() {
                   <Input
                     id="password"
                     name="password"
+                    ref={passRef}
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     autoComplete="current-password"

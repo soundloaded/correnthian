@@ -8,7 +8,9 @@ const config = defineConfig({
   base: "/",
   resolve: { tsconfigPaths: true },
   plugins: [
-  devtools(),
+  // Devtools ship their own websocket client: development only, never the
+  // production bundle an operator audits.
+  ...(process.env.NODE_ENV !== "production" ? [devtools()] : []),
   tailwindcss(),
   tanstackStart({
     spa: {

@@ -8,7 +8,7 @@ import { Button } from "@correnthian/ui/components/button"
 import { pressable, step } from "../landing/motion"
 
 const LENGTH = 6
-const LOGOS = ["google", "slack", "openai", "claude"]
+const LOGOS = ["google", "slack", "openai"]
 const FOOTER_LINKS = ["Support", "Privacy", "Terms"]
 
 export function TwoFactor() {
@@ -105,7 +105,7 @@ export function TwoFactor() {
                 {LOGOS.map((logo) => (
                   <img
                     key={logo}
-                    src={`https://store.codervent.com/logos/${logo}.svg`}
+                    src={`/logos/${logo}.svg`}
                     alt={logo}
                     className={`${logo === "google" ? "h-6" : "h-5"} w-auto object-contain grayscale dark:brightness-0 dark:invert`}
                   />

@@ -102,4 +102,21 @@ describe('api-client failure vocabulary', () => {
     expect(seen[0]?.init.method).toBe('POST');
     expect(typeof seen[0]?.init.body).toBe('string');
   });
+
+  it('notifies once per 401 without letting a bad handler break the result', async () => {
+    const seen: string[] = [];
+    const fetchImpl = (async () => jsonResponse(401, null)) as unknown as typeof fetch;
+    const client = createCorrenthianClient({
+      baseUrl: 'http://api.test',
+      fetchImpl,
+      onUnauthorised: () => {
+        seen.push('fired');
+        throw new Error('handler bug');
+      },
+    });
+
+    const result = await client.request('GET /api/v1/assets/stats');
+    expect(result.status).toBe('unauthorised');
+    expect(seen).toEqual(['fired']);
+  });
 });

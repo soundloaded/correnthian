@@ -22,6 +22,24 @@ export interface ConsoleSession {
 const STORAGE_KEY = 'correnthian.admin.session';
 
 let memory: ConsoleSession | null = null;
+let expiryTimer: ReturnType<typeof setTimeout> | null = null;
+
+function armExpiry(session: ConsoleSession): void {
+  disarmExpiry();
+  const at = Date.parse(session.expiresAt);
+  if (Number.isNaN(at)) return;
+  const delay = at - Date.now();
+  if (delay <= 0) return;
+  // One shot at the deadline, cleared on sign-out — not an interval.
+  expiryTimer = setTimeout(() => clearSession(), delay);
+}
+
+function disarmExpiry(): void {
+  if (expiryTimer) {
+    clearTimeout(expiryTimer);
+    expiryTimer = null;
+  }
+}
 
 export function getSession(): ConsoleSession | null {
   if (memory && !isExpired(memory)) return memory;
@@ -36,8 +54,15 @@ export function getSession(): ConsoleSession | null {
       clearSession();
       return null;
     }
+    armExpiry(memory);
     return memory;
   } catch {
+    // A corrupt or planted value must not survive to be re-parsed forever.
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Storage itself is unavailable; nothing to clean.
+    }
     return null;
   }
 }
@@ -49,6 +74,7 @@ function isExpired(session: ConsoleSession): boolean {
 
 export function setSession(session: ConsoleSession): void {
   memory = session;
+  armExpiry(session);
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
   } catch {
@@ -58,11 +84,23 @@ export function setSession(session: ConsoleSession): void {
 
 export function clearSession(): void {
   memory = null;
+  disarmExpiry();
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch {
     // Nothing persisted, nothing to clear.
   }
+}
+
+if (typeof window !== 'undefined') {
+  // Another tab signing out must sign this one out too: without this, a tab
+  // keeps calling the API on a revoked token until its next navigation.
+  window.addEventListener('storage', (event) => {
+    if (event.key === STORAGE_KEY && event.newValue === null) {
+      memory = null;
+      disarmExpiry();
+    }
+  });
 }
 
 const RANK: Record<string, number> = {

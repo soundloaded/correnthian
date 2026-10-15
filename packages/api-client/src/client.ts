@@ -13,6 +13,13 @@ export interface ClientOptions {
   baseUrl: string;
   getToken?: () => string | null | Promise<string | null>;
   fetchImpl?: typeof fetch;
+  /**
+   * Fired once per 401 response, outside the result flow. Screens use it for
+   * the one global action a dead session demands — drop the session and
+   * leave. Never throws into the request: a handler bug must not convert
+   * every 401 into a crash.
+   */
+  onUnauthorised?: () => void;
 }
 
 export interface RequestOptions {
@@ -103,7 +110,16 @@ export function createCorrenthianClient(options: ClientOptions) {
       return { status: 'unavailable', message: 'Cannot reach the Correnthian API. It may be starting, or stopped.' };
     }
 
-    if (response.status === 401) return { status: 'unauthorised' };
+    if (response.status === 401) {
+      if (options.onUnauthorised) {
+        try {
+          options.onUnauthorised();
+        } catch {
+          // Handlers are observers, never participants.
+        }
+      }
+      return { status: 'unauthorised' };
+    }
     if (response.status === 403 || response.status === 451) {
       const parsed = errorMessage(await safeJson(response), 'Not permitted.');
       return { status: 'forbidden', message: parsed.message };

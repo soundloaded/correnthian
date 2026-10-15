@@ -25,6 +25,16 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1",
       },
       {
+        // Interim posture, stated honestly: script/style need
+        // 'unsafe-inline' (theme init script, Tailwind runtime), and images
+        // stay open until the mock-data pages are rewired to the API — at
+        // which point img-src tightens to 'self' data:. Deployment headers
+        // with a nonce replace this meta tag when a host exists.
+        httpEquiv: "Content-Security-Policy",
+        content:
+          "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' http://localhost:* https:; object-src 'none'; base-uri 'self'; form-action 'self'",
+      },
+      {
         title: "Correnthian Admin",
       },
       {
