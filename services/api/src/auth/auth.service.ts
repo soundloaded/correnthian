@@ -1,8 +1,9 @@
-import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { hash, verify } from '@node-rs/argon2';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { AuthenticatedUser } from '../common/decorators/current-user.decorator.js';
 import { AppError } from '../common/errors.js';
+import { AuditService } from '../audit/audit.service.js';
 import { hashSessionToken } from './token-hash.js';
 import { ConfigService } from '../config/config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -20,6 +21,7 @@ export class AuthService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(ConfigService) private readonly config: ConfigService,
+    @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
   // ------------------------------------------------------------ passwords --
@@ -95,6 +97,13 @@ export class AuthService {
       throw AppError.unauthorized('Invalid or expired session');
     }
 
+    // Suspension takes effect on the next request, not at the next login:
+    // setStatus revokes sessions in the same call, and this closes the race
+    // where a token issued before the suspension would otherwise stay live.
+    if (session.user.status !== 'active') {
+      throw AppError.unauthorized('Invalid or expired session');
+    }
+
     return { id: session.user.id, email: session.user.email, role: session.user.role };
   }
 
@@ -102,6 +111,28 @@ export class AuthService {
     await this.prisma.session.updateMany({
       where: { tokenHash: this.hashToken(raw), revokedAt: null },
       data: { revokedAt: new Date() },
+    });
+  }
+
+  /**
+   * Sign-out that never fails the caller. The session lookup is best-effort
+   * forensics, not a gate: a dead token still ends in a revoke attempt and a
+   * 204, because "logout with a stale token" must not become an error.
+   */
+  async logout(raw: string | undefined): Promise<void> {
+    if (!raw) return;
+    const session = await this.prisma.session
+      .findUnique({
+        where: { tokenHash: this.hashToken(raw) },
+        select: { userId: true },
+      })
+      .catch(() => null);
+    await this.revokeSession(raw);
+    await this.audit.record({
+      actorId: session?.userId ?? null,
+      action: 'auth.logout',
+      targetType: 'Session',
+      outcome: 'success',
     });
   }
 
@@ -124,15 +155,38 @@ export class AuthService {
     const existing = await this.prisma.user.findUnique({ where: { email: normalised } });
     if (existing) {
       // Do not confirm whether an address is registered.
+      await this.audit.record({
+        action: 'auth.register',
+        targetType: 'User',
+        outcome: 'denied',
+        metadata: { email: normalised },
+      });
       throw AppError.conflict('Unable to create account with those details');
     }
 
     const user = await this.prisma.user.create({
       data: { email: normalised, passwordDigest: await this.hashPassword(password) },
       select: { id: true, email: true, role: true },
+    }).catch((err: unknown) => {
+      // A concurrent registration for the same address fails the unique
+      // index after the existence check above. It must answer with the same
+      // generic conflict — the filter's 'Resource already exists' would name
+      // which of the two requests won the race.
+      if (err && typeof err === 'object' && 'code' in err && err.code === 'P2002') {
+        throw AppError.conflict('Unable to create account with those details');
+      }
+      throw err;
     });
 
     const { token, expiresAt } = await this.issueSession(user.id);
+    await this.audit.record({
+      actorId: user.id,
+      action: 'auth.register',
+      targetType: 'User',
+      targetId: user.id,
+      outcome: 'success',
+      metadata: { email: normalised },
+    });
     return { user, token, expiresAt };
   }
 
@@ -149,9 +203,27 @@ export class AuthService {
     const digest = record?.passwordDigest ?? DUMMY_DIGEST;
     const ok = await this.verifyPassword(digest, password);
 
-    if (!record || !ok) throw AppError.unauthorized('Invalid credentials');
+    if (!record || !ok) {
+      await this.audit.record({
+        actorId: record?.id ?? null,
+        action: 'auth.login',
+        targetType: 'User',
+        targetId: record?.id,
+        outcome: 'failure',
+        metadata: { email: email.trim().toLowerCase() },
+      });
+      throw AppError.unauthorized('Invalid credentials');
+    }
 
     const { token, expiresAt } = await this.issueSession(record.id);
+    await this.audit.record({
+      actorId: record.id,
+      action: 'auth.login',
+      targetType: 'User',
+      targetId: record.id,
+      outcome: 'success',
+      metadata: { email: record.email },
+    });
     return {
       user: { id: record.id, email: record.email, role: record.role },
       token,
@@ -161,8 +233,14 @@ export class AuthService {
 }
 
 /**
- * A syntactically valid argon2 digest of a value nobody knows, used to keep
- * the failure path's timing comparable to the success path.
+ * A real argon2id digest of a value nobody knows, used to keep the failure
+ * path's timing comparable to the success path.
+ *
+ * This must stay a digest `verify()` can actually compute: the previous
+ * value was hand-shaped, failed parsing in ~1ms against ~200ms for a real
+ * verification, and made missing-account versus wrong-password
+ * distinguishable by timing — the exact oracle this constant exists to
+ * close. It was proven with a stopwatch, not by reading the base64.
  */
-const DUMMY_DIGEST =
-  '$argon2id$v=19$m=65536,t=3,p=1$c29tZXNhbHR2YWx1ZQ$Z6Q0Cq8vJ0m0Yq0hV0k0Kq0Wq0hV0k0Kq0hV0k0Kq0';
+export const DUMMY_DIGEST =
+  '$argon2id$v=19$m=65536,t=3,p=1$6YhROKZIIuj+FPa5FW9aZg$6lO+YHCRY0hZBH9FZppx3EaScEtQcc3eQmYYHe8CJh8';

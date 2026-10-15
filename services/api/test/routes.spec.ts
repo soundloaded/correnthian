@@ -54,9 +54,11 @@ const CI = Boolean(process.env.CI);
  * assertions still pass, which is how a stray `@Public()` on `GET /users` would
  * reach production looking green. Changing this list is the review.
  *
- * Seven today: three health/meta probes that an orchestrator or a status page
+ * Nine today: three health/meta probes that an orchestrator or a status page
  * must reach unauthenticated, two identity endpoints that have to work before a
- * session exists, and two availability checks a visitor sees before signing up.
+ * session exists, one idempotent sign-out a stale token must still reach, two
+ * availability checks a visitor sees before signing up, and the signed
+ * vendor webhook.
  */
 const EXPECTED_PUBLIC = [
   'GET /compliance/eligibility',
@@ -65,6 +67,7 @@ const EXPECTED_PUBLIC = [
   'GET /meta/versions',
   'GET /onramp/availability',
   'POST /auth/login',
+  'POST /auth/logout',
   'POST /auth/register',
   'POST /compliance/webhooks/persona',
 ].sort();

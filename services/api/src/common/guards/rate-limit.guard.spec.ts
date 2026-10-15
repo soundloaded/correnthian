@@ -58,11 +58,12 @@ function makeGuard(rate: RateConfig = { ...RATE }, redis: Partial<RedisMock> = {
   };
 }
 
-function ctx(url: string, opts: { authorization?: string; ip?: string | null } = {}) {
+function ctx(url: string, opts: { authorization?: string; ip?: string | null; body?: unknown } = {}) {
   const request: Record<string, unknown> = { originalUrl: url };
   if (opts.authorization !== undefined) request['headers'] = { authorization: opts.authorization };
   else request['headers'] = {};
   if (opts.ip !== null) request['ip'] = opts.ip ?? '127.0.0.1';
+  if (opts.body !== undefined) request['body'] = opts.body;
 
   const setHeader = vi.fn();
   const exec = {
@@ -208,6 +209,42 @@ describe('DEF-005 — the budget is per session, not per address', () => {
     const { guard, raw } = makeGuard();
     const key = await keyOf(guard, raw, ctx('/api/v1/assets', { ip: null }).exec);
     expect(key).toBe('correnthian:rate:api:ip:unknown');
+  });
+});
+
+describe('sign-in is keyed on the targeted account, not the address', () => {
+  it('buckets POST /auth/login by the address in the body across IPs', async () => {
+    const { guard, raw } = makeGuard();
+    const a = await keyOf(
+      guard, raw,
+      ctx('/api/v1/auth/login', { ip: '203.0.113.9', body: { email: 'OpS@Example.com ' } }).exec,
+    );
+    const b = await keyOf(
+      guard, raw,
+      ctx('/api/v1/auth/login', { ip: '198.51.100.7', body: { email: 'ops@example.com' } }).exec,
+    );
+    // Same normalised account, different addresses: one budget. The key
+    // carries a digest, never the address itself.
+    expect(a).toBe(b);
+    expect(a).toMatch(/^correnthian:rate:auth:email:[0-9a-f]{64}$/);
+  });
+
+  it('falls back to the address when the login body carries no address', async () => {
+    const { guard, raw } = makeGuard();
+    const key = await keyOf(
+      guard, raw,
+      ctx('/api/v1/auth/login', { ip: '203.0.113.9', body: { password: 'x' } }).exec,
+    );
+    expect(key).toBe('correnthian:rate:auth:ip:203.0.113.9');
+  });
+
+  it('does not apply the email bucket to other auth routes', async () => {
+    const { guard, raw } = makeGuard();
+    const key = await keyOf(
+      guard, raw,
+      ctx('/api/v1/auth/register', { ip: '203.0.113.9', body: { email: 'ops@example.com' } }).exec,
+    );
+    expect(key).toBe('correnthian:rate:auth:ip:203.0.113.9');
   });
 });
 

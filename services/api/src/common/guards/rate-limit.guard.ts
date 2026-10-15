@@ -1,6 +1,7 @@
 import {
   CanActivate, ExecutionContext, Inject, Injectable, Logger, SetMetadata,
 } from '@nestjs/common';
+import { createHash } from 'node:crypto';
 import { Reflector } from '@nestjs/core';
 import type { Request, Response } from 'express';
 import { ConfigService } from '../../config/config.service.js';
@@ -44,6 +45,11 @@ type Bucket = 'auth' | 'api';
  *
  *   - `Bearer` present  -> `session:<sha256 of the token>` — the same value
  *     stored in `Session.tokenHash`
+ *   - `POST /auth/login` with an address in the body -> `email:<sha256 of the
+ *     normalised address>` — credential stuffing targets an *account*, and an
+ *     attacker rotating IPs would otherwise get a fresh budget per address.
+ *     Hashed, because a Redis key naming who tried to sign in is a plaintext
+ *     list of targeted accounts.
  *   - no token          -> `ip:<address>`
  *
  * Both halves are load-bearing. Drop the route bucket and a handful of logins
@@ -146,10 +152,27 @@ export class RateLimitGuard implements CanActivate {
    * Who this request is counted against. Both parts are deliberate and neither
    * can be a bare truthiness check: a token that is present but empty is no
    * identity at all, and would otherwise mint a shared bucket named `''`.
+   *
+   * The email branch reads the *unvalidated* body — the guard runs before the
+   * zod pipe — so it accepts anything shaped like an address and lets the
+   * pipe reject the rest. A malformed body falls back to the IP bucket rather
+   * than to no bucket.
    */
-  private actor(req: Request): { scheme: 'session' | 'ip'; id: string } {
+  private actor(req: Request): { scheme: 'session' | 'email' | 'ip'; id: string } {
     const token = bearerToken(req.headers.authorization);
     if (token) return { scheme: 'session', id: hashSessionToken(token) };
+
+    const path = (req.originalUrl ?? '').split('?')[0] ?? '';
+    if (/\/auth\/login$/.test(path)) {
+      const body = req.body as unknown;
+      const email =
+        body && typeof body === 'object' && 'email' in body && typeof body.email === 'string'
+          ? body.email.trim().toLowerCase()
+          : '';
+      if (email) {
+        return { scheme: 'email', id: createHash('sha256').update(email).digest('hex') };
+      }
+    }
 
     const address = req.ip;
     if (address) return { scheme: 'ip', id: address };

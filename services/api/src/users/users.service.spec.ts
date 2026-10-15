@@ -21,7 +21,8 @@ import { UsersService } from './users.service.js';
 
 const findMany = vi.fn();
 const prisma = { user: { findMany } };
-const svc = new UsersService(prisma as never);
+const revokeAllForUser = vi.fn();
+const svc = new UsersService(prisma as never, { revokeAllForUser } as never);
 
 const query = (cursor?: string) =>
   ({
@@ -147,5 +148,34 @@ describe('response', () => {
     const err = await svc.list(query('usr_raw_id_not_a_cursor')).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(AppError);
     expect((err as AppError).status).toBe(400);
+  });
+});
+
+describe('status changes', () => {
+  function localSvc() {
+    const update = vi.fn().mockResolvedValue({});
+    const findUnique = vi.fn().mockResolvedValue({ id: 'u1' });
+    const revoked: string[] = [];
+    const auth = { revokeAllForUser: vi.fn(async (id: string) => { revoked.push(id); return 1; }) };
+    const local = new UsersService({ user: { update, findUnique } } as never, auth as never);
+    return { local, update, auth, revoked };
+  }
+
+  it('revokes every session when an account is suspended', async () => {
+    const { local, auth } = localSvc();
+    await local.setStatus('u1', 'suspended');
+    expect(auth.revokeAllForUser).toHaveBeenCalledWith('u1');
+  });
+
+  it('revokes every session when an account is closed', async () => {
+    const { local, auth } = localSvc();
+    await local.setStatus('u1', 'closed');
+    expect(auth.revokeAllForUser).toHaveBeenCalledWith('u1');
+  });
+
+  it('leaves sessions alone on reactivation', async () => {
+    const { local, auth } = localSvc();
+    await local.setStatus('u1', 'active');
+    expect(auth.revokeAllForUser).not.toHaveBeenCalled();
   });
 });

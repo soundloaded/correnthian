@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConfigService } from '../config/config.service.js';
-import { AuthService } from './auth.service.js';
+import { AuthService, DUMMY_DIGEST } from './auth.service.js';
 
 const config = {
   auth: { argon2Memory: 65536, argon2Time: 3, argon2Parallelism: 1, sessionTtlHours: 1 },
@@ -13,13 +13,17 @@ function makePrisma() {
   };
 }
 
+function makeAudit() {
+  return { record: vi.fn().mockResolvedValue(undefined) };
+}
+
 describe('AuthService', () => {
   let prisma: ReturnType<typeof makePrisma>;
   let auth: AuthService;
 
   beforeEach(() => {
     prisma = makePrisma();
-    auth = new AuthService(prisma as never, config);
+    auth = new AuthService(prisma as never, config, makeAudit() as never);
   });
 
   it('never persists the raw session token — only its digest', async () => {
@@ -42,7 +46,7 @@ describe('AuthService', () => {
     prisma.session.findUnique.mockResolvedValue({
       revokedAt: null,
       expiresAt: new Date(Date.now() - 1000),
-      user: { id: 'u1', email: 'a@b.c', role: 'user' },
+      user: { id: 'u1', email: 'a@b.c', role: 'user', status: 'active' },
     });
     await expect(auth.resolveSession('whatever')).rejects.toThrow(/Invalid or expired/);
   });
@@ -51,7 +55,7 @@ describe('AuthService', () => {
     prisma.session.findUnique.mockResolvedValue({
       revokedAt: new Date(),
       expiresAt: new Date(Date.now() + 60_000),
-      user: { id: 'u1', email: 'a@b.c', role: 'user' },
+      user: { id: 'u1', email: 'a@b.c', role: 'user', status: 'active' },
     });
     await expect(auth.resolveSession('whatever')).rejects.toThrow(/Invalid or expired/);
   });
@@ -60,11 +64,20 @@ describe('AuthService', () => {
     prisma.session.findUnique.mockResolvedValue({
       revokedAt: null,
       expiresAt: new Date(Date.now() + 60_000),
-      user: { id: 'u1', email: 'a@b.c', role: 'admin' },
+      user: { id: 'u1', email: 'a@b.c', role: 'admin', status: 'active' },
     });
     await expect(auth.resolveSession('t')).resolves.toEqual({
       id: 'u1', email: 'a@b.c', role: 'admin',
     });
+  });
+
+  it('locks out a suspended account on its next request, live token or not', async () => {
+    prisma.session.findUnique.mockResolvedValue({
+      revokedAt: null,
+      expiresAt: new Date(Date.now() + 60_000),
+      user: { id: 'u1', email: 'a@b.c', role: 'user', status: 'suspended' },
+    });
+    await expect(auth.resolveSession('t')).rejects.toThrow(/Invalid or expired/);
   });
 
   it('gives the same error for an unknown token as for a dead one', async () => {
@@ -76,5 +89,25 @@ describe('AuthService', () => {
     prisma.user.findUnique.mockResolvedValue({ id: 'u1' });
     await expect(auth.register('taken@example.com', 'a'.repeat(12)))
       .rejects.toThrow(/Unable to create account/);
+  });
+
+  it('answers a raced registration with the same generic conflict', async () => {
+    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.user.create.mockRejectedValue(Object.assign(new Error('Unique constraint'), { code: 'P2002' }));
+    await expect(auth.register('fresh@example.com', 'a'.repeat(12)))
+      .rejects.toThrow(/Unable to create account/);
+  });
+
+  it('keeps a computable dummy digest — a hand-shaped one fails parsing in ~1ms and reopens the timing oracle', () => {
+    // 16-byte salt (22 chars) and 32-byte hash (43 chars): exactly what
+    // verify() must chew through for the miss path to cost what a real
+    // verification costs.
+    expect(DUMMY_DIGEST).toMatch(/^\$argon2id\$v=19\$m=65536,t=3,p=1\$[A-Za-z0-9+/]{22}\$[A-Za-z0-9+/]{43}$/);
+  });
+
+  it('runs the miss-path verification instead of rejecting the digest', async () => {
+    prisma.user.findUnique.mockResolvedValue(null);
+    await expect(auth.login('nobody@example.com', 'wrong-password'))
+      .rejects.toThrow(/Invalid credentials/);
   });
 });

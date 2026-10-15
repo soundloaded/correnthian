@@ -37,13 +37,20 @@ export class AuthController {
     return { id: user.id, email: user.email, role: user.role };
   }
 
+  /**
+   * Revoke the current session. Public on purpose: the handler is null-
+   * tolerant (no token, no revocation, still 204), and a stale token must be
+   * able to reach it — otherwise "logout with an expired session" 401s in
+   * SessionGuard before revocation runs, and the idempotent 204 this route
+   * promises would be a lie for exactly the caller that needs it.
+   */
+  @Public()
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Revoke the current session' })
   async logout(@Headers('authorization') auth?: string): Promise<void> {
-    const token = bearerToken(auth);
-    if (token) await this.auth.revokeSession(token);
+    await this.auth.logout(bearerToken(auth) ?? undefined);
   }
 
   private present(

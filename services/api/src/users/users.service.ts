@@ -1,12 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { AppError } from '../common/errors.js';
 import { decodeCursor, encodeCursor, KEYSET_ORDER, keysetAfter } from '../common/keyset.js';
+import { AuthService } from '../auth/auth.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { ListUsersDto } from './dto/list-users.dto.js';
 
 @Injectable()
 export class UsersService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(AuthService) private readonly auth: AuthService,
+  ) {}
 
   /**
    * Keyset pagination over `(createdAt desc, id desc)`.
@@ -106,6 +110,12 @@ export class UsersService {
 
   async setStatus(id: string, status: 'active' | 'suspended' | 'closed') {
     await this.prisma.user.update({ where: { id }, data: { status } });
+    if (status !== 'active') {
+      // A suspended account must lose its sessions in the same request that
+      // suspends it: resolveSession does not consult status on every call by
+      // itself, so without this a blocked account keeps working until TTL.
+      await this.auth.revokeAllForUser(id);
+    }
     return this.findById(id);
   }
 
