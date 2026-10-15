@@ -19,7 +19,6 @@ const SOCIALS = [
   { name: "GitHub", icon: FaGithub },
 ]
 const FOOTER_LINKS = ["Support", "Privacy", "Terms"]
-const legalLink = "underline underline-offset-2 hover:text-foreground"
 
 export function Login() {
   const navigate = useNavigate()
@@ -209,9 +208,6 @@ export function Login() {
                     </AnimatePresence>
                   </button>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Password must be at least 8 characters.
-                </p>
               </div>
 
               <motion.div {...pressable}>
@@ -237,12 +233,6 @@ export function Login() {
                 )}
               </AnimatePresence>
             </form>
-
-            <p className="mt-6 text-center text-xs leading-relaxed text-muted-foreground">
-              By signing in, you agree to our{" "}
-              <a href="#" className={legalLink}>Terms</a> and{" "}
-              <a href="#" className={legalLink}>Privacy Policy</a>.
-            </p>
           </div>
         </div>
       </main>
