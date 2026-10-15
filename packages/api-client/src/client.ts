@@ -74,6 +74,9 @@ export function createCorrenthianClient(options: ClientOptions) {
     reqOptions: RequestOptions = {},
   ): Promise<ApiResult<Contract<Path>>> {
     const space = key.indexOf(' ');
+    if (space <= 0) {
+      throw new Error(`Malformed contract key (no METHOD prefix): ${key}`);
+    }
     // The HTTP method lives in the registry key ("POST /api/v1/..."), not in
     // the options: a caller that could send a body with a GET default would
     // make fetch throw (GET/HEAD cannot carry a body) and every financial

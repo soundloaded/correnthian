@@ -2,12 +2,21 @@ import { createCorrenthianClient } from "@correnthian/api-client"
 import { canAccessConsole, clearSession, getSession, setSession } from "./auth"
 
 /**
+ * API origin. Explicitly configured in development; in production a missing
+ * variable falls back to the serving origin rather than a localhost
+ * constant that would silently point every request at the operator's own
+ * machine. Same-origin deploys work; split origins must set VITE_API_URL.
+ */
+export const apiBaseUrl =
+  import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:3000" : window.location.origin);
+
+/**
  * The one API client. Versioned base, bearer from the console session, and
  * response types inferred from the contract registry — screens never
  * hand-write a response shape.
  */
 export const api = createCorrenthianClient({
-  baseUrl: import.meta.env.VITE_API_URL ?? "http://localhost:3000",
+  baseUrl: apiBaseUrl,
   getToken: () => getSession()?.token ?? null,
 })
 
@@ -46,7 +55,7 @@ export async function logout(): Promise<void> {
   const session = getSession()
   if (session) {
     try {
-      await fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:3000"}/api/v1/auth/logout`, {
+      await fetch(`${apiBaseUrl}/api/v1/auth/logout`, {
         method: "POST",
         headers: { Authorization: `Bearer ${session.token}` },
       })

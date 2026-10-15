@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react"
+import { useEffect, useState, type FormEvent } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 import { AnimatePresence, motion } from "motion/react"
 import { Eye, EyeOff, ShieldCheck } from "lucide-react"
@@ -6,6 +6,7 @@ import { FaGithub } from "react-icons/fa6"
 import { FcGoogle } from "react-icons/fc"
 
 import { login } from "@/lib/api"
+import { getSession } from "@/lib/auth"
 
 import { Button } from "@correnthian/ui/components/button"
 import { Input } from "@correnthian/ui/components/input"
@@ -27,6 +28,12 @@ export function Login() {
   const [failed, setFailed] = useState(false)
   const [busy, setBusy] = useState(false)
 
+  // A signed-in operator landing here by back-button or bookmark skips the
+  // form rather than signing in twice.
+  useEffect(() => {
+    if (getSession()) void navigate({ to: "/dashboard" })
+  }, [navigate])
+
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const data = new FormData(e.currentTarget)
@@ -40,17 +47,21 @@ export function Login() {
     setBusy(true)
     setFailed(false)
     setMessage("")
-    void login(email, password).then((r) => {
-      setBusy(false)
-      if (!r.ok) {
-        // Deliberately vague on bad credentials: this form must not confirm
-        // which addresses exist. The helper returns that shape already.
-        setFailed(true)
-        setMessage(r.error)
-        return
+    void (async () => {
+      try {
+        const r = await login(email, password)
+        if (!r.ok) {
+          // Deliberately vague on bad credentials: this form must not confirm
+          // which addresses exist. The helper returns that shape already.
+          setFailed(true)
+          setMessage(r.error)
+          return
+        }
+        void navigate({ to: "/dashboard" })
+      } finally {
+        setBusy(false)
       }
-      void navigate({ to: "/dashboard" })
-    })
+    })()
   }
 
   return (
@@ -158,6 +169,7 @@ export function Login() {
                   type="email"
                   placeholder="you@company.com"
                   autoComplete="email"
+                  disabled={busy}
                   required
                 />
               </div>
@@ -181,6 +193,7 @@ export function Login() {
                     autoComplete="current-password"
                     className="pr-10"
                     minLength={8}
+                    disabled={busy}
                     required
                   />
                   <button

@@ -11,20 +11,32 @@ import {
 
 import { AppSidebar } from "@/components/app-sidebar"
 import { AppHeader } from "@/components/app-header"
-import { canAccessConsole, clearSession, getSession } from "@/lib/auth"
+import { canAccessConsole, clearSession, getSession, setSession } from "@/lib/auth"
+import { api } from "@/lib/api"
 
 export const Route = createFileRoute("/_admin")({
   /**
    * The shell gate. Every admin route inherits it, so a new page cannot be
-   * added without protection. A missing session — or a session whose role no
-   * longer clears the console — returns to sign-in with nothing retained.
-   * This decides which shell renders; the API still authorises every call.
+   * added without protection. Local storage is only the fast path: the
+   * session is re-validated against the API on every navigation, so a
+   * revoked token or a demoted role loses the shell at the next click, not
+   * at the next login. Anything failing that check returns to sign-in with
+   * nothing retained. This decides which shell renders; the API still
+   * authorises every call.
    */
-  beforeLoad: () => {
+  beforeLoad: async () => {
     const session = getSession()
     if (!session || !canAccessConsole(session.role)) {
       clearSession()
       throw redirect({ to: "/auth/login" })
+    }
+    const me = await api.request("GET /api/v1/auth/me").catch(() => null)
+    if (!me || me.status !== "ok" || !canAccessConsole(me.data.role)) {
+      clearSession()
+      throw redirect({ to: "/auth/login" })
+    }
+    if (me.data.role !== session.role) {
+      setSession({ ...session, role: me.data.role })
     }
   },
   component: AdminLayout,

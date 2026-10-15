@@ -22,15 +22,27 @@ const STORAGE_KEY = 'correnthian.admin.session';
 let memory: ConsoleSession | null = null;
 
 export function getSession(): ConsoleSession | null {
-  if (memory) return memory;
+  if (memory && !isExpired(memory)) return memory;
+  memory = null;
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    memory = JSON.parse(raw) as ConsoleSession;
+    const parsed = JSON.parse(raw) as Partial<ConsoleSession>;
+    if (typeof parsed?.token !== 'string' || !parsed.token) return null;
+    memory = parsed as ConsoleSession;
+    if (isExpired(memory)) {
+      clearSession();
+      return null;
+    }
     return memory;
   } catch {
     return null;
   }
+}
+
+function isExpired(session: ConsoleSession): boolean {
+  const at = Date.parse(session.expiresAt);
+  return Number.isNaN(at) || at <= Date.now();
 }
 
 export function setSession(session: ConsoleSession): void {
@@ -61,5 +73,5 @@ const RANK: Record<string, number> = {
 
 /** Fail-closed: an unrecognised role is denied, never admitted. */
 export function canAccessConsole(role: string): boolean {
-  return (RANK[role] ?? -1) >= 1;
+  return (RANK[role.trim().toLowerCase()] ?? -1) >= 1;
 }
