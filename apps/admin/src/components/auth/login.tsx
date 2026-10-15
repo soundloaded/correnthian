@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react"
+import { useState, type FormEvent } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 import { AnimatePresence, motion } from "motion/react"
 import { Eye, EyeOff, ShieldCheck } from "lucide-react"
@@ -6,7 +6,6 @@ import { FaGithub } from "react-icons/fa6"
 import { FcGoogle } from "react-icons/fc"
 
 import { login } from "@/lib/api"
-import { getSession } from "@/lib/auth"
 
 import { Button } from "@correnthian/ui/components/button"
 import { Input } from "@correnthian/ui/components/input"
@@ -27,12 +26,6 @@ export function Login() {
   const [message, setMessage] = useState("")
   const [failed, setFailed] = useState(false)
   const [busy, setBusy] = useState(false)
-
-  // A signed-in operator landing here by back-button or bookmark skips the
-  // form rather than signing in twice.
-  useEffect(() => {
-    if (getSession()) void navigate({ to: "/dashboard" })
-  }, [navigate])
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
