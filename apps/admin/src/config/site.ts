@@ -1,5 +1,5 @@
 export const siteConfig = {
-  name: "Nexora",
+  name: "Correnthian Admin",
   description:
-    "A modern CRM SaaS starter built with TanStack Start and shadcn/ui.",
+    "Internal operations console for Correnthian.",
 }

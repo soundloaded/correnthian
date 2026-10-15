@@ -1,13 +1,13 @@
 import { Link, useNavigate } from "@tanstack/react-router"
 import { motion } from "motion/react"
-import { CheckCircle2, GalleryVerticalEnd } from "lucide-react"
+import { CheckCircle2, ShieldCheck } from "lucide-react"
 
 import { Button } from "@correnthian/ui/components/button"
 
 import { pressable, step } from "../landing/motion"
 
 const LOGOS = ["google", "slack", "openai", "claude"]
-const FOOTER_LINKS = ["Documentation", "Support", "Privacy"]
+const FOOTER_LINKS = ["Support", "Privacy", "Terms"]
 
 export function PasswordSuccess() {
   const navigate = useNavigate()
@@ -24,9 +24,9 @@ export function PasswordSuccess() {
           style={step(0)}
         >
           <div className="flex size-8 items-center justify-center rounded-lg bg-foreground text-background">
-            <GalleryVerticalEnd className="size-4" />
+            <ShieldCheck className="size-4" />
           </div>
-          Nexora
+          Correnthian
         </Link>
         <p className="hero-in text-sm text-muted-foreground" style={step(1)}>
           Ready to continue?{" "}
@@ -132,15 +132,7 @@ export function PasswordSuccess() {
         className="hero-in relative z-20 flex flex-col items-center justify-between gap-4 px-6 pb-6 pt-4 text-xs text-muted-foreground sm:flex-row sm:px-10 lg:px-12"
         style={step(6)}
       >
-        <p>
-          Developed by{" "}
-          <a
-            href="https://codervent.com/"
-            className="font-medium text-foreground transition-colors hover:text-primary"
-          >
-            Codervent
-          </a>
-        </p>
+        <p>© {new Date().getFullYear()} Correnthian. All rights reserved.</p>
         <nav className="flex items-center gap-5">
           {FOOTER_LINKS.map((item) => (
             <a

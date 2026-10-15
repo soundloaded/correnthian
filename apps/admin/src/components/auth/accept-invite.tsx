@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react"
 import { Link } from "@tanstack/react-router"
 import { AnimatePresence, motion } from "motion/react"
-import { Eye, EyeOff, GalleryVerticalEnd, UserPlus } from "lucide-react"
+import { Eye, EyeOff, ShieldCheck, UserPlus } from "lucide-react"
 
 import { Button } from "@correnthian/ui/components/button"
 import { Input } from "@correnthian/ui/components/input"
@@ -10,7 +10,7 @@ import { Label } from "@correnthian/ui/components/label"
 import { pressable, step } from "../landing/motion"
 
 const LOGOS = ["google", "slack", "openai", "claude"]
-const FOOTER_LINKS = ["Documentation", "Support", "Privacy"]
+const FOOTER_LINKS = ["Support", "Privacy", "Terms"]
 const STRENGTH = [
   { label: "Too weak", color: "bg-rose-500" },
   { label: "Weak", color: "bg-rose-500" },
@@ -52,9 +52,9 @@ export function AcceptInvite() {
           style={step(0)}
         >
           <div className="flex size-8 items-center justify-center rounded-lg bg-foreground text-background">
-            <GalleryVerticalEnd className="size-4" />
+            <ShieldCheck className="size-4" />
           </div>
-          Nexora
+          Correnthian
         </Link>
         <p className="hero-in text-sm text-muted-foreground" style={step(1)}>
           Already have an account?{" "}
@@ -81,7 +81,7 @@ export function AcceptInvite() {
               className="hero-in max-w-xl text-4xl font-semibold tracking-tight xl:text-5xl"
               style={step(2)}
             >
-              Join your team on <span className="text-primary">Nexora CRM.</span>
+              Join your team on <span className="text-primary">Correnthian Admin.</span>
             </h1>
             <p
               className="hero-in mt-6 max-w-lg text-base leading-7 text-muted-foreground"
@@ -275,15 +275,7 @@ export function AcceptInvite() {
         className="hero-in relative z-20 flex flex-col items-center justify-between gap-4 px-6 pb-6 pt-4 text-xs text-muted-foreground sm:flex-row sm:px-10 lg:px-12"
         style={step(6)}
       >
-        <p>
-          Developed by{" "}
-          <a
-            href="https://codervent.com/"
-            className="font-medium text-foreground transition-colors hover:text-primary"
-          >
-            Codervent
-          </a>
-        </p>
+        <p>© {new Date().getFullYear()} Correnthian. All rights reserved.</p>
         <nav className="flex items-center gap-5">
           {FOOTER_LINKS.map((item) => (
             <a

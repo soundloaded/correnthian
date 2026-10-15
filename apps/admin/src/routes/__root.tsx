@@ -25,12 +25,12 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1",
       },
       {
-        title: "Nexora CRM",
+        title: "Correnthian Admin",
       },
       {
         name: "description",
         content:
-          "Nexora CRM — a modern CRM SaaS starter built with TanStack Start and shadcn/ui.",
+          "Correnthian Admin — internal operations console.",
       },
     ],
     links: [

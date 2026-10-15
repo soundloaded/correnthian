@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 import { AnimatePresence, motion } from "motion/react"
-import { Eye, EyeOff, GalleryVerticalEnd } from "lucide-react"
+import { Eye, EyeOff, ShieldCheck } from "lucide-react"
 import { FaGithub } from "react-icons/fa6"
 import { FcGoogle } from "react-icons/fc"
 
@@ -18,7 +18,7 @@ const SOCIALS = [
   { name: "Google", icon: FcGoogle },
   { name: "GitHub", icon: FaGithub },
 ]
-const FOOTER_LINKS = ["Documentation", "Support", "Privacy"]
+const FOOTER_LINKS = ["Support", "Privacy", "Terms"]
 const legalLink = "underline underline-offset-2 hover:text-foreground"
 
 export function Login() {
@@ -66,19 +66,10 @@ export function Login() {
           style={step(0)}
         >
           <div className="flex size-8 items-center justify-center rounded-lg bg-foreground text-background">
-            <GalleryVerticalEnd className="size-4" />
+            <ShieldCheck className="size-4" />
           </div>
-          Nexora
+          Correnthian
         </Link>
-        <p className="hero-in text-sm text-muted-foreground" style={step(1)}>
-          Don't have an account?{" "}
-          <Link
-            to="/auth/register"
-            className="font-medium text-foreground underline underline-offset-4 hover:text-primary"
-          >
-            Create account
-          </Link>
-        </p>
       </header>
 
       <main className="relative z-10 flex flex-1 items-center justify-center px-6 py-8">
@@ -101,7 +92,7 @@ export function Login() {
               className="hero-in mt-6 max-w-lg text-base leading-7 text-muted-foreground"
               style={step(3)}
             >
-              Welcome to Nexora CRM. Manage your leads, track deals, organize
+              Welcome to Correnthian Admin. Manage your leads, track deals, organize
               activities, and collaborate with your team in one place.
             </p>
 
@@ -128,7 +119,7 @@ export function Login() {
           >
             <h2 className="text-xl font-semibold tracking-tight">Welcome back</h2>
             <p className="mb-7 mt-1.5 text-sm text-muted-foreground">
-              Sign in to your Nexora CRM account.
+              Sign in to your Correnthian Admin account.
             </p>
 
             <div className="grid gap-3">
@@ -260,15 +251,7 @@ export function Login() {
         className="hero-in relative z-20 flex flex-col items-center justify-between gap-4 px-6 pb-6 pt-4 text-xs text-muted-foreground sm:flex-row sm:px-10 lg:px-12"
         style={step(6)}
       >
-        <p>
-          Developed by{" "}
-          <a
-            href="https://codervent.com/"
-            className="font-medium text-foreground transition-colors hover:text-primary"
-          >
-            Codervent
-          </a>
-        </p>
+        <p>© {new Date().getFullYear()} Correnthian. All rights reserved.</p>
         <nav className="flex items-center gap-5">
           {FOOTER_LINKS.map((item) => (
             <a
