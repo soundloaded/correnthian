@@ -21,13 +21,17 @@ import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AdminActivitiesIndexRouteImport } from './routes/_admin.activities.index'
 import { Route as AdminAssetsIndexRouteImport } from './routes/_admin.assets.index'
 import { Route as AdminAssetsAssetIdRouteImport } from './routes/_admin.assets.$assetId'
+import { Route as AdminAuditIndexRouteImport } from './routes/_admin.audit.index'
+import { Route as AdminAuditAuditIdRouteImport } from './routes/_admin.audit.$auditId'
 import { Route as AdminChainsIndexRouteImport } from './routes/_admin.chains.index'
 import { Route as AdminCompaniesIndexRouteImport } from './routes/_admin.companies.index'
 import { Route as AdminCompaniesCompanyIdRouteImport } from './routes/_admin.companies.$companyId'
+import { Route as AdminComplianceIndexRouteImport } from './routes/_admin.compliance.index'
 import { Route as AdminContactsIndexRouteImport } from './routes/_admin.contacts.index'
 import { Route as AdminContactsContactIdRouteImport } from './routes/_admin.contacts.$contactId'
 import { Route as AdminDealsIndexRouteImport } from './routes/_admin.deals.index'
 import { Route as AdminDealsPipelineRouteImport } from './routes/_admin.deals.pipeline'
+import { Route as AdminDevicesIndexRouteImport } from './routes/_admin.devices.index'
 import { Route as AdminFeesIndexRouteImport } from './routes/_admin.fees.index'
 import { Route as AdminFeesRuleIdRouteImport } from './routes/_admin.fees.$ruleId'
 import { Route as AdminIssuersIndexRouteImport } from './routes/_admin.issuers.index'
@@ -105,6 +109,16 @@ const AdminAssetsAssetIdRoute = AdminAssetsAssetIdRouteImport.update({
   path: '/assets/$assetId',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAuditIndexRoute = AdminAuditIndexRouteImport.update({
+  id: '/audit/',
+  path: '/audit/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAuditAuditIdRoute = AdminAuditAuditIdRouteImport.update({
+  id: '/audit/$auditId',
+  path: '/audit/$auditId',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminChainsIndexRoute = AdminChainsIndexRouteImport.update({
   id: '/chains/',
   path: '/chains/',
@@ -118,6 +132,11 @@ const AdminCompaniesIndexRoute = AdminCompaniesIndexRouteImport.update({
 const AdminCompaniesCompanyIdRoute = AdminCompaniesCompanyIdRouteImport.update({
   id: '/companies/$companyId',
   path: '/companies/$companyId',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminComplianceIndexRoute = AdminComplianceIndexRouteImport.update({
+  id: '/compliance/',
+  path: '/compliance/',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminContactsIndexRoute = AdminContactsIndexRouteImport.update({
@@ -138,6 +157,11 @@ const AdminDealsIndexRoute = AdminDealsIndexRouteImport.update({
 const AdminDealsPipelineRoute = AdminDealsPipelineRouteImport.update({
   id: '/deals/pipeline',
   path: '/deals/pipeline',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDevicesIndexRoute = AdminDevicesIndexRouteImport.update({
+  id: '/devices/',
+  path: '/devices/',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminFeesIndexRoute = AdminFeesIndexRouteImport.update({
@@ -236,6 +260,7 @@ export interface FileRoutesByFullPath {
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/assets/$assetId': typeof AdminAssetsAssetIdRoute
+  '/audit/$auditId': typeof AdminAuditAuditIdRoute
   '/companies/$companyId': typeof AdminCompaniesCompanyIdRoute
   '/contacts/$contactId': typeof AdminContactsContactIdRoute
   '/deals/pipeline': typeof AdminDealsPipelineRoute
@@ -249,10 +274,13 @@ export interface FileRoutesByFullPath {
   '/wallets/$walletId': typeof AdminWalletsWalletIdRoute
   '/activities/': typeof AdminActivitiesIndexRoute
   '/assets/': typeof AdminAssetsIndexRoute
+  '/audit/': typeof AdminAuditIndexRoute
   '/chains/': typeof AdminChainsIndexRoute
   '/companies/': typeof AdminCompaniesIndexRoute
+  '/compliance/': typeof AdminComplianceIndexRoute
   '/contacts/': typeof AdminContactsIndexRoute
   '/deals/': typeof AdminDealsIndexRoute
+  '/devices/': typeof AdminDevicesIndexRoute
   '/fees/': typeof AdminFeesIndexRoute
   '/issuers/': typeof AdminIssuersIndexRoute
   '/leads/': typeof AdminLeadsIndexRoute
@@ -273,6 +301,7 @@ export interface FileRoutesByTo {
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/assets/$assetId': typeof AdminAssetsAssetIdRoute
+  '/audit/$auditId': typeof AdminAuditAuditIdRoute
   '/companies/$companyId': typeof AdminCompaniesCompanyIdRoute
   '/contacts/$contactId': typeof AdminContactsContactIdRoute
   '/deals/pipeline': typeof AdminDealsPipelineRoute
@@ -286,10 +315,13 @@ export interface FileRoutesByTo {
   '/wallets/$walletId': typeof AdminWalletsWalletIdRoute
   '/activities': typeof AdminActivitiesIndexRoute
   '/assets': typeof AdminAssetsIndexRoute
+  '/audit': typeof AdminAuditIndexRoute
   '/chains': typeof AdminChainsIndexRoute
   '/companies': typeof AdminCompaniesIndexRoute
+  '/compliance': typeof AdminComplianceIndexRoute
   '/contacts': typeof AdminContactsIndexRoute
   '/deals': typeof AdminDealsIndexRoute
+  '/devices': typeof AdminDevicesIndexRoute
   '/fees': typeof AdminFeesIndexRoute
   '/issuers': typeof AdminIssuersIndexRoute
   '/leads': typeof AdminLeadsIndexRoute
@@ -312,6 +344,7 @@ export interface FileRoutesById {
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/_admin/assets/$assetId': typeof AdminAssetsAssetIdRoute
+  '/_admin/audit/$auditId': typeof AdminAuditAuditIdRoute
   '/_admin/companies/$companyId': typeof AdminCompaniesCompanyIdRoute
   '/_admin/contacts/$contactId': typeof AdminContactsContactIdRoute
   '/_admin/deals/pipeline': typeof AdminDealsPipelineRoute
@@ -325,10 +358,13 @@ export interface FileRoutesById {
   '/_admin/wallets/$walletId': typeof AdminWalletsWalletIdRoute
   '/_admin/activities/': typeof AdminActivitiesIndexRoute
   '/_admin/assets/': typeof AdminAssetsIndexRoute
+  '/_admin/audit/': typeof AdminAuditIndexRoute
   '/_admin/chains/': typeof AdminChainsIndexRoute
   '/_admin/companies/': typeof AdminCompaniesIndexRoute
+  '/_admin/compliance/': typeof AdminComplianceIndexRoute
   '/_admin/contacts/': typeof AdminContactsIndexRoute
   '/_admin/deals/': typeof AdminDealsIndexRoute
+  '/_admin/devices/': typeof AdminDevicesIndexRoute
   '/_admin/fees/': typeof AdminFeesIndexRoute
   '/_admin/issuers/': typeof AdminIssuersIndexRoute
   '/_admin/leads/': typeof AdminLeadsIndexRoute
@@ -351,6 +387,7 @@ export interface FileRouteTypes {
     | '/auth/forgot-password'
     | '/auth/login'
     | '/assets/$assetId'
+    | '/audit/$auditId'
     | '/companies/$companyId'
     | '/contacts/$contactId'
     | '/deals/pipeline'
@@ -364,10 +401,13 @@ export interface FileRouteTypes {
     | '/wallets/$walletId'
     | '/activities/'
     | '/assets/'
+    | '/audit/'
     | '/chains/'
     | '/companies/'
+    | '/compliance/'
     | '/contacts/'
     | '/deals/'
+    | '/devices/'
     | '/fees/'
     | '/issuers/'
     | '/leads/'
@@ -388,6 +428,7 @@ export interface FileRouteTypes {
     | '/auth/forgot-password'
     | '/auth/login'
     | '/assets/$assetId'
+    | '/audit/$auditId'
     | '/companies/$companyId'
     | '/contacts/$contactId'
     | '/deals/pipeline'
@@ -401,10 +442,13 @@ export interface FileRouteTypes {
     | '/wallets/$walletId'
     | '/activities'
     | '/assets'
+    | '/audit'
     | '/chains'
     | '/companies'
+    | '/compliance'
     | '/contacts'
     | '/deals'
+    | '/devices'
     | '/fees'
     | '/issuers'
     | '/leads'
@@ -426,6 +470,7 @@ export interface FileRouteTypes {
     | '/auth/forgot-password'
     | '/auth/login'
     | '/_admin/assets/$assetId'
+    | '/_admin/audit/$auditId'
     | '/_admin/companies/$companyId'
     | '/_admin/contacts/$contactId'
     | '/_admin/deals/pipeline'
@@ -439,10 +484,13 @@ export interface FileRouteTypes {
     | '/_admin/wallets/$walletId'
     | '/_admin/activities/'
     | '/_admin/assets/'
+    | '/_admin/audit/'
     | '/_admin/chains/'
     | '/_admin/companies/'
+    | '/_admin/compliance/'
     | '/_admin/contacts/'
     | '/_admin/deals/'
+    | '/_admin/devices/'
     | '/_admin/fees/'
     | '/_admin/issuers/'
     | '/_admin/leads/'
@@ -547,6 +595,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAssetsAssetIdRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/audit/': {
+      id: '/_admin/audit/'
+      path: '/audit'
+      fullPath: '/audit/'
+      preLoaderRoute: typeof AdminAuditIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/audit/$auditId': {
+      id: '/_admin/audit/$auditId'
+      path: '/audit/$auditId'
+      fullPath: '/audit/$auditId'
+      preLoaderRoute: typeof AdminAuditAuditIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/chains/': {
       id: '/_admin/chains/'
       path: '/chains'
@@ -566,6 +628,13 @@ declare module '@tanstack/react-router' {
       path: '/companies/$companyId'
       fullPath: '/companies/$companyId'
       preLoaderRoute: typeof AdminCompaniesCompanyIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/compliance/': {
+      id: '/_admin/compliance/'
+      path: '/compliance'
+      fullPath: '/compliance/'
+      preLoaderRoute: typeof AdminComplianceIndexRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_admin/contacts/': {
@@ -594,6 +663,13 @@ declare module '@tanstack/react-router' {
       path: '/deals/pipeline'
       fullPath: '/deals/pipeline'
       preLoaderRoute: typeof AdminDealsPipelineRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/devices/': {
+      id: '/_admin/devices/'
+      path: '/devices'
+      fullPath: '/devices/'
+      preLoaderRoute: typeof AdminDevicesIndexRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_admin/fees/': {
@@ -725,6 +801,7 @@ interface AdminRouteChildren {
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminTeamRoute: typeof AdminTeamRoute
   AdminAssetsAssetIdRoute: typeof AdminAssetsAssetIdRoute
+  AdminAuditAuditIdRoute: typeof AdminAuditAuditIdRoute
   AdminCompaniesCompanyIdRoute: typeof AdminCompaniesCompanyIdRoute
   AdminContactsContactIdRoute: typeof AdminContactsContactIdRoute
   AdminDealsPipelineRoute: typeof AdminDealsPipelineRoute
@@ -738,10 +815,13 @@ interface AdminRouteChildren {
   AdminWalletsWalletIdRoute: typeof AdminWalletsWalletIdRoute
   AdminActivitiesIndexRoute: typeof AdminActivitiesIndexRoute
   AdminAssetsIndexRoute: typeof AdminAssetsIndexRoute
+  AdminAuditIndexRoute: typeof AdminAuditIndexRoute
   AdminChainsIndexRoute: typeof AdminChainsIndexRoute
   AdminCompaniesIndexRoute: typeof AdminCompaniesIndexRoute
+  AdminComplianceIndexRoute: typeof AdminComplianceIndexRoute
   AdminContactsIndexRoute: typeof AdminContactsIndexRoute
   AdminDealsIndexRoute: typeof AdminDealsIndexRoute
+  AdminDevicesIndexRoute: typeof AdminDevicesIndexRoute
   AdminFeesIndexRoute: typeof AdminFeesIndexRoute
   AdminIssuersIndexRoute: typeof AdminIssuersIndexRoute
   AdminLeadsIndexRoute: typeof AdminLeadsIndexRoute
@@ -760,6 +840,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminSettingsRoute: AdminSettingsRoute,
   AdminTeamRoute: AdminTeamRoute,
   AdminAssetsAssetIdRoute: AdminAssetsAssetIdRoute,
+  AdminAuditAuditIdRoute: AdminAuditAuditIdRoute,
   AdminCompaniesCompanyIdRoute: AdminCompaniesCompanyIdRoute,
   AdminContactsContactIdRoute: AdminContactsContactIdRoute,
   AdminDealsPipelineRoute: AdminDealsPipelineRoute,
@@ -773,10 +854,13 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminWalletsWalletIdRoute: AdminWalletsWalletIdRoute,
   AdminActivitiesIndexRoute: AdminActivitiesIndexRoute,
   AdminAssetsIndexRoute: AdminAssetsIndexRoute,
+  AdminAuditIndexRoute: AdminAuditIndexRoute,
   AdminChainsIndexRoute: AdminChainsIndexRoute,
   AdminCompaniesIndexRoute: AdminCompaniesIndexRoute,
+  AdminComplianceIndexRoute: AdminComplianceIndexRoute,
   AdminContactsIndexRoute: AdminContactsIndexRoute,
   AdminDealsIndexRoute: AdminDealsIndexRoute,
+  AdminDevicesIndexRoute: AdminDevicesIndexRoute,
   AdminFeesIndexRoute: AdminFeesIndexRoute,
   AdminIssuersIndexRoute: AdminIssuersIndexRoute,
   AdminLeadsIndexRoute: AdminLeadsIndexRoute,
