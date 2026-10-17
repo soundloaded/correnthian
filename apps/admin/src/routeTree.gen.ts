@@ -28,6 +28,11 @@ import { Route as AdminDealsPipelineRouteImport } from './routes/_admin.deals.pi
 import { Route as AdminLeadsIndexRouteImport } from './routes/_admin.leads.index'
 import { Route as AdminLeadsNewRouteImport } from './routes/_admin.leads.new'
 import { Route as AdminLeadsPipelineRouteImport } from './routes/_admin.leads.pipeline'
+import { Route as AdminQuotesIndexRouteImport } from './routes/_admin.quotes.index'
+import { Route as AdminQuotesQuoteIdRouteImport } from './routes/_admin.quotes.$quoteId'
+import { Route as AdminRedemptionsIndexRouteImport } from './routes/_admin.redemptions.index'
+import { Route as AdminTransactionsIndexRouteImport } from './routes/_admin.transactions.index'
+import { Route as AdminTransactionsTxIdRouteImport } from './routes/_admin.transactions.$txId'
 import { Route as AdminUsersIndexRouteImport } from './routes/_admin.users.index'
 import { Route as AdminUsersUserIdRouteImport } from './routes/_admin.users.$userId'
 
@@ -125,6 +130,31 @@ const AdminLeadsPipelineRoute = AdminLeadsPipelineRouteImport.update({
   path: '/leads/pipeline',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminQuotesIndexRoute = AdminQuotesIndexRouteImport.update({
+  id: '/quotes/',
+  path: '/quotes/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminQuotesQuoteIdRoute = AdminQuotesQuoteIdRouteImport.update({
+  id: '/quotes/$quoteId',
+  path: '/quotes/$quoteId',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminRedemptionsIndexRoute = AdminRedemptionsIndexRouteImport.update({
+  id: '/redemptions/',
+  path: '/redemptions/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminTransactionsIndexRoute = AdminTransactionsIndexRouteImport.update({
+  id: '/transactions/',
+  path: '/transactions/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminTransactionsTxIdRoute = AdminTransactionsTxIdRouteImport.update({
+  id: '/transactions/$txId',
+  path: '/transactions/$txId',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminUsersIndexRoute = AdminUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
@@ -150,12 +180,17 @@ export interface FileRoutesByFullPath {
   '/deals/pipeline': typeof AdminDealsPipelineRoute
   '/leads/new': typeof AdminLeadsNewRoute
   '/leads/pipeline': typeof AdminLeadsPipelineRoute
+  '/quotes/$quoteId': typeof AdminQuotesQuoteIdRoute
+  '/transactions/$txId': typeof AdminTransactionsTxIdRoute
   '/users/$userId': typeof AdminUsersUserIdRoute
   '/activities/': typeof AdminActivitiesIndexRoute
   '/companies/': typeof AdminCompaniesIndexRoute
   '/contacts/': typeof AdminContactsIndexRoute
   '/deals/': typeof AdminDealsIndexRoute
   '/leads/': typeof AdminLeadsIndexRoute
+  '/quotes/': typeof AdminQuotesIndexRoute
+  '/redemptions/': typeof AdminRedemptionsIndexRoute
+  '/transactions/': typeof AdminTransactionsIndexRoute
   '/users/': typeof AdminUsersIndexRoute
 }
 export interface FileRoutesByTo {
@@ -172,12 +207,17 @@ export interface FileRoutesByTo {
   '/deals/pipeline': typeof AdminDealsPipelineRoute
   '/leads/new': typeof AdminLeadsNewRoute
   '/leads/pipeline': typeof AdminLeadsPipelineRoute
+  '/quotes/$quoteId': typeof AdminQuotesQuoteIdRoute
+  '/transactions/$txId': typeof AdminTransactionsTxIdRoute
   '/users/$userId': typeof AdminUsersUserIdRoute
   '/activities': typeof AdminActivitiesIndexRoute
   '/companies': typeof AdminCompaniesIndexRoute
   '/contacts': typeof AdminContactsIndexRoute
   '/deals': typeof AdminDealsIndexRoute
   '/leads': typeof AdminLeadsIndexRoute
+  '/quotes': typeof AdminQuotesIndexRoute
+  '/redemptions': typeof AdminRedemptionsIndexRoute
+  '/transactions': typeof AdminTransactionsIndexRoute
   '/users': typeof AdminUsersIndexRoute
 }
 export interface FileRoutesById {
@@ -196,12 +236,17 @@ export interface FileRoutesById {
   '/_admin/deals/pipeline': typeof AdminDealsPipelineRoute
   '/_admin/leads/new': typeof AdminLeadsNewRoute
   '/_admin/leads/pipeline': typeof AdminLeadsPipelineRoute
+  '/_admin/quotes/$quoteId': typeof AdminQuotesQuoteIdRoute
+  '/_admin/transactions/$txId': typeof AdminTransactionsTxIdRoute
   '/_admin/users/$userId': typeof AdminUsersUserIdRoute
   '/_admin/activities/': typeof AdminActivitiesIndexRoute
   '/_admin/companies/': typeof AdminCompaniesIndexRoute
   '/_admin/contacts/': typeof AdminContactsIndexRoute
   '/_admin/deals/': typeof AdminDealsIndexRoute
   '/_admin/leads/': typeof AdminLeadsIndexRoute
+  '/_admin/quotes/': typeof AdminQuotesIndexRoute
+  '/_admin/redemptions/': typeof AdminRedemptionsIndexRoute
+  '/_admin/transactions/': typeof AdminTransactionsIndexRoute
   '/_admin/users/': typeof AdminUsersIndexRoute
 }
 export interface FileRouteTypes {
@@ -220,12 +265,17 @@ export interface FileRouteTypes {
     | '/deals/pipeline'
     | '/leads/new'
     | '/leads/pipeline'
+    | '/quotes/$quoteId'
+    | '/transactions/$txId'
     | '/users/$userId'
     | '/activities/'
     | '/companies/'
     | '/contacts/'
     | '/deals/'
     | '/leads/'
+    | '/quotes/'
+    | '/redemptions/'
+    | '/transactions/'
     | '/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -242,12 +292,17 @@ export interface FileRouteTypes {
     | '/deals/pipeline'
     | '/leads/new'
     | '/leads/pipeline'
+    | '/quotes/$quoteId'
+    | '/transactions/$txId'
     | '/users/$userId'
     | '/activities'
     | '/companies'
     | '/contacts'
     | '/deals'
     | '/leads'
+    | '/quotes'
+    | '/redemptions'
+    | '/transactions'
     | '/users'
   id:
     | '__root__'
@@ -265,12 +320,17 @@ export interface FileRouteTypes {
     | '/_admin/deals/pipeline'
     | '/_admin/leads/new'
     | '/_admin/leads/pipeline'
+    | '/_admin/quotes/$quoteId'
+    | '/_admin/transactions/$txId'
     | '/_admin/users/$userId'
     | '/_admin/activities/'
     | '/_admin/companies/'
     | '/_admin/contacts/'
     | '/_admin/deals/'
     | '/_admin/leads/'
+    | '/_admin/quotes/'
+    | '/_admin/redemptions/'
+    | '/_admin/transactions/'
     | '/_admin/users/'
   fileRoutesById: FileRoutesById
 }
@@ -416,6 +476,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLeadsPipelineRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/quotes/': {
+      id: '/_admin/quotes/'
+      path: '/quotes'
+      fullPath: '/quotes/'
+      preLoaderRoute: typeof AdminQuotesIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/quotes/$quoteId': {
+      id: '/_admin/quotes/$quoteId'
+      path: '/quotes/$quoteId'
+      fullPath: '/quotes/$quoteId'
+      preLoaderRoute: typeof AdminQuotesQuoteIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/redemptions/': {
+      id: '/_admin/redemptions/'
+      path: '/redemptions'
+      fullPath: '/redemptions/'
+      preLoaderRoute: typeof AdminRedemptionsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/transactions/': {
+      id: '/_admin/transactions/'
+      path: '/transactions'
+      fullPath: '/transactions/'
+      preLoaderRoute: typeof AdminTransactionsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/transactions/$txId': {
+      id: '/_admin/transactions/$txId'
+      path: '/transactions/$txId'
+      fullPath: '/transactions/$txId'
+      preLoaderRoute: typeof AdminTransactionsTxIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/users/': {
       id: '/_admin/users/'
       path: '/users'
@@ -444,12 +539,17 @@ interface AdminRouteChildren {
   AdminDealsPipelineRoute: typeof AdminDealsPipelineRoute
   AdminLeadsNewRoute: typeof AdminLeadsNewRoute
   AdminLeadsPipelineRoute: typeof AdminLeadsPipelineRoute
+  AdminQuotesQuoteIdRoute: typeof AdminQuotesQuoteIdRoute
+  AdminTransactionsTxIdRoute: typeof AdminTransactionsTxIdRoute
   AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
   AdminActivitiesIndexRoute: typeof AdminActivitiesIndexRoute
   AdminCompaniesIndexRoute: typeof AdminCompaniesIndexRoute
   AdminContactsIndexRoute: typeof AdminContactsIndexRoute
   AdminDealsIndexRoute: typeof AdminDealsIndexRoute
   AdminLeadsIndexRoute: typeof AdminLeadsIndexRoute
+  AdminQuotesIndexRoute: typeof AdminQuotesIndexRoute
+  AdminRedemptionsIndexRoute: typeof AdminRedemptionsIndexRoute
+  AdminTransactionsIndexRoute: typeof AdminTransactionsIndexRoute
   AdminUsersIndexRoute: typeof AdminUsersIndexRoute
 }
 
@@ -464,12 +564,17 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminDealsPipelineRoute: AdminDealsPipelineRoute,
   AdminLeadsNewRoute: AdminLeadsNewRoute,
   AdminLeadsPipelineRoute: AdminLeadsPipelineRoute,
+  AdminQuotesQuoteIdRoute: AdminQuotesQuoteIdRoute,
+  AdminTransactionsTxIdRoute: AdminTransactionsTxIdRoute,
   AdminUsersUserIdRoute: AdminUsersUserIdRoute,
   AdminActivitiesIndexRoute: AdminActivitiesIndexRoute,
   AdminCompaniesIndexRoute: AdminCompaniesIndexRoute,
   AdminContactsIndexRoute: AdminContactsIndexRoute,
   AdminDealsIndexRoute: AdminDealsIndexRoute,
   AdminLeadsIndexRoute: AdminLeadsIndexRoute,
+  AdminQuotesIndexRoute: AdminQuotesIndexRoute,
+  AdminRedemptionsIndexRoute: AdminRedemptionsIndexRoute,
+  AdminTransactionsIndexRoute: AdminTransactionsIndexRoute,
   AdminUsersIndexRoute: AdminUsersIndexRoute,
 }
 
