@@ -1,8 +1,6 @@
 "use client"
 
-import * as React from "react"
-
-import { navigation } from "@/config/navigation"
+import { visibleNavigation } from "@/config/navigation"
 
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
@@ -18,55 +16,34 @@ import {
 
 import { ScrollArea } from "@correnthian/ui/components/scroll-area"
 
-import {
-  TargetIcon,
-  MegaphoneIcon,
-  ChartNoAxesCombinedIcon,
-} from "lucide-react"
+import { getSession } from "@/lib/auth"
 
-const data = {
-  user: {
-    name: "Alex Morgan",
-    email: "alex@nexora.dev",
-    avatar: "https://untitledui.com/images/avatars/aliah-lane",
-  },
-
-  teams: [
-  {
-    name: "Nexora",
-    logo: <TargetIcon className="size-4" />,
-    plan: "CRM",
-  },
-  {
-    name: "Marketing",
-    logo: <MegaphoneIcon className="size-4" />,
-    plan: "Marketing",
-  },
-  {
-    name: "Analytics",
-    logo: <ChartNoAxesCombinedIcon className="size-4" />,
-    plan: "Analytics",
-  },
-],
-}
-
+/**
+ * Console shell sidebar. Brand block, grouped navigation, operator
+ * identity. NavProjects/NavSecondary were reference decoration — nothing
+ * feeds them, so they are gone. The role gate is cosmetic; the API
+ * enforces.
+ */
 export function AppSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
+  const session = getSession()
+  const groups = visibleNavigation(session?.role ?? "support")
+
   return (
     <Sidebar variant="inset" {...props} collapsible="icon">
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher />
       </SidebarHeader>
 
       <SidebarContent>
         <ScrollArea className="h-full">
-          <NavMain groups={navigation} />
+          <NavMain groups={groups} />
         </ScrollArea>
       </SidebarContent>
 
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser />
       </SidebarFooter>
 
       <SidebarRail className="hover:bg-transparent hover:after:bg-transparent" />

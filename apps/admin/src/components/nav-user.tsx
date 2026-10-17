@@ -1,9 +1,15 @@
 "use client"
 
+import { Link, useNavigate } from "@tanstack/react-router"
+import {
+  ChevronsUpDownIcon,
+  LogOutIcon,
+  SettingsIcon,
+} from "lucide-react"
+
 import {
   Avatar,
   AvatarFallback,
-  AvatarImage,
 } from "@correnthian/ui/components/avatar"
 
 import {
@@ -23,32 +29,38 @@ import {
   useSidebar,
 } from "@correnthian/ui/components/sidebar"
 
-import {
-  ChevronsUpDownIcon,
-  SparklesIcon,
-  BadgeCheckIcon,
-  CreditCardIcon,
-  BellIcon,
-  SettingsIcon,
-  LogOutIcon,
-} from "lucide-react"
-
 import { ThemeToggle } from "@correnthian/ui/components/theme-toggle"
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    name: string
-    email: string
-    avatar: string
-  }
-}) {
+import { logout } from "@/lib/api"
+import { useApiQuery } from "@/lib/use-api-query"
+
+/**
+ * Live operator identity. The session holds email + role; `auth/me`
+ * re-validates both against the API (`{ id, email, role }` — no display
+ * name, so the email's local part reads as the name). While the read is
+ * pending, the session email shows — never a hardcoded placeholder.
+ */
+export function NavUser() {
   const { isMobile } = useSidebar()
+  const navigate = useNavigate()
+
+  const me = useApiQuery("GET /api/v1/auth/me")
+  const live = me.status === "success" ? me.data : null
+  const email = live?.email ?? ""
+  const role = live?.role ?? ""
+  const name = email ? email.split("@")[0] ?? email : "Operator"
+  const initials = name
+    .split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("") || "OP"
 
   const handleLogout = () => {
-    // TODO: wire to your auth sign-out
-    // router.navigate({ to: "/login" })
+    void (async () => {
+      await logout()
+      await navigate({ to: "/auth/login" })
+    })()
   }
 
   return (
@@ -72,17 +84,16 @@ export function NavUser({
             }
           >
             <Avatar>
-              <AvatarImage src={user.avatar} alt={user.name}/>
-              <AvatarFallback>CN</AvatarFallback>
+              <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
 
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">
-                {user.name}
+                {name}
               </span>
 
               <span className="truncate text-xs text-muted-foreground">
-                {user.email}
+                {email}
               </span>
             </div>
 
@@ -100,23 +111,24 @@ export function NavUser({
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                   <Avatar>
-                    <AvatarImage
-                      src={user.avatar}
-                      alt={user.name}
-                    />
-                    <AvatarFallback>CN</AvatarFallback>
+                    <AvatarFallback>{initials}</AvatarFallback>
                   </Avatar>
 
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">
-                      {user.name}
+                      {name}
                     </span>
 
                     <span className="truncate text-xs text-muted-foreground">
-                      {user.email}
+                      {email}
                     </span>
                   </div>
                 </div>
+                {role && (
+                  <p className="px-1 pb-1 text-xs capitalize text-muted-foreground">
+                    {role}
+                  </p>
+                )}
               </DropdownMenuLabel>
             </DropdownMenuGroup>
 
@@ -127,34 +139,13 @@ export function NavUser({
               <ThemeToggle />
             </DropdownMenuGroup>
 
-            {/* Upgrade */}
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <SparklesIcon />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-
             <DropdownMenuSeparator />
 
-            {/* Account */}
+            {/* Settings */}
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <BadgeCheckIcon />
-                Account
-              </DropdownMenuItem>
-
-              <DropdownMenuItem>
-                <CreditCardIcon />
-                Billing
-              </DropdownMenuItem>
-
-              <DropdownMenuItem>
-                <BellIcon />
-                Notifications
-              </DropdownMenuItem>
-
-              <DropdownMenuItem>
+              <DropdownMenuItem
+                render={<Link to="/settings" />}
+              >
                 <SettingsIcon />
                 Settings
               </DropdownMenuItem>

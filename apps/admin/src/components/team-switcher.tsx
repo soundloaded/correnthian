@@ -1,110 +1,38 @@
 "use client"
 
-import * as React from "react"
+import { Link } from "@tanstack/react-router"
+import { ShieldCheckIcon } from "lucide-react"
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@correnthian/ui/components/dropdown-menu"
+import { siteConfig } from "@/config/site"
+
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@correnthian/ui/components/sidebar"
-import { CheckIcon, ChevronsUpDownIcon, PlusIcon, SettingsIcon } from "lucide-react"
 
-export function TeamSwitcher({
-  teams,
-}: {
-  teams: {
-    name: string
-    logo: React.ReactNode
-    plan: string
-  }[]
-}) {
-  const { isMobile } = useSidebar()
-  const [activeTeam, setActiveTeam] = React.useState(teams[0])
-  if (!activeTeam) {
-    return null
-  }
+/**
+ * Single-organisation brand block. Correnthian operates one console, so
+ * there is nothing to switch — the reference dropdown and its fake teams
+ * are gone. The arrangement (mark + name + caption) is unchanged, and the
+ * block links home the way brand marks do.
+ */
+export function TeamSwitcher() {
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <SidebarMenuButton
-                size="lg"
-                className="data-open:bg-sidebar-accent data-open:text-sidebar-accent-foreground"
-              />
-            }
-          >
-            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-              {activeTeam.logo}
-            </div>
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">{activeTeam.name}</span>
-              <span className="truncate text-xs">{activeTeam.plan}</span>
-            </div>
-            <ChevronsUpDownIcon className="ml-auto" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="w-56 p-2"
-            align="start"
-            side={isMobile ? "bottom" : "right"}
-            sideOffset={4}
-          >
-            <DropdownMenuGroup>
-              <DropdownMenuLabel className="text-xs text-muted-foreground">
-                Applications
-              </DropdownMenuLabel>
-
-              {teams.map((team) => {
-                const isActive = activeTeam.name === team.name
-
-                return (
-                  <DropdownMenuItem
-                    key={team.name}
-                    onClick={() => setActiveTeam(team)}
-                    className="gap-2"
-                  >
-                    <span className="flex size-4 shrink-0 items-center justify-center text-muted-foreground">
-                      {team.logo}
-                    </span>
-
-                    <span className="flex-1 truncate">
-                      {team.name}
-                    </span>
-
-                    {isActive && (
-                      <CheckIcon className="size-4 text-foreground" />
-                    )}
-                  </DropdownMenuItem>
-                )
-              })}
-            </DropdownMenuGroup>
-
-            <DropdownMenuSeparator />
-
-            <DropdownMenuGroup>
-              <DropdownMenuItem className="gap-2">
-                <PlusIcon className="size-4" />
-                <span>Create Application</span>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem className="gap-2">
-                <SettingsIcon className="size-4" />
-                <span>Manage Applications</span>
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <SidebarMenuButton
+          size="lg"
+          render={<Link to="/dashboard" />}
+        >
+          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+            <ShieldCheckIcon className="size-4" />
+          </div>
+          <div className="grid flex-1 text-left text-sm leading-tight">
+            <span className="truncate font-medium">{siteConfig.name}</span>
+            <span className="truncate text-xs">Operations</span>
+          </div>
+        </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>
   )

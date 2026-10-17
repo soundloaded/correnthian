@@ -1,8 +1,9 @@
 "use client"
 
-import type { LucideIcon } from "lucide-react"
 import { ChevronRight } from "lucide-react"
 import { Link, useLocation } from "@tanstack/react-router"
+
+import type { NavGroup } from "@/config/navigation"
 
 import {
   Collapsible,
@@ -20,23 +21,6 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@correnthian/ui/components/sidebar"
-
-type NavSubItem = {
-  title: string
-  url: string
-}
-
-type NavItem = {
-  title: string
-  url: string
-  icon?: LucideIcon
-  items?: readonly NavSubItem[]
-}
-
-type NavGroup = {
-  label: string
-  items: readonly NavItem[]
-}
 
 const menuButtonCollapsedClasses =
   "group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center"
