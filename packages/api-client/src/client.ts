@@ -111,7 +111,10 @@ export function createCorrenthianClient(options: ClientOptions) {
     }
 
     if (response.status === 401) {
-      if (options.onUnauthorised) {
+      // Unauthenticated calls (sign-in itself) must not trip the global
+      // sign-out: a 401 there is the answer, not a dead session. Firing
+      // here reloaded the page and swallowed the form's own error state.
+      if (auth && options.onUnauthorised) {
         try {
           options.onUnauthorised();
         } catch {

@@ -119,4 +119,22 @@ describe('api-client failure vocabulary', () => {
     expect(result.status).toBe('unauthorised');
     expect(seen).toEqual(['fired']);
   });
+
+  it('does not fire the sign-out handler for unauthenticated calls', async () => {
+    // A 401 on sign-in itself is the answer, not a dead session: firing
+    // here reloaded the page and swallowed the form's own error state.
+    let fired = false;
+    const fetchImpl = (async () => jsonResponse(401, null)) as unknown as typeof fetch;
+    const client = createCorrenthianClient({
+      baseUrl: 'http://api.test',
+      fetchImpl,
+      onUnauthorised: () => {
+        fired = true;
+      },
+    });
+
+    const result = await client.request('POST /api/v1/auth/login', { auth: false, body: { email: 'a', password: 'b' } });
+    expect(result.status).toBe('unauthorised');
+    expect(fired).toBe(false);
+  });
 });
