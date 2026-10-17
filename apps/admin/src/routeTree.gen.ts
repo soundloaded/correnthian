@@ -19,15 +19,23 @@ import { Route as AdminTeamRouteImport } from './routes/_admin.team'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AdminActivitiesIndexRouteImport } from './routes/_admin.activities.index'
+import { Route as AdminAssetsIndexRouteImport } from './routes/_admin.assets.index'
+import { Route as AdminAssetsAssetIdRouteImport } from './routes/_admin.assets.$assetId'
+import { Route as AdminChainsIndexRouteImport } from './routes/_admin.chains.index'
 import { Route as AdminCompaniesIndexRouteImport } from './routes/_admin.companies.index'
 import { Route as AdminCompaniesCompanyIdRouteImport } from './routes/_admin.companies.$companyId'
 import { Route as AdminContactsIndexRouteImport } from './routes/_admin.contacts.index'
 import { Route as AdminContactsContactIdRouteImport } from './routes/_admin.contacts.$contactId'
 import { Route as AdminDealsIndexRouteImport } from './routes/_admin.deals.index'
 import { Route as AdminDealsPipelineRouteImport } from './routes/_admin.deals.pipeline'
+import { Route as AdminFeesIndexRouteImport } from './routes/_admin.fees.index'
+import { Route as AdminFeesRuleIdRouteImport } from './routes/_admin.fees.$ruleId'
+import { Route as AdminIssuersIndexRouteImport } from './routes/_admin.issuers.index'
+import { Route as AdminIssuersSlugRouteImport } from './routes/_admin.issuers.$slug'
 import { Route as AdminLeadsIndexRouteImport } from './routes/_admin.leads.index'
 import { Route as AdminLeadsNewRouteImport } from './routes/_admin.leads.new'
 import { Route as AdminLeadsPipelineRouteImport } from './routes/_admin.leads.pipeline'
+import { Route as AdminProvidersIndexRouteImport } from './routes/_admin.providers.index'
 import { Route as AdminQuotesIndexRouteImport } from './routes/_admin.quotes.index'
 import { Route as AdminQuotesQuoteIdRouteImport } from './routes/_admin.quotes.$quoteId'
 import { Route as AdminRedemptionsIndexRouteImport } from './routes/_admin.redemptions.index'
@@ -35,6 +43,8 @@ import { Route as AdminTransactionsIndexRouteImport } from './routes/_admin.tran
 import { Route as AdminTransactionsTxIdRouteImport } from './routes/_admin.transactions.$txId'
 import { Route as AdminUsersIndexRouteImport } from './routes/_admin.users.index'
 import { Route as AdminUsersUserIdRouteImport } from './routes/_admin.users.$userId'
+import { Route as AdminWalletsIndexRouteImport } from './routes/_admin.wallets.index'
+import { Route as AdminWalletsWalletIdRouteImport } from './routes/_admin.wallets.$walletId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -85,6 +95,21 @@ const AdminActivitiesIndexRoute = AdminActivitiesIndexRouteImport.update({
   path: '/activities/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAssetsIndexRoute = AdminAssetsIndexRouteImport.update({
+  id: '/assets/',
+  path: '/assets/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAssetsAssetIdRoute = AdminAssetsAssetIdRouteImport.update({
+  id: '/assets/$assetId',
+  path: '/assets/$assetId',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminChainsIndexRoute = AdminChainsIndexRouteImport.update({
+  id: '/chains/',
+  path: '/chains/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCompaniesIndexRoute = AdminCompaniesIndexRouteImport.update({
   id: '/companies/',
   path: '/companies/',
@@ -115,6 +140,26 @@ const AdminDealsPipelineRoute = AdminDealsPipelineRouteImport.update({
   path: '/deals/pipeline',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminFeesIndexRoute = AdminFeesIndexRouteImport.update({
+  id: '/fees/',
+  path: '/fees/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminFeesRuleIdRoute = AdminFeesRuleIdRouteImport.update({
+  id: '/fees/$ruleId',
+  path: '/fees/$ruleId',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminIssuersIndexRoute = AdminIssuersIndexRouteImport.update({
+  id: '/issuers/',
+  path: '/issuers/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminIssuersSlugRoute = AdminIssuersSlugRouteImport.update({
+  id: '/issuers/$slug',
+  path: '/issuers/$slug',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminLeadsIndexRoute = AdminLeadsIndexRouteImport.update({
   id: '/leads/',
   path: '/leads/',
@@ -128,6 +173,11 @@ const AdminLeadsNewRoute = AdminLeadsNewRouteImport.update({
 const AdminLeadsPipelineRoute = AdminLeadsPipelineRouteImport.update({
   id: '/leads/pipeline',
   path: '/leads/pipeline',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminProvidersIndexRoute = AdminProvidersIndexRouteImport.update({
+  id: '/providers/',
+  path: '/providers/',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminQuotesIndexRoute = AdminQuotesIndexRouteImport.update({
@@ -165,6 +215,16 @@ const AdminUsersUserIdRoute = AdminUsersUserIdRouteImport.update({
   path: '/users/$userId',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminWalletsIndexRoute = AdminWalletsIndexRouteImport.update({
+  id: '/wallets/',
+  path: '/wallets/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminWalletsWalletIdRoute = AdminWalletsWalletIdRouteImport.update({
+  id: '/wallets/$walletId',
+  path: '/wallets/$walletId',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -175,23 +235,33 @@ export interface FileRoutesByFullPath {
   '/team': typeof AdminTeamRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
+  '/assets/$assetId': typeof AdminAssetsAssetIdRoute
   '/companies/$companyId': typeof AdminCompaniesCompanyIdRoute
   '/contacts/$contactId': typeof AdminContactsContactIdRoute
   '/deals/pipeline': typeof AdminDealsPipelineRoute
+  '/fees/$ruleId': typeof AdminFeesRuleIdRoute
+  '/issuers/$slug': typeof AdminIssuersSlugRoute
   '/leads/new': typeof AdminLeadsNewRoute
   '/leads/pipeline': typeof AdminLeadsPipelineRoute
   '/quotes/$quoteId': typeof AdminQuotesQuoteIdRoute
   '/transactions/$txId': typeof AdminTransactionsTxIdRoute
   '/users/$userId': typeof AdminUsersUserIdRoute
+  '/wallets/$walletId': typeof AdminWalletsWalletIdRoute
   '/activities/': typeof AdminActivitiesIndexRoute
+  '/assets/': typeof AdminAssetsIndexRoute
+  '/chains/': typeof AdminChainsIndexRoute
   '/companies/': typeof AdminCompaniesIndexRoute
   '/contacts/': typeof AdminContactsIndexRoute
   '/deals/': typeof AdminDealsIndexRoute
+  '/fees/': typeof AdminFeesIndexRoute
+  '/issuers/': typeof AdminIssuersIndexRoute
   '/leads/': typeof AdminLeadsIndexRoute
+  '/providers/': typeof AdminProvidersIndexRoute
   '/quotes/': typeof AdminQuotesIndexRoute
   '/redemptions/': typeof AdminRedemptionsIndexRoute
   '/transactions/': typeof AdminTransactionsIndexRoute
   '/users/': typeof AdminUsersIndexRoute
+  '/wallets/': typeof AdminWalletsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -202,23 +272,33 @@ export interface FileRoutesByTo {
   '/team': typeof AdminTeamRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
+  '/assets/$assetId': typeof AdminAssetsAssetIdRoute
   '/companies/$companyId': typeof AdminCompaniesCompanyIdRoute
   '/contacts/$contactId': typeof AdminContactsContactIdRoute
   '/deals/pipeline': typeof AdminDealsPipelineRoute
+  '/fees/$ruleId': typeof AdminFeesRuleIdRoute
+  '/issuers/$slug': typeof AdminIssuersSlugRoute
   '/leads/new': typeof AdminLeadsNewRoute
   '/leads/pipeline': typeof AdminLeadsPipelineRoute
   '/quotes/$quoteId': typeof AdminQuotesQuoteIdRoute
   '/transactions/$txId': typeof AdminTransactionsTxIdRoute
   '/users/$userId': typeof AdminUsersUserIdRoute
+  '/wallets/$walletId': typeof AdminWalletsWalletIdRoute
   '/activities': typeof AdminActivitiesIndexRoute
+  '/assets': typeof AdminAssetsIndexRoute
+  '/chains': typeof AdminChainsIndexRoute
   '/companies': typeof AdminCompaniesIndexRoute
   '/contacts': typeof AdminContactsIndexRoute
   '/deals': typeof AdminDealsIndexRoute
+  '/fees': typeof AdminFeesIndexRoute
+  '/issuers': typeof AdminIssuersIndexRoute
   '/leads': typeof AdminLeadsIndexRoute
+  '/providers': typeof AdminProvidersIndexRoute
   '/quotes': typeof AdminQuotesIndexRoute
   '/redemptions': typeof AdminRedemptionsIndexRoute
   '/transactions': typeof AdminTransactionsIndexRoute
   '/users': typeof AdminUsersIndexRoute
+  '/wallets': typeof AdminWalletsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -231,23 +311,33 @@ export interface FileRoutesById {
   '/_admin/team': typeof AdminTeamRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
+  '/_admin/assets/$assetId': typeof AdminAssetsAssetIdRoute
   '/_admin/companies/$companyId': typeof AdminCompaniesCompanyIdRoute
   '/_admin/contacts/$contactId': typeof AdminContactsContactIdRoute
   '/_admin/deals/pipeline': typeof AdminDealsPipelineRoute
+  '/_admin/fees/$ruleId': typeof AdminFeesRuleIdRoute
+  '/_admin/issuers/$slug': typeof AdminIssuersSlugRoute
   '/_admin/leads/new': typeof AdminLeadsNewRoute
   '/_admin/leads/pipeline': typeof AdminLeadsPipelineRoute
   '/_admin/quotes/$quoteId': typeof AdminQuotesQuoteIdRoute
   '/_admin/transactions/$txId': typeof AdminTransactionsTxIdRoute
   '/_admin/users/$userId': typeof AdminUsersUserIdRoute
+  '/_admin/wallets/$walletId': typeof AdminWalletsWalletIdRoute
   '/_admin/activities/': typeof AdminActivitiesIndexRoute
+  '/_admin/assets/': typeof AdminAssetsIndexRoute
+  '/_admin/chains/': typeof AdminChainsIndexRoute
   '/_admin/companies/': typeof AdminCompaniesIndexRoute
   '/_admin/contacts/': typeof AdminContactsIndexRoute
   '/_admin/deals/': typeof AdminDealsIndexRoute
+  '/_admin/fees/': typeof AdminFeesIndexRoute
+  '/_admin/issuers/': typeof AdminIssuersIndexRoute
   '/_admin/leads/': typeof AdminLeadsIndexRoute
+  '/_admin/providers/': typeof AdminProvidersIndexRoute
   '/_admin/quotes/': typeof AdminQuotesIndexRoute
   '/_admin/redemptions/': typeof AdminRedemptionsIndexRoute
   '/_admin/transactions/': typeof AdminTransactionsIndexRoute
   '/_admin/users/': typeof AdminUsersIndexRoute
+  '/_admin/wallets/': typeof AdminWalletsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -260,23 +350,33 @@ export interface FileRouteTypes {
     | '/team'
     | '/auth/forgot-password'
     | '/auth/login'
+    | '/assets/$assetId'
     | '/companies/$companyId'
     | '/contacts/$contactId'
     | '/deals/pipeline'
+    | '/fees/$ruleId'
+    | '/issuers/$slug'
     | '/leads/new'
     | '/leads/pipeline'
     | '/quotes/$quoteId'
     | '/transactions/$txId'
     | '/users/$userId'
+    | '/wallets/$walletId'
     | '/activities/'
+    | '/assets/'
+    | '/chains/'
     | '/companies/'
     | '/contacts/'
     | '/deals/'
+    | '/fees/'
+    | '/issuers/'
     | '/leads/'
+    | '/providers/'
     | '/quotes/'
     | '/redemptions/'
     | '/transactions/'
     | '/users/'
+    | '/wallets/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -287,23 +387,33 @@ export interface FileRouteTypes {
     | '/team'
     | '/auth/forgot-password'
     | '/auth/login'
+    | '/assets/$assetId'
     | '/companies/$companyId'
     | '/contacts/$contactId'
     | '/deals/pipeline'
+    | '/fees/$ruleId'
+    | '/issuers/$slug'
     | '/leads/new'
     | '/leads/pipeline'
     | '/quotes/$quoteId'
     | '/transactions/$txId'
     | '/users/$userId'
+    | '/wallets/$walletId'
     | '/activities'
+    | '/assets'
+    | '/chains'
     | '/companies'
     | '/contacts'
     | '/deals'
+    | '/fees'
+    | '/issuers'
     | '/leads'
+    | '/providers'
     | '/quotes'
     | '/redemptions'
     | '/transactions'
     | '/users'
+    | '/wallets'
   id:
     | '__root__'
     | '/'
@@ -315,23 +425,33 @@ export interface FileRouteTypes {
     | '/_admin/team'
     | '/auth/forgot-password'
     | '/auth/login'
+    | '/_admin/assets/$assetId'
     | '/_admin/companies/$companyId'
     | '/_admin/contacts/$contactId'
     | '/_admin/deals/pipeline'
+    | '/_admin/fees/$ruleId'
+    | '/_admin/issuers/$slug'
     | '/_admin/leads/new'
     | '/_admin/leads/pipeline'
     | '/_admin/quotes/$quoteId'
     | '/_admin/transactions/$txId'
     | '/_admin/users/$userId'
+    | '/_admin/wallets/$walletId'
     | '/_admin/activities/'
+    | '/_admin/assets/'
+    | '/_admin/chains/'
     | '/_admin/companies/'
     | '/_admin/contacts/'
     | '/_admin/deals/'
+    | '/_admin/fees/'
+    | '/_admin/issuers/'
     | '/_admin/leads/'
+    | '/_admin/providers/'
     | '/_admin/quotes/'
     | '/_admin/redemptions/'
     | '/_admin/transactions/'
     | '/_admin/users/'
+    | '/_admin/wallets/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -413,6 +533,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminActivitiesIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/assets/': {
+      id: '/_admin/assets/'
+      path: '/assets'
+      fullPath: '/assets/'
+      preLoaderRoute: typeof AdminAssetsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/assets/$assetId': {
+      id: '/_admin/assets/$assetId'
+      path: '/assets/$assetId'
+      fullPath: '/assets/$assetId'
+      preLoaderRoute: typeof AdminAssetsAssetIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/chains/': {
+      id: '/_admin/chains/'
+      path: '/chains'
+      fullPath: '/chains/'
+      preLoaderRoute: typeof AdminChainsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/companies/': {
       id: '/_admin/companies/'
       path: '/companies'
@@ -455,6 +596,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDealsPipelineRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/fees/': {
+      id: '/_admin/fees/'
+      path: '/fees'
+      fullPath: '/fees/'
+      preLoaderRoute: typeof AdminFeesIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/fees/$ruleId': {
+      id: '/_admin/fees/$ruleId'
+      path: '/fees/$ruleId'
+      fullPath: '/fees/$ruleId'
+      preLoaderRoute: typeof AdminFeesRuleIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/issuers/': {
+      id: '/_admin/issuers/'
+      path: '/issuers'
+      fullPath: '/issuers/'
+      preLoaderRoute: typeof AdminIssuersIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/issuers/$slug': {
+      id: '/_admin/issuers/$slug'
+      path: '/issuers/$slug'
+      fullPath: '/issuers/$slug'
+      preLoaderRoute: typeof AdminIssuersSlugRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/leads/': {
       id: '/_admin/leads/'
       path: '/leads'
@@ -474,6 +643,13 @@ declare module '@tanstack/react-router' {
       path: '/leads/pipeline'
       fullPath: '/leads/pipeline'
       preLoaderRoute: typeof AdminLeadsPipelineRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/providers/': {
+      id: '/_admin/providers/'
+      path: '/providers'
+      fullPath: '/providers/'
+      preLoaderRoute: typeof AdminProvidersIndexRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_admin/quotes/': {
@@ -525,6 +701,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersUserIdRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/wallets/': {
+      id: '/_admin/wallets/'
+      path: '/wallets'
+      fullPath: '/wallets/'
+      preLoaderRoute: typeof AdminWalletsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/wallets/$walletId': {
+      id: '/_admin/wallets/$walletId'
+      path: '/wallets/$walletId'
+      fullPath: '/wallets/$walletId'
+      preLoaderRoute: typeof AdminWalletsWalletIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
@@ -534,23 +724,33 @@ interface AdminRouteChildren {
   AdminReportsRoute: typeof AdminReportsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminTeamRoute: typeof AdminTeamRoute
+  AdminAssetsAssetIdRoute: typeof AdminAssetsAssetIdRoute
   AdminCompaniesCompanyIdRoute: typeof AdminCompaniesCompanyIdRoute
   AdminContactsContactIdRoute: typeof AdminContactsContactIdRoute
   AdminDealsPipelineRoute: typeof AdminDealsPipelineRoute
+  AdminFeesRuleIdRoute: typeof AdminFeesRuleIdRoute
+  AdminIssuersSlugRoute: typeof AdminIssuersSlugRoute
   AdminLeadsNewRoute: typeof AdminLeadsNewRoute
   AdminLeadsPipelineRoute: typeof AdminLeadsPipelineRoute
   AdminQuotesQuoteIdRoute: typeof AdminQuotesQuoteIdRoute
   AdminTransactionsTxIdRoute: typeof AdminTransactionsTxIdRoute
   AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
+  AdminWalletsWalletIdRoute: typeof AdminWalletsWalletIdRoute
   AdminActivitiesIndexRoute: typeof AdminActivitiesIndexRoute
+  AdminAssetsIndexRoute: typeof AdminAssetsIndexRoute
+  AdminChainsIndexRoute: typeof AdminChainsIndexRoute
   AdminCompaniesIndexRoute: typeof AdminCompaniesIndexRoute
   AdminContactsIndexRoute: typeof AdminContactsIndexRoute
   AdminDealsIndexRoute: typeof AdminDealsIndexRoute
+  AdminFeesIndexRoute: typeof AdminFeesIndexRoute
+  AdminIssuersIndexRoute: typeof AdminIssuersIndexRoute
   AdminLeadsIndexRoute: typeof AdminLeadsIndexRoute
+  AdminProvidersIndexRoute: typeof AdminProvidersIndexRoute
   AdminQuotesIndexRoute: typeof AdminQuotesIndexRoute
   AdminRedemptionsIndexRoute: typeof AdminRedemptionsIndexRoute
   AdminTransactionsIndexRoute: typeof AdminTransactionsIndexRoute
   AdminUsersIndexRoute: typeof AdminUsersIndexRoute
+  AdminWalletsIndexRoute: typeof AdminWalletsIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -559,23 +759,33 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminReportsRoute: AdminReportsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminTeamRoute: AdminTeamRoute,
+  AdminAssetsAssetIdRoute: AdminAssetsAssetIdRoute,
   AdminCompaniesCompanyIdRoute: AdminCompaniesCompanyIdRoute,
   AdminContactsContactIdRoute: AdminContactsContactIdRoute,
   AdminDealsPipelineRoute: AdminDealsPipelineRoute,
+  AdminFeesRuleIdRoute: AdminFeesRuleIdRoute,
+  AdminIssuersSlugRoute: AdminIssuersSlugRoute,
   AdminLeadsNewRoute: AdminLeadsNewRoute,
   AdminLeadsPipelineRoute: AdminLeadsPipelineRoute,
   AdminQuotesQuoteIdRoute: AdminQuotesQuoteIdRoute,
   AdminTransactionsTxIdRoute: AdminTransactionsTxIdRoute,
   AdminUsersUserIdRoute: AdminUsersUserIdRoute,
+  AdminWalletsWalletIdRoute: AdminWalletsWalletIdRoute,
   AdminActivitiesIndexRoute: AdminActivitiesIndexRoute,
+  AdminAssetsIndexRoute: AdminAssetsIndexRoute,
+  AdminChainsIndexRoute: AdminChainsIndexRoute,
   AdminCompaniesIndexRoute: AdminCompaniesIndexRoute,
   AdminContactsIndexRoute: AdminContactsIndexRoute,
   AdminDealsIndexRoute: AdminDealsIndexRoute,
+  AdminFeesIndexRoute: AdminFeesIndexRoute,
+  AdminIssuersIndexRoute: AdminIssuersIndexRoute,
   AdminLeadsIndexRoute: AdminLeadsIndexRoute,
+  AdminProvidersIndexRoute: AdminProvidersIndexRoute,
   AdminQuotesIndexRoute: AdminQuotesIndexRoute,
   AdminRedemptionsIndexRoute: AdminRedemptionsIndexRoute,
   AdminTransactionsIndexRoute: AdminTransactionsIndexRoute,
   AdminUsersIndexRoute: AdminUsersIndexRoute,
+  AdminWalletsIndexRoute: AdminWalletsIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
