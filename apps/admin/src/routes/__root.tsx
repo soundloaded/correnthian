@@ -1,4 +1,5 @@
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import appCss from "@correnthian/ui/globals.css?url"
 
@@ -87,9 +88,15 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
 
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>{children}</ThemeProvider>
+        </QueryClientProvider>
         <Scripts />
       </body>
     </html>
   )
 }
+
+// One client for the console lifetime: caches per query key for 30s so the
+// nine dashboard cards share reads instead of refetching per mount.
+const queryClient = new QueryClient()
