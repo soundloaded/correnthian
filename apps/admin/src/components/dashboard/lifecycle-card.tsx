@@ -10,28 +10,35 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@correnthian/ui/components/dropdown-menu"
+import { useApiQuery } from "@/lib/use-api-query"
 
 // ---------------------------------------------------------------------------
-// Data — CRM contacts by lifecycle stage
+// Live KYC pipeline. The mock showed CRM contact stages with invented
+// counts; the bars now show live account counts per KYC status from
+// GET /users/stats — the same bar arrangement, real funnel.
 // ---------------------------------------------------------------------------
 
 const stages = [
-  { name: "Lead", value: 86, color: "#94a3b8" },
-  { name: "Contacted", value: 64, color: "#60a5fa" },
-  { name: "Qualified", value: 48, color: "#a78bfa" },
-  { name: "Proposal", value: 32, color: "#fbbf24" },
-  { name: "Customer", value: 24, color: "#34d399" },
-]
-
-const max = Math.max(...stages.map((s) => s.value))
+  { key: "not_started", name: "Not Started", color: "#94a3b8" },
+  { key: "pending", name: "Pending", color: "#fbbf24" },
+  { key: "approved", name: "Approved", color: "#34d399" },
+  { key: "rejected", name: "Rejected", color: "#f87171" },
+  { key: "expired", name: "Expired", color: "#c4b5fd" },
+] as const
 
 export function LifecycleCard() {
+  const { data, refetch } = useApiQuery("GET /api/v1/users/stats")
+
+  const byKyc = data?.byKyc ?? {}
+  const rows = stages.map((s) => ({ ...s, value: byKyc[s.key] ?? 0 }))
+  const max = Math.max(1, ...rows.map((r) => r.value))
+
   return (
     <Card>
       <CardContent>
         {/* Header */}
         <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold">Sales Lifecycle</p>
+          <p className="text-sm font-semibold">KYC Pipeline</p>
 
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -57,7 +64,7 @@ export function LifecycleCard() {
                 <span>Export Data</span>
               </DropdownMenuItem>
 
-              <DropdownMenuItem className="gap-2">
+              <DropdownMenuItem className="gap-2" onClick={() => refetch()}>
                 <RefreshCwIcon className="size-4" />
                 <span>Refresh</span>
               </DropdownMenuItem>
@@ -67,8 +74,8 @@ export function LifecycleCard() {
 
         {/* Rows */}
         <div className="mt-4 space-y-2.5">
-          {stages.map((stage) => (
-            <div key={stage.name} className="flex items-center gap-3">
+          {rows.map((stage) => (
+            <div key={stage.key} className="flex items-center gap-3">
               <div className="flex w-28 shrink-0 items-center gap-2">
                 <span
                   className="size-2 shrink-0 rounded-full"
@@ -90,8 +97,8 @@ export function LifecycleCard() {
                 />
               </div>
 
-              <span className="w-6 shrink-0 text-right text-sm font-medium text-muted-foreground">
-                {stage.value}
+              <span className="w-6 shrink-0 text-right text-sm font-medium tabular-nums text-muted-foreground">
+                {data ? stage.value : "—"}
               </span>
             </div>
           ))}

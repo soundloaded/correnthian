@@ -1,16 +1,11 @@
 "use client"
 
 import {
-  ArrowDownRightIcon,
   ArrowRightIcon,
-  ArrowUpRightIcon,
-  DownloadIcon,
-  EyeIcon,
   MoreHorizontalIcon,
   RefreshCwIcon,
 } from "lucide-react"
 
-import { cn } from "@correnthian/ui/lib/utils"
 import { Button } from "@correnthian/ui/components/button"
 import {
   Card,
@@ -24,27 +19,56 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@correnthian/ui/components/dropdown-menu"
+import { useApiQuery } from "@/lib/use-api-query"
 
 // ---------------------------------------------------------------------------
-// Data — top countries by pipeline share
+// Live jurisdiction rules. The mock showed countries by pipeline share;
+// the backend stores no per-country volume, so this slot shows what it
+// does store: the redemption permission per jurisdiction from
+// GET /compliance/rules. The ranked-row arrangement stays; countries the
+// backend has never ruled on never appear — absence is the honest answer.
 // ---------------------------------------------------------------------------
 
-const countries = [
-  { rank: 1, name: "Australia", code: "au", share: 48, change: "+6%", trend: "up" as const },
-  { rank: 2, name: "Malaysia", code: "my", share: 33, change: "+3%", trend: "up" as const },
-  { rank: 3, name: "Indonesia", code: "id", share: 25, change: "-2%", trend: "down" as const },
-  { rank: 4, name: "Singapore", code: "sg", share: 17, change: "+4%", trend: "up" as const },
-  { rank: 5, name: "Japan", code: "jp", share: 14, change: "-1%", trend: "down" as const },
-  { rank: 6, name: "India", code: "in", share: 11, change: "+8%", trend: "up" as const },
-  { rank: 7, name: "Vietnam", code: "vn", share: 9, change: "+5%", trend: "up" as const },
-  { rank: 8, name: "Thailand", code: "th", share: 7, change: "-3%", trend: "down" as const },
-]
+const COUNTRY_NAMES: Record<string, string> = {
+  US: "United States",
+  GB: "United Kingdom",
+  NG: "Nigeria",
+  AE: "United Arab Emirates",
+  SG: "Singapore",
+  CA: "Canada",
+  AU: "Australia",
+  DE: "Germany",
+  FR: "France",
+  IN: "India",
+}
+
+function countryName(code: string) {
+  return COUNTRY_NAMES[code] ?? code
+}
 
 export function TopRegionsCard() {
+  const { data: rules, refetch } = useApiQuery(
+    "GET /api/v1/compliance/rules",
+  )
+
+  // One row per country; a region-specific rule only narrows that row.
+  const byCountry = new Map<string, { redeem: boolean; kyc: boolean }>()
+  for (const rule of rules ?? []) {
+    const row = byCountry.get(rule.country) ?? { redeem: true, kyc: false }
+    if (!rule.active) continue
+    row.redeem = row.redeem && rule.canRedeem
+    row.kyc = row.kyc || rule.kycRequired
+    byCountry.set(rule.country, row)
+  }
+  const rows = [...byCountry.entries()]
+    .map(([country, flags], i) => ({ rank: i + 1, country, ...flags }))
+    .sort((a, b) => a.country.localeCompare(b.country))
+    .map((row, i) => ({ ...row, rank: i + 1 }))
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <p className="text-sm font-semibold">Top Country</p>
+        <p className="text-sm font-semibold">Redemption by Jurisdiction</p>
 
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -59,74 +83,58 @@ export function TopRegionsCard() {
             <MoreHorizontalIcon className="size-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-44 rounded-xl p-2">
-  <DropdownMenuItem className="gap-2">
-    <EyeIcon className="size-4" />
-    <span>View Details</span>
-  </DropdownMenuItem>
-
-  <DropdownMenuItem className="gap-2">
-    <DownloadIcon className="size-4" />
-    <span>Export Data</span>
-  </DropdownMenuItem>
-
-  <DropdownMenuItem className="gap-2">
-    <RefreshCwIcon className="size-4" />
-    <span>Refresh</span>
-  </DropdownMenuItem>
-</DropdownMenuContent>
+            <DropdownMenuItem className="gap-2" onClick={() => refetch()}>
+              <RefreshCwIcon className="size-4" />
+              <span>Refresh</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
         </DropdownMenu>
       </CardHeader>
 
       <CardContent>
         <div className="divide-y">
-          {countries.map((country) => {
-            const isUp = country.trend === "up"
+          {rows.map((row) => (
+            <div
+              key={row.country}
+              className="flex items-center justify-between py-2.5"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="text-sm text-muted-foreground">
+                  {row.rank}
+                </span>
 
-            return (
-              <div
-                key={country.name}
-                className="flex items-center justify-between py-2.5"
-              >
-                <div className="flex items-center gap-2.5">
-                  <span className="text-sm text-muted-foreground">
-                    {country.rank}
-                  </span>
-
-                  <span className="relative size-5 shrink-0 overflow-hidden rounded-full border">
-                    <img
-                      src={`https://flagcdn.com/w40/${country.code}.png`}
-                      srcSet={`https://flagcdn.com/w80/${country.code}.png 2x`}
-                      alt={country.name}
-                      className="size-full object-cover"
-                    />
-                  </span>
-
-                  <p className="text-sm font-medium">{country.name}</p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold">
-                    {country.share}%
-                  </span>
-                  <span
-                    className={cn(
-                      "flex w-12 shrink-0 items-center justify-end gap-0.5 text-xs font-medium",
-                      isUp
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-red-600 dark:text-red-400"
-                    )}
-                  >
-                    {isUp ? (
-                      <ArrowUpRightIcon className="size-3" />
-                    ) : (
-                      <ArrowDownRightIcon className="size-3" />
-                    )}
-                    {country.change}
-                  </span>
-                </div>
+                <p className="text-sm font-medium">
+                  {countryName(row.country)}
+                </p>
               </div>
-            )
-          })}
+
+              <div className="flex items-center gap-2">
+                <span
+                  className={`rounded-md border px-2 py-0.5 text-xs font-medium ${
+                    row.redeem
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-400"
+                      : "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-400"
+                  }`}
+                >
+                  {row.redeem ? "Redeemable" : "Blocked"}
+                </span>
+                {row.kyc && (
+                  <span className="text-xs text-muted-foreground">
+                    KYC required
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {rules && rows.length === 0 && (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              No jurisdiction rules yet.
+            </p>
+          )}
+          {!rules && (
+            <p className="py-6 text-center text-sm text-muted-foreground">—</p>
+          )}
         </div>
       </CardContent>
 

@@ -23,54 +23,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@correnthian/ui/components/dropdown-menu"
+import { useApiQuery } from "@/lib/use-api-query"
 
 // ---------------------------------------------------------------------------
-// Data per range
+// Live settlement volume. The mock showed sales revenue by week/month/year
+// with previous-period deltas; the backend keeps no sales ledger, so the
+// chart shows settled transaction volume per day from
+// GET /transactions/daily — real flow, real window, no invented trend.
 // ---------------------------------------------------------------------------
 
-type ChartPoint = { month: string; revenue: number }
-
-const dataByRange: Record<Range, ChartPoint[]> = {
-  Weekly: [
-    { month: "Mon", revenue: 3200 },
-    { month: "Tue", revenue: 4100 },
-    { month: "Wed", revenue: 3800 },
-    { month: "Thu", revenue: 5200 },
-    { month: "Fri", revenue: 4600 },
-    { month: "Sat", revenue: 2100 },
-    { month: "Sun", revenue: 1800 },
-  ],
-  Monthly: [
-    { month: "Jan", revenue: 18400 },
-    { month: "Feb", revenue: 22100 },
-    { month: "Mar", revenue: 19800 },
-    { month: "Apr", revenue: 27300 },
-    { month: "May", revenue: 24600 },
-    { month: "Jun", revenue: 31200 },
-    { month: "Jul", revenue: 28500 },
-    { month: "Aug", revenue: 33900 },
-  ],
-  Yearly: [
-    { month: "2022", revenue: 214000 },
-    { month: "2023", revenue: 268000 },
-    { month: "2024", revenue: 312000 },
-    { month: "2025", revenue: 358000 },
-    { month: "2026", revenue: 421000 },
-  ],
-}
-
-const rateByRange: Record<Range, { change: string; comparePeriod: string }> = {
-  Weekly: { change: "+4.8%", comparePeriod: "last week" },
-  Monthly: { change: "+9.6%", comparePeriod: "last month" },
-  Yearly: { change: "+17.6%", comparePeriod: "last year" },
-}
-
-const ranges = ["Weekly", "Monthly", "Yearly"] as const
-type Range = (typeof ranges)[number]
-
-// ---------------------------------------------------------------------------
-// Custom tooltip
-// ---------------------------------------------------------------------------
+const windows = [
+  { days: 7, label: "7 days" },
+  { days: 30, label: "30 days" },
+  { days: 90, label: "90 days" },
+] as const
 
 function ChartTooltip({
   active,
@@ -78,48 +44,65 @@ function ChartTooltip({
   label,
 }: {
   active?: boolean
-  payload?: { value: number }[]
+  payload?: { value: number; dataKey: string }[]
   label?: string
 }) {
   if (!active || !payload?.length) return null
 
+  const row = payload[0]
   return (
     <div className="rounded-lg bg-foreground px-3 py-2 text-background shadow-lg">
       <p className="text-xs text-background/70">{label}</p>
       <p className="text-sm font-semibold">
-        ${payload[0].value.toLocaleString()}
+        {row.dataKey === "volumeUsd"
+          ? `$${row.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+          : `${row.value} tx`}
       </p>
     </div>
   )
 }
 
 function formatTotal(value: number) {
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`
   if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`
-  return `$${value}`
+  return `$${value.toFixed(2)}`
 }
 
-// ---------------------------------------------------------------------------
-// Main component
-// ---------------------------------------------------------------------------
+function formatDay(iso: string) {
+  return new Date(`${iso}T12:00:00Z`).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  })
+}
 
 export function SalesOverviewCard() {
-  const [range, setRange] = React.useState<Range>("Monthly")
+  const [days, setDays] = React.useState<number>(30)
 
-  const data = dataByRange[range]
-  const rate = rateByRange[range]
-  const total = data[data.length - 1].revenue
+  const { data: series } = useApiQuery(
+    "GET /api/v1/transactions/daily",
+    undefined,
+    { days },
+  )
+
+  const points = (series ?? []).map((d) => ({
+    ...d,
+    label: formatDay(d.date),
+  }))
+  const total = points.reduce((n, p) => n + p.volumeUsd, 0)
+  const count = points.reduce((n, p) => n + p.count, 0)
+  const current = windows.find((w) => w.days === days)
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">Sales Overview</p>
+          <p className="text-sm text-muted-foreground">Settlement Volume</p>
           <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <p className="text-2xl font-semibold tracking-tight">
-              {formatTotal(total)}
+            <p className="text-2xl font-semibold tracking-tight tabular-nums">
+              {series ? formatTotal(total) : "—"}
             </p>
-            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-              {rate.change} vs. {rate.comparePeriod}
+            <span className="text-xs font-medium text-muted-foreground">
+              {series ? `${count} transactions · settled` : ""}
             </span>
           </div>
         </div>
@@ -128,13 +111,13 @@ export function SalesOverviewCard() {
           <DropdownMenuTrigger
             render={<Button variant="outline" size="sm" className="gap-1.5" />}
           >
-            {range}
+            {current?.label}
             <ChevronDownIcon className="size-3.5 text-muted-foreground" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {ranges.map((r) => (
-              <DropdownMenuItem key={r} onClick={() => setRange(r)}>
-                {r}
+            {windows.map((w) => (
+              <DropdownMenuItem key={w.days} onClick={() => setDays(w.days)}>
+                {w.label}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
@@ -143,7 +126,7 @@ export function SalesOverviewCard() {
 
       <CardContent>
         <ResponsiveContainer width="100%" height={145}>
-          <AreaChart data={data} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+          <AreaChart data={points} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.25} />
@@ -158,7 +141,7 @@ export function SalesOverviewCard() {
             />
 
             <XAxis
-              dataKey="month"
+              dataKey="label"
               tickLine={false}
               axisLine={false}
               tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
@@ -172,7 +155,7 @@ export function SalesOverviewCard() {
 
             <Area
               type="monotone"
-              dataKey="revenue"
+              dataKey="volumeUsd"
               stroke="var(--primary)"
               strokeWidth={2}
               fill="url(#revenueFill)"
