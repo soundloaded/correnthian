@@ -24,14 +24,27 @@ const STORAGE_KEY = 'correnthian.admin.session';
 let memory: ConsoleSession | null = null;
 let expiryTimer: ReturnType<typeof setTimeout> | null = null;
 
+/** Largest delay setTimeout accepts: 2^31 - 1 ms, about 24.8 days. */
+const MAX_TIMEOUT = 2_147_483_647;
+
 function armExpiry(session: ConsoleSession): void {
   disarmExpiry();
   const at = Date.parse(session.expiresAt);
   if (Number.isNaN(at)) return;
   const delay = at - Date.now();
   if (delay <= 0) return;
-  // One shot at the deadline, cleared on sign-out — not an interval.
-  expiryTimer = setTimeout(() => clearSession(), delay);
+  // setTimeout takes a 32-bit delay: anything past ~24.8 days overflows and
+  // fires immediately, which signed every operator out at login (a 30-day
+  // TTL overflows it). Clamp and re-arm on fire; the read path enforces
+  // expiry regardless, so the timer is only promptness, not correctness.
+  expiryTimer = setTimeout(tickExpiry, Math.min(delay, MAX_TIMEOUT));
+}
+
+function tickExpiry(): void {
+  expiryTimer = null;
+  if (!memory) return;
+  if (isExpired(memory)) clearSession();
+  else armExpiry(memory);
 }
 
 function disarmExpiry(): void {
