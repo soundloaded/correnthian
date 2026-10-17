@@ -44,7 +44,16 @@ Ground rules:
 - [x] **Users pages** (Harbor → `10bcaac`+`ec89542`): list + detail off the
       contacts pattern, admin-gated mutations, audit surfacing.
 
-## Wave 2 — Operator pages (dispatched 2026-10-17, four lanes)
+## Wave 2 — Operator pages (merged 2026-10-17, live-verified)
+
+- [x] **Money lane** (Ledger → `6c866f9`): transactions, quotes, redemptions.
+- [x] **Trust lane** (Assay → `1bf675f`): compliance, audit, devices.
+- [x] **Registry lane** (Forge → `9b6ff9e`): assets, issuers, providers,
+      chains, wallets, fees.
+- [x] **Shell lane** (Relay → `c6710ff`): notifications page, team rewire,
+      search→user wiring, settings rebuild, full sidebar nav.
+- Verification: 16 routes + 19 endpoints + 3 role gates green; detail
+  ownership confirmed (stranger-404, operators admitted).
 
 Path claims are disjoint; all lanes clone the contacts/users arrangement.
 Sidebar entries: Sextant's `navigation.ts` owns them — lanes request entries

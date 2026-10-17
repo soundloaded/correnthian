@@ -50,10 +50,10 @@ worktree, and delete it before merging back (it must never be committed).
 | **Belfry** | Header: search palette, notifications bell, Create-button verdict + rewire | `apps/admin/src/components/app-header.tsx`, `header-search.tsx`, `header-notifications.tsx`, `header-create.tsx` | Merged (`9939224`) | 2026-10-17 |
 | **Keystone** | Settings backend: FeatureFlag CRUD + settings-section audit | `services/api/src/settings/**`, `services/api/test/settings-flags.spec.ts`, `packages/contracts/src/schemas.ts` (append), `services/api/test/roles.spec.ts` (append), `services/api/src/contracts.spec.ts` (append) | Merged (`7911b56`) | 2026-10-17 |
 | **Harbor** | Users list + detail off the contacts pattern, live data | `apps/admin/src/routes/_admin.users.*`, `apps/admin/src/components/users/**` | Merged (`10bcaac`, `ec89542`) | 2026-10-17 |
-| **Ledger** | Wave-2 money pages: transactions, quotes, redemptions | `apps/admin/src/routes/_admin.transactions.*`, `_admin.quotes.*`, `_admin.redemptions.*` (new), `apps/admin/src/components/transactions/**`, `quotes/**`, `redemptions/**` (new) | Wave 2 — dispatched | 2026-10-17 |
-| **Assay** | Wave-2 trust pages: compliance, audit, devices | `apps/admin/src/routes/_admin.compliance.*`, `_admin.audit.*`, `_admin.devices.*` (new), `apps/admin/src/components/compliance/**`, `audit/**`, `devices/**` (new) | Wave 2 — dispatched | 2026-10-17 |
-| **Forge** | Wave-2 registry pages: assets, issuers, providers, chains, wallets, fees | `apps/admin/src/routes/_admin.assets.*`, `_admin.issuers.*`, `_admin.providers.*`, `_admin.chains.*`, `_admin.wallets.*`, `_admin.fees.*` (new), `apps/admin/src/components/assets/**`, `issuers/**`, `providers/**`, `chains/**`, `wallets/**`, `fees/**` (new) | Wave 2 — dispatched | 2026-10-17 |
-| **Relay** | Wave-2 shell pages: notifications, team rewire, search wiring, settings sections | `apps/admin/src/routes/_admin.notifications.*` (new), `apps/admin/src/components/notifications/**` (new), `apps/admin/src/components/team/**`, `apps/admin/src/components/settings/**`, `apps/admin/src/components/header-search.tsx` (onSelect only) | Wave 2 — dispatched | 2026-10-17 |
+| **Ledger** | Wave-2 money pages: transactions, quotes, redemptions | `apps/admin/src/routes/_admin.transactions.*`, `_admin.quotes.*`, `_admin.redemptions.*`, `apps/admin/src/components/transactions/**`, `quotes/**`, `redemptions/**` | Merged (`6c866f9`) | 2026-10-17 |
+| **Assay** | Wave-2 trust pages: compliance, audit, devices | `apps/admin/src/routes/_admin.compliance.*`, `_admin.audit.*`, `_admin.devices.*`, `apps/admin/src/components/compliance/**`, `audit/**`, `devices/**` | Merged (`1bf675f`) | 2026-10-17 |
+| **Forge** | Wave-2 registry pages: assets, issuers, providers, chains, wallets, fees | `apps/admin/src/routes/_admin.assets.*`, `_admin.issuers.*`, `_admin.providers.*`, `_admin.chains.*`, `_admin.wallets.*`, `_admin.fees.*`, `apps/admin/src/components/assets/**`, `issuers/**`, `providers/**`, `chains/**`, `wallets/**`, `fees/**` | Merged (`9b6ff9e`) | 2026-10-17 |
+| **Relay** | Wave-2 shell pages: notifications, team rewire, search wiring, settings sections | `apps/admin/src/routes/_admin.notifications.*`, `apps/admin/src/components/notifications/**`, `apps/admin/src/components/team/**`, `apps/admin/src/components/settings/**`, `apps/admin/src/components/header-search.tsx` (onSelect only) | Merged (`c6710ff`) | 2026-10-17 |
 
 Reference-only (read, never edit): `apps/admin/src/components/contacts/**`
 (the pattern Harbor cloned), `apps/admin/public/screenshots/**` (all lanes
@@ -92,17 +92,18 @@ Key boundary: `packages/wallet-core` takes no HTTP/RPC/provider — ever.
 Newest first. Need something in another lane's paths? Write it here, do not
 reach across.
 
+- *(closed)* Wave-2 sidebar entries — added by orchestrator at Relay merge:
+  Operations (transactions, quotes, redemptions, compliance, audit,
+  notifications) + Registry (assets, issuers, providers, chains, devices,
+  wallets, fee rules). Every entry verified against an existing route.
 - *(closed)* Harbor → Sextant: users sidebar entries — shipped in `a18af31`.
 - *(closed)* Belfry → Keystone: notification preferences — answered **no
   backend** (Keystone audit); bell ships without mute/filter.
-- *(open)* Wave-2 candidates from wave-1 reports: `/users/$userId` search
-  `onSelect` wiring (Belfry code has the TODO; needs a lane or orchestrator
-  pass); `/notifications` console page (bell "View all" has no destination);
-  full fee-rule / asset pages (subsume the partial Create dialogs);
-  `auth/me` has no display name (API change, not admin).
-- *(open)* All → Orchestrator: CRM orphans (leads, deals, companies,
-  contacts, activities, calendar) have no backend models. Decided: repurpose
-  vs remove in wave 2.
+- *(open)* `DELETE /settings/flags/:key` has no contract-registry entry
+  (Relay hand-rolls via raw fetch) — Keystone follow-up or bless convention.
+- *(open)* Wave-3 CRM orphans: leads, deals, companies, contacts, activities,
+  calendar still fully mocked with no backend models. Reports page fully
+  mocked. Decision: repurpose vs remove.
 
 ---
 
@@ -117,6 +118,12 @@ reach across.
   5 mutation/gate checks green. Pre-existing failures recorded (contracts.spec
   transaction-intent — fails on clean main too; onramp quote 503-shape —
   predates Keystone). Full suite: 911/912 with those two aside.
+- 2026-10-17: wave 2 dispatched (Ledger, Assay, Forge, Relay).
+- 2026-10-17: wave 2 merged — Ledger `6c866f9`, Forge `9b6ff9e`, Assay
+  `1bf675f`, Relay `c6710ff`. Live-verified: 16 routes + 2 detail shapes +
+  19 endpoints + 3 role gates, all green. Detail ownership confirmed in
+  service code (stranger-404 rule, operators admitted). Open: DELETE-flags
+  registry entry, wave-3 orphan decision.
 
 ### Sextant
 
@@ -133,3 +140,19 @@ reach across.
 ### Harbor
 
 - Lane work complete; see wave-1 merge commits `10bcaac`, `ec89542`.
+
+### Ledger
+
+- Lane work complete; see wave-2 merge commit `6c866f9`.
+
+### Assay
+
+- Lane work complete; see wave-2 merge commit `1bf675f`.
+
+### Forge
+
+- Lane work complete; see wave-2 merge commit `9b6ff9e`.
+
+### Relay
+
+- Lane work complete; see wave-2 merge commit `c6710ff`.
