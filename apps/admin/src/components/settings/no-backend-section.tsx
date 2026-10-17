@@ -19,7 +19,7 @@ const SECTIONS: Record<string, { title: string; needs: string }> = {
   },
   pipeline: {
     title: "Pipeline",
-    needs: "a CRM pipeline model — leads, deals, and stages have no backend models (wave-3 decision pending), so there is nothing to stage.",
+    needs: "a pipeline model — the CRM pages were removed in wave 3 (no backend models, no product reason), so there is nothing to stage.",
   },
   billing: {
     title: "Billing",

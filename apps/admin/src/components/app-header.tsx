@@ -33,7 +33,7 @@ function catalogue(): NavEntry[] {
 const entries = catalogue()
 
 /**
- * Longest-prefix match so /leads/pipeline reads "Pipeline" rather than the
+ * Longest-prefix match so /users/$userId reads "All Users" rather than the
  * first prefix that happens to fit. Anything outside the catalogue falls
  * back to the raw segment instead of a stale hardcoded name.
  */

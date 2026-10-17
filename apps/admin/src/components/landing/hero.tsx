@@ -98,7 +98,7 @@ export function Hero() {
             </motion.div>
             <motion.div {...pressable}>
               <Link
-                to="/reports"
+                to="/dashboard"
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`${buttonVariants({ size: "lg", variant: "outline" })} h-11 gap-2 border-foreground/15 bg-background px-6 shadow-sm hover:border-foreground/25 hover:bg-muted`}

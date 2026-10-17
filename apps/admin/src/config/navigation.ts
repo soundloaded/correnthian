@@ -9,7 +9,6 @@ import {
   UsersRoundIcon,
   UsersIcon,
   WalletIcon,
-  BarChart3Icon,
   BellIcon,
   CoinsIcon,
   type LucideIcon,
@@ -132,17 +131,6 @@ export const navigation: readonly NavGroup[] = [
         url: "/fees",
         icon: CoinsIcon,
         minRole: "admin",
-      },
-    ],
-  },
-
-  {
-    label: "Analytics",
-    items: [
-      {
-        title: "Reports",
-        url: "/reports",
-        icon: BarChart3Icon,
       },
     ],
   },
