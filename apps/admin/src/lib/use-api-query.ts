@@ -13,16 +13,20 @@ import { getSession } from "./auth"
 export function useApiQuery<Path extends RegistryPath>(
   key: Path,
   params?: Record<string, string | number>,
+  query?: Record<string, string | number | boolean | undefined | null>,
 ): UseQueryResult<import("@correnthian/api-client").Contract<Path>, Error> {
   return useQuery({
-    queryKey: [key, params],
+    queryKey: [key, params, query],
     queryFn: async () => {
       const client = createCorrenthianClient({
         baseUrl: apiBaseUrl,
         getToken: () => getSession()?.token ?? null,
         onUnauthorised: () => signOutAndLeave(),
       })
-      const result = await client.request(key, params ? { params } : {})
+      const result = await client.request(key, {
+        ...(params ? { params } : {}),
+        ...(query ? { query } : {}),
+      })
       if (result.status === "ok") return result.data
       throw new Error(
         result.status === "unauthorised"

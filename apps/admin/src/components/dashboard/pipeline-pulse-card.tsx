@@ -1,81 +1,77 @@
 "use client"
 
 import * as React from "react"
-import {
-  ArrowDownRightIcon,
-  ArrowUpRightIcon,
-  ChevronDownIcon,
-} from "lucide-react"
+import { ChevronDownIcon } from "lucide-react"
 
 import { cn } from "@correnthian/ui/lib/utils"
 import { Button } from "@correnthian/ui/components/button"
 import { Badge } from "@correnthian/ui/components/badge"
-import { Card, CardContent, CardFooter } from "@correnthian/ui/components/card"
+import { Card, CardContent } from "@correnthian/ui/components/card"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@correnthian/ui/components/dropdown-menu"
+import { useApiQuery } from "@/lib/use-api-query"
 
 // ---------------------------------------------------------------------------
-// Data
+// Data — live redemption ops. The mock showed pipeline value, conversion
+// rate and deal cycle with previous-period deltas; the backend keeps no
+// previous periods, so every figure here is a count straight from
+// GET /redemptions/stats — never an invented comparison.
 // ---------------------------------------------------------------------------
 
-const periods = ["This Week", "This Month", "This Quarter"] as const
-type Period = (typeof periods)[number]
+const stateFilters = [
+  "All States",
+  "requested",
+  "kyc_pending",
+  "approved",
+  "in_production",
+  "shipped",
+  "delivered",
+  "rejected",
+  "cancelled",
+] as const
+type StateFilter = (typeof stateFilters)[number]
 
-const stats = [
-  { label: "Pipeline Value", value: "$4.82M", change: "+11.8%", trend: "up" as const },
-  { label: "Conversion Rate", value: "31.6%", change: "+2.4 pts", trend: "up" as const },
-  { label: "Avg. Deal Cycle", value: "34 days", change: "-6.1%", trend: "up" as const },
-]
+const stateClass: Record<string, string> = {
+  requested:
+    "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400",
+  kyc_pending:
+    "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-950 dark:text-violet-400",
+  approved:
+    "border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-900 dark:bg-cyan-950 dark:text-cyan-400",
+  in_production:
+    "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-400",
+  shipped:
+    "border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-900 dark:bg-indigo-950 dark:text-indigo-400",
+  delivered:
+    "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-400",
+  rejected:
+    "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-400",
+  cancelled:
+    "border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400",
+}
 
-const deals: {
-  name: string
-  company: string
-  value: string
-  stage: string
-  stageClass: string
-}[] = [
-  {
-    name: "Enterprise Rollout",
-    company: "Globex",
-    value: "$240K",
-    stage: "Won",
-    stageClass:
-      "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-400",
-  },
-  {
-    name: "Compliance Add-on",
-    company: "Meridian Bank",
-    value: "$95K",
-    stage: "Review",
-    stageClass:
-      "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-950 dark:text-violet-400",
-  },
-  {
-    name: "Platform Renewal",
-    company: "Orion Logistics",
-    value: "$62K",
-    stage: "Stalled",
-    stageClass:
-      "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-400",
-  },
-]
-
-const QUOTA_PERCENT = 82
+function formatState(state: string) {
+  return state
+    .split("_")
+    .map((w) => w[0]?.toUpperCase() + w.slice(1))
+    .join(" ")
+}
 
 // ---------------------------------------------------------------------------
 // Radial progress ring (pure SVG, no chart lib needed)
 // ---------------------------------------------------------------------------
 
-function QuotaRing({ percent }: { percent: number }) {
+function FulfilmentRing({ percent }: { percent: number | null }) {
+  const shown = percent ?? 0
   const size = 96
   const stroke = 8
   const radius = (size - stroke) / 2
   const circumference = 2 * Math.PI * radius
-  const offset = circumference - (percent / 100) * circumference
+  const offset = circumference - (shown / 100) * circumference
 
   return (
     <div className="relative flex size-24 shrink-0 items-center justify-center">
@@ -101,26 +97,55 @@ function QuotaRing({ percent }: { percent: number }) {
         />
       </svg>
       <div className="absolute flex flex-col items-center">
-        <span className="text-lg font-semibold">{percent}%</span>
-        <span className="text-[10px] text-muted-foreground">quota</span>
+        <span className="text-lg font-semibold">
+          {percent === null ? "—" : `${percent}%`}
+        </span>
+        <span className="text-[10px] text-muted-foreground">fulfilled</span>
       </div>
     </div>
   )
 }
 
 // ---------------------------------------------------------------------------
-// Component — renamed, restructured as a two-column split
+// Component — same two-column split, now redemption ops
 // ---------------------------------------------------------------------------
 
 export function PipelinePulseCard() {
-  const [period, setPeriod] = React.useState<Period>("This Quarter")
+  const [filter, setFilter] = React.useState<StateFilter>("All States")
+
+  const { data: stats } = useApiQuery("GET /api/v1/redemptions/stats")
+  const { data: queue } = useApiQuery(
+    "GET /api/v1/redemptions",
+    undefined,
+    filter === "All States" ? { limit: 3 } : { limit: 3, state: filter },
+  )
+
+  const byState = stats?.byState ?? {}
+  const awaiting = (byState.requested ?? 0) + (byState.kyc_pending ?? 0)
+  const inFulfilment =
+    (byState.approved ?? 0) +
+    (byState.in_production ?? 0) +
+    (byState.shipped ?? 0)
+  const fulfilled =
+    stats && stats.total > 0
+      ? Math.round(((byState.delivered ?? 0) / stats.total) * 100)
+      : null
+
+  const rows = [
+    {
+      label: "Redemption Requests",
+      value: stats ? String(stats.total) : null,
+    },
+    { label: "Awaiting Review", value: stats ? String(awaiting) : null },
+    { label: "In Fulfilment", value: stats ? String(inFulfilment) : null },
+  ]
 
   return (
     <Card>
       <CardContent>
         {/* Header row */}
         <div className="flex items-center justify-between">
-          <p className="text-base font-semibold">Pipeline Pulse</p>
+          <p className="text-base font-semibold">Redemption Pulse</p>
 
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -132,101 +157,83 @@ export function PipelinePulseCard() {
                 />
               }
             >
-              {period}
+              {filter === "All States" ? filter : formatState(filter)}
               <ChevronDownIcon className="size-3.5 text-muted-foreground" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {periods.map((p) => (
-                <DropdownMenuItem key={p} onClick={() => setPeriod(p)}>
-                  {p}
+              {stateFilters.map((s) => (
+                <DropdownMenuItem key={s} onClick={() => setFilter(s)}>
+                  {s === "All States" ? s : formatState(s)}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
-        {/* Split layout: quota ring (left) + stat list (right) */}
+        {/* Split layout: fulfilment ring (left) + stat list (right) */}
         <div className="mt-5 flex items-center gap-6">
-          <QuotaRing percent={QUOTA_PERCENT} />
+          <FulfilmentRing percent={fulfilled} />
 
           <div className="flex flex-1 flex-col gap-3 border-l pl-6">
-            {stats.map((stat) => {
-              const isUp = stat.trend === "up"
-              return (
-                <div
-                  key={stat.label}
-                  className="flex items-center justify-between"
-                >
-                  <p className="text-xs text-muted-foreground">
-                    {stat.label}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold">{stat.value}</p>
-                    <span
-                      className={cn(
-                        "flex items-center gap-0.5 text-xs font-medium",
-                        isUp
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-red-600 dark:text-red-400"
-                      )}
-                    >
-                      {isUp ? (
-                        <ArrowUpRightIcon className="size-3" />
-                      ) : (
-                        <ArrowDownRightIcon className="size-3" />
-                      )}
-                      {stat.change}
-                    </span>
-                  </div>
-                </div>
-              )
-            })}
+            {rows.map((row) => (
+              <div key={row.label} className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">{row.label}</p>
+                <p className="text-sm font-semibold tabular-nums">
+                  {row.value ?? "—"}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
 
         <div className="mt-5 border-t" />
 
-        {/* Deals table-style list instead of a status timeline */}
+        {/* Redemption queue instead of the mock deal list */}
         <div className="mt-4 bg-muted/50 p-3 rounded-lg">
-          <p className="text-base font-semibold">Deals in Motion</p>
+          <p className="text-base font-semibold">Redemptions in Motion</p>
 
           <div className="mt-3 space-y-1 mb-2">
-            {deals.map((deal) => (
+            {queue?.items.map((r) => (
               <div
-                key={deal.name}
+                key={r.id}
                 className="flex items-center justify-between rounded-md px-2 py-1 -mx-2 hover:bg-background"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{deal.name}</p>
+                  <p className="truncate text-sm font-medium">
+                    {r.asset.symbol} · {r.provider.name}
+                  </p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {deal.company}
+                    {new Date(r.requestedAt).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                    })}
                   </p>
                 </div>
 
                 <div className="flex shrink-0 items-center gap-3">
-                  <span className="text-sm font-semibold">{deal.value}</span>
                   <Badge
                     variant="outline"
                     className={cn(
-                      "w-16 justify-center rounded-md px-2 py-0.5 text-xs font-medium",
-                      deal.stageClass
+                      "w-24 justify-center rounded-md px-2 py-0.5 text-xs font-medium",
+                      stateClass[r.state],
                     )}
                   >
-                    {deal.stage}
+                    {formatState(r.state)}
                   </Badge>
                 </div>
               </div>
             ))}
+            {queue && queue.items.length === 0 && (
+              <p className="px-2 py-1 text-sm text-muted-foreground">
+                No redemptions in this state.
+              </p>
+            )}
+            {!queue && (
+              <p className="px-2 py-1 text-sm text-muted-foreground">—</p>
+            )}
           </div>
         </div>
       </CardContent>
-      {/* Footer actions */}
-      <CardFooter className="gap-2 border-t">
-        <Button variant="outline" className="flex-1">
-          Export CSV
-        </Button>
-        <Button className="flex-1">Open Pipeline</Button>
-      </CardFooter>
     </Card>
   )
 }
