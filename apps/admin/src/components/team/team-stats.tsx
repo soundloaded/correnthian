@@ -1,22 +1,7 @@
-import type { ReactNode } from "react"
-import { Handshake, Target, Trophy, Users, type LucideIcon } from "lucide-react"
+import { ShieldCheckIcon, UsersIcon, UserCheckIcon, type LucideIcon } from "lucide-react"
 
-import { formatDealValue } from "@/components/deals/deals-data"
 import { Card, CardContent } from "@correnthian/ui/components/card"
-import { getAttainmentStyle } from "./team-utils"
-
-interface TeamStatsProps {
-  stats: {
-    total: number
-    active: number
-    pending: number
-    openDeals: number
-    dealsWon: number
-    revenue: number
-    quota: number
-    attainment: number
-  }
-}
+import { useApiQuery } from "@/lib/use-api-query"
 
 function StatCard({
   icon: Icon,
@@ -24,14 +9,12 @@ function StatCard({
   value,
   hint,
   iconClassName,
-  children,
 }: {
   icon: LucideIcon
   label: string
   value: string
   hint: string
   iconClassName: string
-  children?: ReactNode
 }) {
   return (
     <Card>
@@ -55,8 +38,6 @@ function StatCard({
             <p className="mt-0.5 truncate text-xs text-muted-foreground">
               {hint}
             </p>
-
-            {children}
           </div>
         </div>
       </CardContent>
@@ -64,49 +45,56 @@ function StatCard({
   )
 }
 
-export function TeamStats({ stats }: TeamStatsProps) {
-  const style = getAttainmentStyle(stats.attainment)
+// Live facts over the accounts registry. Team-scoped numbers (operators
+// only) would need a role-filtered stats endpoint that does not exist, so
+// these count every account and say so — a card that claimed "3 operators"
+// from page one's slice would lie about the registry.
+export function TeamStats() {
+  const { data: stats } = useApiQuery("GET /api/v1/users/stats")
+
+  const total = stats?.total ?? null
+  const admins = stats ? (stats.byRole.admin ?? 0) + (stats.byRole.owner ?? 0) : null
+  const staff =
+    stats
+      ? (stats.byRole.support ?? 0) +
+        (stats.byRole.compliance ?? 0) +
+        (stats.byRole.admin ?? 0) +
+        (stats.byRole.owner ?? 0)
+      : null
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard
-        icon={Users}
-        label="Team members"
-        value={String(stats.total)}
-        hint={`${stats.active} active${stats.pending ? ` · ${stats.pending} invited` : ""}`}
+        icon={UsersIcon}
+        label="Accounts"
+        value={total === null ? "…" : String(total)}
+        hint="Every registered account, not only operators"
         iconClassName="bg-blue-500/10 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400"
       />
 
       <StatCard
-        icon={Handshake}
-        label="Open deals"
-        value={String(stats.openDeals)}
-        hint="Across the whole team"
+        icon={ShieldCheckIcon}
+        label="Admins and owners"
+        value={admins === null ? "…" : String(admins)}
+        hint="Roles that can change access"
         iconClassName="bg-violet-500/10 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400"
       />
 
       <StatCard
-        icon={Trophy}
-        label="Deals won"
-        value={String(stats.dealsWon)}
-        hint={`${formatDealValue(stats.revenue)} closed this quarter`}
+        icon={UserCheckIcon}
+        label="Staff roles"
+        value={staff === null ? "…" : String(staff)}
+        hint="Support, compliance, admin, owner"
         iconClassName="bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400"
       />
 
       <StatCard
-        icon={Target}
-        label="Quota attainment"
-        value={`${stats.attainment}%`}
-        hint={`of ${formatDealValue(stats.quota)} target`}
+        icon={UsersIcon}
+        label="New this week"
+        value={stats ? String(stats.newLast7d) : "…"}
+        hint="Accounts created in the last 7 days"
         iconClassName="bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400"
-      >
-        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className={`h-full rounded-full ${style.bar}`}
-            style={{ width: `${Math.min(stats.attainment, 100)}%` }}
-          />
-        </div>
-      </StatCard>
+      />
     </div>
   )
 }

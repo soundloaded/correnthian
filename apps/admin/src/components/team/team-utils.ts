@@ -1,12 +1,3 @@
-import type { TeamMember, TeamRole, TeamStatus } from "./team-data"
-
-export interface TeamFilters {
-  role: "all" | TeamRole
-  status: "all" | TeamStatus
-}
-
-export const DEFAULT_TEAM_FILTERS: TeamFilters = { role: "all", status: "all" }
-
 export function getInitials(name: string) {
   const initials = name
     .split(" ")
@@ -27,45 +18,24 @@ const AVATAR_COLORS = [
   "bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300",
 ]
 
-/** Same name always gets the same colour. */
+/** Same address always gets the same colour. */
 export function getAvatarColor(name: string) {
   let hash = 0
   for (const char of name) hash = (hash * 31 + char.charCodeAt(0)) >>> 0
   return AVATAR_COLORS[hash % AVATAR_COLORS.length]
 }
 
-/** Revenue as a % of quota, or null when the member has no quota. */
-export function getQuotaAttainment(member: TeamMember) {
-  if (member.quota <= 0) return null
-  return Math.round((member.revenue / member.quota) * 100)
+const RANK: Record<string, number> = {
+  user: 0,
+  support: 1,
+  compliance: 2,
+  admin: 3,
+  owner: 4,
 }
 
-export function getAttainmentStyle(percent: number | null) {
-  if (percent === null) return { bar: "bg-muted-foreground/30", text: "text-muted-foreground" }
-  if (percent >= 80) return { bar: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400" }
-  if (percent >= 50) return { bar: "bg-amber-500", text: "text-amber-600 dark:text-amber-400" }
-  return { bar: "bg-rose-500", text: "text-rose-600 dark:text-rose-400" }
-}
-
-export function applyTeamFilters(
-  members: TeamMember[],
-  search: string,
-  filters: TeamFilters,
-) {
-  const query = search.trim().toLowerCase()
-
-  return members.filter((member) => {
-    const matchesSearch =
-      !query ||
-      [member.name, member.email, member.title, member.location ?? ""]
-        .join(" ")
-        .toLowerCase()
-        .includes(query)
-
-    return (
-      matchesSearch &&
-      (filters.role === "all" || member.role === filters.role) &&
-      (filters.status === "all" || member.status === filters.status)
-    )
-  })
+// Fail-closed mirror of the API rank table: an unrecognised role hides the
+// controls rather than showing them. The gate is display-only — RolesGuard
+// decides — so a non-admin sees rows, never a button that will only bounce.
+export function rankAtLeast(actual: string, required: string): boolean {
+  return (RANK[actual.trim().toLowerCase()] ?? -1) >= (RANK[required] ?? 99)
 }

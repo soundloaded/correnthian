@@ -1,44 +1,48 @@
-import { CircleDot, LayoutGrid, List, Search, Shield, X } from "lucide-react"
+"use client"
+
+import { LayoutGrid, List, Search } from "lucide-react"
 
 import { Button } from "@correnthian/ui/components/button"
 import { Input } from "@correnthian/ui/components/input"
-import { Tabs, TabsList, TabsTrigger } from "@correnthian/ui/components/tabs"
 import {
-  TEAM_ROLES,
-  TEAM_STATUSES,
-  type TeamRole,
-  type TeamStatus,
-  type TeamView,
-} from "./team-data"
-import { TeamFilterMenu } from "./team-filter-menu"
-import type { TeamFilters } from "./team-utils"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@correnthian/ui/components/select"
+import { Tabs, TabsList, TabsTrigger } from "@correnthian/ui/components/tabs"
+import type { TeamView } from "./use-team-list"
+
+// Only filters the list endpoint honours. ListUsersDto takes role,
+// kycStatus, country, search — there is no status param, so status is
+// display-only in the cards and gets no control here. Country is accepted
+// but left out: a free-text ISO box adds validation work for a filter
+// operators rarely need.
+const ROLE_OPTIONS = ["user", "support", "compliance", "admin", "owner"]
+
+const KYC_OPTIONS = ["not_started", "pending", "approved", "rejected", "expired"]
 
 interface TeamToolbarProps {
   search: string
   onSearchChange: (value: string) => void
-  filters: TeamFilters
-  onFiltersChange: (filters: TeamFilters) => void
+  role: string
+  onRoleChange: (value: string) => void
+  kycStatus: string
+  onKycStatusChange: (value: string) => void
   hasActiveFilters: boolean
   onClearFilters: () => void
   view: TeamView
   onViewChange: (view: TeamView) => void
 }
 
-const ROLE_OPTIONS = [
-  { value: "all", label: "Any role" },
-  ...TEAM_ROLES.map((role) => ({ value: role, label: role })),
-]
-
-const STATUS_OPTIONS = [
-  { value: "all", label: "Any status" },
-  ...TEAM_STATUSES.map((status) => ({ value: status, label: status })),
-]
-
 export function TeamToolbar({
   search,
   onSearchChange,
-  filters,
-  onFiltersChange,
+  role,
+  onRoleChange,
+  kycStatus,
+  onKycStatusChange,
   hasActiveFilters,
   onClearFilters,
   view,
@@ -51,31 +55,45 @@ export function TeamToolbar({
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search by name, email, title..."
+            placeholder="Search by email or name..."
             className="h-9 w-full bg-background pl-9"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
 
-        <TeamFilterMenu
-          label="Role"
-          icon={Shield}
-          value={filters.role}
-          options={ROLE_OPTIONS}
-          onChange={(value) =>
-            onFiltersChange({ ...filters, role: value as "all" | TeamRole })
-          }
-        />
-        <TeamFilterMenu
-          label="Status"
-          icon={CircleDot}
-          value={filters.status}
-          options={STATUS_OPTIONS}
-          onChange={(value) =>
-            onFiltersChange({ ...filters, status: value as "all" | TeamStatus })
-          }
-        />
+        <Select value={role} onValueChange={(value) => onRoleChange(value ?? "all")}>
+          <SelectTrigger className="w-full sm:w-40">
+            <SelectValue placeholder="Filter by role" />
+          </SelectTrigger>
+
+          <SelectContent>
+            <SelectItem value="all">All roles</SelectItem>
+            {ROLE_OPTIONS.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={kycStatus}
+          onValueChange={(value) => onKycStatusChange(value ?? "all")}
+        >
+          <SelectTrigger className="w-full sm:w-44">
+            <SelectValue placeholder="Filter by KYC" />
+          </SelectTrigger>
+
+          <SelectContent>
+            <SelectItem value="all">All KYC states</SelectItem>
+            {KYC_OPTIONS.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option.replaceAll("_", " ")}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {hasActiveFilters && (
           <Button
@@ -84,7 +102,6 @@ export function TeamToolbar({
             className="h-9 gap-1.5 text-muted-foreground"
             onClick={onClearFilters}
           >
-            <X className="h-4 w-4" />
             Clear
           </Button>
         )}

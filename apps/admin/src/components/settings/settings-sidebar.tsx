@@ -1,12 +1,12 @@
-
 import {
   Bell,
   Building2,
   ChevronRight,
   CreditCard,
-  Database,
+  Flag,
   Palette,
   Plug,
+  ScrollText,
   ShieldCheck,
   UserRound,
   Webhook,
@@ -18,13 +18,14 @@ export type SettingSection =
   | "profile"
   | "security"
   | "notifications"
+  | "flags"
+  | "integrations"
+  | "data"
   | "appearance"
   | "workspace"
   | "pipeline"
   | "billing"
-  | "integrations"
   | "api-webhooks"
-  | "data"
 
 interface NavItem {
   id: SettingSection
@@ -37,6 +38,9 @@ interface NavGroup {
   items: NavItem[]
 }
 
+// Sections with a backend come first in each group; sections with no
+// backend sit under "Later", labelled as such, so an operator never
+// mistakes an honest empty state for a working page.
 const navGroups: NavGroup[] = [
   {
     groupLabel: "Account",
@@ -44,23 +48,24 @@ const navGroups: NavGroup[] = [
       { id: "profile", label: "Profile", icon: UserRound },
       { id: "security", label: "Security", icon: ShieldCheck },
       { id: "notifications", label: "Notifications", icon: Bell },
-      { id: "appearance", label: "Appearance", icon: Palette },
     ],
   },
   {
     groupLabel: "Workspace",
     items: [
-      { id: "workspace", label: "Workspace", icon: Building2 },
-      { id: "pipeline", label: "Pipeline", icon: Workflow },
-      { id: "billing", label: "Billing", icon: CreditCard },
+      { id: "flags", label: "Feature flags", icon: Flag },
+      { id: "integrations", label: "Integrations", icon: Plug },
+      { id: "data", label: "Data", icon: ScrollText },
     ],
   },
   {
-    groupLabel: "Developer & Data",
+    groupLabel: "Later — no backend",
     items: [
-      { id: "integrations", label: "Integrations", icon: Plug },
+      { id: "appearance", label: "Appearance", icon: Palette },
+      { id: "workspace", label: "Workspace", icon: Building2 },
+      { id: "pipeline", label: "Pipeline", icon: Workflow },
+      { id: "billing", label: "Billing", icon: CreditCard },
       { id: "api-webhooks", label: "API & Webhooks", icon: Webhook },
-      { id: "data", label: "Data", icon: Database },
     ],
   },
 ]

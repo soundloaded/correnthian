@@ -1,9 +1,17 @@
 import {
+  ArrowRightLeftIcon,
+  BoxesIcon,
+  LandmarkIcon,
   LayoutDashboardIcon,
+  ScrollTextIcon,
+  SettingsIcon,
+  ShieldCheckIcon,
   UsersRoundIcon,
   UsersIcon,
+  WalletIcon,
   BarChart3Icon,
-  SettingsIcon,
+  BellIcon,
+  CoinsIcon,
   type LucideIcon,
 } from "lucide-react"
 
@@ -27,11 +35,9 @@ export type NavGroup = {
 }
 
 /**
- * Console navigation, grouped. Every entry links a route that exists:
- * either a route file in `apps/admin/src/routes/`, or `/users` — Harbor's
- * lane, whose nav entries are owned here. Not-yet-built destinations
- * (Audit, registry and system pages) are NOT linked; they are listed in
- * the lane report as "nav-ready, route pending".
+ * Console navigation, grouped. Every entry links a route that exists —
+ * verified against `apps/admin/src/routes/` at merge time. Detail routes
+ * (`/users/$userId` etc.) stay unlisted; they are reached from their lists.
  */
 export const navigation: readonly NavGroup[] = [
   {
@@ -41,6 +47,91 @@ export const navigation: readonly NavGroup[] = [
         title: "Dashboard",
         url: "/dashboard",
         icon: LayoutDashboardIcon,
+      },
+      {
+        title: "Users",
+        url: "/users",
+        icon: UsersRoundIcon,
+        items: [
+          {
+            title: "All Users",
+            url: "/users",
+          },
+        ],
+      },
+      {
+        title: "Transactions",
+        url: "/transactions",
+        icon: ArrowRightLeftIcon,
+      },
+      {
+        title: "Quotes",
+        url: "/quotes",
+        icon: CoinsIcon,
+      },
+      {
+        title: "Redemptions",
+        url: "/redemptions",
+        icon: LandmarkIcon,
+      },
+      {
+        title: "Compliance",
+        url: "/compliance",
+        icon: ShieldCheckIcon,
+        minRole: "compliance",
+      },
+      {
+        title: "Audit",
+        url: "/audit",
+        icon: ScrollTextIcon,
+        minRole: "compliance",
+      },
+      {
+        title: "Notifications",
+        url: "/notifications",
+        icon: BellIcon,
+      },
+    ],
+  },
+
+  {
+    label: "Registry",
+    items: [
+      {
+        title: "Assets",
+        url: "/assets",
+        icon: BoxesIcon,
+      },
+      {
+        title: "Issuers",
+        url: "/issuers",
+        icon: LandmarkIcon,
+      },
+      {
+        title: "Providers",
+        url: "/providers",
+        icon: BoxesIcon,
+      },
+      {
+        title: "Chains",
+        url: "/chains",
+        icon: BoxesIcon,
+      },
+      {
+        title: "Devices",
+        url: "/devices",
+        icon: UsersIcon,
+      },
+      {
+        title: "Wallets",
+        url: "/wallets",
+        icon: WalletIcon,
+      },
+      {
+        title: "Fee rules",
+        url: "/fees",
+        icon: CoinsIcon,
+        minRole: "admin",
       },
     ],
   },
@@ -63,17 +154,6 @@ export const navigation: readonly NavGroup[] = [
         title: "Team",
         url: "/team",
         icon: UsersIcon,
-      },
-      {
-        title: "Users",
-        url: "/users",
-        icon: UsersRoundIcon,
-        items: [
-          {
-            title: "All Users",
-            url: "/users",
-          },
-        ],
       },
     ],
   },

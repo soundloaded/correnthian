@@ -39,6 +39,7 @@ import { Route as AdminIssuersSlugRouteImport } from './routes/_admin.issuers.$s
 import { Route as AdminLeadsIndexRouteImport } from './routes/_admin.leads.index'
 import { Route as AdminLeadsNewRouteImport } from './routes/_admin.leads.new'
 import { Route as AdminLeadsPipelineRouteImport } from './routes/_admin.leads.pipeline'
+import { Route as AdminNotificationsIndexRouteImport } from './routes/_admin.notifications.index'
 import { Route as AdminProvidersIndexRouteImport } from './routes/_admin.providers.index'
 import { Route as AdminQuotesIndexRouteImport } from './routes/_admin.quotes.index'
 import { Route as AdminQuotesQuoteIdRouteImport } from './routes/_admin.quotes.$quoteId'
@@ -199,6 +200,11 @@ const AdminLeadsPipelineRoute = AdminLeadsPipelineRouteImport.update({
   path: '/leads/pipeline',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminNotificationsIndexRoute = AdminNotificationsIndexRouteImport.update({
+  id: '/notifications/',
+  path: '/notifications/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminProvidersIndexRoute = AdminProvidersIndexRouteImport.update({
   id: '/providers/',
   path: '/providers/',
@@ -284,6 +290,7 @@ export interface FileRoutesByFullPath {
   '/fees/': typeof AdminFeesIndexRoute
   '/issuers/': typeof AdminIssuersIndexRoute
   '/leads/': typeof AdminLeadsIndexRoute
+  '/notifications/': typeof AdminNotificationsIndexRoute
   '/providers/': typeof AdminProvidersIndexRoute
   '/quotes/': typeof AdminQuotesIndexRoute
   '/redemptions/': typeof AdminRedemptionsIndexRoute
@@ -325,6 +332,7 @@ export interface FileRoutesByTo {
   '/fees': typeof AdminFeesIndexRoute
   '/issuers': typeof AdminIssuersIndexRoute
   '/leads': typeof AdminLeadsIndexRoute
+  '/notifications': typeof AdminNotificationsIndexRoute
   '/providers': typeof AdminProvidersIndexRoute
   '/quotes': typeof AdminQuotesIndexRoute
   '/redemptions': typeof AdminRedemptionsIndexRoute
@@ -368,6 +376,7 @@ export interface FileRoutesById {
   '/_admin/fees/': typeof AdminFeesIndexRoute
   '/_admin/issuers/': typeof AdminIssuersIndexRoute
   '/_admin/leads/': typeof AdminLeadsIndexRoute
+  '/_admin/notifications/': typeof AdminNotificationsIndexRoute
   '/_admin/providers/': typeof AdminProvidersIndexRoute
   '/_admin/quotes/': typeof AdminQuotesIndexRoute
   '/_admin/redemptions/': typeof AdminRedemptionsIndexRoute
@@ -411,6 +420,7 @@ export interface FileRouteTypes {
     | '/fees/'
     | '/issuers/'
     | '/leads/'
+    | '/notifications/'
     | '/providers/'
     | '/quotes/'
     | '/redemptions/'
@@ -452,6 +462,7 @@ export interface FileRouteTypes {
     | '/fees'
     | '/issuers'
     | '/leads'
+    | '/notifications'
     | '/providers'
     | '/quotes'
     | '/redemptions'
@@ -494,6 +505,7 @@ export interface FileRouteTypes {
     | '/_admin/fees/'
     | '/_admin/issuers/'
     | '/_admin/leads/'
+    | '/_admin/notifications/'
     | '/_admin/providers/'
     | '/_admin/quotes/'
     | '/_admin/redemptions/'
@@ -721,6 +733,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLeadsPipelineRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/notifications/': {
+      id: '/_admin/notifications/'
+      path: '/notifications'
+      fullPath: '/notifications/'
+      preLoaderRoute: typeof AdminNotificationsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/providers/': {
       id: '/_admin/providers/'
       path: '/providers'
@@ -825,6 +844,7 @@ interface AdminRouteChildren {
   AdminFeesIndexRoute: typeof AdminFeesIndexRoute
   AdminIssuersIndexRoute: typeof AdminIssuersIndexRoute
   AdminLeadsIndexRoute: typeof AdminLeadsIndexRoute
+  AdminNotificationsIndexRoute: typeof AdminNotificationsIndexRoute
   AdminProvidersIndexRoute: typeof AdminProvidersIndexRoute
   AdminQuotesIndexRoute: typeof AdminQuotesIndexRoute
   AdminRedemptionsIndexRoute: typeof AdminRedemptionsIndexRoute
@@ -864,6 +884,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminFeesIndexRoute: AdminFeesIndexRoute,
   AdminIssuersIndexRoute: AdminIssuersIndexRoute,
   AdminLeadsIndexRoute: AdminLeadsIndexRoute,
+  AdminNotificationsIndexRoute: AdminNotificationsIndexRoute,
   AdminProvidersIndexRoute: AdminProvidersIndexRoute,
   AdminQuotesIndexRoute: AdminQuotesIndexRoute,
   AdminRedemptionsIndexRoute: AdminRedemptionsIndexRoute,

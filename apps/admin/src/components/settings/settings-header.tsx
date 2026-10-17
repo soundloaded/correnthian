@@ -1,4 +1,3 @@
-
 import { SlidersHorizontal } from "lucide-react"
 
 export function SettingsHeader() {
@@ -12,7 +11,9 @@ export function SettingsHeader() {
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Manage your account, workspace preferences, and CRM configuration.
+        Operator profile, feature flags, and what the rails look like. Every
+        section renders live API data or says it has no backend — nothing
+        here is a toggle that saves nowhere.
       </p>
     </div>
   )

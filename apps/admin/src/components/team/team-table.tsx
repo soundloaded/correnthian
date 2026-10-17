@@ -1,5 +1,7 @@
-import { formatDealValue } from "@/components/deals/deals-data"
-import { Badge } from "@correnthian/ui/components/badge"
+"use client"
+
+import { Link } from "@tanstack/react-router"
+
 import {
   Table,
   TableBody,
@@ -8,27 +10,24 @@ import {
   TableHeader,
   TableRow,
 } from "@correnthian/ui/components/table"
-import { RoleBadge, StatusBadge } from "./team-badges"
-import type { TeamMember, TeamRole, TeamStatus } from "./team-data"
+import { Button } from "@correnthian/ui/components/button"
+import { Avatar, AvatarFallback } from "@correnthian/ui/components/avatar"
+
+import { AccountStatusBadge, KycBadge, RoleBadge } from "@/components/users/user-badges"
+import { getSession } from "@/lib/auth"
 import { TeamMemberActions } from "./team-member-actions"
-import { TeamMemberAvatar } from "./team-member-avatar"
-import { getAttainmentStyle, getQuotaAttainment } from "./team-utils"
+import { getAvatarColor, getInitials } from "./team-utils"
+import type { TeamRow } from "./team-member-card"
 
 interface TeamTableProps {
-  members: TeamMember[]
-  onEdit: (member: TeamMember) => void
-  onChangeRole: (id: string, role: TeamRole) => void
-  onSetStatus: (id: string, status: TeamStatus) => void
-  onRemove: (id: string) => void
+  members: TeamRow[]
+  onChanged: () => void
 }
 
-export function TeamTable({
-  members,
-  onEdit,
-  onChangeRole,
-  onSetStatus,
-  onRemove,
-}: TeamTableProps) {
+// Same arrangement as the users table: identity first, badges for the
+// enumerated states, dates muted. Inactive accounts dim — a suspended
+// operator must read as suspended, never as live.
+export function TeamTable({ members, onChanged }: TeamTableProps) {
   return (
     <div className="overflow-x-auto rounded-xl border bg-card">
       <Table>
@@ -36,95 +35,98 @@ export function TeamTable({
           <TableRow className="bg-muted/40 hover:bg-muted/40">
             <TableHead className="pl-4">Member</TableHead>
             <TableHead>Role</TableHead>
+            <TableHead>KYC</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="text-right">Open</TableHead>
-            <TableHead className="text-right">Won</TableHead>
-            <TableHead className="text-right">Revenue</TableHead>
-            <TableHead className="min-w-[150px]">Quota</TableHead>
-            <TableHead>Last active</TableHead>
+            <TableHead>Wallets</TableHead>
+            <TableHead>Last login</TableHead>
             <TableHead className="w-12 pr-4" />
           </TableRow>
         </TableHeader>
 
         <TableBody>
-          {members.map((member) => {
-            const attainment = getQuotaAttainment(member)
-            const style = getAttainmentStyle(attainment)
-
-            return (
-              <TableRow
-                key={member.id}
-                className={member.status === "Deactivated" ? "opacity-60" : ""}
-              >
-                <TableCell className="pl-4">
-                  <div className="flex items-center gap-3">
-                    <TeamMemberAvatar member={member} size="sm" />
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="truncate font-medium">{member.name}</span>
-                        {member.isYou && (
-                          <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
-                            You
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="truncate text-xs text-muted-foreground">
+          {members.map((member) => (
+            <TableRow
+              key={member.id}
+              className={member.status !== "active" ? "opacity-60" : ""}
+            >
+              <TableCell className="pl-4">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-9 w-9 shrink-0">
+                    <AvatarFallback
+                      className={`text-xs font-medium ${getAvatarColor(member.email)}`}
+                    >
+                      {getInitials(member.email)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Link
+                        to="/users/$userId"
+                        params={{ userId: member.id }}
+                        className="truncate text-sm font-medium hover:underline"
+                      >
                         {member.email}
-                      </div>
+                      </Link>
+                      <YouBadge memberId={member.id} />
+                    </div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      since {formatDate(member.createdAt)}
                     </div>
                   </div>
-                </TableCell>
+                </div>
+              </TableCell>
 
-                <TableCell>
-                  <RoleBadge role={member.role} />
-                </TableCell>
+              <TableCell>
+                <RoleBadge role={member.role} />
+              </TableCell>
 
-                <TableCell>
-                  <StatusBadge status={member.status} />
-                </TableCell>
+              <TableCell>
+                <KycBadge status={member.kycStatus} />
+              </TableCell>
 
-                <TableCell className="text-right tabular-nums">
-                  {member.openDeals}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {member.dealsWon}
-                </TableCell>
-                <TableCell className="text-right font-medium tabular-nums">
-                  {formatDealValue(member.revenue)}
-                </TableCell>
+              <TableCell>
+                <AccountStatusBadge status={member.status} />
+              </TableCell>
 
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className={`h-full rounded-full ${style.bar}`}
-                        style={{ width: `${Math.min(attainment ?? 0, 100)}%` }}
-                      />
-                    </div>
-                    <span className={`text-xs font-semibold ${style.text}`}>
-                      {attainment === null ? "—" : `${attainment}%`}
-                    </span>
-                  </div>
-                </TableCell>
+              <TableCell className="tabular-nums">
+                {member._count.wallets}
+              </TableCell>
 
-                <TableCell className="text-muted-foreground">
-                  {member.lastActive}
-                </TableCell>
+              <TableCell className="text-muted-foreground">
+                {formatDate(member.lastLoginAt)}
+              </TableCell>
 
-                <TableCell className="pr-4">
-                  <TeamMemberActions
-                    member={member}
-                    onEdit={onEdit}
-                    onChangeRole={onChangeRole}
-                    onSetStatus={onSetStatus}
-                    onRemove={onRemove}
-                  />
-                </TableCell>
-              </TableRow>
-            )
-          })}
+              <TableCell className="pr-4">
+                <TeamMemberActions member={member} onChanged={onChanged} />
+              </TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     </div>
   )
+}
+
+export function TeamTableViewAll() {
+  return (
+    <Button variant="ghost" size="sm" render={<Link to="/users" />}>
+      View
+    </Button>
+  )
+}
+
+function YouBadge({ memberId }: { memberId: string }) {
+  const session = getSession()
+  if (!session || session.userId !== memberId) return null
+  return (
+    <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+      You
+    </span>
+  )
+}
+
+function formatDate(value: string | null): string {
+  if (!value) return "—"
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString()
 }

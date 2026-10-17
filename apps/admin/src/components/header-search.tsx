@@ -17,6 +17,7 @@ import {
     CommandItem,
     CommandList,
 } from "@correnthian/ui/components/command"
+import { useNavigate } from "@tanstack/react-router"
 import { useApiQuery } from "@/lib/use-api-query"
 
 /**
@@ -27,11 +28,10 @@ import { useApiQuery } from "@/lib/use-api-query"
  * or a client-side slice of page one masquerading as search. Groups with
  * no backend filtering were cut rather than faked.
  *
- * Results are terminal: this console has no account-detail and no
- * account-list route, so a hit carries the operator's facts inline
- * (role, KYC, wallet/device counts) instead of navigating somewhere that
- * cannot act on it. When an account-detail route lands, wire `onSelect`
- * to it; until then navigation would be decoration.
+ * Account hits navigate to the account detail; device hits stay terminal
+ * because this console has no device-detail route, so they carry the
+ * operator's facts inline (platform, owner) instead of navigating somewhere
+ * that cannot act on them.
  */
 
 const MIN_CHARS = 2
@@ -39,6 +39,7 @@ const MIN_CHARS = 2
 export function HeaderSearch() {
     const [open, setOpen] = React.useState(false)
     const [term, setTerm] = React.useState("")
+    const navigate = useNavigate()
 
     const trimmed = term.trim()
     const active = open && trimmed.length >= MIN_CHARS
@@ -180,7 +181,10 @@ export function HeaderSearch() {
                                     <CommandItem
                                         key={u.id}
                                         value={`${u.email} ${u.role}`}
-                                        onSelect={() => setOpen(false)}
+                                        onSelect={() => {
+                                            setOpen(false)
+                                            void navigate({ to: "/users/$userId", params: { userId: u.id } })
+                                        }}
                                     >
                                         <UserIcon />
                                         <span className="min-w-0 flex-1 truncate">{u.email}</span>
