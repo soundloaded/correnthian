@@ -28,6 +28,8 @@ import { Route as AdminDealsPipelineRouteImport } from './routes/_admin.deals.pi
 import { Route as AdminLeadsIndexRouteImport } from './routes/_admin.leads.index'
 import { Route as AdminLeadsNewRouteImport } from './routes/_admin.leads.new'
 import { Route as AdminLeadsPipelineRouteImport } from './routes/_admin.leads.pipeline'
+import { Route as AdminUsersIndexRouteImport } from './routes/_admin.users.index'
+import { Route as AdminUsersUserIdRouteImport } from './routes/_admin.users.$userId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -123,6 +125,16 @@ const AdminLeadsPipelineRoute = AdminLeadsPipelineRouteImport.update({
   path: '/leads/pipeline',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminUsersIndexRoute = AdminUsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersUserIdRoute = AdminUsersUserIdRouteImport.update({
+  id: '/users/$userId',
+  path: '/users/$userId',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -138,11 +150,13 @@ export interface FileRoutesByFullPath {
   '/deals/pipeline': typeof AdminDealsPipelineRoute
   '/leads/new': typeof AdminLeadsNewRoute
   '/leads/pipeline': typeof AdminLeadsPipelineRoute
+  '/users/$userId': typeof AdminUsersUserIdRoute
   '/activities/': typeof AdminActivitiesIndexRoute
   '/companies/': typeof AdminCompaniesIndexRoute
   '/contacts/': typeof AdminContactsIndexRoute
   '/deals/': typeof AdminDealsIndexRoute
   '/leads/': typeof AdminLeadsIndexRoute
+  '/users/': typeof AdminUsersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -158,11 +172,13 @@ export interface FileRoutesByTo {
   '/deals/pipeline': typeof AdminDealsPipelineRoute
   '/leads/new': typeof AdminLeadsNewRoute
   '/leads/pipeline': typeof AdminLeadsPipelineRoute
+  '/users/$userId': typeof AdminUsersUserIdRoute
   '/activities': typeof AdminActivitiesIndexRoute
   '/companies': typeof AdminCompaniesIndexRoute
   '/contacts': typeof AdminContactsIndexRoute
   '/deals': typeof AdminDealsIndexRoute
   '/leads': typeof AdminLeadsIndexRoute
+  '/users': typeof AdminUsersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -180,11 +196,13 @@ export interface FileRoutesById {
   '/_admin/deals/pipeline': typeof AdminDealsPipelineRoute
   '/_admin/leads/new': typeof AdminLeadsNewRoute
   '/_admin/leads/pipeline': typeof AdminLeadsPipelineRoute
+  '/_admin/users/$userId': typeof AdminUsersUserIdRoute
   '/_admin/activities/': typeof AdminActivitiesIndexRoute
   '/_admin/companies/': typeof AdminCompaniesIndexRoute
   '/_admin/contacts/': typeof AdminContactsIndexRoute
   '/_admin/deals/': typeof AdminDealsIndexRoute
   '/_admin/leads/': typeof AdminLeadsIndexRoute
+  '/_admin/users/': typeof AdminUsersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -202,11 +220,13 @@ export interface FileRouteTypes {
     | '/deals/pipeline'
     | '/leads/new'
     | '/leads/pipeline'
+    | '/users/$userId'
     | '/activities/'
     | '/companies/'
     | '/contacts/'
     | '/deals/'
     | '/leads/'
+    | '/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -222,11 +242,13 @@ export interface FileRouteTypes {
     | '/deals/pipeline'
     | '/leads/new'
     | '/leads/pipeline'
+    | '/users/$userId'
     | '/activities'
     | '/companies'
     | '/contacts'
     | '/deals'
     | '/leads'
+    | '/users'
   id:
     | '__root__'
     | '/'
@@ -243,11 +265,13 @@ export interface FileRouteTypes {
     | '/_admin/deals/pipeline'
     | '/_admin/leads/new'
     | '/_admin/leads/pipeline'
+    | '/_admin/users/$userId'
     | '/_admin/activities/'
     | '/_admin/companies/'
     | '/_admin/contacts/'
     | '/_admin/deals/'
     | '/_admin/leads/'
+    | '/_admin/users/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -392,6 +416,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLeadsPipelineRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/users/': {
+      id: '/_admin/users/'
+      path: '/users'
+      fullPath: '/users/'
+      preLoaderRoute: typeof AdminUsersIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/users/$userId': {
+      id: '/_admin/users/$userId'
+      path: '/users/$userId'
+      fullPath: '/users/$userId'
+      preLoaderRoute: typeof AdminUsersUserIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
@@ -406,11 +444,13 @@ interface AdminRouteChildren {
   AdminDealsPipelineRoute: typeof AdminDealsPipelineRoute
   AdminLeadsNewRoute: typeof AdminLeadsNewRoute
   AdminLeadsPipelineRoute: typeof AdminLeadsPipelineRoute
+  AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
   AdminActivitiesIndexRoute: typeof AdminActivitiesIndexRoute
   AdminCompaniesIndexRoute: typeof AdminCompaniesIndexRoute
   AdminContactsIndexRoute: typeof AdminContactsIndexRoute
   AdminDealsIndexRoute: typeof AdminDealsIndexRoute
   AdminLeadsIndexRoute: typeof AdminLeadsIndexRoute
+  AdminUsersIndexRoute: typeof AdminUsersIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -424,11 +464,13 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminDealsPipelineRoute: AdminDealsPipelineRoute,
   AdminLeadsNewRoute: AdminLeadsNewRoute,
   AdminLeadsPipelineRoute: AdminLeadsPipelineRoute,
+  AdminUsersUserIdRoute: AdminUsersUserIdRoute,
   AdminActivitiesIndexRoute: AdminActivitiesIndexRoute,
   AdminCompaniesIndexRoute: AdminCompaniesIndexRoute,
   AdminContactsIndexRoute: AdminContactsIndexRoute,
   AdminDealsIndexRoute: AdminDealsIndexRoute,
   AdminLeadsIndexRoute: AdminLeadsIndexRoute,
+  AdminUsersIndexRoute: AdminUsersIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
