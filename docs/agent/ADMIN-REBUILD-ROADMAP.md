@@ -30,20 +30,55 @@ Ground rules:
       (`552e914`, `abe7cfe`, `656081d`, `d8c5d8e`)
 - [x] Expiry-timer overflow fixed (`d386fea`); header cleanup (`8302c4c`)
 
-## Wave 1 — Chrome + first page + settings backend (dispatched 2026-10-17)
+## Wave 1 — Chrome + first page + settings backend (merged 2026-10-17)
 
-- [~] **Sidebar** (Sextant): Correnthian brand, live operator identity,
-      sub-nav groups, `navigation.ts` rewrite.
-- [~] **Header** (Belfry): search palette, notifications bell, Create-button
-      verdict + rewire. Verdict recommendation: operator quick actions
-      (New User Invite, Record Attestation, Propose Fee Rule) — decide on
-      report.
-- [~] **Settings backend** (Keystone): `FeatureFlag` CRUD + per-section
-      read/write audit (which settings screen already has a backend, which
-      needs one).
-- [~] **Users pages** (Harbor): list + detail off the contacts pattern.
+- [x] **Sidebar** (Sextant → `a18af31`): Correnthian brand, live operator
+      identity, grouped sub-nav, `minRole` mechanism.
+- [x] **Header** (Belfry → `9939224`): route title, live search
+      (users+devices only), live bell (`pending+failed`), Create → 4 real
+      operator mutations. Verdict landed: Queue notification, Propose fee
+      rule, Record attestation, Run scheduled job.
+- [x] **Settings backend** (Keystone → `7911b56`): `FeatureFlag` CRUD +
+      10-section audit (appearance/workspace/pipeline/billing: no backend;
+      integrations/data: partial; notifications prefs: gap).
+- [x] **Users pages** (Harbor → `10bcaac`+`ec89542`): list + detail off the
+      contacts pattern, admin-gated mutations, audit surfacing.
 
-## Wave 2 — Operator pages (after wave 1 merges)
+## Wave 2 — Operator pages (dispatched 2026-10-17, four lanes)
+
+Path claims are disjoint; all lanes clone the contacts/users arrangement.
+Sidebar entries: Sextant's `navigation.ts` owns them — lanes request entries
+via their reports; orchestrator adds them at merge (one commit, no lane
+touching another's paths).
+
+- [~] **Money lane** (Ledger): Transactions list + detail (states, directions,
+      keyset pagination; transitions/observations UI; broadcast is system-side,
+      read-only) + Quotes list + detail (read-only; `sizeCapUsd` +
+      `executionQuality` first-class) + Redemptions list + queue
+      (state-filtered; `PATCH :id/transition` compliance-gated, actions driven
+      by the state machine; `transitionSchema` is `{state}` only — no reason
+      field, unlike decide).
+- [~] **Trust lane** (Assay): Compliance reviews queue + decide dialog
+      (`decision` approve/reject + `reason` min-1, `assertReason` enforces the
+      real floor; sanctions-hit styling) + jurisdiction rules table
+      (`GET rules`, `PATCH rules/:id` admin) + Audit list + detail
+      (action/outcome/requestId filters; `denied` = destructive; compliance
+      role gate) + Devices table (`includeRevoked=true`, revoked dimmed).
+- [~] **Registry lane** (Forge): Assets list + detail (disclosure verbatim,
+      fact grid, enabled/attestation PATCH) + Issuers list + detail
+      (evidence behind left rule; licence/risk/tier PATCH) + Providers
+      (list + health; degraded = destructive; status PATCH admin) + Chains
+      (rows; enabled PATCH admin; no RPC column ever) + Wallets list +
+      detail (guardians/label/primary PATCH; snapshots manual) + Fee rules
+      (list, `:id`, diagnostics; preview-before-propose; owner writes).
+- [~] **Shell lane** (Relay): `/notifications` console page (bell "View all"
+      destination; list + stats; terminal rows — no read/dismiss endpoint, so
+      no fake state) + Team page rewire (`GET /users` as source; role/status
+      PATCH admin-gated; NO Invite button — no transport, matches gap #2) +
+      search `onSelect` → `/users/$userId` wiring (Belfry left the TODO) +
+      Settings shell sections against Keystone's audit (Flag table UI for
+      `GET/POST/PATCH/DELETE /settings/flags`; sections with no backend
+      render an honest "no backend" state, never mocks).
 
 | Page | Nexora pattern | Backend | Notes |
 |---|---|---|---|
