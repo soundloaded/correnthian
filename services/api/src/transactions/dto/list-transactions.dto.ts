@@ -26,3 +26,12 @@ export const listMyTransactionsSchema = z.object({
   direction: txDirectionSchema.optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
+
+/**
+ * The dashboard chart's window. Capped — a wider window is a heavier
+ * aggregate on a table that only grows, and the chart cannot show more
+ * days than fit on an operator's screen anyway.
+ */
+export const transactionDailySchema = z.object({
+  days: z.coerce.number().int().min(1).max(90).default(30),
+});

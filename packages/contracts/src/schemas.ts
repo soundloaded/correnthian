@@ -706,6 +706,16 @@ export const transactionListSchema = z.object({
   nextCursor: z.string().nullable(),
 });
 
+/** `GET /transactions/daily`: one entry per day, oldest first. Volume sums
+ * `amountUsd` on confirmed rows only — anything earlier is intent, not flow. */
+export const transactionDailySchema = z.array(
+  z.object({
+    date: z.string(),
+    count: z.number(),
+    volumeUsd: z.number(),
+  }),
+);
+
 /** The detail view adds the arbitrary chain data the list withholds. */
 export const transactionDetailSchema = transactionRowSchema.extend({
   metadata: z.unknown().nullable(),
@@ -1246,6 +1256,7 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/audit/:id': auditDetailSchema,
   'GET /api/v1/transactions': transactionListSchema,
   'GET /api/v1/transactions/stats': transactionStatsSchema,
+  'GET /api/v1/transactions/daily': transactionDailySchema,
   'GET /api/v1/transactions/mine': myTransactionsSchema,
   'GET /api/v1/transactions/:id': transactionDetailSchema,
   /**

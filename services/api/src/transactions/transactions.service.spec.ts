@@ -32,12 +32,16 @@ function makeStore(initial: Row[]) {
         const row = rows.get(where.id as string);
         return row ? ({ ...row } as unknown as Transaction) : null;
       },
-      findMany: async (args?: { where?: { state?: { in?: string[] }; expiresAt?: { lt?: Date } } }) => {
+      findMany: async (args?: { where?: { state?: { in?: string[] }; expiresAt?: { lt?: Date }; createdAt?: { gte?: Date } } }) => {
         let out = [...rows.values()];
         const states = args?.where?.state?.in;
         if (states) out = out.filter((r) => states.includes(r['state'] as string));
         const before = args?.where?.expiresAt?.lt;
         if (before) out = out.filter((r) => (r['expiresAt'] as Date) < before);
+        // The daily chart's window. A fake that ignored the bound would let
+        // an old row into the series and the test would pass anyway.
+        const since = args?.where?.createdAt?.gte;
+        if (since) out = out.filter((r) => (r['createdAt'] as Date) >= since);
         return out;
       },
       count: async () => rows.size,
@@ -866,6 +870,53 @@ describe('TransactionsService — the lifecycle', () => {
       expect(result.expired).toBe(1);
       expect(store.rows.get('tx1')?.['state']).toBe('expired');
       expect(audit.recordChange.mock.calls.at(-1)?.[0].actorRole).toBe('system');
+    });
+  });
+
+  describe('daily series', () => {
+    const dayAgo = (days: number) => {
+      const d = new Date();
+      d.setUTCHours(12, 0, 0, 0);
+      d.setUTCDate(d.getUTCDate() - days);
+      return d;
+    };
+
+    it('returns one bucket per day, oldest first, with zeros for quiet days', async () => {
+      store = makeStore([
+        tx({ id: 'a', createdAt: dayAgo(0), state: 'confirmed', amountUsd: { toString: () => '10' } }),
+        tx({ id: 'b', createdAt: dayAgo(2), state: 'created', amountUsd: null }),
+      ]);
+      svc = new TransactionsService(store.prisma as never, audit as never, blockchain as never);
+      const series = await svc.daily(3);
+      expect(series.map((s) => s.count)).toEqual([1, 0, 1]);
+      const dates = series.map((s) => s.date);
+      expect(dates).toEqual([...dates].sort());
+    });
+
+    it('counts volume from confirmed rows only — intent is not flow', async () => {
+      const now = dayAgo(0);
+      store = makeStore([
+        tx({ id: 'a', createdAt: now, state: 'confirmed', amountUsd: { toString: () => '10.005' } }),
+        tx({ id: 'b', createdAt: now, state: 'broadcast', amountUsd: { toString: () => '999' } }),
+      ]);
+      svc = new TransactionsService(store.prisma as never, audit as never, blockchain as never);
+      const series = await svc.daily(1);
+      expect(series).toHaveLength(1);
+      // 10.005 rounds to cents; the 999 from the unconfirmed row never lands.
+      expect(series[0]?.volumeUsd).toBe(10.01);
+      expect(series[0]?.count).toBe(2);
+    });
+
+    it('excludes rows older than the window', async () => {
+      store = makeStore([
+        tx({ id: 'old', createdAt: dayAgo(30), state: 'confirmed', amountUsd: { toString: () => '5' } }),
+        tx({ id: 'new', createdAt: dayAgo(0), state: 'confirmed', amountUsd: { toString: () => '7' } }),
+      ]);
+      svc = new TransactionsService(store.prisma as never, audit as never, blockchain as never);
+      const series = await svc.daily(7);
+      expect(series).toHaveLength(7);
+      expect(series.reduce((n, s) => n + s.count, 0)).toBe(1);
+      expect(series.reduce((n, s) => n + s.volumeUsd, 0)).toBe(7);
     });
   });
 

@@ -577,6 +577,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     ['GET /api/v1/audit', '/api/v1/audit'],
     ['GET /api/v1/transactions', '/api/v1/transactions'],
     ['GET /api/v1/transactions/stats', '/api/v1/transactions/stats'],
+    ['GET /api/v1/transactions/daily', '/api/v1/transactions/daily?days=7'],
     ['GET /api/v1/transactions/mine', '/api/v1/transactions/mine'],
     ['GET /api/v1/redemptions/stats', '/api/v1/redemptions/stats'],
     ['GET /api/v1/jobs', '/api/v1/jobs'],

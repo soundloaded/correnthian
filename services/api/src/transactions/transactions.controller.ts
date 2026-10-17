@@ -11,7 +11,8 @@ import {
   type BroadcastDto, type CreateTransactionDto, type ObservationDto, type TransitionDto,
 } from './dto/create-transaction.dto.js';
 import {
-  listMyTransactionsSchema, listTransactionsSchema, type ListTransactionsDto,
+  listMyTransactionsSchema, listTransactionsSchema, transactionDailySchema,
+  type ListTransactionsDto,
 } from './dto/list-transactions.dto.js';
 import type { TransactionActor } from './transactions.service.js';
 import { TransactionsService } from './transactions.service.js';
@@ -54,6 +55,18 @@ export class TransactionsController {
   @ApiOperation({ summary: 'Transaction counters' })
   stats() {
     return this.transactions.stats();
+  }
+
+  /**
+   * Declared before `:id` with it, so the literal segment cannot be
+   * swallowed by the parameter route — same reason `stats` sits above.
+   */
+  @Get('daily')
+  @Roles('support')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Per-day transaction counts and settled USD volume for the dashboard chart' })
+  daily(@Query(zodPipe(transactionDailySchema)) query: { days: number }) {
+    return this.transactions.daily(query.days);
   }
 
   /**

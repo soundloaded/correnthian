@@ -102,6 +102,7 @@ const EXPECTED_GATED: string[] = [
   'GET /swaps/quotes -> support',
   'GET /swaps/quotes/stats -> support',
   'GET /transactions -> support',
+  'GET /transactions/daily -> support',
   'GET /transactions/stats -> support',
   'GET /users -> support',
   'GET /users/:id -> support',

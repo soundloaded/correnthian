@@ -920,6 +920,44 @@ export class TransactionsService {
     };
   }
 
+  /**
+   * Per-day counts and settled USD volume for the dashboard chart.
+   *
+   * One query, grouped in the process: `days` caps at 90, so the row set
+   * stays small. `amountUsd` is a Decimal — it crosses as the float the
+   * Prisma row already maps it to in `presentRow`, rounded to cents here
+   * so a float tail never reaches the chart.
+   */
+  async daily(days: number): Promise<Array<{ date: string; count: number; volumeUsd: number }>> {
+    const start = new Date();
+    start.setUTCHours(0, 0, 0, 0);
+    start.setUTCDate(start.getUTCDate() - (days - 1));
+    const rows = await this.prisma.transaction.findMany({
+      where: { createdAt: { gte: start } },
+      select: { createdAt: true, state: true, amountUsd: true },
+    });
+    const buckets = new Map<string, { count: number; volumeUsd: number }>();
+    for (let i = 0; i < days; i += 1) {
+      const day = new Date(start);
+      day.setUTCDate(start.getUTCDate() + i);
+      buckets.set(day.toISOString().slice(0, 10), { count: 0, volumeUsd: 0 });
+    }
+    for (const row of rows) {
+      const key = row.createdAt.toISOString().slice(0, 10);
+      const bucket = buckets.get(key);
+      if (!bucket) continue;
+      bucket.count += 1;
+      if (row.state === 'confirmed' && row.amountUsd != null) {
+        bucket.volumeUsd += Number(row.amountUsd.toString());
+      }
+    }
+    return [...buckets.entries()].map(([date, bucket]) => ({
+      date,
+      count: bucket.count,
+      volumeUsd: Math.round(bucket.volumeUsd * 100) / 100,
+    }));
+  }
+
   // --- the machine ---------------------------------------------------------
 
   /**
