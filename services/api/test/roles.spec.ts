@@ -63,16 +63,9 @@ const RANK: Record<string, number> = {
 const HAS_DB = Boolean(process.env.DATABASE_URL);
 const CI = Boolean(process.env.CI);
 /**
- * Every role-gated route as of 2026-10-09, with what each requires.
- *
- * Checked in on purpose. A route that loses its `@Roles()` disappears from
- * discovery, and both behavioural assertions then pass over a route that is
- * now open to any signed-in account.
- */
-/**
- * Every role-gated route as of 2026-10-09, with what each requires. 40 of
- * them: 34 handler-level `@Roles` plus 6 routes covered by the two
- * class-level decorators (`audit` and `users`).
+ * Every role-gated route as of 2026-10-17, with what each requires. 44 of
+ * them: 37 handler-level `@Roles` plus 7 routes covered by the three
+ * class-level decorators (`audit`, `users`, and `settings/flags`).
  *
  * Checked in on purpose. A route that loses its `@Roles()` disappears from
  * discovery, and both behavioural assertions below then pass over a route
@@ -80,6 +73,7 @@ const CI = Boolean(process.env.CI);
  * gate being *removed*.
  */
 const EXPECTED_GATED: string[] = [
+  'DELETE /settings/flags/:key -> admin',
   'GET /audit -> compliance',
   'GET /audit/:id -> compliance',
   'GET /audit/actor/:actorId -> compliance',
@@ -99,6 +93,7 @@ const EXPECTED_GATED: string[] = [
   'GET /notifications/stats -> support',
   'GET /redemptions -> support',
   'GET /redemptions/stats -> support',
+  'GET /settings/flags -> support',
   'GET /swaps/quotes -> support',
   'GET /swaps/quotes/stats -> support',
   'GET /transactions -> support',
@@ -117,6 +112,7 @@ const EXPECTED_GATED: string[] = [
   'PATCH /issuers/:slug/verification -> compliance',
   'PATCH /providers/:slug/status -> admin',
   'PATCH /redemptions/:id/transition -> compliance',
+  'PATCH /settings/flags/:key -> admin',
   'PATCH /users/:id/role -> admin',
   'PATCH /users/:id/status -> admin',
   'POST /assets -> compliance',
@@ -126,6 +122,7 @@ const EXPECTED_GATED: string[] = [
   'POST /jobs/:name/run -> admin',
   'POST /notifications -> support',
   'POST /pricing/record -> support',
+  'POST /settings/flags -> admin',
   'POST /transactions/:id/observations -> support',
 ];
 

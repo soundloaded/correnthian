@@ -585,6 +585,7 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     ['GET /health/ready', '/health/ready'],
     ['GET /api/v1/compliance/eligibility', '/api/v1/compliance/eligibility?country=US'],
     ['GET /api/v1/compliance/rules', '/api/v1/compliance/rules'],
+    ['GET /api/v1/settings/flags', '/api/v1/settings/flags'],
     ['GET /api/v1/onramp/availability', '/api/v1/onramp/availability?direction=buy&country=US'],
   ];
 
@@ -899,8 +900,35 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     await prisma.wallet.deleteMany({ where: { id: reg.body.id } });
   });
 
-  it('notification enqueue → mine parses, then the row is deleted', async () => {
-    const template = `c-fill-${process.pid}`;
+  it('flag create → patch → list parses all three contracts, then the flag is deleted', async () => {
+    const key = `c-fill-${process.pid}`;
+    const created = await request(app.getHttpServer()).post('/api/v1/settings/flags')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ key, enabled: false, rollout: 10, description: 'contract fill', reason: 'contract suite proves the flag surface parses' });
+    expect(created.status, JSON.stringify(created.body)).toBe(201);
+    expect(CONTRACT_REGISTRY['POST /api/v1/settings/flags'].safeParse(created.body).success).toBe(true);
+
+    const patched = await request(app.getHttpServer()).patch(`/api/v1/settings/flags/${key}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ enabled: true, reason: 'contract suite flips the fill flag before deleting it' });
+    expect(patched.status, JSON.stringify(patched.body)).toBe(200);
+    expect(CONTRACT_REGISTRY['PATCH /api/v1/settings/flags/:key'].safeParse(patched.body).success).toBe(true);
+    expect(patched.body.enabled).toBe(true);
+
+    const list = await request(app.getHttpServer()).get('/api/v1/settings/flags')
+      .set('Authorization', `Bearer ${token}`);
+    expect(CONTRACT_REGISTRY['GET /api/v1/settings/flags'].safeParse(list.body).success).toBe(true);
+    expect((list.body as Array<{ key: string }>).some((f) => f.key === key)).toBe(true);
+
+    const gone = await request(app.getHttpServer()).delete(`/api/v1/settings/flags/${key}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ reason: 'contract suite removes the flag it created' });
+    expect(gone.status).toBe(204);
+
+    await prisma.featureFlag.deleteMany({ where: { key } });
+  });
+
+  it('notification enqueue → mine parses, then the row is deleted', async () => {    const template = `c-fill-${process.pid}`;
     const enq = await request(app.getHttpServer()).post('/api/v1/notifications')
       .set('Authorization', `Bearer ${token}`)
       .send({ channel: 'email', template, payload: {} });

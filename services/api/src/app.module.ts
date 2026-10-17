@@ -22,6 +22,7 @@ import { PortfolioModule } from './portfolio/portfolio.module.js';
 import { PricingModule } from './pricing/pricing.module.js';
 import { ProvidersModule } from './providers/providers.module.js';
 import { RedisModule } from './redis/redis.module.js';
+import { SettingsModule } from './settings/settings.module.js';
 import { SwapsModule } from './swaps/swaps.module.js';
 import { TransactionsModule } from './transactions/transactions.module.js';
 import { UsersModule } from './users/users.module.js';
@@ -59,6 +60,7 @@ import { WalletsModule } from './wallets/wallets.module.js';
     CoreModule,
     HealthModule,
     VersioningModule,
+    SettingsModule,
     AuthModule,
     UsersModule,
     DevicesModule,

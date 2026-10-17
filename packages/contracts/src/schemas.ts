@@ -904,6 +904,26 @@ export const availabilitySchema = z.object({
   reason: z.string().nullable(),
 });
 
+// --- settings (BE-1505) ---------------------------------------------------------
+
+/**
+ * A feature flag: a named switch with a rollout percentage.
+ *
+ * The row predates the route (it has sat in the schema since the init
+ * migration with nothing reading it). `updatedAt` is an ISO string here
+ * because the wire carries no `Date` objects — the service serialises
+ * implicitly through JSON, and this schema says what the client receives.
+ */
+export const featureFlagSchema = z.object({
+  key: z.string(),
+  enabled: z.boolean(),
+  rollout: z.number().int().min(0).max(100),
+  description: z.string().nullable(),
+  updatedAt: z.string(),
+});
+
+export const featureFlagListSchema = z.array(featureFlagSchema);
+
 // --- portfolio ---------------------------------------------------------------
 
 export const portfolioHoldingSchema = z.object({
@@ -1305,6 +1325,10 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/compliance/eligibility': eligibilitySchema,
   'GET /api/v1/compliance/rules': z.array(jurisdictionRuleSchema),
   'PATCH /api/v1/compliance/rules/:id': jurisdictionRuleSchema,
+  // Settings. Reading the table is any operator's; writing is admin's.
+  'GET /api/v1/settings/flags': featureFlagListSchema,
+  'POST /api/v1/settings/flags': featureFlagSchema,
+  'PATCH /api/v1/settings/flags/:key': featureFlagSchema,
   'GET /api/v1/onramp/availability': availabilitySchema,
   'POST /api/v1/jobs/:name/run': jobRunSchema,
   'GET /api/v1/meta/versions': apiVersionsDocumentSchema,
