@@ -101,9 +101,8 @@ reach across.
   backend** (Keystone audit); bell ships without mute/filter.
 - *(open)* `DELETE /settings/flags/:key` has no contract-registry entry
   (Relay hand-rolls via raw fetch) — Keystone follow-up or bless convention.
-- *(open)* Wave-3 CRM orphans: leads, deals, companies, contacts, activities,
-  calendar still fully mocked with no backend models. Reports page fully
-  mocked. Decision: repurpose vs remove.
+- *(closed)* Wave-3 CRM orphans — **removed** (`24b2e46`): 115 mock files,
+  10 routes, reports nav group all gone. Verified 404/200.
 
 ---
 

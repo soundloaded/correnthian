@@ -110,13 +110,17 @@ touching another's paths).
 | Settings | settings shell (exists) | Keystone's audit decides per-section | rebuild sections against real endpoints only |
 | Team | team cards | ⚠️ `GET /users` + role/status PATCH as the source | "invite" needs a backend decision — no invite/reset/email transport exists |
 
-## Wave 3 — CRM orphans (decision required)
+## Wave 3 — CRM orphans (removed 2026-10-17, `24b2e46`)
 
-Leads, deals, companies, contacts, activities, calendar have full Nexora UI
-and **no backend models**. Options per page: repurpose onto a real entity
-(users, redemptions, quotes, audit), keep as a backend build (new models +
-endpoints), or remove. Reports page is fully mocked — same decision. The
-orchestrator decides after wave-1 lane reports land.
+Decision: **remove, all of it.** No backend models exist for leads, deals,
+companies, contacts, activities, calendar, or reports — 115 mock files,
+zero `useApiQuery` calls among them. Building models would mean new Prisma
+tables for CRM entities a self-custody metals console has no product reason
+to own; repurpose candidates all duplicate live pages (leads-as-users,
+activities-as-audit, companies-as-issuers). Pattern reference now lives in
+the live pages. Reports nav group, hero preview link, and the orphan-only
+date-range picker went with them. All 17 live routes verified 200, all 10
+removed verified 404.
 
 ---
 
