@@ -133,13 +133,17 @@ export function ForgotPassword() {
 
                 {sent ? (
                   <div className="grid gap-3">
-                    {/* In production the user reaches the reset page from the email link */}
+                    {/*
+                      No reset endpoint exists yet, so the funnel ends here on
+                      purpose: the button returns to sign-in rather than to a
+                      reset page that cannot work.
+                    */}
                     <motion.div {...pressable}>
                       <Button
                         className="w-full"
-                        onClick={() => navigate({ to: "/auth/reset-password" })}
+                        onClick={() => navigate({ to: "/auth/login" })}
                       >
-                        Continue to reset password
+                        Back to sign in
                       </Button>
                     </motion.div>
                     <motion.div {...pressable}>

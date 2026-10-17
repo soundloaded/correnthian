@@ -16,14 +16,8 @@ import { Route as AdminDashboardRouteImport } from './routes/_admin.dashboard'
 import { Route as AdminReportsRouteImport } from './routes/_admin.reports'
 import { Route as AdminSettingsRouteImport } from './routes/_admin.settings'
 import { Route as AdminTeamRouteImport } from './routes/_admin.team'
-import { Route as AuthAcceptInviteRouteImport } from './routes/auth.accept-invite'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
-import { Route as AuthPasswordSuccessRouteImport } from './routes/auth.password-success'
-import { Route as AuthRegisterRouteImport } from './routes/auth.register'
-import { Route as AuthResetPasswordRouteImport } from './routes/auth.reset-password'
-import { Route as AuthTwoFactorRouteImport } from './routes/auth.two-factor'
-import { Route as AuthVerifyEmailRouteImport } from './routes/auth.verify-email'
 import { Route as AdminActivitiesIndexRouteImport } from './routes/_admin.activities.index'
 import { Route as AdminCompaniesIndexRouteImport } from './routes/_admin.companies.index'
 import { Route as AdminCompaniesCompanyIdRouteImport } from './routes/_admin.companies.$companyId'
@@ -69,11 +63,6 @@ const AdminTeamRoute = AdminTeamRouteImport.update({
   path: '/team',
   getParentRoute: () => AdminRoute,
 } as any)
-const AuthAcceptInviteRoute = AuthAcceptInviteRouteImport.update({
-  id: '/auth/accept-invite',
-  path: '/auth/accept-invite',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
   id: '/auth/forgot-password',
   path: '/auth/forgot-password',
@@ -82,31 +71,6 @@ const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/auth/login',
   path: '/auth/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthPasswordSuccessRoute = AuthPasswordSuccessRouteImport.update({
-  id: '/auth/password-success',
-  path: '/auth/password-success',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRegisterRoute = AuthRegisterRouteImport.update({
-  id: '/auth/register',
-  path: '/auth/register',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
-  id: '/auth/reset-password',
-  path: '/auth/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthTwoFactorRoute = AuthTwoFactorRouteImport.update({
-  id: '/auth/two-factor',
-  path: '/auth/two-factor',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthVerifyEmailRoute = AuthVerifyEmailRouteImport.update({
-  id: '/auth/verify-email',
-  path: '/auth/verify-email',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminActivitiesIndexRoute = AdminActivitiesIndexRouteImport.update({
@@ -167,14 +131,8 @@ export interface FileRoutesByFullPath {
   '/reports': typeof AdminReportsRoute
   '/settings': typeof AdminSettingsRoute
   '/team': typeof AdminTeamRoute
-  '/auth/accept-invite': typeof AuthAcceptInviteRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
-  '/auth/password-success': typeof AuthPasswordSuccessRoute
-  '/auth/register': typeof AuthRegisterRoute
-  '/auth/reset-password': typeof AuthResetPasswordRoute
-  '/auth/two-factor': typeof AuthTwoFactorRoute
-  '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/companies/$companyId': typeof AdminCompaniesCompanyIdRoute
   '/contacts/$contactId': typeof AdminContactsContactIdRoute
   '/deals/pipeline': typeof AdminDealsPipelineRoute
@@ -193,14 +151,8 @@ export interface FileRoutesByTo {
   '/reports': typeof AdminReportsRoute
   '/settings': typeof AdminSettingsRoute
   '/team': typeof AdminTeamRoute
-  '/auth/accept-invite': typeof AuthAcceptInviteRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
-  '/auth/password-success': typeof AuthPasswordSuccessRoute
-  '/auth/register': typeof AuthRegisterRoute
-  '/auth/reset-password': typeof AuthResetPasswordRoute
-  '/auth/two-factor': typeof AuthTwoFactorRoute
-  '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/companies/$companyId': typeof AdminCompaniesCompanyIdRoute
   '/contacts/$contactId': typeof AdminContactsContactIdRoute
   '/deals/pipeline': typeof AdminDealsPipelineRoute
@@ -221,14 +173,8 @@ export interface FileRoutesById {
   '/_admin/reports': typeof AdminReportsRoute
   '/_admin/settings': typeof AdminSettingsRoute
   '/_admin/team': typeof AdminTeamRoute
-  '/auth/accept-invite': typeof AuthAcceptInviteRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
-  '/auth/password-success': typeof AuthPasswordSuccessRoute
-  '/auth/register': typeof AuthRegisterRoute
-  '/auth/reset-password': typeof AuthResetPasswordRoute
-  '/auth/two-factor': typeof AuthTwoFactorRoute
-  '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/_admin/companies/$companyId': typeof AdminCompaniesCompanyIdRoute
   '/_admin/contacts/$contactId': typeof AdminContactsContactIdRoute
   '/_admin/deals/pipeline': typeof AdminDealsPipelineRoute
@@ -249,14 +195,8 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/team'
-    | '/auth/accept-invite'
     | '/auth/forgot-password'
     | '/auth/login'
-    | '/auth/password-success'
-    | '/auth/register'
-    | '/auth/reset-password'
-    | '/auth/two-factor'
-    | '/auth/verify-email'
     | '/companies/$companyId'
     | '/contacts/$contactId'
     | '/deals/pipeline'
@@ -275,14 +215,8 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/team'
-    | '/auth/accept-invite'
     | '/auth/forgot-password'
     | '/auth/login'
-    | '/auth/password-success'
-    | '/auth/register'
-    | '/auth/reset-password'
-    | '/auth/two-factor'
-    | '/auth/verify-email'
     | '/companies/$companyId'
     | '/contacts/$contactId'
     | '/deals/pipeline'
@@ -302,14 +236,8 @@ export interface FileRouteTypes {
     | '/_admin/reports'
     | '/_admin/settings'
     | '/_admin/team'
-    | '/auth/accept-invite'
     | '/auth/forgot-password'
     | '/auth/login'
-    | '/auth/password-success'
-    | '/auth/register'
-    | '/auth/reset-password'
-    | '/auth/two-factor'
-    | '/auth/verify-email'
     | '/_admin/companies/$companyId'
     | '/_admin/contacts/$contactId'
     | '/_admin/deals/pipeline'
@@ -325,14 +253,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
-  AuthAcceptInviteRoute: typeof AuthAcceptInviteRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
-  AuthPasswordSuccessRoute: typeof AuthPasswordSuccessRoute
-  AuthRegisterRoute: typeof AuthRegisterRoute
-  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
-  AuthTwoFactorRoute: typeof AuthTwoFactorRoute
-  AuthVerifyEmailRoute: typeof AuthVerifyEmailRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -386,13 +308,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTeamRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/auth/accept-invite': {
-      id: '/auth/accept-invite'
-      path: '/auth/accept-invite'
-      fullPath: '/auth/accept-invite'
-      preLoaderRoute: typeof AuthAcceptInviteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/auth/forgot-password': {
       id: '/auth/forgot-password'
       path: '/auth/forgot-password'
@@ -405,41 +320,6 @@ declare module '@tanstack/react-router' {
       path: '/auth/login'
       fullPath: '/auth/login'
       preLoaderRoute: typeof AuthLoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/password-success': {
-      id: '/auth/password-success'
-      path: '/auth/password-success'
-      fullPath: '/auth/password-success'
-      preLoaderRoute: typeof AuthPasswordSuccessRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/register': {
-      id: '/auth/register'
-      path: '/auth/register'
-      fullPath: '/auth/register'
-      preLoaderRoute: typeof AuthRegisterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/reset-password': {
-      id: '/auth/reset-password'
-      path: '/auth/reset-password'
-      fullPath: '/auth/reset-password'
-      preLoaderRoute: typeof AuthResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/two-factor': {
-      id: '/auth/two-factor'
-      path: '/auth/two-factor'
-      fullPath: '/auth/two-factor'
-      preLoaderRoute: typeof AuthTwoFactorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/verify-email': {
-      id: '/auth/verify-email'
-      path: '/auth/verify-email'
-      fullPath: '/auth/verify-email'
-      preLoaderRoute: typeof AuthVerifyEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_admin/activities/': {
@@ -556,14 +436,8 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
-  AuthAcceptInviteRoute: AuthAcceptInviteRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
-  AuthPasswordSuccessRoute: AuthPasswordSuccessRoute,
-  AuthRegisterRoute: AuthRegisterRoute,
-  AuthResetPasswordRoute: AuthResetPasswordRoute,
-  AuthTwoFactorRoute: AuthTwoFactorRoute,
-  AuthVerifyEmailRoute: AuthVerifyEmailRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

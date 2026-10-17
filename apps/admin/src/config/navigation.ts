@@ -102,39 +102,10 @@ export const navigation = [
             url: "/auth/login",
           },
           {
-            title: "Register",
-            url: "/auth/register",
-          },
-          {
             title: "Forgot Password",
             url: "/auth/forgot-password",
             icon: Plus,
           },
-          {
-            title: "Reset Password",
-            url: "/auth/reset-password",
-            icon: Plus,
-          },
-          {
-            title: "Verify Email",
-            url: "/auth/verify-email",
-            icon: Plus,
-          },
-          {
-            title: "Two Factor",
-            url: "/auth/two-factor",
-            icon: Plus,
-          },
-          {
-            title: "Accept Invite",
-            url: "/auth/accept-invite",
-            icon: Plus,
-          },
-          {
-            title: "Password Success",
-            url: "/auth/password-success",
-            icon: Plus,
-          }
         ],
       },
     ],
