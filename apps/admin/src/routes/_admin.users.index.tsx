@@ -48,6 +48,9 @@ function UsersPage() {
           selectedIds={users.selectedIds}
           onToggleRow={users.onToggleRow}
           onToggleAll={users.onToggleAll}
+          sort={users.sort}
+          order={users.order}
+          onSortChange={users.onSortChange}
           onPageChange={(index) => {
             const delta = index - users.pageIndex
             if (delta === 1) users.nextPage()

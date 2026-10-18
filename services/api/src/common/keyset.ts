@@ -33,8 +33,13 @@ import { AppError } from './errors.js';
  */
 
 export interface KeysetCursor {
-  /** The sort timestamp of the last row of the previous page. */
-  at: Date;
+  /**
+   * The sort value of the last row of the previous page. A `Date` for
+   * timestamp orders, the raw value otherwise — `decodeCursor` preserves
+   * whatever the encoder wrote, and each consumer interprets it for its own
+   * column. A timestamp-only type here is what made email cursors unreadable.
+   */
+  at: Date | string;
   id: string;
 }
 
@@ -46,11 +51,9 @@ export const KEYSET_ORDER = [{ createdAt: 'desc' }, { id: 'desc' }] as const;
  * `lastSeenAt` for the admin device list. Named `at` rather than after one
  * particular column so the second caller does not have to pretend.
  */
-export function encodeCursor(row: { id: string; at: Date }): string {
-  return Buffer.from(
-    JSON.stringify({ t: row.at.toISOString(), i: row.id }),
-    'utf8',
-  ).toString('base64url');
+export function encodeCursor(row: { id: string; at: Date | string }): string {
+  const at = row.at instanceof Date ? row.at.toISOString() : row.at;
+  return Buffer.from(JSON.stringify({ t: at, i: row.id }), 'utf8').toString('base64url');
 }
 
 export function decodeCursor(cursor: string): KeysetCursor {
@@ -63,25 +66,38 @@ export function decodeCursor(cursor: string): KeysetCursor {
   } catch {
     throw AppError.badRequest('cursor is not a valid pagination cursor');
   }
-  const at = new Date(String(parsed?.t));
-  if (typeof parsed?.i !== 'string' || Number.isNaN(at.getTime())) {
+  if (typeof parsed?.i !== 'string' || (typeof parsed?.t !== 'string' && !(parsed?.t instanceof String))) {
     // Silently restarting at page one would hide a client bug behind a page
     // that looks correct, so this is an error rather than a default.
     throw AppError.badRequest('cursor is not a valid pagination cursor');
   }
+  const raw = String(parsed.t);
+  // Timestamp orders keep Date semantics (comparison operators on the column);
+  // anything else stays a string so a non-date sort value survives the
+  // round trip instead of becoming Invalid Date at decode time.
+  const asDate = new Date(raw);
+  const at: Date | string = Number.isNaN(asDate.getTime()) ? raw : asDate;
   return { at, id: parsed.i };
 }
 
 /**
- * Rows strictly after `after`, ordered by `field desc, id desc`.
+ * Rows strictly after `after`, ordered by `field dir, id dir`.
  *
  * Returns `{}` for the first page. The timestamp field is a parameter because
  * not every list sorts on `createdAt` — the admin's device list sorts on
  * `lastSeenAt`, which is what an operator actually looks for — but `id` is
- * always the tiebreak, because it is always unique.
+ * always the tiebreak, because it is always unique. Direction matters to the
+ * comparison: after the cursor on a descending page means strictly less,
+ * on an ascending page strictly greater. The cursor stays `{ t, i }` either
+ * way; `t` is the row's value for the sort column.
  */
-export function keysetAfter(after: KeysetCursor | null, field: string): object {
+export function keysetAfter(
+  after: KeysetCursor | null,
+  field: string,
+  dir: 'asc' | 'desc' = 'desc',
+): object {
   if (!after) return {};
+  const cmp = dir === 'asc' ? 'gt' : 'lt';
   return {
     // Under `AND`, never as a bare `OR`: a caller's own `where` may already
     // carry one — `users.list` ORs across email and displayName when
@@ -91,8 +107,8 @@ export function keysetAfter(after: KeysetCursor | null, field: string): object {
     AND: [
       {
         OR: [
-          { [field]: { lt: after.at } },
-          { [field]: after.at, id: { lt: after.id } },
+          { [field]: { [cmp]: after.at } },
+          { [field]: after.at, id: { [cmp]: after.id } },
         ],
       },
     ],

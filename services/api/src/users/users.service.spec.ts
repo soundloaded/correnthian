@@ -32,6 +32,8 @@ const query = (cursor?: string) =>
     kycStatus: undefined,
     country: undefined,
     search: undefined,
+    sort: 'createdAt',
+    order: 'desc',
   }) as unknown as ListUsersDto;
 
 /**
@@ -118,6 +120,43 @@ describe('query shape', () => {
     findMany.mockResolvedValue([]);
     await svc.list(query());
     expect(sent().take).toBe(11);
+  });
+
+  it('defaults to newest first', async () => {
+    findMany.mockResolvedValue([]);
+    await svc.list(query());
+    expect(sent().orderBy).toEqual([{ createdAt: 'desc' }, { id: 'desc' }]);
+  });
+
+  it('sorts by email ascending when asked, ties on id', async () => {
+    findMany.mockResolvedValue([]);
+    await svc.list({ ...query(), sort: 'email', order: 'asc' } as unknown as ListUsersDto);
+    expect(sent().orderBy).toEqual([{ email: 'asc' }, { id: 'asc' }]);
+  });
+
+  it('carries the sort column through the keyset filter', async () => {
+    // The cursor is `{ t, i }` where `t` is the row's value for the sort
+    // column. A filter hardcoded to `createdAt` under an email order would
+    // compare an email string against a timestamp field — Prisma throws, and
+    // worse, a silent `lt` on mismatched types could page wrong without
+    // throwing on every adapter. This pins the field follows the sort.
+    findMany.mockResolvedValue([]);
+    const at = new Date('2026-10-08T09:00:00.000Z');
+    await svc.list({
+      ...query(encodeCursor({ id: 'usr_last', at })),
+      sort: 'email',
+      order: 'asc',
+    } as unknown as ListUsersDto);
+    expect(sent().where?.AND?.[0]?.OR).toEqual([
+      { email: { gt: at } },
+      { email: at, id: { gt: 'usr_last' } },
+    ]);
+  });
+
+  it('rejects an unknown sort column at the edge, not in Prisma', async () => {
+    const { listUsersSchema } = await import('./dto/list-users.dto.js');
+    expect(listUsersSchema.safeParse({ sort: 'role' }).success).toBe(false);
+    expect(listUsersSchema.safeParse({ sort: 'email; DROP TABLE users' }).success).toBe(false);
   });
 });
 

@@ -4,8 +4,12 @@ import * as React from "react"
 
 import { useApiQuery } from "@/lib/use-api-query"
 import { UsersToolbar } from "./users-toolbar"
+import type { SortDir, UserSort } from "./users-table"
 
 const PAGE_SIZES = [10, 25, 50] as const
+
+const DEFAULT_SORT: UserSort = "createdAt"
+const DEFAULT_ORDER: SortDir = "desc"
 
 // Server-driven filtering with keyset pagination. Filters and the cursor
 // travel in the query key, so changing one resets the page stack: a cursor
@@ -20,6 +24,8 @@ export function useUsersList() {
   const [pageSize, setPageSize] = React.useState<number>(25)
   const [cursors, setCursors] = React.useState<(string | null)[]>([null])
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set())
+  const [sort, setSort] = React.useState<UserSort>(DEFAULT_SORT)
+  const [order, setOrder] = React.useState<SortDir>(DEFAULT_ORDER)
 
   const pageIndex = cursors.length - 1
   const cursor = cursors[pageIndex] ?? undefined
@@ -29,6 +35,8 @@ export function useUsersList() {
     search: debouncedSearch.trim() === "" ? undefined : debouncedSearch.trim(),
     role: role === "all" ? undefined : role,
     kycStatus: kycStatus === "all" ? undefined : kycStatus,
+    sort,
+    order,
     limit: pageSize,
     cursor,
   })
@@ -55,6 +63,19 @@ export function useUsersList() {
 
   const handlePageSizeChange = (size: number) => {
     setPageSize(size)
+    resetPages()
+  }
+
+  // Sort change resets the stack: a cursor minted under another order points
+  // into the wrong slice. Tapping the active column flips direction;
+  // tapping the other column starts at its default (newest / Z-first).
+  const handleSortChange = (next: UserSort) => {
+    if (next === sort) {
+      setOrder((prev) => (prev === "asc" ? "desc" : "asc"))
+    } else {
+      setSort(next)
+      setOrder("desc")
+    }
     resetPages()
   }
 
@@ -119,6 +140,9 @@ export function useUsersList() {
     pageIndex,
     pageSize,
     pageSizes: PAGE_SIZES,
+    sort,
+    order,
+    onSortChange: handleSortChange,
     nextPage,
     previousPage,
     goToPage,

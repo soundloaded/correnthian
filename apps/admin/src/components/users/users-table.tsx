@@ -19,12 +19,15 @@ import {
   DropdownMenuTrigger,
 } from "@correnthian/ui/components/dropdown-menu"
 import type { Contract } from "@correnthian/api-client"
-import { EyeIcon, MoreHorizontalIcon } from "lucide-react"
+import { ArrowDownIcon, ArrowUpIcon, EyeIcon, MoreHorizontalIcon } from "lucide-react"
 
 import { AccountStatusBadge, KycBadge, RoleBadge } from "./user-badges"
 import { AccountAvatar } from "./account-avatar"
 
 export type UserRow = Contract<"GET /api/v1/users">["items"][number]
+
+export type UserSort = "createdAt" | "email"
+export type SortDir = "asc" | "desc"
 
 // Contacts-pattern table on live account rows: selection column, sortable
 // headers, account cell with avatar + email link, row actions menu,
@@ -44,6 +47,9 @@ export function UsersTable({
   onToggleAll,
   onPageChange,
   onPageSizeChange,
+  sort,
+  order,
+  onSortChange,
 }: {
   rows: UserRow[]
   pageIndex: number
@@ -55,9 +61,37 @@ export function UsersTable({
   onToggleAll: () => void
   onPageChange: (index: number) => void
   onPageSizeChange: (size: number) => void
+  sort: UserSort
+  order: SortDir
+  onSortChange: (sort: UserSort) => void
 }) {
   const allSelected = rows.length > 0 && rows.every((r) => selectedIds.has(r.id))
   const someSelected = rows.some((r) => selectedIds.has(r.id))
+
+  // Same header idiom as the reference: the label is a button and the arrow
+  // marks the active sort. Only `createdAt` and `email` sort server-side
+  // (the DTO closes the set), so only those two headers are buttons — the
+  // rest stay plain text rather than faking a client-side reorder of one
+  // page. Tapping the active column flips direction; tapping the other
+  // column starts descending (newest / Z-first is the useful default).
+  // The arrow shows direction: up for ascending, down for descending.
+  const sortHeader = (label: string, key: UserSort) => {
+    const active = sort === key
+    const ArrowIcon = active && order === "asc" ? ArrowUpIcon : ArrowDownIcon
+    return (
+      <button
+        type="button"
+        onClick={() => onSortChange(key)}
+        className="flex items-center gap-1.5"
+        aria-label={`Sort by ${label.toLowerCase()}${active ? ` (currently ${order}ending)` : ""}`}
+      >
+        {label}
+        <ArrowIcon
+          className={`size-3.5 ${active ? "text-foreground" : "text-muted-foreground/60"}`}
+        />
+      </button>
+    )
+  }
 
   return (
     <div className="overflow-hidden rounded-xl border">
@@ -72,13 +106,13 @@ export function UsersTable({
                 aria-label="Select all accounts on this page"
               />
             </TableHead>
-            <TableHead className="pl-4">Account</TableHead>
+            <TableHead className="pl-4">{sortHeader("Account", "email")}</TableHead>
             <TableHead>Role</TableHead>
             <TableHead>KYC</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Wallets</TableHead>
             <TableHead>Last login</TableHead>
-            <TableHead>Created</TableHead>
+            <TableHead>{sortHeader("Created", "createdAt")}</TableHead>
             <TableHead className="w-10" />
           </TableRow>
         </TableHeader>

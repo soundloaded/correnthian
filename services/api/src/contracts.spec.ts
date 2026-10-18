@@ -968,6 +968,40 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     await prisma.user.deleteMany({ where: { id } });
   });
 
+  it('user list sorts by email both ways and stays keyset-honest', async () => {
+    // Two probes against live data: the order actually flips, and the second
+    // page of an ascending order does not repeat the first (the `gt`
+    // direction rides with the call — a `lt` carried over would page
+    // backwards and repeat). Defaults already covered by the ENDPOINTS row.
+    const asc = await request(app.getHttpServer()).get('/api/v1/users?sort=email&order=asc&limit=3')
+      .set('Authorization', `Bearer ${token}`);
+    expect(asc.status, JSON.stringify(asc.body)).toBe(200);
+    expect(CONTRACT_REGISTRY['GET /api/v1/users'].safeParse(asc.body).success).toBe(true);
+    const ascEmails = (asc.body.items as Array<{ email: string }>).map((i) => i.email);
+    expect([...ascEmails].sort()).toEqual(ascEmails);
+
+    const desc = await request(app.getHttpServer()).get('/api/v1/users?sort=email&order=desc&limit=3')
+      .set('Authorization', `Bearer ${token}`);
+    expect(desc.status).toBe(200);
+    const descEmails = (desc.body.items as Array<{ email: string }>).map((i) => i.email);
+    expect([...descEmails].sort().reverse()).toEqual(descEmails);
+
+    if (asc.body.nextCursor) {
+      const page2 = await request(app.getHttpServer())
+        .get(`/api/v1/users?sort=email&order=asc&limit=3&cursor=${asc.body.nextCursor}`)
+        .set('Authorization', `Bearer ${token}`);
+      expect(page2.status).toBe(200);
+      const page1Ids = new Set((asc.body.items as Array<{ id: string }>).map((i) => i.id));
+      for (const row of page2.body.items as Array<{ id: string }>) {
+        expect(page1Ids.has(row.id)).toBe(false);
+      }
+    }
+
+    const bad = await request(app.getHttpServer()).get('/api/v1/users?sort=role')
+      .set('Authorization', `Bearer ${token}`);
+    expect(bad.status).toBe(422);
+  });
+
   it('verification start parses when the fake is scripted for the admin', async () => {
     const { SCREENING_PROVIDER } = await import('../src/compliance/screening/screening-provider.js');
     const { FakeScreeningProvider } = await import('../src/compliance/screening/fake-screening.provider.js');

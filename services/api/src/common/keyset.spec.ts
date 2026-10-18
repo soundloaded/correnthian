@@ -16,7 +16,15 @@ describe('encode/decode', () => {
   it('round-trips both halves of the sort key', () => {
     const back = decodeCursor(encodeCursor(row));
     expect(back.id).toBe(row.id);
-    expect(back.at.getTime()).toBe(row.at.getTime());
+    expect((back.at as Date).getTime()).toBe(row.at.getTime());
+  });
+
+  it('round-trips a non-date sort value as a string', () => {
+    // Email orders carry the address in `t`. Decoding must not `new Date()`
+    // it into Invalid Date — the string is the position.
+    const back = decodeCursor(encodeCursor({ id: 'usr_x', at: 'ada@example.com' }));
+    expect(back.id).toBe('usr_x');
+    expect(back.at).toBe('ada@example.com');
   });
 
   it('writes the wire format the two existing services already emitted', () => {
@@ -40,8 +48,11 @@ describe('encode/decode', () => {
     ['not base64url json', '!!!not-a-cursor!!!'],
     ['base64url of non-json', Buffer.from('hello').toString('base64url')],
     ['json with no id', Buffer.from(JSON.stringify({ t: '2026-10-08T00:00:00.000Z' })).toString('base64url')],
-    ['json with a bad date', Buffer.from(JSON.stringify({ t: 'not-a-date', i: 'x' })).toString('base64url')],
-    ['json with no date', Buffer.from(JSON.stringify({ i: 'x' })).toString('base64url')],
+    ['json with no value', Buffer.from(JSON.stringify({ i: 'x' })).toString('base64url')],
+    ['json with a non-string value', Buffer.from(JSON.stringify({ t: 12345, i: 'x' })).toString('base64url')],
+    // A bad date is a *usable* string cursor now, not garbage: email orders
+    // carry addresses in `t`, and `new Date('not-a-date')` is Invalid Date.
+    // The row moved from the refuse list to the round-trip test above.
   ])('refuses %s with a 400 rather than restarting at page one', (_label, bad) => {
     // `decodeCursor` throws, so the assertion has to catch — the cast in a
     // first draft read the return type and let the exception escape.
@@ -94,6 +105,19 @@ describe('keysetAfter', () => {
       AND: Array<{ OR: Array<Record<string, unknown>> }>;
     };
     expect(keyset.AND[0]?.OR[1]).toEqual({ createdAt: at, id: { lt: 'usr_abc123' } });
+  });
+
+  it('flips the comparison for ascending pages', () => {
+    // A descending default (`lt`) carried into an ascending order would page
+    // backwards — after the cursor would mean before it, and the second page
+    // would repeat the first. The direction rides with the call.
+    const keyset = keysetAfter({ at, id: 'usr_abc123' }, 'createdAt', 'asc') as {
+      AND: Array<{ OR: Array<Record<string, unknown>> }>;
+    };
+    expect(keyset.AND[0]?.OR).toEqual([
+      { createdAt: { gt: at } },
+      { createdAt: at, id: { gt: 'usr_abc123' } },
+    ]);
   });
 });
 

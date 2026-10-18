@@ -24,8 +24,22 @@ export class UsersService {
    * The cursor and the filter now come from `common/keyset`, the same
    * implementation `SwapsService` and `TransactionsService` already use.
    */
+  /**
+   * Keyset pagination over the requested order, defaulting to
+   * `(createdAt desc, id desc)` (see the note above).
+   *
+   * Sort is closed to `createdAt` and `email`: an arbitrary column would
+   * reach Prisma's `orderBy` unvalidated, and each order needs its cursor
+   * to carry the row's value for that column — the cursor is `{ t, i }`
+   * and `t` is whichever timestamp or string the order sorts on. Email
+   * ties break on `id` like everything else; `id` uniqueness makes the
+   * order total, which is what keeps a page boundary from moving under
+   * concurrent writes (DEF-015's lesson, applied to the new order too).
+   */
   async list(query: ListUsersDto) {
     const after = query.cursor ? decodeCursor(query.cursor) : null;
+    const field = query.sort === 'email' ? 'email' : 'createdAt';
+    const dir = query.order === 'asc' ? 'asc' : 'desc';
 
     const where = {
       ...(query.role ? { role: query.role } : {}),
@@ -42,9 +56,9 @@ export class UsersService {
     };
 
     const rows = await this.prisma.user.findMany({
-      where: { ...where, ...keysetAfter(after, 'createdAt') },
+      where: { ...where, ...keysetAfter(after, field, dir) },
       take: query.limit + 1,
-      orderBy: [...KEYSET_ORDER],
+      orderBy: [{ [field]: dir }, { id: dir }],
       select: {
         id: true,
         email: true,
@@ -64,7 +78,10 @@ export class UsersService {
     const last = items.at(-1);
     return {
       items,
-      nextCursor: hasMore && last ? encodeCursor({ id: last.id, at: last.createdAt }) : null,
+      nextCursor:
+        hasMore && last
+          ? encodeCursor({ id: last.id, at: last[field] })
+          : null,
     };
   }
 
