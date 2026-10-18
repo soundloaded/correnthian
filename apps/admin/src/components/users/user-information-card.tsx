@@ -74,8 +74,8 @@ export function UserInformationCard({ user }: { user: UserDetail }) {
 
         <InfoRow label="Footprint">
           <span className="text-sm text-muted-foreground">
-            {user._count.wallets} wallets · {user._count.devices} devices ·{" "}
-            {user._count.sessions} sessions
+            {user._count.wallets} wallets · {user.devices.length} active
+            devices · {user._count.sessions} sessions
           </span>
         </InfoRow>
       </CardContent>

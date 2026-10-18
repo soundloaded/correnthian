@@ -4,11 +4,14 @@ import { Button } from "@correnthian/ui/components/button"
 import { useApiQuery } from "@/lib/use-api-query"
 import { UserAccessCard } from "@/components/users/user-access-card"
 import { UserActivityCard } from "@/components/users/user-activity-card"
+import { UserDevicesCard } from "@/components/users/user-devices-card"
 import {
   UserDetailsHeader,
   UserNotFound,
 } from "@/components/users/user-details-header"
 import { UserInformationCard } from "@/components/users/user-information-card"
+import { UserStatsStrip } from "@/components/users/user-stats-strip"
+import { UserTransactionsCard } from "@/components/users/user-transactions-card"
 import { UserWalletsCard } from "@/components/users/user-wallets-card"
 
 export const Route = createFileRoute("/_admin/users/$userId")({
@@ -20,6 +23,14 @@ function UserDetailsPage() {
   const { data: user, isLoading, isError, refetch } = useApiQuery(
     "GET /api/v1/users/:id",
     { id: userId },
+  )
+  // The stats strip needs the audit total without a second fetch: the
+  // activity card owns that query, so the count lifts here and drops back
+  // down as a prop. One request, two renders.
+  const audit = useApiQuery(
+    "GET /api/v1/audit/actor/:actorId",
+    { actorId: userId },
+    undefined,
   )
 
   if (isLoading) {
@@ -57,22 +68,30 @@ function UserDetailsPage() {
       {/* Profile Header */}
       <UserDetailsHeader user={user} />
 
+      {/* Headline counters */}
+      <UserStatsStrip
+        user={user}
+        auditCount={audit.data ? audit.data.length : null}
+      />
+
       {/* Details Layout */}
       <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(220px,0.85fr)_minmax(320px,1.45fr)_minmax(220px,0.85fr)]">
-        {/* Left Column */}
+        {/* Left Column — who this is */}
         <div className="space-y-4">
           <UserInformationCard user={user} />
-          <UserWalletsCard user={user} />
+          <UserDevicesCard user={user} />
         </div>
 
-        {/* Center Column */}
+        {/* Center Column — what moved and what happened */}
         <div className="space-y-4">
+          <UserTransactionsCard userId={user.id} />
           <UserActivityCard userId={user.id} />
         </div>
 
-        {/* Right Column */}
+        {/* Right Column — what the console may do */}
         <div className="space-y-4">
           <UserAccessCard user={user} onChanged={() => refetch()} />
+          <UserWalletsCard user={user} />
         </div>
       </div>
     </div>
