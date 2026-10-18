@@ -1,7 +1,8 @@
 "use client"
 
-import { SearchIcon } from "lucide-react"
+import { SearchIcon, XCircleIcon } from "lucide-react"
 
+import { Button } from "@correnthian/ui/components/button"
 import { Input } from "@correnthian/ui/components/input"
 import {
   Select,
@@ -27,6 +28,7 @@ type UsersToolbarProps = {
   onRoleChange: (value: string) => void
   kycStatus: string
   onKycStatusChange: (value: string) => void
+  selectedCount: number
 }
 
 export function UsersToolbar({
@@ -36,7 +38,17 @@ export function UsersToolbar({
   onRoleChange,
   kycStatus,
   onKycStatusChange,
+  selectedCount,
 }: UsersToolbarProps) {
+  const hasActiveFilters =
+    search.trim() !== "" || role !== "all" || kycStatus !== "all"
+
+  const clearAll = () => {
+    onSearchChange("")
+    onRoleChange("all")
+    onKycStatusChange("all")
+  }
+
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div className="flex flex-1 flex-wrap items-center gap-2">
@@ -83,7 +95,25 @@ export function UsersToolbar({
             ))}
           </SelectContent>
         </Select>
+
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearAll}
+            className="gap-1.5 text-muted-foreground"
+          >
+            <XCircleIcon className="size-4" />
+            Clear
+          </Button>
+        )}
       </div>
+
+      {selectedCount > 0 && (
+        <p className="text-sm text-muted-foreground" role="status">
+          {selectedCount} selected
+        </p>
+      )}
     </div>
   )
 }

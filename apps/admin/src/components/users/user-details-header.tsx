@@ -5,10 +5,10 @@ import { Link } from "@tanstack/react-router"
 
 import { Button } from "@correnthian/ui/components/button"
 import { Card, CardContent } from "@correnthian/ui/components/card"
-import { Avatar, AvatarFallback } from "@correnthian/ui/components/avatar"
 import type { Contract } from "@correnthian/api-client"
 
 import { AccountStatusBadge, KycBadge, RoleBadge } from "./user-badges"
+import { AccountAvatar } from "./account-avatar"
 
 export type UserDetail = Contract<"GET /api/v1/users/:id">
 
@@ -22,9 +22,11 @@ export function UserDetailsHeader({ user }: { user: UserDetail }) {
     <Card>
       <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <Avatar className="size-14" shape="square">
-            <AvatarFallback>{getInitials(title)}</AvatarFallback>
-          </Avatar>
+          <AccountAvatar
+            accountId={user.id}
+            title={title}
+            className="size-14"
+          />
 
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
@@ -74,15 +76,6 @@ export function UserNotFound({ userId }: { userId: string }) {
       </Button>
     </div>
   )
-}
-
-function getInitials(name: string) {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("")
 }
 
 function formatDate(value: string): string {

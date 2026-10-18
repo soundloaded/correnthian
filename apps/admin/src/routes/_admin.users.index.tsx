@@ -5,8 +5,6 @@ import { UsersHeader } from "@/components/users/users-header"
 import { useUsersList } from "@/components/users/use-users-list"
 import { UsersTable } from "@/components/users/users-table"
 
-const PAGE_LIMIT = 25
-
 export const Route = createFileRoute("/_admin/users/")({
   component: UsersPage,
 })
@@ -41,36 +39,23 @@ function UsersPage() {
           </Button>
         </div>
       ) : (
-        <>
-          <UsersTable rows={users.rows} />
-
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">
-              Page {users.pageIndex + 1} · showing up to {PAGE_LIMIT} per
-              page. The list holds at most {PAGE_LIMIT} rows — when a next
-              page exists, more accounts remain.
-            </p>
-
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={users.previousPage}
-                disabled={!users.hasPrevious}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={users.nextPage}
-                disabled={!users.hasNext}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        </>
+        <UsersTable
+          rows={users.rows}
+          pageIndex={users.pageIndex}
+          pageCount={users.pageCount}
+          pageSize={users.pageSize}
+          totalCount={users.rows.length}
+          selectedIds={users.selectedIds}
+          onToggleRow={users.onToggleRow}
+          onToggleAll={users.onToggleAll}
+          onPageChange={(index) => {
+            const delta = index - users.pageIndex
+            if (delta === 1) users.nextPage()
+            else if (delta === -1) users.previousPage()
+            else users.goToPage(index)
+          }}
+          onPageSizeChange={users.onPageSizeChange}
+        />
       )}
     </div>
   )
