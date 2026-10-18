@@ -35,6 +35,7 @@ archive/**/node_modules/
 archive/**/.next/
 archive/**/.turbo/
 archive/**/dist/
+nexora-crm
 
 # Sentry Config File
 .env.sentry-build-plugin
