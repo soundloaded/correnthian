@@ -99,7 +99,7 @@ export function TransactionsTable({ rows }: { rows: TransactionRow[] }) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    render={
+                    nativeButton={false} render={
                       <Link to="/transactions/$txId" params={{ txId: row.id }} />
                     }
                   >

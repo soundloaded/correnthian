@@ -5,6 +5,8 @@ import { BellRingIcon, ShieldAlertIcon } from "lucide-react"
 import { Badge } from "@correnthian/ui/components/badge"
 import { Button } from "@correnthian/ui/components/button"
 import { Card, CardContent } from "@correnthian/ui/components/card"
+import { Link } from "@tanstack/react-router"
+
 import { useApiQuery } from "@/lib/use-api-query"
 
 // Who the operator is, from the one endpoint that answers it. The session
@@ -105,7 +107,12 @@ export function NotificationsSettings() {
             </div>
           </div>
 
-          <Button variant="outline" size="sm" render={<a href="/notifications" />}>
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<Link to="/notifications" />}
+          >
             Open the queue
           </Button>
         </CardContent>

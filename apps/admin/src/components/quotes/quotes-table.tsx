@@ -102,7 +102,7 @@ export function QuotesTable({ rows }: { rows: QuoteRow[] }) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    render={
+                    nativeButton={false} render={
                       <Link to="/quotes/$quoteId" params={{ quoteId: row.id }} />
                     }
                   >
