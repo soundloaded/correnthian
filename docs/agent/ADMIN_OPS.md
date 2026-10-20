@@ -20,26 +20,26 @@ empty states, which are states rather than fakes.
 | | `/users` | `/users` (search, role, kycStatus, sort, order, limit, cursor) | support |
 | | `/users/$userId` | `/users/:id`, `/audit/actor/:actorId`, `/transactions?userId=` | support |
 | | `/transactions` | `/transactions` (state, direction, chainId, walletId, userId, limit, cursor), `/transactions/stats` | support |
-| | `/transactions/$txId` | `/transactions/:id` | support |
+| | `/transactions/$txId` | `/transactions/:id`, **POST** `/transactions/:id/transitions`, **POST** `/transactions/:id/observations` | support |
 | | `/quotes` | `/swaps/quotes` (state, railKind, limit, cursor), `/swaps/quotes/stats` | support |
 | | `/quotes/$quoteId` | `/swaps/quotes/:id` | any session |
 | | `/redemptions` | `/redemptions` (state, limit, cursor), `/redemptions/stats` | support |
 | | `/compliance` | `/compliance/reviews`, `/compliance/rules` | **compliance** |
 | | `/audit` | `/audit` (action, outcome, requestId, limit) | **compliance** |
 | | `/notifications` | `/notifications` (state, limit, cursor), `/notifications/stats` | support |
-| Registry | `/assets` | `/assets` (category, chainId, issuerId, enabled, limit), `/assets/stats` | any session |
+| Registry | `/assets` | `/assets` (category, chainId, issuerId, enabled, limit), `/assets/stats`, **POST** `/assets` (compliance) | any session |
 | | `/assets/$assetId` | `/assets/:assetId` | any session |
-| | `/issuers` | `/issuers`, `/issuers/stats` | support |
+| | `/issuers` | `/issuers`, `/issuers/stats`, **POST** `/issuers` (compliance) | support |
 | | `/issuers/$slug` | `/issuers/:slug` | support |
 | | `/providers` | `/providers` (category), `/providers/health` | any session |
 | | `/chains` | `/chains` | any session |
 | | `/devices` | `/devices/all` (search, platform, includeRevoked, limit, cursor), `/devices/stats` | support |
 | | `/wallets` | `/wallets` | any session |
-| | `/wallets/$walletId` | `/wallets/:id`, `/portfolio/wallets/:walletId` | any session |
-| | `/fees` | `/fees/rules` (operation, kind, active, limit), `/fees/rules/diagnostics` | **admin** |
-| | `/fees/$ruleId` | `/fees/rules/:id` | **admin** |
+| | `/wallets/$walletId` | `/wallets/:id`, `/portfolio/wallets/:walletId`, **POST** `/blockchain/wallets/:walletId/sync` | any session |
+| | `/fees` | `/fees/rules` (operation, kind, active, limit), `/fees/rules/diagnostics`, **POST** `/fees/rules` (owner) | **admin** |
+| | `/fees/$ruleId` | `/fees/rules/:id`, **POST** `/fees/preview`, **PATCH** `/fees/rules/:id` | **admin** |
 | Workspace | `/team` | `/users` (search, role, kycStatus, limit, cursor) | support |
-| System | `/settings` | `/settings/flags`, `/devices/all`, `/notifications`, `/audit`, `/providers/health` | any session |
+| System | `/settings` | `/settings/flags` (**POST**/**PATCH**/**DELETE**), `/devices/all`, `/notifications`, `/audit`, `/providers/health`, `/jobs`, **POST** `/jobs/:name/run` | any session |
 
 Navigation lives in `apps/admin/src/config/navigation.ts`. Detail routes
 (`/users/$userId` etc.) stay unlisted; they are reached from their lists.
@@ -134,7 +134,34 @@ the page.
 
 ---
 
-## 5. Page behaviour worth preserving
+## 5. The operator surfaces
+
+These were added on 2026-10-20. Each one writes to a real endpoint, behind
+the role the endpoint actually requires, with the outcome rendered inline.
+
+| Surface | Endpoint | Role | Notes |
+|---|---|---|---|
+| Transaction detail — **Operator actions** | `POST /transactions/:id/transitions`, `POST /transactions/:id/observations` | support | The state list comes from the server's own `permittedNext`, never from a hard-coded set. The form collects the evidence each edge carries: a hash for `broadcast`, a code and message for `failed`, a reason of at least 8 characters for the two edges that move a settled row backwards. |
+| Wallet detail — **Chain state** | `POST /blockchain/wallets/:walletId/sync` | support | Re-reads the chain. Nothing else is offered here: registering a wallet and writing a balance are the account holder's own writes, and an operator typing a number into a chain-derived balance is a liability, not an ops tool. |
+| Settings — **Scheduled jobs** | `GET /jobs`, `POST /jobs/:name/run` | support / **admin** | Lists every scheduled job with its cadence and last run. "Run now" is admin's, and the outcome is rendered inline — the job's own report, not a toast. |
+| Assets — **Register an asset** | `POST /assets` | compliance | Every field maps 1:1 to the API's `createAssetSchema`. The chain and issuer are selects populated from the live registry; choosing a chain auto-fills `decimals`. |
+| Issuers — **Register an issuer** | `POST /issuers` | compliance | No tier field: the API always creates an issuer unverified, and tier is a separate audited act. |
+| Fee rules — **Create a fee rule** | `POST /fees/rules` | **owner** | Owner only, and the reason is part of the request. The confirmation states what will be created in plain words before it happens. |
+
+### What is deliberately not offered
+
+- **Building or broadcasting a transaction.** The device signs; the server
+  relays. Both routes require the transaction's own account, so an operator
+  gets a 404 — correctly.
+- **Registering a wallet, or writing a balance.** Those are the account
+  holder's own writes, scoped to `user.id`.
+- **Composing a notification.** The enqueue route stamps the row with the
+  *caller's* account and the DTO has no recipient field, so it can only ever
+  notify the operator themselves.
+
+---
+
+## 6. Page behaviour worth preserving
 
 ### Errors render inline, not as a toast
 
@@ -201,7 +228,7 @@ is a refusal someone may need to explain.
 
 ---
 
-## 6. Not built
+## 7. Not built
 
 | Capability | Blocked on |
 |---|---|
@@ -212,10 +239,12 @@ is a refusal someone may need to explain.
 | `GET /compliance/eligibility`, `GET /onramp/availability` | The console calls neither |
 | Account-status filter on the users list | `GET /users` has no `status` param, though the column is shown |
 | `GET /portfolio/wallets/:id/history-series` (with its `bucket` filter) | The console calls `/history` instead |
+| `/providers/:slug` and `/chains/:id` detail pages | The API serves both; the console has no route for either |
+| `GET /pricing/assets/:assetId`, `GET /meta/versions`, `GET /blockchain/health`, `GET /wallets/portfolio`, `GET /portfolio/allocation` | No console surface; each is an operator-readable fact the console does not yet show |
 
 ---
 
-## 7. Environment
+## 8. Environment
 
 | Variable | Default | Notes |
 |---|---|---|
@@ -228,7 +257,7 @@ IPv6 localhost — `http://localhost:3000` works, `127.0.0.1:3000` may not.
 
 ---
 
-## 8. A note on provenance
+## 9. A note on provenance
 
 The previous admin implementation is preserved at `archive/admin-legacy/`,
 including its `STUB-AUDIT.md` — a per-file inventory of every mock the shadcn

@@ -64,7 +64,7 @@ the location the entry names.
 
 | Status | Defects | Count |
 |---|---|---|
-| `DONE` | `DEF-001` … `DEF-008`, `DEF-010` … `DEF-024` | 23 |
+| `DONE` | `DEF-001` … `DEF-008`, `DEF-010` … `DEF-025` | 24 |
 | `PARTIAL` | `DEF-009` | 1 |
 | `BACKLOG` | *none* | 0 |
 
@@ -650,6 +650,24 @@ kept for the record; it does not describe the current code._
 - **Tests:** `packages/api-client/src/__tests__/client.test.ts` — the
   rewritten test fails against the pre-fix client (`expected null to be
   'a@b.test'`) and passes after it.
+- **Status:** `DONE`
+
+### DEF-025 — `lastLoginAt` was never written · `DONE`
+- **Found by:** the admin sweep of 2026-10-20, reading the console rather
+  than the code. The users list and the account page both show a "Last
+  login" column, and it read `—` for every account — including one with
+  thirteen sessions.
+- **The defect:** `AuthService.login()` issued the session and recorded the
+  audit line, and never wrote `User.lastLoginAt`. The column existed in the
+  schema and was read by `users.service.ts`; nothing ever set it. A column
+  that looks live and never was — the same shape as `DEF-024`, one layer
+  down.
+- **Fixed by** stamping the column on a successful sign-in. A failure to
+  stamp it does not fail the sign-in: the session is already issued and the
+  holder must still get in, so the failure is logged rather than thrown.
+- **Tests:** `services/api/src/auth/auth.service.spec.ts` — two cases, one
+  asserting the stamp and one asserting the sign-in survives a failed
+  stamp. The first fails against the pre-fix service.
 - **Status:** `DONE`
 
 ---
@@ -1424,9 +1442,13 @@ Raised by the owner's 2026-10-07 product document; the *engine* already exists.
 - **Dependencies:** `BE-601`, `BE-1102`, `BE-1104`.
 - **Status:** `BACKLOG`
 - **Read on 2026-10-20, while auditing the console against the API:** most of
-  this list has since been built — transactions, compliance, redemptions, fees,
-  devices, wallets, team and settings all render live data now, and the
-  operator write routes are being wired. What genuinely has no surface:
+  this list has since been built. Transactions, compliance, redemptions, fees,
+  devices, wallets, team and settings all render live data, and the operator
+  write routes are wired: transaction transitions and observations, wallet
+  chain-sync, scheduled-job runs, asset and issuer registration, fee-rule
+  creation. The console's filters, sorts and pagination all reach the server
+  now — they did not before `DEF-024`.
+- **What genuinely has no surface:**
   - `GET /compliance/eligibility?country=&region=` and
     `GET /onramp/availability?direction=&country=&region=` — the console calls
     neither.
@@ -1435,6 +1457,13 @@ Raised by the owner's 2026-10-07 product document; the *engine* already exists.
   - `GET /portfolio/wallets/:walletId/history-series` (with its `bucket`
     filter) is never called; the console calls `/history` instead.
   - `GET /users` accepts a `country` filter the console never sends.
+  - `GET /providers/:slug` and `GET /chains/:id` are served by the API and
+    have **no console route at all** — there is no provider detail page and
+    no chain detail page.
+  - `GET /pricing/assets/:assetId`, `GET /meta/versions`,
+    `GET /blockchain/health`, `GET /wallets/portfolio` and
+    `GET /portfolio/allocation` have no surface either; each is an
+    operator-readable fact the console does not show.
 
 ### BE-1505 — System configuration · `BACKLOG`
 - The `FeatureFlag` model exists (`key`, `enabled`, `rollout`, `description`)
@@ -1668,7 +1697,7 @@ Re-derivation reports 98 routes, 99 keys, zero uncovered.
 
 ## 21. Summary counts
 
-**50 tracked tasks plus 23 defects.** Recomputed from the `Status` of every
+**50 tracked tasks plus 24 defects.** Recomputed from the `Status` of every
 entry — and now checked by one, because this section has been wrong three
 times running. The version before last claimed 56 tasks and "17 defects, all
 BACKLOG"; the last claimed 61 tasks and 19 defects while telling the reader it
@@ -1683,14 +1712,14 @@ lived in its body rather than its heading, and nothing reads both.
 
 | Status | Tasks | Defects |
 |---|---|---|
-| `DONE` | 19 | 23 |
+| `DONE` | 19 | 24 |
 | `PARTIAL` | 16 | 1 |
 | `BACKLOG` | 13 | 0 |
 | `BLOCKED` | 2 | 0 |
 | `OPEN` | 0 | 0 |
-| **Total** | **50** | **24** |
+| **Total** | **50** | **25** |
 
-**19 of 50 tasks are complete and 16 partially built; 23 of 24 defects are done and 1 (`DEF-009`) is
+**19 of 50 tasks are complete and 16 partially built; 24 of 25 defects are done and 1 (`DEF-009`) is
 half fixed — no defect is left in `BACKLOG`.** The plan's §68 dependency chain
 is most of the way built at the infrastructure layer and not started at the
 layer that moves money.

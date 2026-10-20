@@ -13,6 +13,65 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ## 2026-10-20
 
+### The console was wired but inert — DEF-024, and a page-by-page pass
+
+The request was to make the admin console's pages functional. The first
+finding was that most of them were already wired to the API and looked
+fine, while the API client was throwing away every query parameter before
+the request left the browser. Filters, sorts and pagination cursors were
+discarded, so the console answered with the server's defaults: the filters
+looked live and did nothing, and "Next page" returned the same rows. That
+is what made the console read as a set of static pages.
+
+Found by driving it in a browser and reading the URL the page actually
+requested — not by reading the code. The client test named *"fills path
+params and query strings"* passed no params and asserted a bare URL, so it
+was named for the behaviour and checked none of it.
+
+- **Fixed** (`ce23a50`), mutation-checked, and verified live: filters
+  change the result set, and clicking Next advances pages.
+- **A full audit** of all 21 console call sites against the API's DTOs
+  found zero parameter-name or type mismatches, so no existing call could
+  break. It found one new failure class the fix exposed — free-text filter
+  inputs with no length cap could exceed the API's caps and 422 a whole
+  page — and those inputs are capped now.
+- **The devices page** was a scaffold stub reading "Hello". It now lists
+  trusted devices across accounts with the filters the endpoint honours,
+  keeping revoked rows visible so a revocation stays verifiable.
+
+### Operator surfaces that did not exist
+
+Six, each against a real endpoint and the role it actually requires:
+transaction lifecycle transitions and observations (the state list comes
+from the server's own `permittedNext`), wallet chain-sync, scheduled-job
+runs in Settings, asset and issuer registration, and fee-rule creation.
+Each confirms in plain words what it is about to do, and renders its
+outcome inline.
+
+What was deliberately **not** offered: building or broadcasting a
+transaction (the device signs; both routes require the transaction's own
+account), registering a wallet or writing a balance (the account holder's
+own writes), and composing a notification (the route stamps the row with
+the caller's account and has no recipient field).
+
+### Three more things that looked fine and were not
+
+- **The production build was broken** — `window` read at module scope
+  during prerender, so CI's build step was red. The development fallback
+  pointed at the console's own port, so `pnpm dev` produced a console
+  that called itself and every request 404'd.
+- **`lastLoginAt` was never written** (`DEF-025`). The users list and the
+  account page both show a "Last login" column, and it read `—` for every
+  account. Nothing set the column.
+- **Every link-button logged a Base UI warning** — 185 of them on one
+  page. The noise hid real errors, and the warning was correct.
+
+### The console, verified
+
+Every page walked in a real browser against the live API: all seventeen
+render live data, with no failure states and no console output at all.
+The dev database was returned to its pre-session state afterwards.
+
 ### The API client dropped every query parameter — DEF-024
 - `packages/api-client/src/client.ts` destructured `query` out of the request
   options and then built the URL from path params alone. Every list filter,
