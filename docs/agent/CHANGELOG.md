@@ -11,6 +11,36 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ---
 
+## 2026-10-20
+
+### The API client dropped every query parameter — DEF-024
+- `packages/api-client/src/client.ts` destructured `query` out of the request
+  options and then built the URL from path params alone. Every list filter,
+  sort, limit and pagination cursor the console sent was discarded before the
+  request left the browser, and the server answered with its defaults.
+- This is why the console read as a set of static pages: the filters looked
+  live and did nothing, and "Next page" returned the same rows. Found by
+  driving the console in a browser and reading the URL the page actually
+  requested — not by reading the code.
+- The client test named *"fills path params and query strings"* passed no
+  params and asserted a bare URL. It was named for the behaviour and checked
+  none of it, so the suite stayed green while the behaviour was absent — the
+  shape of `DEF-018` and `DEF-021`.
+- Fixed by passing `query` to `buildUrl`; the test now asserts a substituted
+  path param, a search value, a number, a boolean, and that a `null` value
+  stays off the wire. It fails against the pre-fix client.
+- A full audit of all 21 console call sites found **zero** parameter-name or
+  type mismatches against the API's DTOs, and the API's zod schemas strip
+  unknown keys rather than rejecting them — so no existing call can break.
+  One new failure class did appear and is fixed: free-text filter inputs with
+  no `maxLength` could now exceed the API's length caps and 422 the page.
+
+### Devices page built
+- `/devices` was a scaffold stub reading "Hello". It now lists trusted devices
+  across all accounts with the filters the endpoint honours, paginated by
+  cursor, keeping revoked rows visible and dimmed so a revocation stays
+  verifiable.
+
 ## 2026-10-12 (later)
 
 ### Entity registered; API-key vs partnership split recorded
