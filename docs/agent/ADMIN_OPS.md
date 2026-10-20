@@ -1,36 +1,48 @@
 # ADMIN_OPS
 
-`apps/admin` — the internal operations console. Next.js 16.3.8, App Router,
-server-rendered, shadcn/ui `radix-nova`.
+`apps/admin` — the internal operations console. Vite 8 + TanStack Router
+(SPA), React 19, Tailwind 4, shadcn/ui from `packages/ui`.
 
-Verified against the repository at `2be6499`. Design detail in
-[`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md).
+Verified against the repository at `3763196`.
 
 ---
 
 ## 1. What it is
 
-Eleven route files, every one rendering live API data. **No mock data remains** — the
-placeholders are loading skeletons and empty states, which are states rather
-than fakes.
+A single-page console. Twenty-six route files, seventeen of them reachable
+from the sidebar; the rest are detail routes reached from their lists. Every
+data-backed surface renders live API data — the placeholders are loading and
+empty states, which are states rather than fakes.
 
-| Route | API endpoints | Min role |
-|---|---|---|
-| `/login` | `POST /auth/login` | public |
-| `/dashboard` | `/users/stats`, `/assets/stats`, `/audit?limit=200`, `/providers` | support (audit needs compliance) |
-| `/users` | `/users` | support |
-| `/users/[id]` | `/users/:id` | support |
-| `/devices` | `/devices/all?includeRevoked=true`, `/devices/stats` | support |
-| `/assets` | `/assets?limit=200` | any session |
-| `/issuers` | `/issuers`, `/issuers/stats` | support |
-| `/chains` | `/chains` | any session |
-| `/providers` | `/providers`, `/providers/health` | any session |
-| `/quotes` | `/swaps/quotes`, `/swaps/quotes/stats` | support |
-| `/audit` | `/audit`, `/audit/:id` | **compliance** |
+| Group | Route | API endpoints | Min role |
+|---|---|---|---|
+| Operations | `/dashboard` | `/users/stats`, `/assets/stats`, `/redemptions`, `/redemptions/stats`, `/swaps/quotes/stats`, `/transactions/daily`, `/providers` | support |
+| | `/users` | `/users` (search, role, kycStatus, sort, order, limit, cursor) | support |
+| | `/users/$userId` | `/users/:id`, `/audit/actor/:actorId`, `/transactions?userId=` | support |
+| | `/transactions` | `/transactions` (state, direction, chainId, walletId, userId, limit, cursor), `/transactions/stats` | support |
+| | `/transactions/$txId` | `/transactions/:id` | support |
+| | `/quotes` | `/swaps/quotes` (state, railKind, limit, cursor), `/swaps/quotes/stats` | support |
+| | `/quotes/$quoteId` | `/swaps/quotes/:id` | any session |
+| | `/redemptions` | `/redemptions` (state, limit, cursor), `/redemptions/stats` | support |
+| | `/compliance` | `/compliance/reviews`, `/compliance/rules` | **compliance** |
+| | `/audit` | `/audit` (action, outcome, requestId, limit) | **compliance** |
+| | `/notifications` | `/notifications` (state, limit, cursor), `/notifications/stats` | support |
+| Registry | `/assets` | `/assets` (category, chainId, issuerId, enabled, limit), `/assets/stats` | any session |
+| | `/assets/$assetId` | `/assets/:assetId` | any session |
+| | `/issuers` | `/issuers`, `/issuers/stats` | support |
+| | `/issuers/$slug` | `/issuers/:slug` | support |
+| | `/providers` | `/providers` (category), `/providers/health` | any session |
+| | `/chains` | `/chains` | any session |
+| | `/devices` | `/devices/all` (search, platform, includeRevoked, limit, cursor), `/devices/stats` | support |
+| | `/wallets` | `/wallets` | any session |
+| | `/wallets/$walletId` | `/wallets/:id`, `/portfolio/wallets/:walletId` | any session |
+| | `/fees` | `/fees/rules` (operation, kind, active, limit), `/fees/rules/diagnostics` | **admin** |
+| | `/fees/$ruleId` | `/fees/rules/:id` | **admin** |
+| Workspace | `/team` | `/users` (search, role, kycStatus, limit, cursor) | support |
+| System | `/settings` | `/settings/flags`, `/devices/all`, `/notifications`, `/audit`, `/providers/health` | any session |
 
-Navigation is flat, in `apps/admin/src/components/layout/nav-links.tsx`. Collapsible
-sub-groups were dropped: an operator console has a dozen destinations, all one
-level deep, and making people expand a section is friction for no gain.
+Navigation lives in `apps/admin/src/config/navigation.ts`. Detail routes
+(`/users/$userId` etc.) stay unlisted; they are reached from their lists.
 
 ---
 
@@ -39,73 +51,50 @@ level deep, and making people expand a section is friction for no gain.
 ### Server-side is the real one
 
 `RolesGuard` on the API enforces independently: `user < support < compliance <
-admin < owner`. The UI gate exists only so a support agent is not shown a button
-that will only bounce.
+admin < owner`. The UI gate exists only so a support agent is not shown a
+button that will only bounce.
 
 ### UI-side is cosmetic, deliberately
 
-`apps/admin/src/lib/api-server.ts` exports `roleAtLeast(actual, required)`,
-mirroring the API's rank table. It is used in `guard()` inside
-`apps/admin/src/app/(dashboard)/actions.ts` for every mutation.
-
-**`getSession()` reads an unsigned base64 cookie.** It never validates the token
-against the API — the cookie is display state only, and the code says so:
-
-> The session payload is the signed-in identity only. Authorisation is
-> re-checked server-side on every call — this is display state, never a security
-> decision.
+`apps/admin/src/lib/roles.ts` exports `rankAtLeast(actual, required)`, which
+mirrors the API's rank table. It fails closed on both sides: an unrecognised
+role ranks `-1`, and an unrecognised requirement is unsatisfiable.
 
 **These UI role gates are not a security control and must not be described as
-one.** A user can trivially rewrite the cookie to change what the console shows
-them. They see no different data.
-
-### DEF-016 — the console has no role gate on sign-in · `DONE` (`50cb8a1`)
-
-**Was:** `loginAction` stored whatever role the API returned and
-`DashboardLayout` redirected only when there was no session at all, so an
-account with role `user` reached the console shell. It saw no data — every page
-routes through `ApiState` and the API enforces independently — but the console
-never stated the restriction, and a non-operator looking at an empty console is
-a poor first impression of an internal tool.
-
-**Now:** a role below `support` is refused in `loginAction` *before*
-`setSession`, so no session is written; the layout gates again because a session
-outlives a role change; and `/unauthorized` says why, with a sign-out. The rank
-table and `canAccessConsole` live in `apps/admin/src/lib/roles.ts`, which fails
-closed on any role it does not recognise.
-
-The paragraph above it still holds, and is now written into `lib/roles.ts`
-itself: this gate decides **which shell to render**, never whether data is
-served.
+one.** An operator can rewrite the stored session to change what the console
+shows them. They see no different data — every call is authorised server-side.
 
 ---
 
 ## 3. Session
 
-`services/api` issues bearer tokens. They are held in an **httpOnly cookie**
-(`correnthian_admin_session`, 12 hours, `sameSite: 'lax'`, `secure` in
-production), set by the server action in `apps/admin/src/app/login/actions.ts`.
+`services/api` issues bearer tokens. The console runs in SPA mode, so there is
+no server to hold an httpOnly cookie: the bearer lives in memory and is
+mirrored to `localStorage` so an operator stays signed in across tabs and
+reloads.
 
-`localStorage` was rejected: an XSS in this admin could otherwise exfiltrate a
-token that reaches every account, KYC record and audit entry.
+That mirror is readable by any script running on the origin, which is the
+accepted cost. It is why the console must never render untrusted HTML, why
+stored sessions die at expiry, and why the shell re-validates against the API
+on every navigation. `sessionStorage` was tried first and rejected: it
+isolates tabs, so signing in on one tab left every other tab signed out.
 
-A second cookie, `correnthian_admin_session_user`, carries the display payload
-(base64url JSON). `logoutAction` revokes server-side via `POST /auth/logout`
-best-effort, then clears both cookies regardless.
+`getSession()` returns the session or `null`; it never validates the token
+against the API. A role below `support` is refused at sign-in, before a
+session is written, and the shell gates again because a session outlives a
+role change.
 
 ---
 
 ## 4. Data access
 
-`apps/admin/src/lib/api-server.ts`. Two functions, deliberately distinct at the call site:
+Two modules, and only two:
 
-- `apiFetch<T>(path)` — reads.
-- `apiSend<T>(path, method, body)` — writes.
-
-`API_URL` comes from `env`, defaulting to `http://localhost:3000`. **`API_URL`
-was undocumented and defaulted to the admin's own port**, so an unset value sent
-every fetch to the wrong place and pages rendered empty rather than failing
-loudly. Fixed in commit `419fca5` by adding `.env.example` / `.env.local`.
+- `apps/admin/src/lib/api.ts` — the client, built on `@correnthian/api-client`.
+  Reads and writes both go through it; response types come from the contract
+  registry, so a screen never hand-writes a response shape.
+- `apps/admin/src/lib/use-api-query.ts` — one query hook for every console
+  read, mapping the client's discriminated result onto query states.
 
 ### The failure vocabulary
 
@@ -119,98 +108,66 @@ type ApiResult<T> =
 ```
 
 Distinct outcomes because the UI must react differently to each. Collapsing
-them into one "failed" state is how an admin gets shown a login screen during an
-outage — which locks everyone out rather than telling them the API is down.
+them into one "failed" state is how an admin gets shown a login screen during
+an outage — which locks everyone out rather than telling them the API is down.
 
-451 is mapped to a jurisdiction explanation rather than a generic error.
-5xx maps to `unavailable`, everything else to `error`.
+### DEF-024 — the query parameters were being dropped
 
-### `ApiState`
+`packages/api-client/src/client.ts` destructured `query` out of the request
+options and then built the URL from path params alone. Every list filter,
+sort, limit and pagination cursor the console sent was discarded before the
+request left the browser, and the server answered with its defaults.
 
-`apps/admin/src/components/feedback/api-state.tsx`. Every data-backed surface routes
-through it, and it renders five designed states:
+The console looked inert because of it: the filters looked live and did
+nothing, and "Next page" returned the same rows. Fixed in `ce23a50`.
 
-| State | Treatment |
-|---|---|
-| `ok` | The surface, or a designed empty state |
-| `unauthorised` | "Session expired" with a link to `/login` |
-| `forbidden` | "Not permitted" with the API's message |
-| `unavailable` | "API unavailable" with **Retry** |
-| `error` | "Request failed" with **Retry** |
+The client test named *"fills path params and query strings"* passed no
+params and asserted a bare URL — it was named for the behaviour and checked
+none of it, so the suite stayed green while the behaviour was absent. The
+shape of `DEF-018` and `DEF-021`: a check that is wired up and green while
+inspecting nothing.
 
-`RetryButton` calls `router.refresh()` in a transition — a server component
-cannot retry on its own, because a refetch means re-running the render on the
-server.
+One consequence still applies: the API's length caps on free-text filters
+are now reachable for the first time. The console inputs that could exceed
+their cap carry a `maxLength` so a long paste fails one request rather than
+the page.
+
+---
+
+## 5. Page behaviour worth preserving
+
+### Errors render inline, not as a toast
+
+A permission change that silently disappears is indistinguishable from one
+that never happened.
 
 ### A partial read is not an all-clear
 
-`dashboard/page.tsx` tracks which of its four requests succeeded. If some failed
-it names them:
-
-> Not checked, because the request failed: *users, assets*. This is not an
-> all-clear.
-
-This is deliberate and is the kind of honesty the rest of the console keeps. An
-operator reading a green panel must be able to trust it.
-
----
-
-## 5. Mutations
-
-`apps/admin/src/app/(dashboard)/actions.ts` — server actions, each guarded by
-`guard(requiredRole)` on both sides.
-
-| Action | Endpoint | Role |
-|---|---|---|
-| `changeUserRoleAction` | `PATCH /users/:id/role` | admin |
-| `changeUserStatusAction` | `PATCH /users/:id/status` | admin |
-| `setAssetEnabledAction` | `PATCH /assets/:assetId/enabled` | admin |
-| `recordAttestationAction` | `PATCH /assets/:assetId/attestation` | compliance |
-| `setIssuerTierAction` | `PATCH /issuers/:slug/verification` | compliance |
-| `addIssuerRiskFlagAction` | `PATCH /issuers/:slug/risk-flags` | compliance |
-| `setProviderStatusAction` | `PATCH /providers/:slug/status` | admin |
-| `setChainEnabledAction` | `PATCH /chains/:id/enabled` | admin |
-
-Each calls `revalidatePath` on success.
-
-**Errors render inline, not as a toast.** A permission change that silently
-disappears is indistinguishable from one that never happened.
-
-Destructive actions use `AlertDialog` through `ConfirmAction`, and say what
-survives: disabling an asset or a chain leaves balances untouched on-chain.
-
-Components are grouped by role rather than the block's flat names —
-`layout/`, `feedback/`, `forms/`, `actions/`, `charts/`.
-
----
-
-## 6. Page behaviour worth preserving
-
-### Assets
-
-- The disclosure string is rendered **verbatim** from `row.disclosure`, in a
-  full-bleed band, never rebuilt from `asset.backing` on the client. This is
-  the product's claim and a second implementation would drift in the direction
-  that is easiest to get wrong.
-- `synthetic — not metal` and `never attested` are **badges**, not grey text.
-- Custody model, custodian, vault locations and attestation freshness sit in a
-  fact grid above the disclosure.
-- The page requests 200 rather than the API's default 50 and **says so when the
-  list is full**, instead of silently truncating a registry an operator believes
-  they are seeing whole.
-
-### Issuers
-
-The evidence is the page, not the badge. Licence types and references sit behind
-a left rule that turns destructive when an `issuer_verified` issuer has nothing
-behind the tier.
+Every list page says what it does not know. "The API did not answer. The list
+below may be stale or empty — this is not an all-clear." An operator reading
+a green panel must be able to trust it.
 
 ### Devices
 
-Requests `includeRevoked=true`. Revoked devices are soft-deleted precisely so
-the audit trail survives, so a console that hides them makes a revocation
-unverifiable — an operator could see only an absence, indistinguishable from
-never having had one. Revoked rows render dimmed with a destructive badge.
+Revoked devices are soft-deleted precisely so the audit trail survives, so a
+console that hides them makes a revocation unverifiable — an operator could
+see only an absence, indistinguishable from never having had one. Revoked
+rows render dimmed with a destructive badge.
+
+### Assets
+
+The disclosure string is rendered **verbatim** from `row.disclosure`, in a
+full-bleed band, never rebuilt from `asset.backing` on the client. This is
+the product's claim and a second implementation would drift in the direction
+that is easiest to get wrong. The page requests 200 rather than the API's
+default and **says so when the list is full**, instead of silently truncating
+a registry an operator believes they are seeing whole.
+
+### Issuers
+
+The evidence is the page, not the badge. Licence types and references sit
+behind a left rule that turns destructive when an `issuer_verified` issuer
+has nothing behind the tier.
 
 ### Providers
 
@@ -223,12 +180,13 @@ checked reads destructive too. Credentials are never in the table.
 No RPC column, and there never will be one — the API does not return an RPC
 URL. Testnet reads as its own network badge, separate from enabled/disabled.
 
-### Users and users/[id]
+### Users and users/$userId
 
-Filtering and pagination live in the URL via a plain GET form, so the URL is the
-state. A smart account whose deploy transaction has not confirmed renders as
-**"not yet"** with a tooltip stating it exists nowhere on-chain and cannot hold
-or move anything. It must never read as live.
+A smart account whose deploy transaction has not confirmed renders as
+**"not yet"** with a tooltip stating it exists nowhere on-chain and cannot
+hold or move anything. It must never read as live. The account footprint
+counts *active* devices, because the detail projection holds revoked rows
+back.
 
 ### Quotes
 
@@ -239,38 +197,38 @@ honest read of the two rather than as a third opinion.
 ### Audit
 
 `denied` is the only outcome that takes the destructive tone — a denied action
-is a refusal someone may need to explain. The filter is a GET form over
-`action` and `outcome`.
+is a refusal someone may need to explain.
 
 ---
 
-## 7. Not built
+## 6. Not built
 
-| Page | Blocked on |
+| Capability | Blocked on |
 |---|---|
-| Transactions | `BE-601` — no `Transaction` row is ever written |
-| Compliance / risk operations | `BE-1102` — no risk engine |
-| Metals / redemption | `BE-805` — the request path works (`DEF-001` fixed in `5a31c4b`); there is still no provider to redeem against |
-| Finance / revenue | `BE-1601` — no analytics |
-| System configuration | `BE-1505` — `FeatureFlag` exists, nothing reads or writes it |
-| Users list audit history | `GET /audit/actor/:actorId` exists and is not surfaced |
+| Risk operations / velocity scoring | `BE-1102` — no risk engine exists |
+| Finance / revenue / AUM | `BE-1601` — no analytics backend |
+| Reconciliation | `BE-1602` — blocked on `BE-802` |
+| Support tickets | `BE-1506` — no model, no route |
+| `GET /compliance/eligibility`, `GET /onramp/availability` | The console calls neither |
+| Account-status filter on the users list | `GET /users` has no `status` param, though the column is shown |
+| `GET /portfolio/wallets/:id/history-series` (with its `bucket` filter) | The console calls `/history` instead |
 
 ---
 
-## 8. Environment
+## 7. Environment
 
 | Variable | Default | Notes |
 |---|---|---|
-| `API_URL` | `http://localhost:3000` | **Must be set.** It was undocumented and defaulted to the admin's own port. |
-| `NODE_ENV` | — | Drives `secure` on the session cookie |
+| `VITE_API_URL` | `http://localhost:3100` | The API origin. Falls back to the serving origin in production, never to a localhost constant that would point every request at the operator's own machine. |
+| `PORT` (API) | `3100` | `services/api/.env` |
+| `CORS_ORIGINS` | `http://localhost:3000,http://localhost:3001` | Must include the admin's origin. |
 
-CORS: `CORS_ORIGINS` defaults to `http://localhost:3001`. The admin does not
-currently run on 3001 — it has no `dev` script pinned to a port in
-`package.json`. Set both together.
+The admin dev server runs on port 3000 (`vite dev --port 3000`) and listens on
+IPv6 localhost — `http://localhost:3000` works, `127.0.0.1:3000` may not.
 
 ---
 
-## 9. A note on provenance
+## 8. A note on provenance
 
 The previous admin implementation is preserved at `archive/admin-legacy/`,
 including its `STUB-AUDIT.md` — a per-file inventory of every mock the shadcn
@@ -280,6 +238,3 @@ reviewer lists, and three of four view tabs that were empty dashed divs).
 
 `archive/` is outside the pnpm workspace globs, so it is never built or
 typechecked. `git mv archive/admin-legacy apps/admin` restores it exactly.
-
-The root `TASK.md` still links to `apps/admin/STUB-AUDIT.md`, which no longer
-exists at that path.
