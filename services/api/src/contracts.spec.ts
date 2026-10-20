@@ -275,7 +275,14 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
    * run's account would be a 404 rather than a contract failure.
    */
   async function seedTransactionFixtures(adminId: string) {
-    const chain = await prisma.chain.findFirst({ where: { enabled: true, family: 'evm' } });
+    // Ordered: the dev seed puts the transferable fixtures on chain 1, and
+    // `findFirst` without an order returns rows in whatever order the heap
+    // happens to hold them — so the suite could pick a chain with no assets
+    // on it and fail for a reason that has nothing to do with contracts.
+    const chain = await prisma.chain.findFirst({
+      where: { enabled: true, family: 'evm' },
+      orderBy: { id: 'asc' },
+    });
     if (!chain) throw new Error('The contract suite needs an enabled EVM chain.');
     const asset = await prisma.asset.findFirst({
       where: { chainId: chain.id, enabled: true, transferSupported: true },

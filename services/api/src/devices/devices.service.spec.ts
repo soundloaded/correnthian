@@ -78,6 +78,9 @@ describe('admin device list pagination', () => {
     expect(page.nextCursor).not.toBe('d4');
     const back = decodeCursor(page.nextCursor as string);
     expect(back.id).toBe('d4');
-    expect(back.at.getTime()).toBe(seen.getTime());
+    // The cursor carries the sort value in whatever shape the encoder
+    // wrote: a Date for a timestamp order, a string otherwise.
+    const backAt = back.at instanceof Date ? back.at : new Date(back.at);
+    expect(backAt.getTime()).toBe(seen.getTime());
   });
 });

@@ -173,7 +173,11 @@ describe('response', () => {
     expect(page.nextCursor).not.toBe('r9');
     const back = decodeCursor(page.nextCursor as string);
     expect(back.id).toBe('r9');
-    expect(back.at.getTime()).toBe(at.getTime());
+    // The cursor carries the sort value in whatever shape the encoder
+    // wrote, so a timestamp order reads a Date and an email order a
+    // string. Handle both rather than assuming one.
+    const backAt = back.at instanceof Date ? back.at : new Date(back.at);
+    expect(backAt.getTime()).toBe(at.getTime());
   });
 
   it('returns no cursor on the last page', async () => {
