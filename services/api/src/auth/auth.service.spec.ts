@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { hash } from '@node-rs/argon2';
 import { ConfigService } from '../config/config.service.js';
 import { AuthService, DUMMY_DIGEST } from './auth.service.js';
 
@@ -9,7 +10,7 @@ const config = {
 function makePrisma() {
   return {
     session: { create: vi.fn(), findUnique: vi.fn(), updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
-    user: { findUnique: vi.fn(), create: vi.fn() },
+    user: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn().mockResolvedValue({}) },
   };
 }
 
@@ -109,5 +110,50 @@ describe('AuthService', () => {
     prisma.user.findUnique.mockResolvedValue(null);
     await expect(auth.login('nobody@example.com', 'wrong-password'))
       .rejects.toThrow(/Invalid credentials/);
+  });
+
+  it("stamps the account's last sign-in, which the console shows", async () => {
+    // Nothing wrote this column, so "Last login" read "—" for every
+    // account that had signed in a dozen times.
+    const digest = await hash('correct-horse-battery-staple', {
+      memoryCost: 65536,
+      timeCost: 3,
+      parallelism: 1,
+    });
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'u1',
+      email: 'a@b.c',
+      role: 'user',
+      passwordDigest: digest,
+    });
+
+    const before = Date.now();
+    await auth.login('a@b.c', 'correct-horse-battery-staple');
+    const stamped = prisma.user.update.mock.calls.at(-1)?.[0]?.data?.lastLoginAt;
+
+    expect(stamped).toBeInstanceOf(Date);
+    expect(stamped.getTime()).toBeGreaterThanOrEqual(before);
+  });
+
+  it('still signs the account in when the stamp cannot be written', async () => {
+    // The session is already issued; refusing the sign-in over a
+    // bookkeeping column would lock the holder out of their own account.
+    const digest = await hash('correct-horse-battery-staple', {
+      memoryCost: 65536,
+      timeCost: 3,
+      parallelism: 1,
+    });
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'u1',
+      email: 'a@b.c',
+      role: 'user',
+      passwordDigest: digest,
+    });
+    prisma.user.update.mockRejectedValue(new Error('database is away'));
+
+    const result = await auth.login('a@b.c', 'correct-horse-battery-staple');
+
+    expect(result.token).toBeTruthy();
+    expect(result.user.id).toBe('u1');
   });
 });

@@ -216,6 +216,22 @@ export class AuthService {
     }
 
     const { token, expiresAt } = await this.issueSession(record.id);
+
+    // The account's last sign-in, which the console shows on the users list
+    // and the account page. Nothing wrote this column, so it read "—" for
+    // every account that had signed in a dozen times — a column that
+    // looked live and never was. A failure to stamp it must not fail the
+    // sign-in: the session is already issued and the holder must still get
+    // in, so the failure is logged rather than thrown.
+    try {
+      await this.prisma.user.update({
+        where: { id: record.id },
+        data: { lastLoginAt: new Date() },
+      });
+    } catch (err) {
+      this.logger.warn(`Could not stamp lastLoginAt for ${record.id}: ${String(err)}`);
+    }
+
     await this.audit.record({
       actorId: record.id,
       action: 'auth.login',
