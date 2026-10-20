@@ -3,7 +3,8 @@
 import * as React from "react"
 
 import { useApiQuery } from "@/lib/use-api-query"
-import { AssetsToolbar, type AssetsFilters } from "./assets-toolbar"
+import { AssetsToolbar } from "./assets-toolbar"
+import type { AssetsFilters } from "./assets-toolbar"
 
 // The registry caps at 200 rows per request (§6: request 200 and say so when
 // full). The list endpoint returns a bare array, not a keyset page, so there

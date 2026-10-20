@@ -14,7 +14,12 @@ import { canAccessConsole, clearSession, getSession, setSession } from "./auth"
  * API rather than a misdirected one.
  */
 export const apiBaseUrl =
-  import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:3100" : window.location.origin)
+  import.meta.env.VITE_API_URL ??
+  (import.meta.env.DEV
+    ? "http://localhost:3100"
+    : typeof window === "undefined"
+      ? ""
+      : window.location.origin)
 
 export function signOutAndLeave(): void {
   clearSession()
