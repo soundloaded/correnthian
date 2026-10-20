@@ -30,6 +30,10 @@ android/
 # Agent worktrees — transient, never committed
 .claude/worktrees/
 
+# Browser-automation scratch — console logs and page snapshots, tens of
+# megabytes, regenerated on every run.
+.playwright-mcp/
+
 # Archived work kept for reference, not part of the workspace.
 archive/**/node_modules/
 archive/**/.next/
