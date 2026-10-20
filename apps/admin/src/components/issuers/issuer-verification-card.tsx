@@ -19,6 +19,7 @@ import {
 } from "@correnthian/ui/components/select"
 
 import type { IssuerDetail } from "./issuer-details-header"
+import { rankAtLeast } from "@/lib/roles"
 
 const TIER_OPTIONS = ["issuer_verified", "community_verified", "unverified"] as const
 
@@ -236,19 +237,6 @@ function VerificationCardHeader() {
       </div>
     </CardHeader>
   )
-}
-
-const RANK: Record<string, number> = {
-  user: 0,
-  support: 1,
-  compliance: 2,
-  admin: 3,
-  owner: 4,
-}
-
-// Fail-closed mirror of the API rank table.
-function rankAtLeast(actual: string, required: string): boolean {
-  return (RANK[actual.trim().toLowerCase()] ?? -1) >= (RANK[required] ?? 99)
 }
 
 function toMessage(

@@ -28,6 +28,7 @@ import {
 } from "@correnthian/ui/components/alert-dialog"
 
 import type { UserDetail } from "./user-details-header"
+import { rankAtLeast } from "@/lib/roles"
 
 const ROLE_OPTIONS = ["user", "support", "compliance", "admin", "owner"] as const
 
@@ -224,20 +225,6 @@ function AccessCardHeader() {
       </div>
     </CardHeader>
   )
-}
-
-const RANK: Record<string, number> = {
-  user: 0,
-  support: 1,
-  compliance: 2,
-  admin: 3,
-  owner: 4,
-}
-
-// Fail-closed mirror of the API rank table: an unrecognised role hides the
-// controls rather than showing them.
-function rankAtLeast(actual: string, required: string): boolean {
-  return (RANK[actual.trim().toLowerCase()] ?? -1) >= (RANK[required] ?? 99)
 }
 
 function toMessage(

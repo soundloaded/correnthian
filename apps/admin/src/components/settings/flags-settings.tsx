@@ -31,7 +31,7 @@ import {
 import { api, apiBaseUrl } from "@/lib/api"
 import { getSession } from "@/lib/auth"
 import { useApiQuery } from "@/lib/use-api-query"
-import { rankAtLeast } from "@/components/team/team-utils"
+import { rankAtLeast } from "@/lib/roles"
 
 export type FeatureFlag = Contract<"GET /api/v1/settings/flags">[number]
 

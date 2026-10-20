@@ -35,7 +35,7 @@ import {
 } from "@correnthian/ui/components/dropdown-menu"
 import { api } from "@/lib/api"
 import { getSession } from "@/lib/auth"
-import { rankAtLeast } from "./team-utils"
+import { rankAtLeast } from "@/lib/roles"
 import type { TeamRow } from "./team-member-card"
 
 const ROLE_OPTIONS = ["user", "support", "compliance", "admin", "owner"] as const

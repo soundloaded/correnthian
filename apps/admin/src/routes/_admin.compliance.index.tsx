@@ -4,29 +4,18 @@ import { createFileRoute } from "@tanstack/react-router"
 import { Button } from "@correnthian/ui/components/button"
 import { ComplianceHeader } from "@/components/compliance/compliance-header"
 import { DecideDialogRoot } from "@/components/compliance/decide-dialog"
-import { ReviewsTable, type ReviewRow } from "@/components/compliance/reviews-table"
+import { ReviewsTable } from "@/components/compliance/reviews-table"
+import type { ReviewRow } from "@/components/compliance/reviews-table"
 import { RuleEditDialogRoot } from "@/components/compliance/rule-edit-dialog"
-import { RulesTable, type RuleRow } from "@/components/compliance/rules-table"
+import { RulesTable } from "@/components/compliance/rules-table"
+import type { RuleRow } from "@/components/compliance/rules-table"
 import { useApiQuery } from "@/lib/use-api-query"
 import { getSession } from "@/lib/auth"
+import { rankAtLeast } from "@/lib/roles"
 
 export const Route = createFileRoute("/_admin/compliance/")({
   component: CompliancePage,
 })
-
-const RANK: Record<string, number> = {
-  user: 0,
-  support: 1,
-  compliance: 2,
-  admin: 3,
-  owner: 4,
-}
-
-// Fail-closed mirror of the API rank table: an unrecognised role hides the
-// controls rather than showing them.
-function rankAtLeast(actual: string, required: string): boolean {
-  return (RANK[actual.trim().toLowerCase()] ?? -1) >= (RANK[required] ?? 99)
-}
 
 function CompliancePage() {
   const sessionRole = getSession()?.role ?? "user"

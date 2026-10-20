@@ -22,6 +22,7 @@ import {
 } from "@correnthian/ui/components/alert-dialog"
 
 import type { AssetDetail } from "./asset-details-header"
+import { rankAtLeast } from "@/lib/roles"
 
 // Enable/disable needs admin; attestation needs compliance. The UI hides each
 // control below its role, but that gate is display-only — RolesGuard decides.
@@ -179,19 +180,6 @@ function RegistryCardHeader() {
       </div>
     </CardHeader>
   )
-}
-
-const RANK: Record<string, number> = {
-  user: 0,
-  support: 1,
-  compliance: 2,
-  admin: 3,
-  owner: 4,
-}
-
-// Fail-closed mirror of the API rank table.
-function rankAtLeast(actual: string, required: string): boolean {
-  return (RANK[actual.trim().toLowerCase()] ?? -1) >= (RANK[required] ?? 99)
 }
 
 function toMessage(

@@ -10,6 +10,7 @@ import { useRedemptionsList } from "@/components/redemptions/use-redemptions-lis
 import { RedemptionsTable } from "@/components/redemptions/redemptions-table"
 import { RedemptionTransitionDialog } from "@/components/redemptions/redemption-transition-dialog"
 import type { RedemptionRow } from "@/components/redemptions/redemptions-table"
+import { rankAtLeast } from "@/lib/roles"
 
 const PAGE_LIMIT = 25
 
@@ -110,16 +111,3 @@ function RedemptionsPage() {
   )
 }
 
-const RANK: Record<string, number> = {
-  user: 0,
-  support: 1,
-  compliance: 2,
-  admin: 3,
-  owner: 4,
-}
-
-// Fail-closed mirror of the API rank table: an unrecognised role hides the
-// controls rather than showing them.
-function rankAtLeast(actual: string, required: string): boolean {
-  return (RANK[actual.trim().toLowerCase()] ?? -1) >= (RANK[required] ?? 99)
-}

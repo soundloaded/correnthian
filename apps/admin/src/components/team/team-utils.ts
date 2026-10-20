@@ -25,17 +25,3 @@ export function getAvatarColor(name: string) {
   return AVATAR_COLORS[hash % AVATAR_COLORS.length]
 }
 
-const RANK: Record<string, number> = {
-  user: 0,
-  support: 1,
-  compliance: 2,
-  admin: 3,
-  owner: 4,
-}
-
-// Fail-closed mirror of the API rank table: an unrecognised role hides the
-// controls rather than showing them. The gate is display-only — RolesGuard
-// decides — so a non-admin sees rows, never a button that will only bounce.
-export function rankAtLeast(actual: string, required: string): boolean {
-  return (RANK[actual.trim().toLowerCase()] ?? -1) >= (RANK[required] ?? 99)
-}

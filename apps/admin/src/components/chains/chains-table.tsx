@@ -27,6 +27,7 @@ import {
 } from "@correnthian/ui/components/alert-dialog"
 
 import { EnabledBadge, NetworkBadge } from "./chain-badges"
+import { rankAtLeast } from "@/lib/roles"
 
 export type ChainRow = Contract<"GET /api/v1/chains">[number]
 
@@ -184,19 +185,6 @@ function ChainTableRow({
       </AlertDialog>
     </>
   )
-}
-
-const RANK: Record<string, number> = {
-  user: 0,
-  support: 1,
-  compliance: 2,
-  admin: 3,
-  owner: 4,
-}
-
-// Fail-closed mirror of the API rank table.
-function rankAtLeast(actual: string, required: string): boolean {
-  return (RANK[actual.trim().toLowerCase()] ?? -1) >= (RANK[required] ?? 99)
 }
 
 function toMessage(

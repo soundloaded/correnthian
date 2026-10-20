@@ -1,3 +1,5 @@
+import { rankAtLeast } from "./roles"
+
 /**
  * Console session for the SPA shell.
  *
@@ -61,7 +63,7 @@ export function getSession(): ConsoleSession | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<ConsoleSession>;
-    if (typeof parsed?.token !== 'string' || !parsed.token) return null;
+    if (typeof parsed.token !== 'string' || !parsed.token) return null;
     memory = parsed as ConsoleSession;
     if (isExpired(memory)) {
       clearSession();
@@ -116,15 +118,7 @@ if (typeof window !== 'undefined') {
   });
 }
 
-const RANK: Record<string, number> = {
-  user: 0,
-  support: 1,
-  compliance: 2,
-  admin: 3,
-  owner: 4,
-};
-
 /** Fail-closed: an unrecognised role is denied, never admitted. */
 export function canAccessConsole(role: string): boolean {
-  return (RANK[role.trim().toLowerCase()] ?? -1) >= 1;
+  return rankAtLeast(role, "support");
 }
