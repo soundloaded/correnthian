@@ -1423,6 +1423,18 @@ Raised by the owner's 2026-10-07 product document; the *engine* already exists.
   configuration. The underlying APIs mostly exist for the first three.
 - **Dependencies:** `BE-601`, `BE-1102`, `BE-1104`.
 - **Status:** `BACKLOG`
+- **Read on 2026-10-20, while auditing the console against the API:** most of
+  this list has since been built — transactions, compliance, redemptions, fees,
+  devices, wallets, team and settings all render live data now, and the
+  operator write routes are being wired. What genuinely has no surface:
+  - `GET /compliance/eligibility?country=&region=` and
+    `GET /onramp/availability?direction=&country=&region=` — the console calls
+    neither.
+  - `GET /users` has **no `status` filter**, though the row carries `status`
+    and the table displays it. Account status is visible but not filterable.
+  - `GET /portfolio/wallets/:walletId/history-series` (with its `bucket`
+    filter) is never called; the console calls `/history` instead.
+  - `GET /users` accepts a `country` filter the console never sends.
 
 ### BE-1505 — System configuration · `BACKLOG`
 - The `FeatureFlag` model exists (`key`, `enabled`, `rollout`, `description`)

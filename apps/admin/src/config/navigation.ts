@@ -14,6 +14,8 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
+import { rankAtLeast } from "@/lib/roles"
+
 export type NavSubItem = {
   title: string
   url: string
@@ -158,27 +160,17 @@ export const navigation: readonly NavGroup[] = [
   },
 ]
 
-/** Console role rank, mirroring `apps/admin/src/lib/auth.ts`. Cosmetic only. */
-const RANK: Record<string, number> = {
-  user: 0,
-  support: 1,
-  compliance: 2,
-  admin: 3,
-  owner: 4,
-}
-
 /**
  * Hide nav entries the operator's role cannot open, so a support agent is
  * not shown a link that only bounces. Cosmetic only — the API enforces.
- * Unknown roles fail closed to support-level visibility.
+ * An unrecognised role sees nothing: the rank table fails closed.
  */
 export function visibleNavigation(role: string): readonly NavGroup[] {
-  const rank = RANK[role.trim().toLowerCase()] ?? 1
   return navigation
     .map((group) => ({
       ...group,
-      items: group.items.filter(
-        (item) => (RANK[item.minRole ?? "support"] ?? 1) <= rank,
+      items: group.items.filter((item) =>
+        rankAtLeast(role, item.minRole ?? "support"),
       ),
     }))
     .filter((group) => group.items.length > 0)

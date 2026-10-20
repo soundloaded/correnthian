@@ -141,6 +141,9 @@ export function HeaderSearch() {
                         placeholder="Search accounts and devices by email..."
                         value={term}
                         onValueChange={setTerm}
+                        // Both endpoints cap the term at 200 characters and
+                        // answer a longer one with a validation failure.
+                        maxLength={200}
                     />
 
                     <CommandList>
