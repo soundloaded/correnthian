@@ -6,6 +6,7 @@ import {
   TransactionDetailsHeader,
   TransactionNotFound,
 } from "@/components/transactions/transaction-details-header"
+import { TransactionActionsCard } from "@/components/transactions/transaction-actions-card"
 import { TransactionInformationCard } from "@/components/transactions/transaction-information-card"
 import { TransactionLifecycleCard } from "@/components/transactions/transaction-lifecycle-card"
 import { TransactionPartiesCard } from "@/components/transactions/transaction-parties-card"
@@ -66,6 +67,7 @@ function TransactionDetailsPage() {
         {/* Center Column */}
         <div className="space-y-4">
           <TransactionLifecycleCard tx={tx} />
+          <TransactionActionsCard tx={tx} onChanged={() => refetch()} />
         </div>
 
         {/* Right Column */}

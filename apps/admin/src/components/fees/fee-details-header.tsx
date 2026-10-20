@@ -43,7 +43,7 @@ export function FeeDetailsHeader({ rule }: { rule: FeeRuleDetail }) {
         <Button
           variant="outline"
           className="gap-1.5"
-          render={<Link to="/fees" />}
+          nativeButton={false} render={<Link to="/fees" />}
         >
           <ArrowLeftIcon className="size-4" />
           All rules
@@ -64,7 +64,7 @@ export function FeeRuleNotFound({ ruleId }: { ruleId: string }) {
         No fee rule with id {ruleId} exists, or you cannot see it.
       </p>
 
-      <Button variant="outline" render={<Link to="/fees" />}>
+      <Button variant="outline" nativeButton={false} render={<Link to="/fees" />}>
         <ArrowLeftIcon className="mr-2 size-4" />
         Back to Fee rules
       </Button>

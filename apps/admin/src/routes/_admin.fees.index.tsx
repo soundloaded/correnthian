@@ -6,6 +6,7 @@ import { useApiQuery } from "@/lib/use-api-query"
 import { FeesHeader } from "@/components/fees/fees-header"
 import { FeesToolbar, type FeesFilters } from "@/components/fees/fees-toolbar"
 import { FeesTable } from "@/components/fees/fees-table"
+import { FeeCreateCard } from "@/components/fees/fee-create-card"
 
 // The rules endpoint caps at 200 (default 100 — requested explicitly) and
 // returns a bare array, so a full page says the table may hold more rather
@@ -42,6 +43,9 @@ function FeesPage() {
 
       {/* Filters */}
       <FeesToolbar filters={filters} onChange={setFilters} />
+
+      {/* Create — owner only; the card says so below that */}
+      <FeeCreateCard onCreated={() => refetch()} />
 
       {/* Fee rules Data Table */}
       {isLoading ? (

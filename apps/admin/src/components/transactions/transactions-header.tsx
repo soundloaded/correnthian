@@ -3,9 +3,8 @@
 import { Badge } from "@correnthian/ui/components/badge"
 import { useApiQuery } from "@/lib/use-api-query"
 
-// Count only — same arrangement as the users header. No actions: broadcast is
-// system-side and transitions are account/node-driven, so there is nothing
-// for a console button to call.
+// Count only — same arrangement as the users header. No list-level actions:
+// a transition belongs to one row, so it lives on that row's detail page.
 export function TransactionsHeader() {
   const { data: stats } = useApiQuery("GET /api/v1/transactions/stats")
 
@@ -20,8 +19,8 @@ export function TransactionsHeader() {
         </div>
         <p className="text-sm text-muted-foreground">
           Every signed intent across chains: lifecycle state, confirmation
-          depth, and what may legally happen next. Read-only — movement is
-          reported by accounts and nodes, never issued here.
+          depth, and what may legally happen next. A stuck row is advanced
+          from its own page.
         </p>
       </div>
     </div>

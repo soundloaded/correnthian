@@ -8,6 +8,7 @@ import {
   Plug,
   ScrollText,
   ShieldCheck,
+  Timer,
   UserRound,
   Webhook,
   Workflow,
@@ -21,6 +22,7 @@ export type SettingSection =
   | "flags"
   | "integrations"
   | "data"
+  | "jobs"
   | "appearance"
   | "workspace"
   | "pipeline"
@@ -56,6 +58,12 @@ const navGroups: NavGroup[] = [
       { id: "flags", label: "Feature flags", icon: Flag },
       { id: "integrations", label: "Integrations", icon: Plug },
       { id: "data", label: "Data", icon: ScrollText },
+    ],
+  },
+  {
+    groupLabel: "Operations",
+    items: [
+      { id: "jobs", label: "Scheduled jobs", icon: Timer },
     ],
   },
   {

@@ -12,9 +12,8 @@ import { TxDirectionBadge, TxStateBadge } from "./transaction-badges"
 
 export type TransactionDetail = Contract<"GET /api/v1/transactions/:id">
 
-// Identity only: no actions exist for intents in the console (transitions are
-// account/node-driven, broadcast is system-side), so the right side holds just
-// a back link. Same card arrangement as the user header.
+// Identity only: the actions for this row live in the card below, so the
+// right side holds just a back link. Same card arrangement as the user header.
 export function TransactionDetailsHeader({ tx }: { tx: TransactionDetail }) {
   return (
     <Card>
@@ -48,7 +47,7 @@ export function TransactionDetailsHeader({ tx }: { tx: TransactionDetail }) {
         <Button
           variant="outline"
           className="gap-1.5"
-          render={<Link to="/transactions" />}
+          nativeButton={false} render={<Link to="/transactions" />}
         >
           <ArrowLeftIcon className="size-4" />
           All transactions
@@ -69,7 +68,7 @@ export function TransactionNotFound({ txId }: { txId: string }) {
         No transaction with id {txId} exists, or you cannot see it.
       </p>
 
-      <Button variant="outline" render={<Link to="/transactions" />}>
+      <Button variant="outline" nativeButton={false} render={<Link to="/transactions" />}>
         <ArrowLeftIcon className="mr-2 size-4" />
         Back to Transactions
       </Button>

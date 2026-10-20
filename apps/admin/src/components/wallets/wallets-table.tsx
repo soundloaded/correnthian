@@ -77,7 +77,7 @@ export function WalletsTable({ rows }: { rows: WalletRow[] }) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    render={<Link to="/wallets/$walletId" params={{ walletId: row.id }} />}
+                    nativeButton={false} render={<Link to="/wallets/$walletId" params={{ walletId: row.id }} />}
                   >
                     View
                   </Button>

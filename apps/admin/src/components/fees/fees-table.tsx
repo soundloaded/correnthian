@@ -72,7 +72,7 @@ export function FeesTable({ rows }: { rows: FeeRuleRow[] }) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    render={<Link to="/fees/$ruleId" params={{ ruleId: row.id }} />}
+                    nativeButton={false} render={<Link to="/fees/$ruleId" params={{ ruleId: row.id }} />}
                   >
                     View
                   </Button>

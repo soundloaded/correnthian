@@ -13,7 +13,8 @@ import {
 
 // Only filters the list endpoint honours: category, chainId, issuerId,
 // enabled. There is no search param, so the text boxes filter chain and
-// issuer by exact id — the list DTO takes raw strings, no validation help.
+// issuer by exact value — the list DTO takes raw strings, no validation
+// help. `issuerId` is matched against the issuer's slug.
 const CATEGORY_OPTIONS = ["crypto", "stablecoin", "metal", "treasury", "fund", "other"]
 
 export type AssetsFilters = {
@@ -49,7 +50,7 @@ export function AssetsToolbar({ filters, onChange }: AssetsToolbarProps) {
           <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 
           <Input
-            placeholder="Issuer id…"
+            placeholder="Issuer slug…"
             value={filters.issuerId}
             onChange={(e) => set({ issuerId: e.target.value })}
             className="pl-9"

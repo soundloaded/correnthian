@@ -7,9 +7,8 @@ import { Card, CardContent, CardHeader } from "@correnthian/ui/components/card"
 import type { TransactionDetail } from "./transaction-details-header"
 
 // The lifecycle, read-only. permittedNext is the API's own statement of which
-// edges are legal — rendered as text so the console cannot offer a button the
-// API would refuse. Transitions arrive from accounts and nodes; there is no
-// console affordance to advance one, and broadcast is system-side.
+// edges are legal — the operator actions card offers exactly those, and the
+// API re-checks the edge before it applies it.
 export function TransactionLifecycleCard({ tx }: { tx: TransactionDetail }) {
   const stamps: Array<[string, string | null]> = [
     ["Signed", tx.signedAt],
@@ -75,8 +74,9 @@ export function TransactionLifecycleCard({ tx }: { tx: TransactionDetail }) {
               <span className="font-medium text-foreground">
                 {tx.permittedNext.join(", ").replaceAll("_", " ")}
               </span>
-              . Edges are reported by the account or the node — the console
-              observes, it does not advance.
+              . Edges are reported by the account or the node; an operator
+              may also advance one from the card below, and the service
+              re-checks the edge.
             </>
           ) : (
             "Terminal state — no further edges. This is final."

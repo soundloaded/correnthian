@@ -3,9 +3,11 @@
 import { Badge } from "@correnthian/ui/components/badge"
 import { useApiQuery } from "@/lib/use-api-query"
 
+import { AssetCreateDialog } from "./asset-create-dialog"
+
 // Count badge only: the registry list itself is the page, and stats travel
 // on a separate endpoint so a stats failure must not blank the table.
-export function AssetsHeader() {
+export function AssetsHeader({ onRegistered }: { onRegistered?: () => void }) {
   const { data: stats } = useApiQuery("GET /api/v1/assets/stats")
 
   return (
@@ -18,10 +20,12 @@ export function AssetsHeader() {
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground">
-          Token registry with backing disclosure. Disabling an asset is
-          admin-only; attestations are compliance-only. Neither moves funds.
+          Token registry with backing disclosure. Registration, disabling and
+          attestations are compliance- or admin-only. None of them move funds.
         </p>
       </div>
+
+      <AssetCreateDialog onCreated={() => onRegistered?.()} />
     </div>
   )
 }

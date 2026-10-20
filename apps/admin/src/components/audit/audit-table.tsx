@@ -86,7 +86,7 @@ export function AuditTable({ rows }: { rows: AuditRow[] }) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    render={<Link to="/audit/$auditId" params={{ auditId: row.id }} />}
+                    nativeButton={false} render={<Link to="/audit/$auditId" params={{ auditId: row.id }} />}
                   >
                     View
                   </Button>

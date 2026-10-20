@@ -18,7 +18,7 @@ function IssuersPage() {
   return (
     <div className="flex flex-1 flex-col gap-6">
       {/* Page Header */}
-      <IssuersHeader />
+      <IssuersHeader onRegistered={() => refetch()} />
 
       {/* Issuers Data Table */}
       {isLoading ? (

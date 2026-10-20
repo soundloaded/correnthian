@@ -89,6 +89,10 @@ export function SalesOverviewCard() {
     label: formatDay(d.date),
   }))
   const total = points.reduce((n, p) => n + p.volumeUsd, 0)
+  // `count` is every transaction created in the window, in any state; only
+  // `volumeUsd` is limited to confirmed ones. So the count is not a settled
+  // count — labelling it as one made a window of expired transactions read
+  // as settled volume.
   const count = points.reduce((n, p) => n + p.count, 0)
   const current = windows.find((w) => w.days === days)
 
@@ -102,7 +106,7 @@ export function SalesOverviewCard() {
               {series ? formatTotal(total) : "—"}
             </p>
             <span className="text-xs font-medium text-muted-foreground">
-              {series ? `${count} transactions · settled` : ""}
+              {series ? `${count} transactions in window` : ""}
             </span>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { Bell, Flag, Plug, ScrollText, ShieldCheck, UserRound } from "lucide-react"
+import { Bell, Flag, Plug, ScrollText, ShieldCheck, Timer, UserRound } from "lucide-react"
 
 import { DataSettings, IntegrationsSettings } from "@/components/settings/backend-settings"
 import {
@@ -7,6 +7,7 @@ import {
   SecuritySettings,
 } from "@/components/settings/account-settings"
 import { FlagsSettings } from "@/components/settings/flags-settings"
+import { JobsSettings } from "@/components/settings/jobs-settings"
 import { NoBackendSection } from "@/components/settings/no-backend-section"
 import type { SettingSection } from "@/components/settings/settings-sidebar"
 
@@ -39,6 +40,9 @@ export function SettingsContent({
     case "data":
       return <DataSettings />
 
+    case "jobs":
+      return <JobsSettings />
+
     case "appearance":
     case "workspace":
     case "pipeline":
@@ -58,4 +62,5 @@ export const SETTING_SECTION_META = {
   flags: { label: "Feature flags", icon: Flag, group: "Workspace" },
   integrations: { label: "Integrations", icon: Plug, group: "Workspace" },
   data: { label: "Data", icon: ScrollText, group: "Workspace" },
+  jobs: { label: "Scheduled jobs", icon: Timer, group: "Operations" },
 } as const

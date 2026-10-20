@@ -40,7 +40,7 @@ export function UserTransactionsCard({ userId }: { userId: string }) {
           <Button
             variant="ghost"
             size="sm"
-            render={<Link to="/transactions" />}
+            nativeButton={false} render={<Link to="/transactions" />}
             className="h-7 text-xs text-muted-foreground"
           >
             Open full ledger

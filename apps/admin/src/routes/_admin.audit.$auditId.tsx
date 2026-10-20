@@ -41,7 +41,7 @@ function AuditDetailPage() {
               Retry
             </Button>
           ) : (
-            <Button variant="outline" size="sm" render={<Link to="/audit" />}>
+            <Button variant="outline" size="sm" nativeButton={false} render={<Link to="/audit" />}>
               Back to audit
             </Button>
           )}
@@ -53,7 +53,7 @@ function AuditDetailPage() {
   return (
     <div className="flex flex-1 flex-col gap-4">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" render={<Link to="/audit" />}>
+        <Button variant="ghost" size="sm" nativeButton={false} render={<Link to="/audit" />}>
           <ChevronLeftIcon className="size-4" />
           Audit
         </Button>

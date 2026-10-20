@@ -51,7 +51,7 @@ export function QuoteDetailsHeader({ quote }: { quote: QuoteDetail }) {
         <Button
           variant="outline"
           className="gap-1.5"
-          render={<Link to="/quotes" />}
+          nativeButton={false} render={<Link to="/quotes" />}
         >
           <ArrowLeftIcon className="size-4" />
           All quotes
@@ -72,7 +72,7 @@ export function QuoteNotFound({ quoteId }: { quoteId: string }) {
         No quote with id {quoteId} exists, or you cannot see it.
       </p>
 
-      <Button variant="outline" render={<Link to="/quotes" />}>
+      <Button variant="outline" nativeButton={false} render={<Link to="/quotes" />}>
         <ArrowLeftIcon className="mr-2 size-4" />
         Back to Quotes
       </Button>

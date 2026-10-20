@@ -17,7 +17,7 @@ function AssetsPage() {
   return (
     <div className="flex flex-1 flex-col gap-6">
       {/* Page Header */}
-      <AssetsHeader />
+      <AssetsHeader onRegistered={() => assets.refetch()} />
 
       {/* Search and Filters */}
       {assets.toolbar}

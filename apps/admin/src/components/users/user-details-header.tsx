@@ -49,7 +49,7 @@ export function UserDetailsHeader({ user }: { user: UserDetail }) {
         <Button
           variant="outline"
           className="gap-1.5"
-          render={<Link to="/users" />}
+          nativeButton={false} render={<Link to="/users" />}
         >
           <ArrowLeftIcon className="size-4" />
           All users
@@ -70,7 +70,7 @@ export function UserNotFound({ userId }: { userId: string }) {
         No account with id {userId} exists, or you cannot see it.
       </p>
 
-      <Button variant="outline" render={<Link to="/users" />}>
+      <Button variant="outline" nativeButton={false} render={<Link to="/users" />}>
         <ArrowLeftIcon className="mr-2 size-4" />
         Back to Users
       </Button>

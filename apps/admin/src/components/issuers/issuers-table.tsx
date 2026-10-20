@@ -78,7 +78,7 @@ export function IssuersTable({ rows }: { rows: IssuerRow[] }) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    render={<Link to="/issuers/$slug" params={{ slug: row.slug }} />}
+                    nativeButton={false} render={<Link to="/issuers/$slug" params={{ slug: row.slug }} />}
                   >
                     View
                   </Button>

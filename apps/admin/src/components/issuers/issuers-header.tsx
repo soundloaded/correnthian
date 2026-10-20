@@ -3,9 +3,11 @@
 import { Badge } from "@correnthian/ui/components/badge"
 import { useApiQuery } from "@/lib/use-api-query"
 
+import { IssuerCreateDialog } from "./issuer-create-dialog"
+
 // Count badge only: the registry list itself is the page, and stats travel
 // on a separate endpoint so a stats failure must not blank the table.
-export function IssuersHeader() {
+export function IssuersHeader({ onRegistered }: { onRegistered?: () => void }) {
   const { data: stats } = useApiQuery("GET /api/v1/issuers/stats")
 
   return (
@@ -18,10 +20,12 @@ export function IssuersHeader() {
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground">
-          Issuer registry and verification tiers. Tier, licence, and risk-flag
-          changes are compliance-only and audited.
+          Issuer registry and verification tiers. Registration, tier, licence,
+          and risk-flag changes are compliance-only and audited.
         </p>
       </div>
+
+      <IssuerCreateDialog onCreated={() => onRegistered?.()} />
     </div>
   )
 }

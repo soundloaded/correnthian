@@ -78,7 +78,7 @@ export function AssetsTable({ rows }: { rows: AssetRow[] }) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    render={<Link to="/assets/$assetId" params={{ assetId: row.asset.assetId }} />}
+                    nativeButton={false} render={<Link to="/assets/$assetId" params={{ assetId: row.asset.assetId }} />}
                   >
                     View
                   </Button>

@@ -109,7 +109,7 @@ export function TeamTable({ members, onChanged }: TeamTableProps) {
 
 export function TeamTableViewAll() {
   return (
-    <Button variant="ghost" size="sm" render={<Link to="/users" />}>
+    <Button variant="ghost" size="sm" nativeButton={false} render={<Link to="/users" />}>
       View
     </Button>
   )

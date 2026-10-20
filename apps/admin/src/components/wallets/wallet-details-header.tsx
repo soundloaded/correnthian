@@ -48,7 +48,7 @@ export function WalletDetailsHeader({ wallet }: { wallet: WalletDetail }) {
         <Button
           variant="outline"
           className="gap-1.5"
-          render={<Link to="/wallets" />}
+          nativeButton={false} render={<Link to="/wallets" />}
         >
           <ArrowLeftIcon className="size-4" />
           All wallets
@@ -69,7 +69,7 @@ export function WalletNotFound({ walletId }: { walletId: string }) {
         No wallet with id {walletId} is registered to this account.
       </p>
 
-      <Button variant="outline" render={<Link to="/wallets" />}>
+      <Button variant="outline" nativeButton={false} render={<Link to="/wallets" />}>
         <ArrowLeftIcon className="mr-2 size-4" />
         Back to Wallets
       </Button>

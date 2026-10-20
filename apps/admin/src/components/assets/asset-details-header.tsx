@@ -44,7 +44,7 @@ export function AssetDetailsHeader({ asset }: { asset: AssetDetail }) {
         <Button
           variant="outline"
           className="gap-1.5"
-          render={<Link to="/assets" />}
+          nativeButton={false} render={<Link to="/assets" />}
         >
           <ArrowLeftIcon className="size-4" />
           All assets
@@ -65,7 +65,7 @@ export function AssetNotFound({ assetId }: { assetId: string }) {
         No asset with id {assetId} exists, or you cannot see it.
       </p>
 
-      <Button variant="outline" render={<Link to="/assets" />}>
+      <Button variant="outline" nativeButton={false} render={<Link to="/assets" />}>
         <ArrowLeftIcon className="mr-2 size-4" />
         Back to Assets
       </Button>

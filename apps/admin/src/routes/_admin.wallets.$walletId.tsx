@@ -8,6 +8,7 @@ import {
 } from "@/components/wallets/wallet-details-header"
 import { WalletManageCard } from "@/components/wallets/wallet-manage-card"
 import { WalletPortfolioCard } from "@/components/wallets/wallet-portfolio-card"
+import { WalletSyncCard } from "@/components/wallets/wallet-sync-card"
 
 export const Route = createFileRoute("/_admin/wallets/$walletId")({
   component: WalletDetailsPage,
@@ -60,6 +61,7 @@ function WalletDetailsPage() {
         {/* Left Column */}
         <div className="space-y-4">
           <WalletManageCard wallet={wallet} onChanged={() => refetch()} />
+          <WalletSyncCard wallet={wallet} />
         </div>
 
         {/* Right Column */}

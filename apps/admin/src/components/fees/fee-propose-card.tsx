@@ -7,6 +7,7 @@ import { PenLineIcon } from "lucide-react"
 import { api } from "@/lib/api"
 import type { ApiResult } from "@correnthian/api-client"
 import { getSession } from "@/lib/auth"
+import { rankAtLeast } from "@/lib/roles"
 import { Button } from "@correnthian/ui/components/button"
 import { Card, CardContent, CardHeader } from "@correnthian/ui/components/card"
 import { Input } from "@correnthian/ui/components/input"
@@ -246,19 +247,6 @@ function ProposeCardHeader() {
       </div>
     </CardHeader>
   )
-}
-
-const RANK: Record<string, number> = {
-  user: 0,
-  support: 1,
-  compliance: 2,
-  admin: 3,
-  owner: 4,
-}
-
-// Fail-closed mirror of the API rank table.
-function rankAtLeast(actual: string, required: string): boolean {
-  return (RANK[actual.trim().toLowerCase()] ?? -1) >= (RANK[required] ?? 99)
 }
 
 function toMessage(

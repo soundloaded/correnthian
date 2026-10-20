@@ -19,7 +19,7 @@ export function TeamHeader({ onNavigate }: { onNavigate: () => void }) {
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">Team</h1>
           <Badge variant="secondary" className="rounded-full px-2.5 py-0.5">
-            {stats ? `${stats.total} operators` : "…"}
+            {stats ? `${stats.total} accounts` : "…"}
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground">

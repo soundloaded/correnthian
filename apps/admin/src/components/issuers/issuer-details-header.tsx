@@ -45,7 +45,7 @@ export function IssuerDetailsHeader({ issuer }: { issuer: IssuerDetail }) {
         <Button
           variant="outline"
           className="gap-1.5"
-          render={<Link to="/issuers" />}
+          nativeButton={false} render={<Link to="/issuers" />}
         >
           <ArrowLeftIcon className="size-4" />
           All issuers
@@ -66,7 +66,7 @@ export function IssuerNotFound({ slug }: { slug: string }) {
         No issuer with slug {slug} exists, or you cannot see it.
       </p>
 
-      <Button variant="outline" render={<Link to="/issuers" />}>
+      <Button variant="outline" nativeButton={false} render={<Link to="/issuers" />}>
         <ArrowLeftIcon className="mr-2 size-4" />
         Back to Issuers
       </Button>
