@@ -36,8 +36,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@correnthian/ui/components/select"
+import { Link } from "@tanstack/react-router"
+
 import { api } from "@/lib/api"
 import { getSession } from "@/lib/auth"
+import { rankAtLeast } from "@/lib/roles"
 
 /**
  * The Create verdict. The inherited Nexora items (New Lead, New Task,
@@ -47,14 +50,12 @@ import { getSession } from "@/lib/auth"
  * honestly perform today:
  *
  * - Queue notification → POST /notifications (support+)
- * - Propose fee rule  → POST /fees/rules (owner only, needs a reason)
  * - Record attestation → PATCH /assets/:assetId/attestation (compliance+)
  *
- * The fee-rule body is deliberately partial: the full rule has a dozen
- * optional selectors (provider, jurisdiction, notional band, windows),
- * and a header dialog is the wrong place to author precision pricing.
- * The dialog authors a labelled percent-or-fixed rule and says so; the
- * rest belongs to a fee-rule page when one exists.
+ * Creating a fee rule used to live here as a partial dialog — percent or
+ * fixed, no selectors, no priority — and could express less than the form
+ * on the fee rules page. It is a link to that page now, so there is one
+ * place that authors a rule and it is the one that can author all of it.
  *
  * Role-gating here is cosmetic, as everywhere in this console: the API
  * enforces independently, and the gate exists only so an operator is not
@@ -62,22 +63,10 @@ import { getSession } from "@/lib/auth"
  * dialog that produced them, never as toasts.
  */
 
-type ActionId = "notify" | "fee" | "attest" | "job" | null
-
-const RANK: Record<string, number> = {
-  user: 0,
-  support: 1,
-  compliance: 2,
-  admin: 3,
-  owner: 4,
-}
+type ActionId = "notify" | "attest" | "job" | null
 
 function useRole(): string {
   return getSession()?.role ?? "user"
-}
-
-function roleAtLeast(actual: string, required: string): boolean {
-  return (RANK[actual.trim().toLowerCase()] ?? -1) >= (RANK[required] ?? 99)
 }
 
 function Field({ id, label, hint, children }: { id: string; label: string; hint?: string; children: React.ReactNode }) {
@@ -174,166 +163,6 @@ function NotifyDialog({ onClose }: { onClose: () => void }) {
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
           <Button type="submit" disabled={busy}>{busy ? "Queueing…" : "Queue"}</Button>
-        </DialogFooter>
-      </form>
-    </DialogContent>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Propose fee rule (owner only, needs a reason)
-// ---------------------------------------------------------------------------
-
-const FEE_OPERATIONS = ["swap", "buy", "sell", "redeem", "onramp", "offramp"] as const
-const FEE_KINDS = ["network", "provider", "correnthian"] as const
-
-function FeeRuleDialog({ onClose }: { onClose: () => void }) {
-  const [operation, setOperation] = React.useState<string>("swap")
-  const [kind, setKind] = React.useState<string>("correnthian")
-  const [basis, setBasis] = React.useState<"percent" | "fixed">("percent")
-  const [label, setLabel] = React.useState("")
-  const [rateBps, setRateBps] = React.useState("")
-  const [fixedUsd, setFixedUsd] = React.useState("")
-  const [reason, setReason] = React.useState("")
-  const [error, setError] = React.useState<string | null>(null)
-  const [busy, setBusy] = React.useState(false)
-
-  async function submit(event: React.FormEvent) {
-    event.preventDefault()
-    if (!label.trim()) {
-      setError("Give the rule a label.")
-      return
-    }
-    // Mirrors the backend's basis-consistency rule client-side so a
-    // percent rule without a rate fails here, not as a 400.
-    if (basis === "percent") {
-      const bps = Number(rateBps)
-      if (!Number.isInteger(bps) || bps < 0 || bps > 1_000_000) {
-        setError("A percent fee needs a rate in basis points (0–1000000).")
-        return
-      }
-    } else {
-      if (!/^\d+(\.\d+)?$/.test(fixedUsd.trim())) {
-        setError("A fixed fee needs an exact USD amount, as a decimal string.")
-        return
-      }
-    }
-    if (reason.trim().length < 8) {
-      setError("A reason of at least 8 characters is required — it is recorded against your name.")
-      return
-    }
-    setBusy(true)
-    setError(null)
-    const result = await api.request("POST /api/v1/fees/rules", {
-      body: basis === "percent"
-        ? { operation, kind, basis, label: label.trim(), rateBps: Number(rateBps), reason: reason.trim() }
-        : { operation, kind, basis, label: label.trim(), fixedUsd: fixedUsd.trim(), reason: reason.trim() },
-    })
-    setBusy(false)
-    if (result.status === "ok") {
-      onClose()
-      return
-    }
-    setError(
-      result.status === "unauthorised"
-        ? "Your session expired. Sign in again."
-        : result.status === "forbidden" || result.status === "unavailable" || result.status === "error"
-          ? result.message
-          : "The request failed.",
-    )
-  }
-
-  return (
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>Propose fee rule</DialogTitle>
-        <DialogDescription>
-          A labelled percent-or-fixed rule, unrestricted unless narrowed later. Owner only.
-        </DialogDescription>
-      </DialogHeader>
-      <form onSubmit={submit} className="grid gap-4">
-        <div className="grid grid-cols-2 gap-3">
-          <Field id="fee-operation" label="Operation">
-            <Select value={operation} onValueChange={(v) => setOperation(v ?? "swap")}>
-              <SelectTrigger id="fee-operation">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {FEE_OPERATIONS.map((o) => (
-                  <SelectItem key={o} value={o}>{o}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field id="fee-kind" label="Kind">
-            <Select value={kind} onValueChange={(v) => setKind(v ?? "correnthian")}>
-              <SelectTrigger id="fee-kind">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {FEE_KINDS.map((k) => (
-                  <SelectItem key={k} value={k}>{k}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-        </div>
-        <Field id="fee-label" label="Label">
-          <Input
-            id="fee-label"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            placeholder="Standard swap fee"
-            maxLength={80}
-          />
-        </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field id="fee-basis" label="Basis">
-            <Select value={basis} onValueChange={(v) => setBasis(v as "percent" | "fixed")}>
-              <SelectTrigger id="fee-basis">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="percent">percent</SelectItem>
-                <SelectItem value="fixed">fixed</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
-          {basis === "percent" ? (
-            <Field id="fee-rate" label="Rate (bps)" hint="100 bps = 1%.">
-              <Input
-                id="fee-rate"
-                inputMode="numeric"
-                value={rateBps}
-                onChange={(e) => setRateBps(e.target.value)}
-                placeholder="25"
-              />
-            </Field>
-          ) : (
-            <Field id="fee-amount" label="Amount (USD)" hint="Exact decimal, never a float.">
-              <Input
-                id="fee-amount"
-                inputMode="decimal"
-                value={fixedUsd}
-                onChange={(e) => setFixedUsd(e.target.value)}
-                placeholder="1.50"
-              />
-            </Field>
-          )}
-        </div>
-        <Field id="fee-reason" label="Reason" hint="Required. Recorded against your name in the audit trail.">
-          <Input
-            id="fee-reason"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Why this rate is changing"
-            maxLength={500}
-          />
-        </Field>
-        <FormError message={error} />
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={busy}>{busy ? "Proposing…" : "Propose rule"}</Button>
         </DialogFooter>
       </form>
     </DialogContent>
@@ -474,9 +303,9 @@ export function HeaderCreate() {
   const [action, setAction] = React.useState<ActionId>(null)
   const role = useRole()
 
-  const canNotify = roleAtLeast(role, "support")
-  const canFee = roleAtLeast(role, "owner")
-  const canAttest = roleAtLeast(role, "compliance")
+  const canNotify = rankAtLeast(role, "support")
+  const canFee = rankAtLeast(role, "owner")
+  const canAttest = rankAtLeast(role, "compliance")
 
   // The dialog is separate from the menu so a failed mutation's inline
   // error survives: closing the menu must not unmount the form.
@@ -509,9 +338,12 @@ export function HeaderCreate() {
             )}
 
             {canFee && (
-              <DropdownMenuItem className="gap-2" onSelect={() => setAction("fee")}>
+              <DropdownMenuItem
+                className="gap-2"
+                render={<Link to="/fees" />}
+              >
                 <HandCoinsIcon className="size-4" />
-                <span>Propose fee rule</span>
+                <span>Create a fee rule</span>
               </DropdownMenuItem>
             )}
 
@@ -536,7 +368,6 @@ export function HeaderCreate() {
 
       <Dialog open={action !== null} onOpenChange={(v) => { if (!v) setAction(null) }}>
         {action === "notify" && <NotifyDialog onClose={() => setAction(null)} />}
-        {action === "fee" && <FeeRuleDialog onClose={() => setAction(null)} />}
         {action === "attest" && <AttestDialog onClose={() => setAction(null)} />}
         {action === "job" && <JobDialog onClose={() => setAction(null)} role={role} />}
       </Dialog>
@@ -559,7 +390,7 @@ function JobDialog({ onClose, role }: { onClose: () => void; role: string }) {
   // Role-gated at render, not just at the menu: the menu hides this for
   // non-admins, and the dialog refuses too, so a crafted open cannot reach
   // the mutation from an unentitled session.
-  const allowed = roleAtLeast(role, "admin")
+  const allowed = rankAtLeast(role, "admin")
 
   React.useEffect(() => {
     let live = true
