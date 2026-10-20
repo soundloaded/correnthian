@@ -36,8 +36,24 @@ describe('api-client failure vocabulary', () => {
     });
     const client = createCorrenthianClient({ baseUrl: 'http://api.test/', fetchImpl: fetchImpl as unknown as typeof fetch });
 
-    await client.request('GET /api/v1/assets/stats', { auth: false });
-    expect(seen[0]?.url).toBe('http://api.test/api/v1/assets/stats');
+    // Path params are substituted and query strings are appended. This test
+    // used to pass no params at all and assert a bare URL — it was named for
+    // this behaviour and checked none of it, so the client could drop every
+    // filter, sort and pagination cursor and the suite stayed green.
+    await client.request('GET /api/v1/users/:id', {
+      auth: false,
+      params: { id: 'usr_123' },
+      query: { search: 'a@b.test', limit: 25, includeRevoked: true, cursor: null },
+    });
+
+    const url = new URL(seen[0]?.url ?? '');
+    expect(url.pathname).toBe('/api/v1/users/usr_123');
+    expect(url.searchParams.get('search')).toBe('a@b.test');
+    expect(url.searchParams.get('limit')).toBe('25');
+    expect(url.searchParams.get('includeRevoked')).toBe('true');
+    // A null query value means "not set" — it must not become the string
+    // "null" on the wire.
+    expect(url.searchParams.has('cursor')).toBe(false);
   });
 
   it('maps 401 to unauthorised and 403 to forbidden', async () => {

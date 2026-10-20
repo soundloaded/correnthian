@@ -90,7 +90,12 @@ export function createCorrenthianClient(options: ClientOptions) {
     // POST would arrive as a GET. An explicit option still wins.
     const { method = key.slice(0, space) as NonNullable<RequestOptions['method']>, params, query, body, idempotencyKey, auth = true } = reqOptions;
     const template = key.slice(space + 1);
-    const url = buildUrl(options.baseUrl, fillParams(template, params));
+    // `query` belongs in the URL. It was destructured here and then dropped on
+    // the floor: the URL was built from path params alone, so every list
+    // filter, sort, limit and pagination cursor the console sent never
+    // reached the API. The server answered with its defaults, and the
+    // console looked like a filter that did nothing.
+    const url = buildUrl(options.baseUrl, fillParams(template, params), query);
 
     let token: string | null = null;
     if (auth && options.getToken) token = await options.getToken();
