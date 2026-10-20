@@ -44,6 +44,9 @@ export function DevicesToolbar({
             placeholder="Search by account email..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
+            // The API caps the term at 200 characters and answers a longer
+            // one with a validation failure that replaces the whole table.
+            maxLength={200}
             className="pl-9"
           />
         </div>
