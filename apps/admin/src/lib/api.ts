@@ -6,9 +6,15 @@ import { canAccessConsole, clearSession, getSession, setSession } from "./auth"
  * variable falls back to the serving origin rather than a localhost
  * constant that would silently point every request at the operator's own
  * machine. Same-origin deploys work; split origins must set VITE_API_URL.
+ *
+ * The development fallback is the API's port (3100, from
+ * `services/api/.env`), not the console's own. It used to point at 3000 —
+ * the admin's own port — so `pnpm dev` with no `.env` produced a console
+ * that called itself, and every request 404'd. The failure looks like a dead
+ * API rather than a misdirected one.
  */
 export const apiBaseUrl =
-  import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:3000" : window.location.origin)
+  import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:3100" : window.location.origin)
 
 export function signOutAndLeave(): void {
   clearSession()
