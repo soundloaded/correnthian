@@ -64,7 +64,7 @@ the location the entry names.
 
 | Status | Defects | Count |
 |---|---|---|
-| `DONE` | `DEF-001` … `DEF-008`, `DEF-010` … `DEF-022` | 21 |
+| `DONE` | `DEF-001` … `DEF-008`, `DEF-010` … `DEF-024` | 23 |
 | `PARTIAL` | `DEF-009` | 1 |
 | `BACKLOG` | *none* | 0 |
 
@@ -623,6 +623,33 @@ kept for the record; it does not describe the current code._
   transaction engine. Unit spec asserts no URL/host/method text and a
   still-informative failure; the contracts.spec sync pin asserts no stub
   URL on the live 201 branch either.
+- **Status:** `DONE`
+
+### DEF-024 — The API client dropped every query parameter · `DONE`
+- **Found by:** driving the console in a browser to check the devices list — a
+  page that had never been built. The API answered with 25 revoked devices
+  when asked directly for `includeRevoked=true`, and the console showed none.
+  Patching `window.fetch` inside the page and reading the URL it was called
+  with showed the request went to `/api/v1/devices/all` with no query string
+  at all.
+- **The defect:** `packages/api-client/src/client.ts` destructured `query` out
+  of the request options and then called
+  `buildUrl(options.baseUrl, fillParams(template, params))` — the query object
+  was never passed to the URL builder. Every list filter, sort, limit and
+  pagination cursor the console sent was discarded before the request left the
+  browser, and the server answered with its defaults. That is why the console
+  read as a set of static pages: the filters looked live and did nothing, and
+  "Next page" returned the same rows.
+- **Why nothing caught it:** the client test named *"fills path params and
+  query strings"* passed no params and asserted a bare URL. It was named for
+  this behaviour and checked none of it — the shape of `DEF-018` and
+  `DEF-021`: a check that is wired up and green while inspecting nothing.
+- **Fixed by** passing `query` to `buildUrl`. The rewritten test asserts a
+  substituted path param, a search value, a number, a boolean, and that a
+  `null` query value stays off the wire.
+- **Tests:** `packages/api-client/src/__tests__/client.test.ts` — the
+  rewritten test fails against the pre-fix client (`expected null to be
+  'a@b.test'`) and passes after it.
 - **Status:** `DONE`
 
 ---
@@ -1629,7 +1656,7 @@ Re-derivation reports 98 routes, 99 keys, zero uncovered.
 
 ## 21. Summary counts
 
-**50 tracked tasks plus 22 defects.** Recomputed from the `Status` of every
+**50 tracked tasks plus 23 defects.** Recomputed from the `Status` of every
 entry — and now checked by one, because this section has been wrong three
 times running. The version before last claimed 56 tasks and "17 defects, all
 BACKLOG"; the last claimed 61 tasks and 19 defects while telling the reader it
@@ -1644,14 +1671,14 @@ lived in its body rather than its heading, and nothing reads both.
 
 | Status | Tasks | Defects |
 |---|---|---|
-| `DONE` | 19 | 22 |
+| `DONE` | 19 | 23 |
 | `PARTIAL` | 16 | 1 |
 | `BACKLOG` | 13 | 0 |
 | `BLOCKED` | 2 | 0 |
 | `OPEN` | 0 | 0 |
-| **Total** | **50** | **23** |
+| **Total** | **50** | **24** |
 
-**19 of 50 tasks are complete and 16 partially built; 22 of 23 defects are done and 1 (`DEF-009`) is
+**19 of 50 tasks are complete and 16 partially built; 23 of 24 defects are done and 1 (`DEF-009`) is
 half fixed — no defect is left in `BACKLOG`.** The plan's §68 dependency chain
 is most of the way built at the infrastructure layer and not started at the
 layer that moves money.
