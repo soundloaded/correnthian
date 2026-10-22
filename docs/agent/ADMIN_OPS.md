@@ -39,7 +39,7 @@ empty states, which are states rather than fakes.
 | | `/fees` | `/fees/rules` (operation, kind, active, limit), `/fees/rules/diagnostics`, **POST** `/fees/rules` (owner) | **admin** |
 | | `/fees/$ruleId` | `/fees/rules/:id`, **POST** `/fees/preview`, **PATCH** `/fees/rules/:id` | **admin** |
 | Workspace | `/team` | `/users` (search, role, kycStatus, limit, cursor) | support |
-| System | `/settings` | `/settings/flags` (**POST**/**PATCH**/**DELETE**), `/devices/all`, `/notifications`, `/audit`, `/providers/health`, `/jobs`, **POST** `/jobs/:name/run` | any session |
+| System | `/settings` | `/settings/flags` (**POST**/**PATCH**/**DELETE**), `/settings/system` (**PATCH**/**DELETE**), `/config`, `/devices/all`, `/notifications`, `/audit`, `/providers/health`, `/jobs`, **POST** `/jobs/:name/run` | any session |
 
 Navigation lives in `apps/admin/src/config/navigation.ts`. Detail routes
 (`/users/$userId` etc.) stay unlisted; they are reached from their lists.
@@ -143,6 +143,7 @@ the role the endpoint actually requires, with the outcome rendered inline.
 |---|---|---|---|
 | Transaction detail — **Operator actions** | `POST /transactions/:id/transitions`, `POST /transactions/:id/observations` | support | The state list comes from the server's own `permittedNext`, never from a hard-coded set. The form collects the evidence each edge carries: a hash for `broadcast`, a code and message for `failed`, a reason of at least 8 characters for the two edges that move a settled row backwards. |
 | Wallet detail — **Chain state** | `POST /blockchain/wallets/:walletId/sync` | support | Re-reads the chain. Nothing else is offered here: registering a wallet and writing a balance are the account holder's own writes, and an operator typing a number into a chain-derived balance is a liability, not an ops tool. |
+| Settings — **System settings** | `GET /settings/system`, **PATCH** `/settings/system/:key`, **DELETE** `/settings/system/:key`, `GET /config` | support / **admin** / public | Renders the settings the code declares, grouped by area, each showing the value in force and whether it is the declared default or an override. Writes are admin's and carry a reason. The page also shows the **published configuration** — the payload `GET /api/v1/config` serves — so an operator can see what a client sees instead of trusting that a write propagated. |
 | Settings — **Scheduled jobs** | `GET /jobs`, `POST /jobs/:name/run` | support / **admin** | Lists every scheduled job with its cadence and last run. "Run now" is admin's, and the outcome is rendered inline — the job's own report, not a toast. |
 | Assets — **Register an asset** | `POST /assets` | compliance | Every field maps 1:1 to the API's `createAssetSchema`. The chain and issuer are selects populated from the live registry; choosing a chain auto-fills `decimals`. |
 | Issuers — **Register an issuer** | `POST /issuers` | compliance | No tier field: the API always creates an issuer unverified, and tier is a separate audited act. |
@@ -226,9 +227,63 @@ honest read of the two rather than as a third opinion.
 `denied` is the only outcome that takes the destructive tone — a denied action
 is a refusal someone may need to explain.
 
+### Settings
+
+The settings page renders what the **code declares**, not what a list of
+toggles was written down to be. A setting shows the value in force and
+whether it is the declared default or an operator's override, because the
+question an operator has is "is this still the value we shipped with?".
+
+The page also renders the **published configuration** — the payload
+`GET /api/v1/config` serves — above the settings. That is the loop-closer: an
+operator who changes a setting and cannot see it in the published payload is
+looking at a switch that reaches nobody.
+
 ---
 
-## 7. Not built
+## 7. Maintenance mode
+
+**What it is.** `platform.maintenance-mode` closes the API: every route
+answers `503` with the operator's message, except the ones that have to stay
+open. It is a setting like any other — turn it on from *Settings → System
+settings*, and it takes effect on the next request, with no restart and no
+redeploy.
+
+**What stays open, and why.**
+
+| Path | Why |
+|---|---|
+| `/api/v1/settings/*` | The only way back out. |
+| `/api/v1/auth/*` | An operator has to sign in to reach the settings page. |
+| `/api/v1/config` | Carries `maintenance.active` and the message, so a client can tell the user *why*. |
+| `/api/v1/meta/*` | Version discovery, so a client knows where to retry. |
+| `/api/v1/compliance/webhooks/*` | Inbound vendor events. Persona retries, but a closed platform that drops verification events leaves people's screening state behind. |
+| `/health/*` | The process is healthy and it is the one serving the 503. **Readiness stays up** — draining the instance turns an informative 503 into a connection refused. |
+
+**If the console is unreachable.** The settings routes are on the allowlist,
+so the console's own shell answers as long as the operator has a session. If
+the console cannot be reached at all, the break-glass is a direct database
+update — the override is one row:
+
+```sql
+DELETE FROM "SystemSetting" WHERE key = 'platform.maintenance-mode';
+```
+
+The declared default is `false`, so removing the row is the same as turning
+it off, and it leaves no trace of a hand-edited value.
+
+**It fails open.** If the setting cannot be read, the request is allowed. A
+configuration read that fails must not become a second outage, and a refusal
+nobody can clear is worse than an open platform during a database incident.
+
+**What is not recorded.** A request refused by the guard never reaches the
+audit interceptor, so a maintenance window leaves no audit lines for the
+requests it refused. That is deliberate: the window is a decision, recorded
+once, when the switch was flipped.
+
+---
+
+## 8. Not built
 
 | Capability | Blocked on |
 |---|---|
@@ -244,7 +299,7 @@ is a refusal someone may need to explain.
 
 ---
 
-## 8. Environment
+## 9. Environment
 
 | Variable | Default | Notes |
 |---|---|---|
@@ -257,7 +312,7 @@ IPv6 localhost — `http://localhost:3000` works, `127.0.0.1:3000` may not.
 
 ---
 
-## 9. A note on provenance
+## 10. A note on provenance
 
 The previous admin implementation is preserved at `archive/admin-legacy/`,
 including its `STUB-AUDIT.md` — a per-file inventory of every mock the shadcn

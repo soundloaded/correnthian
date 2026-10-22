@@ -8,6 +8,7 @@ import {
 } from "@/components/assets/asset-details-header"
 import { AssetFactGrid } from "@/components/assets/asset-fact-grid"
 import { AssetDisclosureBand } from "@/components/assets/asset-disclosure-band"
+import { AssetPriceCard } from "@/components/assets/asset-price-card"
 import { AssetRegistryCard } from "@/components/assets/asset-registry-card"
 
 export const Route = createFileRoute("/_admin/assets/$assetId")({
@@ -66,6 +67,7 @@ function AssetDetailsPage() {
 
         {/* Right Column */}
         <div className="space-y-4">
+          <AssetPriceCard assetId={assetId} />
           <AssetRegistryCard asset={asset} onChanged={() => refetch()} />
         </div>
       </div>

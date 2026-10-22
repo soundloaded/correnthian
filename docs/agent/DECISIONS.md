@@ -745,3 +745,64 @@ operation. Each is a build-time choice that needs a vendor or a contract, and
 recording them as decided would be the same mistake as shipping a `claimBatch`
 that does not claim.
 
+
+---
+
+## ADR-023 — A setting is a code declaration with a database override, not a row
+
+**Status:** Locked.
+
+**Decision.** A system setting is defined in code — key, type, bounds,
+default — and the database holds only *overrides*. The effective value is
+`override ?? default`. The two kinds of setting are different things and stay
+apart:
+
+| | **System setting** | **Feature flag** |
+|---|---|---|
+| Value | a typed scalar with bounds | a switch, and a rollout percentage |
+| Read by | the service whose behaviour depends on it | nothing, today |
+| Meaning of `rollout` | not applicable | *not implemented* — see below |
+| Declared in | `src/settings/registry.ts` | the `FeatureFlag` table |
+
+**Reason.**
+
+*Why the definition stays in code.* A row that defines a setting is a setting
+nobody reads — the defect the repository already names twice (`DEF-024`, and
+`FeatureFlag` sitting in the schema for a year with nothing reading it). The
+console renders whatever the registry declares, so a setting added in a
+release appears without the console changing, and a setting the console
+remembers that the code does not declare cannot be written at all.
+
+*Why overrides only.* The default is the value the platform already had, so
+the table starts empty and applying the migration changes no behaviour. It
+also means the fallback — a stored value that a later code change made
+invalid — is safe, because the fallback *is* the behaviour that was there
+before. That safety is a property of the defaults equalling today's
+behaviour, not of the design, which is why the registry refuses to load when
+a default fails its own schema and why a test fails the build when a key has
+no reader.
+
+*Why a `Json` column and not a column per setting.* One column per setting
+means a migration per setting, and splits the fact of a setting across two
+homes: its type in the database, its default in the code. The cost of `Json`
+is that the database enforces nothing, so **only the settings module may read
+or write the table** — a read that bypassed the registry would skip the
+validation and the fallback, and would reintroduce the defect this table
+exists to remove.
+
+*Why flags are not settings, and why gradual rollout is not implemented.*
+`rollout` only means something against a subject. On a public route there is
+no subject: `SessionGuard` does not resolve a session for `@Public()` calls,
+and a caller-supplied subject would let anyone choose their own bucket, so
+"10% rollout" would be "0% or 100%, whichever you prefer". Publishing flags
+anywhere a client can read them would publish a contract whose central
+mechanism does not exist. So flags stay where they are — read by the console,
+evaluated by nothing — and per-user rollout waits for a route that can verify
+a subject, designed on its own.
+
+**What this ADR deliberately does not decide.** Whether rate limits become
+settings (a limiter that must reach the database to decide whether to admit a
+request has made itself a dependency of the thing it exists to protect), and
+whether individual jobs can be paused from the console (a paused job would
+read `overdue` forever on the page whose whole job is to report that the
+schedule is broken).

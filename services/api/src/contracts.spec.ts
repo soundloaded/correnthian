@@ -593,6 +593,8 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     ['GET /api/v1/compliance/eligibility', '/api/v1/compliance/eligibility?country=US'],
     ['GET /api/v1/compliance/rules', '/api/v1/compliance/rules'],
     ['GET /api/v1/settings/flags', '/api/v1/settings/flags'],
+    ['GET /api/v1/settings/system', '/api/v1/settings/system'],
+    ['GET /api/v1/config', '/api/v1/config'],
     ['GET /api/v1/onramp/availability', '/api/v1/onramp/availability?direction=buy&country=US'],
   ];
 
@@ -907,6 +909,51 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     await prisma.wallet.deleteMany({ where: { id: reg.body.id } });
   });
 
+  it('magic link request → consume parses both contracts and opens a session', async () => {
+    // The whole path, over the wire: a request that mints a link, the
+    // notification that carries it, and the exchange that turns it into a
+    // session. The token is read from the queued notification because the
+    // email is the only other way to get it — which is the point of the
+    // shape, and the reason the raw token is in the payload rather than
+    // stored.
+    const email = `c-magic-${process.pid}@example.test`;
+    const reg = await request(app.getHttpServer())
+      .post('/api/v1/auth/register')
+      .send({ email, password: 'correct-horse-battery-staple' });
+    expect(reg.status, JSON.stringify(reg.body)).toBe(201);
+
+    const requested = await request(app.getHttpServer())
+      .post('/api/v1/auth/magic-link')
+      .send({ email });
+    expect(requested.status, JSON.stringify(requested.body)).toBe(202);
+    expect(CONTRACT_REGISTRY['POST /api/v1/auth/magic-link'].safeParse(requested.body).success).toBe(true);
+
+    const queued = await prisma.notification.findFirstOrThrow({
+      where: { userId: reg.body.user.id, template: 'auth.magic-link' },
+    });
+    const link = (queued.payload as { link: string }).link;
+    const raw = new URL(link).searchParams.get('token');
+    expect(raw).toBeTruthy();
+
+    const consumed = await request(app.getHttpServer())
+      .post('/api/v1/auth/magic-link/consume')
+      .send({ token: raw });
+    expect(consumed.status, JSON.stringify(consumed.body)).toBe(200);
+    expect(CONTRACT_REGISTRY['POST /api/v1/auth/magic-link/consume'].safeParse(consumed.body).success).toBe(true);
+    expect(consumed.body.user).toMatchObject({ email });
+
+    // The link is single-use: the second exchange is refused.
+    const again = await request(app.getHttpServer())
+      .post('/api/v1/auth/magic-link/consume')
+      .send({ token: raw });
+    expect(again.status).toBe(401);
+
+    await prisma.notification.deleteMany({ where: { userId: reg.body.user.id } });
+    await prisma.authToken.deleteMany({ where: { userId: reg.body.user.id } });
+    await prisma.session.deleteMany({ where: { userId: reg.body.user.id } });
+    await prisma.user.delete({ where: { id: reg.body.user.id } });
+  });
+
   it('flag create → patch → list parses all three contracts, then the flag is deleted', async () => {
     const key = `c-fill-${process.pid}`;
     const created = await request(app.getHttpServer()).post('/api/v1/settings/flags')
@@ -933,6 +980,31 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     expect(gone.status).toBe(204);
 
     await prisma.featureFlag.deleteMany({ where: { key } });
+  });
+
+  it('system setting patch → list → reset parses all three contracts', async () => {
+    // A message, because it changes nothing another suite can observe: the
+    // window between the write and the reset is a few milliseconds, and a
+    // setting that steered a real decision would be a race with every suite
+    // running alongside this one.
+    const key = 'platform.maintenance-message';
+    const patched = await request(app.getHttpServer()).patch(`/api/v1/settings/system/${key}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ value: 'contract suite', reason: 'contract suite proves the settings surface parses' });
+    expect(patched.status, JSON.stringify(patched.body)).toBe(200);
+    expect(CONTRACT_REGISTRY['PATCH /api/v1/settings/system/:key'].safeParse(patched.body).success).toBe(true);
+    expect(patched.body).toMatchObject({ key, value: 'contract suite', source: 'override' });
+
+    const list = await request(app.getHttpServer()).get('/api/v1/settings/system')
+      .set('Authorization', `Bearer ${token}`);
+    expect(CONTRACT_REGISTRY['GET /api/v1/settings/system'].safeParse(list.body).success).toBe(true);
+
+    // Back to the declared default, so the next suite sees what it expects.
+    const gone = await request(app.getHttpServer()).delete(`/api/v1/settings/system/${key}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ reason: 'contract suite removes the override it created' });
+    expect(gone.status).toBe(204);
+    await prisma.systemSetting.deleteMany({ where: { key } });
   });
 
   it('notification enqueue → mine parses, then the row is deleted', async () => {    const template = `c-fill-${process.pid}`;
@@ -1731,7 +1803,9 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
       'blockchain.index-transactions',
       'compliance.rescreen-stale',
       'idempotency.purge',
+      'notifications.dispatch',
       'price.flag-stale',
+      'pricing.record-reference',
       'provider.health-probe',
       'swap-quote.expire',
       'transaction.expire-intents',

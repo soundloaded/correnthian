@@ -3,6 +3,7 @@ import { assertReason } from '../audit/audit.service.js';
 import { isOperatorRole, rankOf, roleSatisfies } from '../common/roles.js';
 import type { Transaction } from '../generated/prisma/client.js';
 import { TransactionsService, type TransactionActor } from './transactions.service.js';
+import { settingDefinition } from '../settings/registry.js';
 
 /**
  * A transaction store with a real compare-and-swap.
@@ -159,6 +160,15 @@ const OWNER: TransactionActor = { id: 'u1', role: 'user' };
 const OTHER: TransactionActor = { id: 'u2', role: 'user' };
 const SUPPORT: TransactionActor = { id: 's1', role: 'support' };
 
+/**
+ * The settings the service reads. The fake serves the declared default for
+ * every key, so this suite exercises the service at the values the platform
+ * ships with.
+ */
+const settings = {
+  get: async (key: string) => settingDefinition(key)!.default,
+} as never;
+
 describe('TransactionsService — the lifecycle', () => {
   let svc: TransactionsService;
   let store: ReturnType<typeof makeStore>;
@@ -221,7 +231,7 @@ describe('TransactionsService — the lifecycle', () => {
       })),
     };
     blockchain = { forChain: vi.fn(async () => adapter) };
-    svc = new TransactionsService(store.prisma as never, audit as never, blockchain as never);
+    svc = new TransactionsService(store.prisma as never, audit as never, blockchain as never, settings);
   };
 
   beforeEach(() => seed());
@@ -886,7 +896,7 @@ describe('TransactionsService — the lifecycle', () => {
         tx({ id: 'a', createdAt: dayAgo(0), state: 'confirmed', amountUsd: { toString: () => '10' } }),
         tx({ id: 'b', createdAt: dayAgo(2), state: 'created', amountUsd: null }),
       ]);
-      svc = new TransactionsService(store.prisma as never, audit as never, blockchain as never);
+      svc = new TransactionsService(store.prisma as never, audit as never, blockchain as never, settings);
       const series = await svc.daily(3);
       expect(series.map((s) => s.count)).toEqual([1, 0, 1]);
       const dates = series.map((s) => s.date);
@@ -899,7 +909,7 @@ describe('TransactionsService — the lifecycle', () => {
         tx({ id: 'a', createdAt: now, state: 'confirmed', amountUsd: { toString: () => '10.005' } }),
         tx({ id: 'b', createdAt: now, state: 'broadcast', amountUsd: { toString: () => '999' } }),
       ]);
-      svc = new TransactionsService(store.prisma as never, audit as never, blockchain as never);
+      svc = new TransactionsService(store.prisma as never, audit as never, blockchain as never, settings);
       const series = await svc.daily(1);
       expect(series).toHaveLength(1);
       // 10.005 rounds to cents; the 999 from the unconfirmed row never lands.
@@ -912,7 +922,7 @@ describe('TransactionsService — the lifecycle', () => {
         tx({ id: 'old', createdAt: dayAgo(30), state: 'confirmed', amountUsd: { toString: () => '5' } }),
         tx({ id: 'new', createdAt: dayAgo(0), state: 'confirmed', amountUsd: { toString: () => '7' } }),
       ]);
-      svc = new TransactionsService(store.prisma as never, audit as never, blockchain as never);
+      svc = new TransactionsService(store.prisma as never, audit as never, blockchain as never, settings);
       const series = await svc.daily(7);
       expect(series).toHaveLength(7);
       expect(series.reduce((n, s) => n + s.count, 0)).toBe(1);
@@ -956,6 +966,34 @@ describe('TransactionsService — the lifecycle', () => {
     it('normalises a checksummed destination rather than storing two spellings of one address', async () => {
       const created = await svc.create({ ...good } as never, 'u1');
       expect(created.destination).toBe('0xdac17f958d2ee523a2206206994597c13d831ec7');
+    });
+
+    it('takes the intent lifetime from the setting', async () => {
+      // A 45-minute window against the 15-minute default. The intent is
+      // stamped with `expiresAt` at creation and the expiry sweep reads that
+      // stored value, so changing the setting never moves a settled row.
+      const longer = new TransactionsService(
+        store.prisma as never,
+        audit as never,
+        blockchain as never,
+        {
+          get: async (key: string) =>
+            key === 'transactions.intent-ttl-minutes'
+              ? 45
+              : settingDefinition(key)!.default,
+        } as never,
+      );
+      const before = Date.now();
+      const created = await longer.create({ ...good } as never, 'u1');
+      const expiresAt = created.expiresAt as Date;
+      expect(expiresAt.getTime()).toBeGreaterThanOrEqual(before + 45 * 60_000);
+      expect(expiresAt.getTime()).toBeLessThan(Date.now() + 46 * 60_000);
+    });
+
+    it('a caller that names its own lifetime still wins over the setting', async () => {
+      const created = await svc.create({ ...good, expiresInMinutes: 5 } as never, 'u1');
+      const expiresAt = created.expiresAt as Date;
+      expect(expiresAt.getTime()).toBeLessThan(Date.now() + 6 * 60_000);
     });
 
     it('starts in `created` and never anywhere else', async () => {

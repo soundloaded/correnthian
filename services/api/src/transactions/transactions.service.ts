@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { redact } from '@correnthian/security';
 import { validateAddress, type BuildTransactionRequest, type UnsignedTransaction } from '@correnthian/blockchain';
 import { BlockchainService } from '../blockchain/blockchain.service.js';
+import { SystemSettingsService } from '../settings/system-settings.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { AppError } from '../common/errors.js';
 import { decodeCursor, encodeCursor, KEYSET_ORDER, keysetAfter } from '../common/keyset.js';
@@ -23,7 +24,7 @@ import type {
 } from './dto/create-transaction.dto.js';
 import type { ListTransactionsDto } from './dto/list-transactions.dto.js';
 import {
-  allowedTransitions, DEFAULT_CONFIRMATIONS, DEFAULT_INTENT_TTL_MINUTES,
+  allowedTransitions, DEFAULT_CONFIRMATIONS,
   reporterFor, reasonRequired, SYSTEM_ROLE,
   type TxState,
 } from './transaction-lifecycle.js';
@@ -160,6 +161,7 @@ export class TransactionsService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(BlockchainService) private readonly blockchain: BlockchainService,
+    @Inject(SystemSettingsService) private readonly settings: SystemSettingsService,
   ) {}
 
   // --- creation ------------------------------------------------------------
@@ -233,8 +235,14 @@ export class TransactionsService {
         feeUsd: input.feeUsd ?? null,
         requiredConfirmations,
         ...(input.metadata ? { metadata: input.metadata as object } : {}),
+        // The lifetime is a setting, so an operator can change it without a
+        // release. A caller that names its own lifetime still wins: the
+        // setting is the default, not a cap.
         expiresAt: new Date(
-          Date.now() + (input.expiresInMinutes ?? DEFAULT_INTENT_TTL_MINUTES) * 60_000,
+          Date.now() +
+            (input.expiresInMinutes ??
+              (await this.settings.get('transactions.intent-ttl-minutes'))) *
+              60_000,
         ),
       },
     });

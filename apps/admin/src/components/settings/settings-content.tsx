@@ -1,4 +1,4 @@
-import { Bell, Flag, Plug, ScrollText, ShieldCheck, Timer, UserRound } from "lucide-react"
+import { Bell, CogIcon, Flag, Plug, ScrollText, ShieldCheck, Timer, UserRound } from "lucide-react"
 
 import { DataSettings, IntegrationsSettings } from "@/components/settings/backend-settings"
 import {
@@ -7,6 +7,7 @@ import {
   SecuritySettings,
 } from "@/components/settings/account-settings"
 import { FlagsSettings } from "@/components/settings/flags-settings"
+import { PlatformSettings } from "@/components/settings/platform-settings"
 import { JobsSettings } from "@/components/settings/jobs-settings"
 import { NoBackendSection } from "@/components/settings/no-backend-section"
 import type { SettingSection } from "@/components/settings/settings-sidebar"
@@ -30,6 +31,9 @@ export function SettingsContent({
 
     case "notifications":
       return <NotificationsSettings />
+
+    case "platform":
+      return <PlatformSettings />
 
     case "flags":
       return <FlagsSettings />
@@ -59,6 +63,7 @@ export const SETTING_SECTION_META = {
   profile: { label: "Profile", icon: UserRound, group: "Account" },
   security: { label: "Security", icon: ShieldCheck, group: "Account" },
   notifications: { label: "Notifications", icon: Bell, group: "Account" },
+  platform: { label: "System settings", icon: CogIcon, group: "Platform" },
   flags: { label: "Feature flags", icon: Flag, group: "Workspace" },
   integrations: { label: "Integrations", icon: Plug, group: "Workspace" },
   data: { label: "Data", icon: ScrollText, group: "Workspace" },

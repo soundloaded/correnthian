@@ -1,20 +1,22 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { AppError } from '../common/errors.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { SystemSettingsService } from '../settings/system-settings.service.js';
 import { KycService } from './kyc.service.js';
 import { ScreeningUnavailableError } from './screening/screening-provider.js';
 
 /**
- * How long a clean sanctions screen stays valid. After this the gate
- * re-screens inline before allowing a fiat movement — the movement waits
- * on the vendor call, bounded by the provider's own timeout.
+ * How long a clean sanctions screen stays valid is now a setting —
+ * `compliance.sanctions-rescreen-hours` — so an operator can change it
+ * without a release.
  *
- * Exported (not inlined) so the nightly re-screen job and the tests read
- * the same number the gate enforces. Two TTLs would drift, and the drift
- * would be invisible: the job would re-screen on a different schedule
- * than the gate demands.
+ * It was a constant here, exported so the nightly re-screen job and the
+ * tests read the same number the gate enforces: two TTLs would drift, and
+ * the drift would be invisible, because the job would re-screen on a
+ * different schedule than the gate demands. The setting keeps that
+ * property — the gate and the job read the same one value — and adds the
+ * ability to change it.
  */
-export const SANCTIONS_TTL_MS = 24 * 60 * 60_000;
 
 /** Fiat-touching movements. Crypto-only moves never reach this gate — the
  *  send and swap paths do not import it, and that absence is enforced by
@@ -67,6 +69,7 @@ export class ComplianceGate {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(KycService) private readonly kyc: KycService,
+    @Inject(SystemSettingsService) private readonly settings: SystemSettingsService,
   ) {}
 
   async assertFiatAllowed(userId: string, movement: FiatMovement, now: Date = new Date()): Promise<void> {
@@ -86,10 +89,11 @@ export class ComplianceGate {
     }
 
     const screenedAt = profile?.sanctionsScreenedAt ? new Date(profile.sanctionsScreenedAt).getTime() : null;
+    const ttlMs = (await this.settings.get('compliance.sanctions-rescreen-hours')) * 60 * 60_000;
     if (
       profile?.sanctionsResult === 'clean' &&
       screenedAt !== null &&
-      now.getTime() - screenedAt <= SANCTIONS_TTL_MS
+      now.getTime() - screenedAt <= ttlMs
     ) {
       return;
     }

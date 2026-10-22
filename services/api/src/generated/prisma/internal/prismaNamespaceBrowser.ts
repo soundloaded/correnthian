@@ -53,6 +53,7 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   User: 'User',
   Session: 'Session',
+  AuthToken: 'AuthToken',
   Device: 'Device',
   KycProfile: 'KycProfile',
   WebhookEvent: 'WebhookEvent',
@@ -71,7 +72,9 @@ export const ModelName = {
   JurisdictionRule: 'JurisdictionRule',
   AuditLog: 'AuditLog',
   Notification: 'Notification',
+  DeliveryLog: 'DeliveryLog',
   FeatureFlag: 'FeatureFlag',
+  SystemSetting: 'SystemSetting',
   IdempotencyRecord: 'IdempotencyRecord',
   JobRun: 'JobRun'
 } as const
@@ -123,6 +126,19 @@ export const SessionScalarFieldEnum = {
 } as const
 
 export type SessionScalarFieldEnum = (typeof SessionScalarFieldEnum)[keyof typeof SessionScalarFieldEnum]
+
+
+export const AuthTokenScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  purpose: 'purpose',
+  tokenHash: 'tokenHash',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type AuthTokenScalarFieldEnum = (typeof AuthTokenScalarFieldEnum)[keyof typeof AuthTokenScalarFieldEnum]
 
 
 export const DeviceScalarFieldEnum = {
@@ -477,10 +493,28 @@ export const NotificationScalarFieldEnum = {
   sentAt: 'sentAt',
   failedAt: 'failedAt',
   error: 'error',
+  claimedBy: 'claimedBy',
+  claimedUntil: 'claimedUntil',
   createdAt: 'createdAt'
 } as const
 
 export type NotificationScalarFieldEnum = (typeof NotificationScalarFieldEnum)[keyof typeof NotificationScalarFieldEnum]
+
+
+export const DeliveryLogScalarFieldEnum = {
+  id: 'id',
+  notificationId: 'notificationId',
+  channel: 'channel',
+  template: 'template',
+  userId: 'userId',
+  attempt: 'attempt',
+  status: 'status',
+  providerMsgId: 'providerMsgId',
+  error: 'error',
+  createdAt: 'createdAt'
+} as const
+
+export type DeliveryLogScalarFieldEnum = (typeof DeliveryLogScalarFieldEnum)[keyof typeof DeliveryLogScalarFieldEnum]
 
 
 export const FeatureFlagScalarFieldEnum = {
@@ -492,6 +526,15 @@ export const FeatureFlagScalarFieldEnum = {
 } as const
 
 export type FeatureFlagScalarFieldEnum = (typeof FeatureFlagScalarFieldEnum)[keyof typeof FeatureFlagScalarFieldEnum]
+
+
+export const SystemSettingScalarFieldEnum = {
+  key: 'key',
+  value: 'value',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SystemSettingScalarFieldEnum = (typeof SystemSettingScalarFieldEnum)[keyof typeof SystemSettingScalarFieldEnum]
 
 
 export const IdempotencyRecordScalarFieldEnum = {

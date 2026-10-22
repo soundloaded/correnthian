@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { SanctionsRescreenJob } from './sanctions-rescreen.job.js';
+import { settingDefinition } from '../settings/registry.js';
 import type { JobContext } from './job.js';
 
 /**
@@ -78,9 +79,18 @@ function makePrisma(rows: Row[]) {
 function setup(rows: Row[], rescreen: (userId: string) => Promise<{ result: 'clean' | 'hit'; screenedAt: Date }>) {
   const prisma = makePrisma(rows);
   const kyc = { rescreen: vi.fn(rescreen) };
-  const job = new SanctionsRescreenJob(prisma as never, kyc as never);
+  const job = new SanctionsRescreenJob(prisma as never, kyc as never, settings);
   return { prisma, kyc, job };
 }
+
+/**
+ * The settings the service reads. The fake serves the declared default for
+ * every key, so this suite exercises the service at the values the platform
+ * ships with.
+ */
+const settings = {
+  get: async (key: string) => settingDefinition(key)!.default,
+} as never;
 
 const profile = (userId: string, over: Row = {}) => ({
   userId,

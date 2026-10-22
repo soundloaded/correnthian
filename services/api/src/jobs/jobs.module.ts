@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ComplianceModule } from '../compliance/compliance.module.js';
+import { NotificationsModule } from '../notifications/notifications.module.js';
 import { PricingModule } from '../pricing/pricing.module.js';
 import { ProvidersModule } from '../providers/providers.module.js';
+import { SettingsModule } from '../settings/settings.module.js';
 import { TransactionsModule } from '../transactions/transactions.module.js';
 import { CLOCK, SystemClock } from './clock.js';
 import { IdempotencyPurgeJob } from './idempotency-purge.job.js';
@@ -10,6 +12,8 @@ import { JobLockService } from './job-lock.service.js';
 import { JobRunStore } from './job-run.store.js';
 import { JobScheduler } from './job-scheduler.service.js';
 import { JobsController } from './jobs.controller.js';
+import { PriceRecordingJob } from '../pricing/price-recording.job.js';
+import { NotificationDispatchJob } from './notification-dispatch.job.js';
 import { ProviderHealthProbeJob } from './provider-health-probe.job.js';
 import { SanctionsRescreenJob } from './sanctions-rescreen.job.js';
 import { AttestationFreshnessJob } from './attestation-freshness.job.js';
@@ -39,6 +43,8 @@ import { JOBS } from './job.js';
  */
 const JOB_CLASSES = [
   IdempotencyPurgeJob,
+  NotificationDispatchJob,
+  PriceRecordingJob,
   ProviderHealthProbeJob,
   SwapQuoteExpiryJob,
   StalePriceFlagJob,
@@ -50,7 +56,9 @@ const JOB_CLASSES = [
 
 @Module({
   controllers: [JobsController],
-  imports: [ProvidersModule, TransactionsModule, PricingModule, ComplianceModule],
+  imports: [ProvidersModule, TransactionsModule, PricingModule, ComplianceModule, SettingsModule, NotificationsModule],
+  // Jobs live in JobsModule so the scheduler owns every schedule in one
+  // place; the job classes themselves live beside the domains they serve.
   providers: [
     { provide: CLOCK, useClass: SystemClock },
     JobLockService,

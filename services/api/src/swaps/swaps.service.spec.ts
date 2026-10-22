@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { deriveAssetId } from '@correnthian/assets';
 import { AppError } from '../common/errors.js';
 import { SwapsService } from './swaps.service.js';
+import { settingDefinition } from '../settings/registry.js';
 
 /**
  * SwapsService with a fake store — batch B gap.
@@ -50,11 +51,21 @@ const fees = {
   })),
 };
 
+/**
+ * The settings the service reads. The fake serves the declared default for
+ * every key, so this suite exercises the service at the values the platform
+ * ships with.
+ */
+const settings = {
+  get: async (key: string) => settingDefinition(key)!.default,
+} as never;
+
 beforeEach(() => {
   fees.breakdown.mockClear();
 });
 
-const svc = (p: ReturnType<typeof makePrisma>) => new SwapsService(p as never, fees as never);
+const svc = (p: ReturnType<typeof makePrisma>) =>
+  new SwapsService(p as never, fees as never, settings);
 
 describe('createQuote refusals', () => {
   it('refuses a conversion to the same asset', async () => {
@@ -87,6 +98,28 @@ describe('createQuote refusals', () => {
       userId: 'u1', fromAssetId: ASSET_A.assetId, toAssetId: ASSET_B.assetId, fromAmountRaw: '100',
     }).catch((e: unknown) => e);
     expect((err2 as AppError).status).toBe(400);
+  });
+
+  it("takes the quote's lifetime from the setting", async () => {
+    // Seven minutes against the one-minute default. The quote is stamped
+    // with `expiresAt` at creation, and the expiry sweep reads that stored
+    // value.
+    const p = makePrisma();
+    const longer = new SwapsService(
+      p as never,
+      fees as never,
+      {
+        get: async (key: string) =>
+          key === 'swaps.quote-ttl-minutes' ? 7 : settingDefinition(key)!.default,
+      } as never,
+    );
+    const before = Date.now();
+    await longer.createQuote({
+      userId: 'u1', fromAssetId: ASSET_A.assetId, toAssetId: ASSET_B.assetId, fromAmountRaw: '100',
+    });
+    const expiresAt = p.created[0]?.['expiresAt'] as Date;
+    expect(expiresAt.getTime()).toBeGreaterThanOrEqual(before + 7 * 60_000);
+    expect(expiresAt.getTime()).toBeLessThan(Date.now() + 8 * 60_000);
   });
 
   it('stores the quote unexecuted with the fee breakdown attached', async () => {

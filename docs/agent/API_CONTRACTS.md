@@ -53,7 +53,7 @@ table already demonstrated.
 
 ---
 
-## 2. The registry — 16 entries
+## 2. The registry — 109 entries
 
 | Key | Schema | Min role |
 |---|---|---|
@@ -73,12 +73,21 @@ table already demonstrated.
 | `GET /audit` | `auditRowSchema[]` | compliance |
 | `GET /audit/:id` | `auditDetailSchema` | compliance |
 | `GET /audit` (error envelope) | `apiErrorSchema` | — |
+| `GET /settings/system` | `systemSettingListSchema` | support |
+| `PATCH /settings/system/:key` | `systemSettingSchema` | admin |
+| `GET /config` | `clientConfigSchema` | public |
 
 `apiErrorSchema` is the standard envelope every failure path produces:
 `{ error: { code, message, detail? }, path, timestamp }`.
 
-**Sixteen of 71 route handlers.** Everything in this table is read-only and
-is consumed by the admin console. No mutating route has a registered contract.
+**109 entries, covering 39 mutating routes as well as the reads.** The table
+above is the part of the registry this section is about; the full map is
+`CONTRACT_REGISTRY` in `packages/contracts/src/schemas.ts`, and every entry
+in it is parsed by a live response in `services/api/src/contracts.spec.ts`.
+
+`GET /config` is the first **public** entry with a body: it is what a client
+reads before it offers anything, so it carries the API version, the
+maintenance state and message, and the enabled chains — and nothing else.
 
 ---
 
@@ -87,7 +96,15 @@ is consumed by the admin console. No mutating route has a registered contract.
 This is the part that matters. A registry entry is a guarantee; its absence is
 not a warning, it is silence.
 
-### Mutating routes — none have contracts
+### Mutating routes — a snapshot from before the registry grew
+
+> **This list has not been re-audited.** It was written when the registry held
+> sixteen read routes and nothing else, and it claims that no mutating route
+> had a contract. That is no longer true: 39 mutating routes have one now,
+> including `POST /assets` and `PATCH /settings/system/:key`.
+> `CONTRACT_REGISTRY` in `packages/contracts/src/schemas.ts` is the
+> authority; the table below is what was untyped when it was written, kept
+> for the record rather than deleted.
 
 | Route | Method | Notes |
 |---|---|---|

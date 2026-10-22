@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { FeesModule } from '../fees/fees.module.js';
+import { SettingsModule } from '../settings/settings.module.js';
 import { ProvidersModule } from '../providers/providers.module.js';
 import { SwapsController } from './swaps.controller.js';
 import { SwapsService } from './swaps.service.js';
 
 @Module({
-  imports: [ProvidersModule, FeesModule],
+  imports: [ProvidersModule, FeesModule, SettingsModule],
   controllers: [SwapsController],
   providers: [SwapsService],
   exports: [SwapsService],

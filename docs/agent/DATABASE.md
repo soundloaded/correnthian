@@ -40,9 +40,9 @@ account because it has no contract to hold them.
 
 ---
 
-## 2. Models — 19
+## 2. Models — 24
 
-> The root `TASK.md` said "18 models, 15 enums". The schema has **19 and 19**.
+> The root `TASK.md` said "18 models, 15 enums". The schema has **24 and 19**.
 > Counted: `grep -c '^model '` and `grep -c '^enum '`.
 
 ### Identity
@@ -92,7 +92,8 @@ account because it has no contract to hold them.
 | `JurisdictionRule` | `(country, region)` → permissions. `region` is `''` for country-wide. `@@unique([country, region])`. |
 | `AuditLog` | Append-only trail. `actorId` is a plain string, **not a relation**, which is why the API resolves emails in a batched second query. |
 | `Notification` | Queued intent. **Never sent.** |
-| `FeatureFlag` | `key`, `enabled`, `rollout`, `description`. **Nothing reads or writes it.** |
+| `FeatureFlag` | `key`, `enabled`, `rollout`, `description`. Read and written by the flags CRUD; **nothing evaluates a flag**, and no client reads one. |
+| `SystemSetting` | `key`, `value Json`, `updatedAt`. **Overrides only** — the definition of every setting lives in `src/settings/registry.ts`, so a row can never be the definition of a setting. Only `src/settings/` may read or write it. |
 
 ---
 
@@ -123,12 +124,24 @@ construction.
 
 ## 4. Migrations
 
-Two. The second is hand-written and is the reason this section exists.
+Three are worth naming. The second is hand-written and is the reason this
+section exists; the third is hand-written for the same reason. The rest are
+listed in `services/api/prisma/migrations/`.
 
 ### `20261005142627_init`
 
 Generated. 583 lines — 19 enums, 19 tables, indexes, unique constraints,
 foreign keys with `onDelete: Cascade` on user-owned relations.
+
+### `20261021083353_system_settings`
+
+**Hand-written.** Creates `SystemSetting` — the override table behind the
+system settings. Its own header explains the two decisions that make it
+safe: the table holds *overrides only*, because the definition of every
+setting lives in `src/settings/registry.ts` and a row must never be the
+definition of a setting; and the value is `Json`, because the database cannot
+enforce a value that depends on which key it is — so only `src/settings/` may
+read or write it.
 
 ### `20261005150000_non_nullable_compound_uniques`
 

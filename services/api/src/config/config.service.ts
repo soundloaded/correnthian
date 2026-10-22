@@ -15,6 +15,7 @@ export class ConfigService {
   get redis() { return this.value.redis; }
   get auth() { return this.value.auth; }
   get persona() { return this.value.persona; }
+  get notifications() { return this.value.notifications; }
   get log() { return this.value.log; }
   get rateLimit() { return this.value.rateLimit; }
   get isProduction() { return this.value.env === 'production'; }

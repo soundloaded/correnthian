@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { assertReason } from '../audit/audit.service.js';
 import type { ObservedTokenTransfer } from '@correnthian/blockchain';
 import { TransactionsService } from './transactions.service.js';
+import { settingDefinition } from '../settings/registry.js';
 import { TransactionIndexingService, type ChainIndexReport } from './transaction-indexing.service.js';
 
 /**
@@ -230,10 +231,19 @@ function makeAdapter(options?: {
   return { adapter, blockchain, getTokenTransfers, getBlockNumber, getTransaction };
 }
 
+/**
+ * The settings the service reads. The fake serves the declared default for
+ * every key, so this suite exercises the service at the values the platform
+ * ships with.
+ */
+const settings = {
+  get: async (key: string) => settingDefinition(key)!.default,
+} as never;
+
 function makeService(adapterFactory: () => ReturnType<typeof makeAdapter>) {
   const store = makeStore();
   const transactions = new TransactionsService(
-    store.prisma as any, audit as any, { forChain: async () => undefined } as any,
+    store.prisma as any, audit as any, { forChain: async () => undefined } as any, settings as any,
   );
   const built = adapterFactory();
   const indexing = new TransactionIndexingService(

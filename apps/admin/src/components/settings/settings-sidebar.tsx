@@ -2,6 +2,7 @@ import {
   Bell,
   Building2,
   ChevronRight,
+  CogIcon,
   CreditCard,
   Flag,
   Palette,
@@ -19,6 +20,7 @@ export type SettingSection =
   | "profile"
   | "security"
   | "notifications"
+  | "platform"
   | "flags"
   | "integrations"
   | "data"
@@ -58,6 +60,12 @@ const navGroups: NavGroup[] = [
       { id: "flags", label: "Feature flags", icon: Flag },
       { id: "integrations", label: "Integrations", icon: Plug },
       { id: "data", label: "Data", icon: ScrollText },
+    ],
+  },
+  {
+    groupLabel: "Platform",
+    items: [
+      { id: "platform", label: "System settings", icon: CogIcon },
     ],
   },
   {

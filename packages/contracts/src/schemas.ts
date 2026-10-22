@@ -160,6 +160,17 @@ export const authMeSchema = z.object({
   id: z.string(), email: z.string(), role: z.string(),
 });
 
+/**
+ * The answer to "we sent you a link".
+ *
+ * The same shape whatever the address was: a request for a link says nothing
+ * about whether the account exists, because distinguishing them is how a list
+ * of addresses becomes a list of targets.
+ */
+export const authLinkRequestSchema = z.object({
+  message: z.string(),
+});
+
 export const deviceListSchema = z.object({
   items: z.array(deviceRowSchema),
   nextCursor: z.string().nullable(),
@@ -924,6 +935,60 @@ export const featureFlagSchema = z.object({
 
 export const featureFlagListSchema = z.array(featureFlagSchema);
 
+// --- system settings (BE-1507) ------------------------------------------------
+
+/**
+ * One system setting, with the value in force and where it came from.
+ *
+ * The payload describes itself — type, bounds, label — because the console
+ * must not hold a second list of settings that can drift from the one the
+ * server declares. `source` says whether the value is the declared default
+ * or an operator's override, so an operator can see at a glance that a
+ * setting they forgot about is still the default.
+ */
+export const systemSettingSchema = z.object({
+  key: z.string(),
+  value: z.union([z.string(), z.number(), z.boolean()]),
+  source: z.enum(['default', 'override']),
+  category: z.string(),
+  label: z.string(),
+  description: z.string(),
+  type: z.enum(['boolean', 'number', 'string']),
+  min: z.number().optional(),
+  max: z.number().optional(),
+  clientVisible: z.boolean(),
+  updatedAt: z.string().nullable(),
+});
+
+export const systemSettingListSchema = z.array(systemSettingSchema);
+
+/**
+ * What a client needs to know before it offers anything.
+ *
+ * Public by design, and therefore deliberately small: an unauthenticated
+ * client must be able to learn that the platform is in maintenance, and why.
+ * No counts, no RPC endpoints, no settings that are not published on
+ * purpose.
+ */
+export const clientConfigSchema = z.object({
+  version: z.string(),
+  maintenance: z.object({
+    active: z.boolean(),
+    message: z.string().nullable(),
+  }),
+  chains: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      family: z.string(),
+      nativeSymbol: z.string(),
+      decimals: z.number().int(),
+      explorerUrl: z.string().nullable(),
+      isTestnet: z.boolean(),
+    }),
+  ),
+});
+
 // --- portfolio ---------------------------------------------------------------
 
 export const portfolioHoldingSchema = z.object({
@@ -1235,6 +1300,9 @@ export const CONTRACT_REGISTRY = {
   'POST /api/v1/devices': deviceMineSchema,
   'POST /api/v1/auth/register': authSessionSchema,
   'POST /api/v1/auth/login': authSessionSchema,
+  'POST /api/v1/auth/magic-link': authLinkRequestSchema,
+  'POST /api/v1/auth/magic-link/consume': authSessionSchema,
+  'POST /api/v1/auth/password-reset': authLinkRequestSchema,
   'GET /api/v1/auth/me': authMeSchema,
   'GET /api/v1/devices/all': deviceListSchema,
   'GET /api/v1/devices/stats': deviceStatsSchema,
@@ -1329,6 +1397,11 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/settings/flags': featureFlagListSchema,
   'POST /api/v1/settings/flags': featureFlagSchema,
   'PATCH /api/v1/settings/flags/:key': featureFlagSchema,
+  // System settings. Reading the list is any operator's; writing is admin's.
+  'GET /api/v1/settings/system': systemSettingListSchema,
+  'PATCH /api/v1/settings/system/:key': systemSettingSchema,
+  // The client contract. Public, and therefore small on purpose.
+  'GET /api/v1/config': clientConfigSchema,
   'GET /api/v1/onramp/availability': availabilitySchema,
   'POST /api/v1/jobs/:name/run': jobRunSchema,
   'GET /api/v1/meta/versions': apiVersionsDocumentSchema,

@@ -27,6 +27,15 @@ export type ErrorCode =
    * thing a fee engine must not do.
    */
   | 'fee_configuration_invalid'
+  /**
+   * The platform is deliberately down, by an operator's decision.
+   *
+   * Distinct from `provider_unavailable` (a counterparty could not serve) and
+   * from `internal` (something broke). The remedy is known and it is short: an
+   * operator turns maintenance off. The client cannot fix it and is told
+   * nothing it could not already know.
+   */
+  | 'maintenance'
   | 'internal';
 
 const STATUS: Record<ErrorCode, number> = {
@@ -43,6 +52,9 @@ const STATUS: Record<ErrorCode, number> = {
   // it will answer again the moment an operator resolves it. The client cannot
   // fix it and is told nothing it could not already know.
   fee_configuration_invalid: 503,
+  // 503 and not 500: nothing is broken. The platform is closed on purpose,
+  // and it will answer again when the operator opens it.
+  maintenance: 503,
   internal: 500,
 };
 
@@ -78,6 +90,17 @@ export class AppError extends Error {
    */
   static feeConfigurationInvalid(m = 'The fee rules cannot state a fee for this operation.', d?: unknown) {
     return new AppError('fee_configuration_invalid', m, d);
+  }
+  /**
+   * The platform is in maintenance.
+   *
+   * `detail` carries the operator's message, which is also published to
+   * clients in `GET /api/v1/config`. It is safe to send because it is public
+   * by construction — an operator writing a notice for users is not a
+   * disclosure.
+   */
+  static maintenance(m = 'The platform is in maintenance.', d?: unknown) {
+    return new AppError('maintenance', m, d);
   }
 }
 

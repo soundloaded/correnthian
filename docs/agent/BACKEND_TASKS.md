@@ -1465,10 +1465,58 @@ Raised by the owner's 2026-10-07 product document; the *engine* already exists.
     `GET /portfolio/allocation` have no surface either; each is an
     operator-readable fact the console does not show.
 
-### BE-1505 — System configuration · `BACKLOG`
-- The `FeatureFlag` model exists (`key`, `enabled`, `rollout`, `description`)
-  and **nothing reads or writes it**. No route, no middleware, no admin surface.
-- **Status:** `BACKLOG`
+### BE-1505 — Feature flags · `DONE`
+- `FeatureFlag` CRUD: `GET/POST/PATCH/DELETE /settings/flags`, two tiers (any
+  operator reads, only `admin` writes), every write carrying a reason, every
+  write audited with before/after. `7911b56`.
+- **The console renders the table and nothing evaluates it.** `rollout` is a
+  number that still controls nothing, and no client reads a flag. That is
+  deliberate now rather than an oversight, and the reason is recorded in
+  `BE-1507`: gradual rollout needs a subject it can verify, and a public
+  route cannot verify one.
+- **Status:** `DONE`
+
+---
+
+### BE-1507 — System settings · `DONE`
+- A setting is a value the platform's behaviour depends on. The definition —
+  key, type, bounds, default — lives in code
+  (`services/api/src/settings/registry.ts`); the database holds only
+  *overrides*, and the effective value is `override ?? default`.
+- **Five settings, each with a reader:** `transactions.intent-ttl-minutes`
+  (the intent lifetime), `compliance.sanctions-rescreen-hours` (the
+  sanctions freshness window, read by the gate **and** the nightly job, so
+  they cannot drift apart), `swaps.quote-ttl-minutes` (how long a quote may
+  be executed for), `platform.maintenance-mode` and
+  `platform.maintenance-message`.
+- **Every default is the value the code was already using**, so applying the
+  migration changes no behaviour. No new business number was introduced.
+- `GET /settings/system` (any operator), `PATCH /settings/system/:key` and
+  `DELETE /settings/system/:key` (`admin`, with a reason, audited with
+  before/after and `destructive: true`).
+- **Maintenance mode is enforced**, not merely stored: a global guard answers
+  503 with the operator's message, while the settings routes, the auth
+  routes, the client config, the version metadata and the inbound vendor
+  webhook stay open. It fails open if the setting cannot be read — a
+  configuration read that fails must not become a second outage.
+- **`GET /api/v1/config` publishes what a client needs** — the API version,
+  the maintenance state and message, and the enabled chains in a projection
+  that carries no counts and no RPC endpoints.
+- **The console has a page for it**: `/settings` → *System settings*, which
+  renders the registry generically and shows the published configuration
+  beside it, so an operator can see the payload a client sees.
+- **Three tests keep it honest**: a key that nothing reads fails the build
+  (the reader scan), a row for a key the registry does not declare fails the
+  build (the orphan test), and a stored value that no longer validates falls
+  back to the declared default rather than wedging the platform.
+- **Status:** `DONE`
+- **Deliberately not built:** rate limits as settings (a limiter that has to
+  reach the database has made itself a dependency of what it protects);
+  per-job enable toggles (a paused job would read `overdue` forever on the
+  page whose job is to report the schedule is broken); `swaps.price-max-age`
+  (`PricingService.MAX_AGE_SECONDS` is the same threshold in four other
+  places, and a second settable copy would drift); gradual flag rollout (see
+  `BE-1505`).
 
 ---
 
@@ -1697,7 +1745,7 @@ Re-derivation reports 98 routes, 99 keys, zero uncovered.
 
 ## 21. Summary counts
 
-**50 tracked tasks plus 24 defects.** Recomputed from the `Status` of every
+**51 tracked tasks plus 25 defects.** Recomputed from the `Status` of every
 entry — and now checked by one, because this section has been wrong three
 times running. The version before last claimed 56 tasks and "17 defects, all
 BACKLOG"; the last claimed 61 tasks and 19 defects while telling the reader it
@@ -1712,14 +1760,14 @@ lived in its body rather than its heading, and nothing reads both.
 
 | Status | Tasks | Defects |
 |---|---|---|
-| `DONE` | 19 | 24 |
+| `DONE` | 21 | 24 |
 | `PARTIAL` | 16 | 1 |
-| `BACKLOG` | 13 | 0 |
+| `BACKLOG` | 12 | 0 |
 | `BLOCKED` | 2 | 0 |
 | `OPEN` | 0 | 0 |
-| **Total** | **50** | **25** |
+| **Total** | **51** | **25** |
 
-**19 of 50 tasks are complete and 16 partially built; 24 of 25 defects are done and 1 (`DEF-009`) is
+**21 of 51 tasks are complete and 16 partially built; 24 of 25 defects are done and 1 (`DEF-009`) is
 half fixed — no defect is left in `BACKLOG`.** The plan's §68 dependency chain
 is most of the way built at the infrastructure layer and not started at the
 layer that moves money.

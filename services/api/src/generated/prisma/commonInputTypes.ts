@@ -169,6 +169,23 @@ export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedDateTimeFilter<$PrismaModel>
 }
 
+export type EnumAuthTokenPurposeFilter<$PrismaModel = never> = {
+  equals?: $Enums.AuthTokenPurpose | Prisma.EnumAuthTokenPurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.AuthTokenPurpose[] | Prisma.ListEnumAuthTokenPurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AuthTokenPurpose[] | Prisma.ListEnumAuthTokenPurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAuthTokenPurposeFilter<$PrismaModel> | $Enums.AuthTokenPurpose
+}
+
+export type EnumAuthTokenPurposeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.AuthTokenPurpose | Prisma.EnumAuthTokenPurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.AuthTokenPurpose[] | Prisma.ListEnumAuthTokenPurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AuthTokenPurpose[] | Prisma.ListEnumAuthTokenPurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAuthTokenPurposeWithAggregatesFilter<$PrismaModel> | $Enums.AuthTokenPurpose
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumAuthTokenPurposeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumAuthTokenPurposeFilter<$PrismaModel>
+}
+
 export type EnumDevicePlatformFilter<$PrismaModel = never> = {
   equals?: $Enums.DevicePlatform | Prisma.EnumDevicePlatformFieldRefInput<$PrismaModel>
   in?: $Enums.DevicePlatform[] | Prisma.ListEnumDevicePlatformFieldRefInput<$PrismaModel>
@@ -993,6 +1010,23 @@ export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedDateTimeFilter<$PrismaModel>
   _max?: Prisma.NestedDateTimeFilter<$PrismaModel>
+}
+
+export type NestedEnumAuthTokenPurposeFilter<$PrismaModel = never> = {
+  equals?: $Enums.AuthTokenPurpose | Prisma.EnumAuthTokenPurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.AuthTokenPurpose[] | Prisma.ListEnumAuthTokenPurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AuthTokenPurpose[] | Prisma.ListEnumAuthTokenPurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAuthTokenPurposeFilter<$PrismaModel> | $Enums.AuthTokenPurpose
+}
+
+export type NestedEnumAuthTokenPurposeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.AuthTokenPurpose | Prisma.EnumAuthTokenPurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.AuthTokenPurpose[] | Prisma.ListEnumAuthTokenPurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AuthTokenPurpose[] | Prisma.ListEnumAuthTokenPurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAuthTokenPurposeWithAggregatesFilter<$PrismaModel> | $Enums.AuthTokenPurpose
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumAuthTokenPurposeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumAuthTokenPurposeFilter<$PrismaModel>
 }
 
 export type NestedEnumDevicePlatformFilter<$PrismaModel = never> = {

@@ -37,6 +37,14 @@ export const UserRole = {
 export type UserRole = (typeof UserRole)[keyof typeof UserRole]
 
 
+export const AuthTokenPurpose = {
+  magic_link: 'magic_link',
+  password_reset: 'password_reset'
+} as const
+
+export type AuthTokenPurpose = (typeof AuthTokenPurpose)[keyof typeof AuthTokenPurpose]
+
+
 export const DevicePlatform = {
   ios: 'ios',
   android: 'android',

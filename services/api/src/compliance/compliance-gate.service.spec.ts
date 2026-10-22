@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  ComplianceGate, FiatDeniedError, SANCTIONS_TTL_MS,
+  ComplianceGate, FiatDeniedError,
 } from './compliance-gate.service.js';
 import { FakeScreeningProvider } from './screening/fake-screening.provider.js';
 import { KycService } from './kyc.service.js';
+import { settingDefinition } from '../settings/registry.js';
 
 /**
  * The fiat gate — BE-1101/BE-1105 §4.
@@ -29,6 +30,27 @@ import { KycService } from './kyc.service.js';
 
 const T0 = new Date('2026-10-10T10:00:00.000Z');
 const HOUR = 3_600_000;
+
+/**
+ * The freshness window is a setting now. The spec reads the declared default
+ * from the registry rather than restating it, so the two cannot drift: a
+ * stale screen here is stale against the value the gate actually enforces.
+ */
+const SANCTIONS_TTL_MS =
+  (settingDefinition('compliance.sanctions-rescreen-hours')!.default as number) * HOUR;
+
+/**
+ * The settings the gate reads. The fake serves the declared default for
+ * every key, so this suite exercises the gate's behaviour at the values the
+ * platform ships with — and `overrides` lets a test move one.
+ */
+const settingsWith = (overrides: Record<string, unknown> = {}) =>
+  ({
+    get: async (key: string) =>
+      key in overrides ? overrides[key] : settingDefinition(key)!.default,
+  }) as never;
+
+const settings = settingsWith();
 
 type Row = Record<string, unknown>;
 
@@ -56,13 +78,13 @@ function makePrisma(profile: Row | null) {
 
 const audit = { record: vi.fn(async () => {}) };
 
-function setup(profile: Row | null) {
+function setup(profile: Row | null, overrides: Record<string, unknown> = {}) {
   const { prisma, profiles } = makePrisma(profile);
   const screening = new FakeScreeningProvider();
   const kyc = new KycService(prisma, screening, audit as never);
   // KycService.rescreen is exercised through its fake store here; the
   // gate under test calls the real method against the same fakes.
-  const gate = new ComplianceGate(prisma, kyc);
+  const gate = new ComplianceGate(prisma, kyc, settingsWith(overrides));
   return { prisma, profiles, screening, kyc, gate };
 }
 
@@ -135,6 +157,25 @@ describe('assertFiatAllowed', () => {
     const err = await gate.assertFiatAllowed('u1', 'redemption', T0).catch((e) => e);
     expect(err).toBeInstanceOf(FiatDeniedError);
     expect(err.code).toBe('sanctions_review');
+  });
+
+  it('the freshness window is a setting, and it decides what counts as stale', async () => {
+    // Two hours old: fresh against the 24h default, stale against a 1h window.
+    const twoHoursOld = new Date(T0.getTime() - 2 * HOUR);
+
+    const wide = setup(approved({ sanctionsScreenedAt: twoHoursOld }));
+    await expect(wide.gate.assertFiatAllowed('u1', 'redemption', T0)).resolves.toBeUndefined();
+    expect(wide.screening.calls.rescreen).toHaveLength(0);
+
+    const narrow = setup(
+      approved({ sanctionsScreenedAt: twoHoursOld }),
+      { 'compliance.sanctions-rescreen-hours': 1 },
+    );
+    narrow.screening.scriptScreen('u1', 'clean');
+    await expect(narrow.gate.assertFiatAllowed('u1', 'redemption', T0)).resolves.toBeUndefined();
+    // The same screen, the same vendor, a different window: it re-screened
+    // because the setting said the screen was old.
+    expect(narrow.screening.calls.rescreen).toEqual(['u1']);
   });
 
   it('denies when the vendor cannot be reached, rather than waving through', async () => {

@@ -6,6 +6,7 @@ import { JurisdictionService } from './jurisdiction.service.js';
 import { KycService } from './kyc.service.js';
 import { PersonaWebhookController } from './persona-webhook.controller.js';
 import { ConfigService } from '../config/config.service.js';
+import { SettingsModule } from '../settings/settings.module.js';
 import { FakeScreeningProvider } from './screening/fake-screening.provider.js';
 import { PersonaScreeningProvider } from './screening/persona-screening.provider.js';
 import { SCREENING_PROVIDER } from './screening/screening-provider.js';
@@ -50,6 +51,9 @@ function screeningProvider(config: ConfigService) {
  */
 @Module({
   controllers: [ComplianceController, PersonaWebhookController],
+  // `SettingsModule` for the sanctions screen's freshness window, which the
+  // gate enforces and the nightly job re-screens on.
+  imports: [SettingsModule],
   providers: [
     JurisdictionService,
     KycService,

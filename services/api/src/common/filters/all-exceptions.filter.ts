@@ -21,7 +21,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const { status, code, message, detail } = this.classify(exception);
 
-    if (status >= 500) {
+    // A maintenance window answers every request with a 503, and logging each
+    // one as an error with a stack would bury the real errors in the exact
+    // window an operator most needs to read. The refusal is not a fault.
+    if (status >= 500 && code !== 'maintenance') {
       this.logger.error(
         `${req.method} ${req.originalUrl} -> ${status}`,
         redactDeep(exception instanceof Error ? exception.stack : exception),

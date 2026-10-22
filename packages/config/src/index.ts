@@ -122,6 +122,41 @@ const schema = z.object({
       enabled: v.sentryDsn !== undefined || v.otelEndpoint !== undefined,
     })),
 
+  /**
+   * Outbound email. Named the way Persona is: credentials together or not at
+   * all, and `configured` means able to send end to end.
+   *
+   * The sink is the development default. It sends nothing and logs the
+   * rendered message, which is the right behaviour while there is no
+   * delivery provider: a message the console can show is not a lie, because
+   * it never claims delivery. Production refuses the sink at boot — real
+   * users waiting on links that never come is an outage, and every one of
+   * those links would read as delivered.
+   */
+  notifications: z
+    .object({
+      provider: z.enum(['console', 'smtp']).default('console'),
+      from: z.string().email().optional(),
+      host: z.string().min(1).optional(),
+      port: z.coerce.number().int().min(1).max(65535).default(587),
+      secure: boolish('false'),
+      user: z.string().min(1).optional(),
+      pass: z.string().optional(),
+    })
+    .superRefine((v, ctx) => {
+      if (v.provider === 'smtp' && (v.host === undefined || v.from === undefined)) {
+        ctx.addIssue({
+          code: 'custom',
+          message:
+            'NOTIFICATIONS_PROVIDER=smtp needs MAIL_HOST and MAIL_FROM; refusing a transport that cannot send',
+        });
+      }
+    })
+    .transform((v) => ({
+      ...v,
+      configured: v.provider === 'console' || (v.host !== undefined && v.from !== undefined),
+    })),
+
   rateLimit: z.object({
     windowSeconds: z.coerce.number().int().min(1).default(60),
     /** The general API budget. */
@@ -180,6 +215,15 @@ export function parseConfig(source: NodeJS.ProcessEnv = process.env): ParseResul
       webhookSecret: source['PERSONA_WEBHOOK_SECRET'],
       templateId: source['PERSONA_TEMPLATE_ID'],
       baseUrl: source['PERSONA_BASE_URL'],
+    },
+    notifications: {
+      provider: source['NOTIFICATIONS_PROVIDER'],
+      from: source['MAIL_FROM'],
+      host: source['MAIL_HOST'],
+      port: source['MAIL_PORT'],
+      secure: source['MAIL_SECURE'],
+      user: source['MAIL_USER'],
+      pass: source['MAIL_PASS'],
     },
     rateLimit: {
       windowSeconds: source['RATE_LIMIT_WINDOW_SECONDS'],

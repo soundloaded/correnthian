@@ -2,10 +2,12 @@ import { Global, Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthModule } from '../auth/auth.module.js';
 import { AuditModule } from '../audit/audit.module.js';
+import { SettingsModule } from '../settings/settings.module.js';
 import { IdempotencyInterceptor } from './idempotency/idempotency.interceptor.js';
 import { IdempotencyModule } from './idempotency/idempotency.module.js';
 import { RolesGuard } from './guards/roles.guard.js';
 import { AuditInterceptor } from './interceptors/audit.interceptor.js';
+import { MaintenanceGuard } from './guards/maintenance.guard.js';
 import { RateLimitGuard } from './guards/rate-limit.guard.js';
 import { SessionGuard } from './guards/session.guard.js';
 import { AllExceptionsFilter } from './filters/all-exceptions.filter.js';
@@ -23,10 +25,16 @@ import { AllExceptionsFilter } from './filters/all-exceptions.filter.js';
  */
 @Global()
 @Module({
-  imports: [AuthModule, AuditModule, IdempotencyModule],
+  imports: [AuthModule, AuditModule, IdempotencyModule, SettingsModule],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_GUARD, useClass: RateLimitGuard },
+    // Maintenance sits after the limiter and before the session. The limiter
+    // first, so a flood of requests is counted rather than each one costing
+    // a settings read; the session last of the three, so a client refused
+    // during maintenance is told the platform is down rather than that it
+    // is logged out.
+    { provide: APP_GUARD, useClass: MaintenanceGuard },
     { provide: APP_GUARD, useClass: SessionGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_INTERCEPTOR, useClass: IdempotencyInterceptor },

@@ -21,6 +21,7 @@ import { Route as AdminAssetsAssetIdRouteImport } from './routes/_admin.assets.$
 import { Route as AdminAuditIndexRouteImport } from './routes/_admin.audit.index'
 import { Route as AdminAuditAuditIdRouteImport } from './routes/_admin.audit.$auditId'
 import { Route as AdminChainsIndexRouteImport } from './routes/_admin.chains.index'
+import { Route as AdminChainsChainIdRouteImport } from './routes/_admin.chains.$chainId'
 import { Route as AdminComplianceIndexRouteImport } from './routes/_admin.compliance.index'
 import { Route as AdminDevicesIndexRouteImport } from './routes/_admin.devices.index'
 import { Route as AdminFeesIndexRouteImport } from './routes/_admin.fees.index'
@@ -29,6 +30,7 @@ import { Route as AdminIssuersIndexRouteImport } from './routes/_admin.issuers.i
 import { Route as AdminIssuersSlugRouteImport } from './routes/_admin.issuers.$slug'
 import { Route as AdminNotificationsIndexRouteImport } from './routes/_admin.notifications.index'
 import { Route as AdminProvidersIndexRouteImport } from './routes/_admin.providers.index'
+import { Route as AdminProvidersSlugRouteImport } from './routes/_admin.providers.$slug'
 import { Route as AdminQuotesIndexRouteImport } from './routes/_admin.quotes.index'
 import { Route as AdminQuotesQuoteIdRouteImport } from './routes/_admin.quotes.$quoteId'
 import { Route as AdminRedemptionsIndexRouteImport } from './routes/_admin.redemptions.index'
@@ -98,6 +100,11 @@ const AdminChainsIndexRoute = AdminChainsIndexRouteImport.update({
   path: '/chains/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminChainsChainIdRoute = AdminChainsChainIdRouteImport.update({
+  id: '/chains/$chainId',
+  path: '/chains/$chainId',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminComplianceIndexRoute = AdminComplianceIndexRouteImport.update({
   id: '/compliance/',
   path: '/compliance/',
@@ -136,6 +143,11 @@ const AdminNotificationsIndexRoute = AdminNotificationsIndexRouteImport.update({
 const AdminProvidersIndexRoute = AdminProvidersIndexRouteImport.update({
   id: '/providers/',
   path: '/providers/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminProvidersSlugRoute = AdminProvidersSlugRouteImport.update({
+  id: '/providers/$slug',
+  path: '/providers/$slug',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminQuotesIndexRoute = AdminQuotesIndexRouteImport.update({
@@ -193,8 +205,10 @@ export interface FileRoutesByFullPath {
   '/auth/login': typeof AuthLoginRoute
   '/assets/$assetId': typeof AdminAssetsAssetIdRoute
   '/audit/$auditId': typeof AdminAuditAuditIdRoute
+  '/chains/$chainId': typeof AdminChainsChainIdRoute
   '/fees/$ruleId': typeof AdminFeesRuleIdRoute
   '/issuers/$slug': typeof AdminIssuersSlugRoute
+  '/providers/$slug': typeof AdminProvidersSlugRoute
   '/quotes/$quoteId': typeof AdminQuotesQuoteIdRoute
   '/transactions/$txId': typeof AdminTransactionsTxIdRoute
   '/users/$userId': typeof AdminUsersUserIdRoute
@@ -223,8 +237,10 @@ export interface FileRoutesByTo {
   '/auth/login': typeof AuthLoginRoute
   '/assets/$assetId': typeof AdminAssetsAssetIdRoute
   '/audit/$auditId': typeof AdminAuditAuditIdRoute
+  '/chains/$chainId': typeof AdminChainsChainIdRoute
   '/fees/$ruleId': typeof AdminFeesRuleIdRoute
   '/issuers/$slug': typeof AdminIssuersSlugRoute
+  '/providers/$slug': typeof AdminProvidersSlugRoute
   '/quotes/$quoteId': typeof AdminQuotesQuoteIdRoute
   '/transactions/$txId': typeof AdminTransactionsTxIdRoute
   '/users/$userId': typeof AdminUsersUserIdRoute
@@ -255,8 +271,10 @@ export interface FileRoutesById {
   '/auth/login': typeof AuthLoginRoute
   '/_admin/assets/$assetId': typeof AdminAssetsAssetIdRoute
   '/_admin/audit/$auditId': typeof AdminAuditAuditIdRoute
+  '/_admin/chains/$chainId': typeof AdminChainsChainIdRoute
   '/_admin/fees/$ruleId': typeof AdminFeesRuleIdRoute
   '/_admin/issuers/$slug': typeof AdminIssuersSlugRoute
+  '/_admin/providers/$slug': typeof AdminProvidersSlugRoute
   '/_admin/quotes/$quoteId': typeof AdminQuotesQuoteIdRoute
   '/_admin/transactions/$txId': typeof AdminTransactionsTxIdRoute
   '/_admin/users/$userId': typeof AdminUsersUserIdRoute
@@ -287,8 +305,10 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/assets/$assetId'
     | '/audit/$auditId'
+    | '/chains/$chainId'
     | '/fees/$ruleId'
     | '/issuers/$slug'
+    | '/providers/$slug'
     | '/quotes/$quoteId'
     | '/transactions/$txId'
     | '/users/$userId'
@@ -317,8 +337,10 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/assets/$assetId'
     | '/audit/$auditId'
+    | '/chains/$chainId'
     | '/fees/$ruleId'
     | '/issuers/$slug'
+    | '/providers/$slug'
     | '/quotes/$quoteId'
     | '/transactions/$txId'
     | '/users/$userId'
@@ -348,8 +370,10 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/_admin/assets/$assetId'
     | '/_admin/audit/$auditId'
+    | '/_admin/chains/$chainId'
     | '/_admin/fees/$ruleId'
     | '/_admin/issuers/$slug'
+    | '/_admin/providers/$slug'
     | '/_admin/quotes/$quoteId'
     | '/_admin/transactions/$txId'
     | '/_admin/users/$userId'
@@ -463,6 +487,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminChainsIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/chains/$chainId': {
+      id: '/_admin/chains/$chainId'
+      path: '/chains/$chainId'
+      fullPath: '/chains/$chainId'
+      preLoaderRoute: typeof AdminChainsChainIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/compliance/': {
       id: '/_admin/compliance/'
       path: '/compliance'
@@ -517,6 +548,13 @@ declare module '@tanstack/react-router' {
       path: '/providers'
       fullPath: '/providers/'
       preLoaderRoute: typeof AdminProvidersIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/providers/$slug': {
+      id: '/_admin/providers/$slug'
+      path: '/providers/$slug'
+      fullPath: '/providers/$slug'
+      preLoaderRoute: typeof AdminProvidersSlugRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_admin/quotes/': {
@@ -591,8 +629,10 @@ interface AdminRouteChildren {
   AdminTeamRoute: typeof AdminTeamRoute
   AdminAssetsAssetIdRoute: typeof AdminAssetsAssetIdRoute
   AdminAuditAuditIdRoute: typeof AdminAuditAuditIdRoute
+  AdminChainsChainIdRoute: typeof AdminChainsChainIdRoute
   AdminFeesRuleIdRoute: typeof AdminFeesRuleIdRoute
   AdminIssuersSlugRoute: typeof AdminIssuersSlugRoute
+  AdminProvidersSlugRoute: typeof AdminProvidersSlugRoute
   AdminQuotesQuoteIdRoute: typeof AdminQuotesQuoteIdRoute
   AdminTransactionsTxIdRoute: typeof AdminTransactionsTxIdRoute
   AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
@@ -619,8 +659,10 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminTeamRoute: AdminTeamRoute,
   AdminAssetsAssetIdRoute: AdminAssetsAssetIdRoute,
   AdminAuditAuditIdRoute: AdminAuditAuditIdRoute,
+  AdminChainsChainIdRoute: AdminChainsChainIdRoute,
   AdminFeesRuleIdRoute: AdminFeesRuleIdRoute,
   AdminIssuersSlugRoute: AdminIssuersSlugRoute,
+  AdminProvidersSlugRoute: AdminProvidersSlugRoute,
   AdminQuotesQuoteIdRoute: AdminQuotesQuoteIdRoute,
   AdminTransactionsTxIdRoute: AdminTransactionsTxIdRoute,
   AdminUsersUserIdRoute: AdminUsersUserIdRoute,

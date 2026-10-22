@@ -5,6 +5,7 @@ import { isOperatorRole } from '../common/roles.js';
 import { decodeCursor, encodeCursor, KEYSET_ORDER, keysetAfter } from '../common/keyset.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { FeesService } from '../fees/fees.service.js';
+import { SystemSettingsService } from '../settings/system-settings.service.js';
 import type { PublicFeeBreakdown, PublicFeeLine } from '../fees/fee-breakdown.js';
 import {
   isWithinStoreRange, MoneyError, notionalUsd as notionalFromRaw, parseUsd, type Usd,
@@ -123,6 +124,7 @@ export class SwapsService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(FeesService) private readonly fees: FeesService,
+    @Inject(SystemSettingsService) private readonly settings: SystemSettingsService,
   ) {
     // `ProvidersService` used to be injected here and was never read. It is
     // gone rather than left as a hint: the rail binding it implied is `BE-702`,
@@ -161,7 +163,11 @@ export class SwapsService {
     const chain = await this.prisma.chain.findUnique({ where: { id: from.chainId } });
     if (!chain?.enabled) throw AppError.badRequest('The source chain is not enabled');
 
-    const expiresAt = new Date(Date.now() + 60_000);
+    // How long a quote can be executed for is a setting, so an operator can
+    // change it without a release. It was an unnamed `60_000` here: a minute,
+    // with nothing saying so.
+    const ttlMs = (await this.settings.get('swaps.quote-ttl-minutes')) * 60_000;
+    const expiresAt = new Date(Date.now() + ttlMs);
 
     // The fee is resolved before the quote is written and stored with it.
     //

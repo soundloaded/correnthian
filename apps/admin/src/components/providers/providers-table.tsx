@@ -13,6 +13,7 @@ import {
 import type { Contract } from "@correnthian/api-client"
 import { api } from "@/lib/api"
 import type { ApiResult } from "@correnthian/api-client"
+import { Link } from "@tanstack/react-router"
 import { getSession } from "@/lib/auth"
 import {
   Select,
@@ -109,7 +110,13 @@ function ProviderTableRow({
     <>
       <TableRow className={dimmed ? "opacity-60" : ""}>
         <TableCell className="pl-4">
-          <p className="text-sm font-medium">{row.name}</p>
+          <Link
+            to="/providers/$slug"
+            params={{ slug: row.slug }}
+            className="text-sm font-medium hover:underline"
+          >
+            {row.name}
+          </Link>
           <p className="text-xs text-muted-foreground">{row.slug}</p>
         </TableCell>
 

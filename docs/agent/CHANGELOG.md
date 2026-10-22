@@ -11,6 +11,50 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ---
 
+## 2026-10-21
+
+### System settings: a store whose every key is read by code
+
+The console's settings page had two halves: a feature-flag table that
+nothing evaluated, and five sections that said so out loud. Neither was a
+system. The platform's real knobs were module constants — the intent
+lifetime, the sanctions freshness window, the quote's life — and chain
+enablement, which reached no client at all.
+
+- **A setting is now a code declaration with a database override.** The
+  definition — key, type, bounds, default — lives in
+  `services/api/src/settings/registry.ts`; the table holds only overrides, and
+  the effective value is `override ?? default`. Every default is the value
+  the code was already using, so applying the migration changes no
+  behaviour and introduces no new business number.
+- **Five settings, each with a reader**: the intent lifetime, the sanctions
+  freshness window (read by the gate *and* the nightly job, so the two
+  cannot drift apart the way two constants could), the quote lifetime, and
+  maintenance mode with its message.
+- **Maintenance mode is enforced, not merely stored.** A global guard
+  answers `503` with the operator's message while the settings routes, the
+  auth routes, the client config, the version metadata and the inbound
+  vendor webhook stay open — the last because losing verification events is
+  worse than losing a request. It fails open if the setting cannot be read:
+  a configuration read that fails must not become a second outage, and a
+  refusal nobody can clear is worse than an open platform.
+- **`GET /api/v1/config` publishes what a client needs** — the API version,
+  the maintenance state and message, and the enabled chains in a projection
+  that carries no counts and no RPC endpoints. Without it, a console that
+  changes something is worth nothing to the people it changes it for.
+- **The console has a page for it**, and it renders the registry generically
+  — a setting added in a release appears without the console changing. Above
+  the settings it shows the *published* configuration, so an operator sees
+  the payload a client sees rather than trusting that a write propagated.
+- **Three tests keep it honest.** A key nothing reads fails the build (the
+  reader scan). A row for a key the registry does not declare fails the
+  build (the orphan test). A stored value that no longer validates falls
+  back to the declared default rather than wedging the platform.
+- **What was deliberately not built**: rate limits as settings, per-job
+  enable toggles, and gradual flag rollout — the last because a public
+  route cannot verify a subject, so "10%" would be "whichever you prefer".
+  The reasoning is in ADR-023.
+
 ## 2026-10-20
 
 ### The console was wired but inert — DEF-024, and a page-by-page pass

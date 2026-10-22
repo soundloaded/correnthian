@@ -52,6 +52,18 @@ export type User = Prisma.UserModel
  */
 export type Session = Prisma.SessionModel
 /**
+ * Model AuthToken
+ * A one-time link for passwordless sign-in or password reset — BE-203.
+ * 
+ * The raw token is handed to the account holder once (in the email) and is
+ * otherwise known to nobody, including us: only its SHA-256 is stored, as
+ * with sessions. Use marks the row consumed; expiry is a column, not a
+ * hope. A used, expired, or unknown token is indistinguishable from the
+ * outside, because distinguishing them confirms whether an address is
+ * registered.
+ */
+export type AuthToken = Prisma.AuthTokenModel
+/**
  * Model Device
  * 
  */
@@ -168,10 +180,44 @@ export type AuditLog = Prisma.AuditLogModel
  */
 export type Notification = Prisma.NotificationModel
 /**
+ * Model DeliveryLog
+ * One attempt to deliver a notification through a transport.
+ * 
+ * The `Notification` row is the intent; this table is the record of what
+ * the transport did with it. A row that claims to have been emailed is a
+ * lie a user could act on, so every attempt is written down — sent,
+ * failed, and retried alike — and the *latest* attempt is what the state is.
+ */
+export type DeliveryLog = Prisma.DeliveryLogModel
+/**
  * Model FeatureFlag
  * 
  */
 export type FeatureFlag = Prisma.FeatureFlagModel
+/**
+ * Model SystemSetting
+ * An operator's override for a setting the code declares.
+ * 
+ * This table holds **overrides only**. The value of every setting is decided
+ * in code — `services/api/src/settings/registry.ts` names each key, its type,
+ * its bounds and its default — and this table records only where an operator
+ * has replaced that default. The effective value is `override ?? default`.
+ * 
+ * That split is the whole point. A row here is never the definition of a
+ * setting, so a key cannot be read by nothing: it is in the registry, and a
+ * test fails the build if a registry key is never read outside it. It is also
+ * why the column is `Json` and not one column per setting — a new setting is
+ * a code change, not a migration, and it cannot be added by writing a row.
+ * 
+ * `Json` enforces nothing, so the value is validated against its key's
+ * schema on the way in and on the way out. A stored value that a later code
+ * change made invalid falls back to the declared default rather than
+ * wedging the platform.
+ * 
+ * SECURITY INVARIANT: this table holds configuration, never key material.
+ * Nothing that could move user funds may be written here.
+ */
+export type SystemSetting = Prisma.SystemSettingModel
 /**
  * Model IdempotencyRecord
  * A claim on an `Idempotency-Key`, and the response that claim produced.

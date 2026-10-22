@@ -11,7 +11,7 @@ import { Button } from "@correnthian/ui/components/button"
 import { Input } from "@correnthian/ui/components/input"
 import { Label } from "@correnthian/ui/components/label"
 
-import { pressable, step } from "../landing/motion"
+import { pressable, step } from "@/components/motion"
 
 const LOGOS = ["google", "slack", "openai"]
 const SOCIALS = [

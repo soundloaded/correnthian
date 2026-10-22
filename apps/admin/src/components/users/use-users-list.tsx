@@ -21,6 +21,7 @@ export function useUsersList() {
   const [search, setSearch] = React.useState("")
   const [role, setRole] = React.useState("all")
   const [kycStatus, setKycStatus] = React.useState("all")
+  const [country, setCountry] = React.useState("")
   const [pageSize, setPageSize] = React.useState<number>(25)
   const [cursors, setCursors] = React.useState<(string | null)[]>([null])
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set())
@@ -31,10 +32,14 @@ export function useUsersList() {
   const cursor = cursors[pageIndex] ?? undefined
   const debouncedSearch = useDebouncedValue(search, 300)
 
+  // Country is sent only when it is a complete two-letter code: a partial
+  // keystroke is not a jurisdiction, and sending it would read as a filter
+  // that excludes everyone. The toolbar already refuses non-letters.
   const query = useApiQuery("GET /api/v1/users", undefined, {
     search: debouncedSearch.trim() === "" ? undefined : debouncedSearch.trim(),
     role: role === "all" ? undefined : role,
     kycStatus: kycStatus === "all" ? undefined : kycStatus,
+    country: country.length === 2 ? country : undefined,
     sort,
     order,
     limit: pageSize,
@@ -58,6 +63,11 @@ export function useUsersList() {
 
   const handleKycStatusChange = (value: string) => {
     setKycStatus(value)
+    resetPages()
+  }
+
+  const handleCountryChange = (value: string) => {
+    setCountry(value)
     resetPages()
   }
 
@@ -131,6 +141,8 @@ export function useUsersList() {
         onRoleChange={handleRoleChange}
         kycStatus={kycStatus}
         onKycStatusChange={handleKycStatusChange}
+        country={country}
+        onCountryChange={handleCountryChange}
         selectedCount={selectedIds.size}
       />
     ),

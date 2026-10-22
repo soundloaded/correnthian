@@ -18,6 +18,35 @@ export class ChainsService {
     });
   }
 
+  /**
+   * The chains a client may use.
+   *
+   * A separate projection from `list()` on purpose. The operator view counts
+   * the assets and wallets on each chain, and those counts are platform
+   * totals — publishing them to an unauthenticated client would say how many
+   * wallets and assets Correnthian holds. This one carries only what a client
+   * needs to offer the chain: what it is, and how to look it up.
+   *
+   * RPC endpoints are absent here for the same reason they are absent from
+   * `list()`: they are infrastructure configuration, and publishing them
+   * invites a third party onto our paid quota.
+   */
+  clientList() {
+    return this.prisma.chain.findMany({
+      where: { enabled: true },
+      orderBy: [{ family: 'asc' }, { name: 'asc' }],
+      select: {
+        id: true,
+        name: true,
+        family: true,
+        nativeSymbol: true,
+        decimals: true,
+        explorerUrl: true,
+        isTestnet: true,
+      },
+    });
+  }
+
   async findById(id: string) {
     const chain = await this.prisma.chain.findUnique({
       where: { id },

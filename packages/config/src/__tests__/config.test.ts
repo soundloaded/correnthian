@@ -182,4 +182,39 @@ describe('config parsing', () => {
       expect(full.config.persona.configured).toBe(true);
     }
   });
+
+  it('defaults notifications to the console sink, which never claims to send', () => {
+    const r = parseConfig(valid);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.config.notifications.provider).toBe('console');
+      expect(r.config.notifications.configured).toBe(true);
+      expect(r.config.notifications.from).toBeUndefined();
+    }
+  });
+
+  it('refuses an smtp transport that cannot send', () => {
+    // A transport that boots unconfigured discovers it at 3am, from a
+    // user's complaint. Refuse at boot instead.
+    const hostOnly = parseConfig({
+      ...valid,
+      NOTIFICATIONS_PROVIDER: 'smtp',
+      MAIL_HOST: 'smtp.example.com',
+    });
+    expect(hostOnly.ok).toBe(false);
+    if (!hostOnly.ok) {
+      expect(hostOnly.issues.join(' ')).toContain('MAIL_FROM');
+    }
+    const full = parseConfig({
+      ...valid,
+      NOTIFICATIONS_PROVIDER: 'smtp',
+      MAIL_FROM: 'no-reply@example.com',
+      MAIL_HOST: 'smtp.example.com',
+    });
+    expect(full.ok).toBe(true);
+    if (full.ok) {
+      expect(full.config.notifications.host).toBe('smtp.example.com');
+      expect(full.config.notifications.configured).toBe(true);
+    }
+  });
 });

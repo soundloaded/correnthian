@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { BlockchainModule } from '../blockchain/blockchain.module.js';
+import { SettingsModule } from '../settings/settings.module.js';
 import { TransactionsController } from './transactions.controller.js';
 import { TransactionIndexingService } from './transaction-indexing.service.js';
 import { TransactionsService } from './transactions.service.js';
@@ -19,7 +20,7 @@ import { TransactionsService } from './transactions.service.js';
  */
 @Module({
   controllers: [TransactionsController],
-  imports: [BlockchainModule],
+  imports: [BlockchainModule, SettingsModule],
   providers: [TransactionsService, TransactionIndexingService],
   exports: [TransactionsService, TransactionIndexingService],
 })

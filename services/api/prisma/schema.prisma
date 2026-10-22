@@ -49,6 +49,14 @@ enum UserRole {
   owner
 }
 
+/// What a one-time auth link grants. Magic links open a session; password
+/// resets grant the right to set a new password. Same shape, same discipline
+/// — see the migration header.
+enum AuthTokenPurpose {
+  magic_link
+  password_reset
+}
+
 enum DevicePlatform {
   ios
   android
@@ -237,6 +245,9 @@ model User {
   sessions Session[]
   devices  Device[]
   wallets  Wallet[]
+  /// One-time links for passwordless sign-in and password reset. Cascaded:
+  /// deleting the account must not leave a live link behind.
+  authTokens AuthToken[]
   /// Denormalised from `Wallet`, never taken from a request body. Listed here
   /// so "everything this account moved" does not need a join through Wallet.
   transactions Transaction[]
@@ -266,6 +277,32 @@ model Session {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+/// A one-time link for passwordless sign-in or password reset — BE-203.
+///
+/// The raw token is handed to the account holder once (in the email) and is
+/// otherwise known to nobody, including us: only its SHA-256 is stored, as
+/// with sessions. Use marks the row consumed; expiry is a column, not a
+/// hope. A used, expired, or unknown token is indistinguishable from the
+/// outside, because distinguishing them confirms whether an address is
+/// registered.
+model AuthToken {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  purpose AuthTokenPurpose
+
+  /// SHA-256 of the token. The token itself is never stored.
+  tokenHash String @unique
+
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, purpose, createdAt])
 }
 
 model Device {
@@ -999,10 +1036,50 @@ model Notification {
   failedAt DateTime?
   error    String?
 
+  /// The delivery lease: who holds the row, and when the hold lapses.
+  /// A worker that dies mid-batch leaves these set; the next worker treats
+  /// a lapsed lease as unclaimed. See `DEF-009` and the migration header.
+  claimedBy    String?
+  claimedUntil DateTime?
+
   createdAt DateTime @default(now())
+
+  deliveries DeliveryLog[]
 
   @@index([userId, createdAt])
   @@index([channel, sentAt])
+  @@index([claimedUntil])
+}
+
+/// One attempt to deliver a notification through a transport.
+///
+/// The `Notification` row is the intent; this table is the record of what
+/// the transport did with it. A row that claims to have been emailed is a
+/// lie a user could act on, so every attempt is written down — sent,
+/// failed, and retried alike — and the *latest* attempt is what the state is.
+model DeliveryLog {
+  id             String @id @default(cuid())
+  notificationId String
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  channel  String @default("email")
+  template String
+  userId   String
+
+  /// Which attempt this was. The first delivery of a row is 1.
+  attempt Int @default(1)
+
+  /// `sent`, `failed` or `retrying`. `failed` is terminal; `retrying` means
+  /// the row is back in the queue with a fresh lease.
+  status String
+
+  providerMsgId String?
+  error         String?
+
+  createdAt DateTime @default(now())
+
+  @@index([notificationId])
+  @@index([status, createdAt])
 }
 
 model FeatureFlag {
@@ -1011,6 +1088,39 @@ model FeatureFlag {
   /// Percentage 0-100 for gradual rollout.
   rollout     Int     @default(100)
   description String?
+
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// System settings
+// ---------------------------------------------------------------------------
+
+/// An operator's override for a setting the code declares.
+///
+/// This table holds **overrides only**. The value of every setting is decided
+/// in code — `services/api/src/settings/registry.ts` names each key, its type,
+/// its bounds and its default — and this table records only where an operator
+/// has replaced that default. The effective value is `override ?? default`.
+///
+/// That split is the whole point. A row here is never the definition of a
+/// setting, so a key cannot be read by nothing: it is in the registry, and a
+/// test fails the build if a registry key is never read outside it. It is also
+/// why the column is `Json` and not one column per setting — a new setting is
+/// a code change, not a migration, and it cannot be added by writing a row.
+///
+/// `Json` enforces nothing, so the value is validated against its key's
+/// schema on the way in and on the way out. A stored value that a later code
+/// change made invalid falls back to the declared default rather than
+/// wedging the platform.
+///
+/// SECURITY INVARIANT: this table holds configuration, never key material.
+/// Nothing that could move user funds may be written here.
+model SystemSetting {
+  key String @id
+
+  /// The override value. Validated against the key's declared schema.
+  value Json
 
   updatedAt DateTime @updatedAt
 }

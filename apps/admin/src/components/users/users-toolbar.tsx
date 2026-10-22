@@ -14,9 +14,9 @@ import {
 
 // Only filters the list endpoint honours. ListUsersDto takes role,
 // kycStatus, country, search — there is no status param, so status is
-// display-only in the table and gets no control here. Country is accepted
-// but left out: a free-text ISO box adds validation work for a filter
-// operators rarely need.
+// display-only in the table and gets no control here. Country is a
+// two-letter ISO code, uppercased: an input that refuses anything else, so
+// no invalid value ever reaches the API.
 const ROLE_OPTIONS = ["user", "support", "compliance", "admin", "owner"]
 
 const KYC_OPTIONS = ["not_started", "pending", "approved", "rejected", "expired"]
@@ -28,6 +28,8 @@ type UsersToolbarProps = {
   onRoleChange: (value: string) => void
   kycStatus: string
   onKycStatusChange: (value: string) => void
+  country: string
+  onCountryChange: (value: string) => void
   selectedCount: number
 }
 
@@ -38,15 +40,21 @@ export function UsersToolbar({
   onRoleChange,
   kycStatus,
   onKycStatusChange,
+  country,
+  onCountryChange,
   selectedCount,
 }: UsersToolbarProps) {
   const hasActiveFilters =
-    search.trim() !== "" || role !== "all" || kycStatus !== "all"
+    search.trim() !== "" ||
+    role !== "all" ||
+    kycStatus !== "all" ||
+    country.trim() !== ""
 
   const clearAll = () => {
     onSearchChange("")
     onRoleChange("all")
     onKycStatusChange("all")
+    onCountryChange("")
   }
 
   return (
@@ -95,6 +103,18 @@ export function UsersToolbar({
             ))}
           </SelectContent>
         </Select>
+
+        <Input
+          placeholder="Country (e.g. US)"
+          value={country}
+          maxLength={2}
+          onChange={(e) => {
+            const next = e.target.value.toUpperCase().replace(/[^A-Z]/g, "")
+            onCountryChange(next)
+          }}
+          className="w-full sm:w-32"
+          aria-label="Filter by country code"
+        />
 
         {hasActiveFilters && (
           <Button

@@ -7,7 +7,8 @@ import { Button } from "@correnthian/ui/components/button"
 import { Input } from "@correnthian/ui/components/input"
 import { Label } from "@correnthian/ui/components/label"
 
-import { pressable, step } from "../landing/motion"
+import { api } from "@/lib/api"
+import { pressable, step } from "@/components/motion"
 
 const LOGOS = ["google", "slack", "openai"]
 const FOOTER_LINKS = ["Support", "Privacy", "Terms"]
@@ -16,10 +17,39 @@ export function ForgotPassword() {
   const navigate = useNavigate()
   const [email, setEmail] = useState("")
   const [sent, setSent] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [sending, setSending] = useState(false)
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  /**
+   * Ask the API for a reset link.
+   *
+   * The page used to flip to "we sent you a link" without asking anything —
+   * a control that pretended to work. It now calls the real endpoint, and it
+   * shows the answer the API gives: the same message whether or not the
+   * address holds an account, because confirming that an address is
+   * registered is how a list of addresses becomes a list of targets.
+   */
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setSent(true)
+    setError(null)
+    setSending(true)
+    const result = await api.request("POST /api/v1/auth/password-reset", {
+      method: "POST",
+      auth: false,
+      body: { email: email.trim() },
+    })
+    setSending(false)
+    if (result.status === "ok") {
+      setSent(true)
+      return
+    }
+    setError(
+      result.status === "unavailable"
+        ? "Cannot reach the Correnthian API. It may be starting, or stopped."
+        : result.status === "unauthorised"
+          ? "The API refused the request. Sign in and try again."
+          : result.message,
+    )
   }
 
   const Icon = sent ? MailCheck : KeyRound
@@ -120,23 +150,28 @@ export function ForgotPassword() {
                 <p className="mb-7 mt-1.5 text-sm text-muted-foreground">
                   {sent ? (
                     <>
-                      We sent a password reset link to{" "}
-                      <span className="font-medium text-foreground">
-                        {email}
-                      </span>
-                      .
+                      If that address holds an account, a reset link is on its
+                      way. It works once and expires in an hour.
                     </>
                   ) : (
                     "Enter the email linked to your account and we'll send you a reset link."
                   )}
                 </p>
 
+                {sent && (
+                  <p className="mb-5 rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                    Development sends nothing: the link is written to the
+                    API's log, where the console sink renders it.
+                  </p>
+                )}
+
                 {sent ? (
                   <div className="grid gap-3">
                     {/*
-                      No reset endpoint exists yet, so the funnel ends here on
-                      purpose: the button returns to sign-in rather than to a
-                      reset page that cannot work.
+                      The reset link lands in the holder's inbox and opens
+                      the web client's reset page, which is not this console.
+                      So the button returns to sign-in rather than to a page
+                      that cannot work.
                     */}
                     <motion.div {...pressable}>
                       <Button
@@ -171,9 +206,14 @@ export function ForgotPassword() {
                         required
                       />
                     </div>
+                    {error && (
+                      <p role="alert" className="text-sm text-destructive">
+                        {error}
+                      </p>
+                    )}
                     <motion.div {...pressable}>
-                      <Button type="submit" className="w-full">
-                        Send reset link
+                      <Button type="submit" className="w-full" disabled={sending}>
+                        {sending ? "Sending…" : "Send reset link"}
                       </Button>
                     </motion.div>
                   </form>
