@@ -63,17 +63,24 @@ const RANK: Record<string, number> = {
 const HAS_DB = Boolean(process.env.DATABASE_URL);
 const CI = Boolean(process.env.CI);
 /**
- * Every role-gated route as of 2026-10-21, with what each requires. 47 of
- * them: 39 handler-level `@Roles` plus 8 routes covered by the four
- * class-level decorators (`audit`, `users`, `settings/flags` and
- * `settings/system`).
+ * Every role-gated route as of 2026-10-22, with what each requires. 56 of
+ * them: 41 handler-level `@Roles` plus 15 routes covered by the four
+ * class-level decorators (`audit` 3, `users` 5, `settings/flags` 4 and
+ * `settings/system` 3).
  *
  * Checked in on purpose. A route that loses its `@Roles()` disappears from
  * discovery, and both behavioural assertions below then pass over a route
  * that is now open to any signed-in account — discovery alone cannot catch a
  * gate being *removed*.
+ *
+ * The count was wrong before (it said 47 against a list of 54): the
+ * class-level half was understated, and the total was copied from the
+ * breakdown instead of counted. The assertion below compares the whole
+ * list, so the list is what has to be right; the comment above it is
+ * where a wrong number hides, and it is the part a reader trusts.
  */
 const EXPECTED_GATED: string[] = [
+  'DELETE /issuers/:slug/risk-flags/:flag -> compliance',
   'DELETE /settings/flags/:key -> admin',
   'DELETE /settings/system/:key -> admin',
   'GET /audit -> compliance',
@@ -89,6 +96,7 @@ const EXPECTED_GATED: string[] = [
   'GET /fees/rules/diagnostics -> admin',
   'GET /issuers -> support',
   'GET /issuers/:slug -> support',
+  'GET /issuers/:slug/verification-checks -> support',
   'GET /issuers/stats -> support',
   'GET /jobs -> support',
   'GET /notifications -> support',

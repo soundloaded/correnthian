@@ -2,6 +2,17 @@ import { Inject, Injectable } from '@nestjs/common';
 import { AppError } from '../common/errors.js';
 import { AuditService } from '../audit/audit.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import {
+  attestationStale,
+  checkAttestationFreshness,
+  checkLicences,
+  checkProofUrls,
+  type FetchText,
+  type VerificationAsset,
+  type VerificationIssuer,
+} from './verification-checks.js';
+import { VERIFICATION_FETCH } from './verification-fetch.js';
+import type { VerificationPreview } from './verification-preview.js';
 
 export interface DueDiligence {
   legalStructure?: string;
@@ -33,6 +44,7 @@ export class IssuersService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(VERIFICATION_FETCH) private readonly fetchText: FetchText,
   ) {}
 
   list() {
@@ -86,18 +98,124 @@ export class IssuersService {
   }
 
   /**
+   * Check what the machine can check about an issuer's verification claim.
+   *
+   * Read-only and side-effect free: it fetches proof URLs and reads the
+   * registry, and writes nothing. The console renders this before the
+   * operator decides, so "promote" is never the first time anyone looked.
+   * The judgment — does this custodian arrangement satisfy counsel, does
+   * this auditor's report say what the tier claims — stays human, and the
+   * tier change records the reason the human gave alongside what the
+   * machine measured.
+   */
+  async checkVerification(
+    slug: string,
+    due: DueDiligence,
+    now: Date = new Date(),
+  ): Promise<VerificationPreview> {
+    const issuer = await this.prisma.issuer.findUnique({ where: { slug } });
+    if (!issuer) throw AppError.notFound('Issuer not found');
+
+    const assets = await this.prisma.asset.findMany({
+      where: { issuerId: issuer.id },
+      select: {
+        assetId: true,
+        symbol: true,
+        lastAttestedAt: true,
+        attestationCadence: true,
+        proofOfReserveUrl: true,
+      },
+    });
+
+    return this.evaluateVerification(
+      {
+        slug: issuer.slug,
+        licenseTypes: issuer.licenseTypes,
+        licenseRefs: issuer.licenseRefs,
+      },
+      assets.map((a) => ({
+        assetId: a.assetId,
+        symbol: a.symbol,
+        lastAttestedAt: a.lastAttestedAt,
+        attestationCadence: a.attestationCadence as VerificationAsset['attestationCadence'],
+        proofOfReserveUrl: a.proofOfReserveUrl,
+      })),
+      due,
+      now,
+    );
+  }
+
+  /**
+   * The machine half, factored out: same evidence in, same verdict out.
+   * `checkVerification` reads the registry; this evaluates what it read.
+   * The tier change enforces the verdict; the console previews it.
+   */
+  async evaluateVerification(
+    issuer: VerificationIssuer,
+    assets: VerificationAsset[],
+    due: DueDiligence,
+    now: Date = new Date(),
+  ): Promise<VerificationPreview> {
+    const nowDate = now instanceof Date ? now : new Date(now);
+
+    const licences = checkLicences(issuer);
+    const freshness = checkAttestationFreshness(assets, nowDate);
+
+    const urls = [due.proofOfReserves, ...(due.auditRefs ?? [])].filter(
+      (u): u is string => typeof u === 'string' && u.trim().length > 0,
+    );
+    const reachable = await checkProofUrls(urls, this.fetchText);
+
+    const checks = [licences, freshness, reachable];
+    const checkedUrls = [...new Set(checks.flatMap((c) => c.checkedUrls ?? []))];
+    // Freshness per asset, from the same function the check itself uses.
+    // Restating the window here would be a second definition of "fresh" —
+    // and two definitions of freshness are two answers to the same question.
+    const assetResults = assets.map((a) => ({
+      assetId: a.assetId,
+      symbol: a.symbol,
+      fresh: !attestationStale(a.lastAttestedAt, nowDate),
+    }));
+
+    return {
+      passed: checks.every((c) => c.passed),
+      checks,
+      checkedUrls,
+      assetResults,
+    };
+  }
+
+  /**
    * Set the verification tier, refusing to promote to issuer-verified without
    * the evidence that would make the badge honest.
+   *
+   * The machine half runs first: licences on record, a fresh attestation on
+   * at least one asset, and every cited proof URL answering over HTTPS. A
+   * check that cannot run fails the promotion rather than waving it
+   * through. The human half is the reason, recorded alongside what the
+   * machine measured — the tier change is auditable as both.
    */
   async setVerifiedTier(
     slug: string,
     tier: 'issuer_verified' | 'community_verified' | 'unverified',
     due: DueDiligence,
-    actor: { id: string; role: string },
+    actor: { id: string; role: string; reason?: string },
   ) {
     const issuer = await this.prisma.issuer.findUnique({ where: { slug } });
     if (!issuer) throw AppError.notFound('Issuer not found');
 
+    // The reason is checked before anything is written, not after. The
+    // route's `@RequireAuditReason` already refuses a request without one,
+    // so this is the second line — but the second line is the one that
+    // matters here, because `recordChange` is the *last* thing this method
+    // does, and a reason discovered at that point would arrive after the
+    // tier had already moved.
+    this.audit.assertReason('verifiedTier.changed', actor.reason);
+
+    // The presence gate stays: a missing field is a missing field, and the
+    // operator should hear that before any network call runs. The workflow
+    // below checks that the cited evidence exists, answers, and is fresh.
+    let checks: VerificationPreview | undefined;
     if (tier === 'issuer_verified') {
       const missing: string[] = [];
       if (!issuer.licenseTypes.length) missing.push('licenseTypes');
@@ -110,6 +228,17 @@ export class IssuersService {
             `A verification tier with no evidence is a claim, not a verification.`,
         );
       }
+
+      checks = await this.checkVerification(slug, due);
+      if (!checks.passed) {
+        throw AppError.badRequest(
+          `Verification checks failed: ${checks.checks
+            .filter((c) => !c.passed)
+            .map((c) => `${c.name} — ${c.detail}`)
+            .join(' ')} ` +
+            `Fix the evidence, or record a lower tier that does not claim it.`,
+        );
+      }
     }
 
     const updated = await this.prisma.issuer.update({
@@ -117,11 +246,6 @@ export class IssuersService {
       data: {
         verifiedTier: tier,
         ...(due.legalStructure ? { notes: due.legalStructure } : {}),
-        // Propagate to every asset from this issuer, or the registry would
-        // show a verified issuer next to unverified tokens it stands behind.
-        ...(tier !== 'unverified'
-          ? {}
-          : {}),
       },
     });
 
@@ -130,10 +254,50 @@ export class IssuersService {
       data: { verifiedTier: tier },
     });
 
-    await this.audit.record({
+    // The tier is shown to users as a trust signal, so the trail records
+    // what was checked as well as what was decided: the due diligence the
+    // operator cited, and — for a promotion — the machine report behind
+    // it. A tier whose trail says only "promoted" is the claim this
+    // workflow exists to prevent.
+    //
+    // The report recorded here is the *same* one that gated the promotion.
+    // Re-running the checks after the write would fetch the proof URLs a
+    // second time, and a URL that had gone down in between would put a
+    // failing report next to a promotion the gate had already allowed —
+    // a trail that contradicts itself about the same decision.
+    const recordMeta: Record<string, unknown> = {
+      slug,
+      from: issuer.verifiedTier,
+      to: tier,
+      dueDiligence: due,
+    };
+    if (checks) {
+      recordMeta.checks = checks.checks.map((c) => ({
+        name: c.name,
+        passed: c.passed,
+        detail: c.detail,
+      }));
+      recordMeta.checkedUrls = checks.checkedUrls;
+      recordMeta.assetResults = checks.assetResults;
+    }
+
+    await this.audit.recordChange({
       actorId: actor.id, actorRole: actor.role,
-      action: `issuer.verifiedTier.${tier}`, targetType: 'Issuer', targetId: issuer.id,
-      metadata: { slug, from: issuer.verifiedTier, to: tier, dueDiligence: due },
+      // The destructiveness registry's name for this operation. A tier is
+      // the product, and the registry treats moving one as destructive in
+      // both directions — so it is recorded as a state change with the row
+      // either side of it, not as a note.
+      action: 'verifiedTier.changed',
+      targetType: 'Issuer', targetId: issuer.id,
+      reason: actor.reason,
+      destructive: true,
+      // The two fields this operation owns. `recordChange` derives the
+      // diff from these, and skips an entry when nothing in them moved —
+      // so a request that sets the tier it already has leaves no line,
+      // which is the same rule every other state change follows.
+      before: { verifiedTier: issuer.verifiedTier, notes: issuer.notes },
+      after: { verifiedTier: tier, notes: updated.notes },
+      metadata: recordMeta,
     });
 
     return updated;
@@ -201,6 +365,44 @@ export class IssuersService {
     await this.audit.record({
       actorId: actor.id, actorRole: actor.role,
       action: 'issuer.riskFlag.added', targetType: 'Issuer', targetId: issuer.id,
+      metadata: { slug, flag },
+    });
+    return updated;
+  }
+
+  /**
+   * Remove a risk flag, from the issuer and from every asset that carries it.
+   *
+   * Adding without removing is a ratchet: every scare leaves a permanent
+   * mark, and a registry that can only get scarier stops meaning anything.
+   * Removal propagates the same way addition does, or an asset would keep
+   * warning about a risk its issuer no longer carries.
+   */
+  async removeRiskFlag(slug: string, flag: string, actor: { id: string; role: string }) {
+    const issuer = await this.prisma.issuer.findUnique({ where: { slug } });
+    if (!issuer) throw AppError.notFound('Issuer not found');
+    if (!issuer.riskFlags.includes(flag)) return issuer;
+
+    const updated = await this.prisma.issuer.update({
+      where: { slug },
+      data: { riskFlags: issuer.riskFlags.filter((f) => f !== flag) },
+    });
+    // Prisma has no array-remove for Postgres text[]: rewrite each row's
+    // array without the flag rather than pretending `push` has an inverse.
+    const assets = await this.prisma.asset.findMany({
+      where: { issuerId: issuer.id },
+      select: { id: true, riskFlags: true },
+    });
+    for (const row of assets) {
+      if (!row.riskFlags.includes(flag)) continue;
+      await this.prisma.asset.update({
+        where: { id: row.id },
+        data: { riskFlags: row.riskFlags.filter((f: string) => f !== flag) },
+      });
+    }
+    await this.audit.record({
+      actorId: actor.id, actorRole: actor.role,
+      action: 'issuer.riskFlag.removed', targetType: 'Issuer', targetId: issuer.id,
       metadata: { slug, flag },
     });
     return updated;

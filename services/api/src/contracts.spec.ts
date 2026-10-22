@@ -9,6 +9,8 @@ import { RedisService } from './redis/redis.service.js';
 import { CONTRACT_REGISTRY, type Contract } from '@correnthian/contracts';
 import { applyApiVersioning } from './versioning/apply-versioning.js';
 import { JobScheduler } from './jobs/job-scheduler.service.js';
+import { FakeVerificationFetch } from './issuers/fake-verification-fetch.js';
+import { VERIFICATION_FETCH } from './issuers/verification-fetch.js';
 
 /**
  * The wire-format contract test.
@@ -108,7 +110,14 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
     // stays too.
     process.env['RATE_LIMIT_MAX_REQUESTS'] = '100000';
     process.env['RATE_LIMIT_AUTH_MAX_REQUESTS'] = '100000';
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    // The proof-URL fetch is replaced: this suite asserts the wire format,
+    // and a suite that reached the internet would be asserting that the
+    // internet works. Nothing here promotes an issuer — the preview route
+    // reads the registry and reports — so no proof URL has to answer.
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(VERIFICATION_FETCH)
+      .useValue(new FakeVerificationFetch().fetch)
+      .compile();
     app = moduleRef.createNestApplication();
     // The version prefix is configured here, not only in main.ts. This suite
     // never runs main.ts, so wiring it in one place only would mean the tests
@@ -756,14 +765,38 @@ describe.skipIf(!HAS_DB && !CI)('API wire-format contracts', () => {
       .send({ licenseTypes: ['trust-charter'], licenseRefs: ['ref-1'] });
     expect(CONTRACT_REGISTRY['PATCH /api/v1/issuers/:slug/licences'].safeParse(lic.body).success).toBe(true);
 
+    // The tier write carries a reason — the route refuses a tier change
+    // without one, and the reason is what the audit line records.
+    //
+    // `community_verified` rather than `issuer_verified`: this suite
+    // pins the *shape* of each write, and the response is the same
+    // issuer either way. The evidence a promotion to `issuer_verified`
+    // demands — licences, a fresh attestation, a reachable proof URL —
+    // is policy, and it is covered where it belongs, by the issuer
+    // HTTP suite.
     const tier = await request(app.getHttpServer()).patch(`/api/v1/issuers/${slug}/verification`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ tier: 'issuer_verified', custodian: 'Fill Vault', proofOfReserves: 'https://example.test/por.pdf' });
+      .send({ tier: 'community_verified', reason: 'contract-fill: tier change probe' });
     expect(CONTRACT_REGISTRY['PATCH /api/v1/issuers/:slug/verification'].safeParse(tier.body).success).toBe(true);
 
     const flag = await request(app.getHttpServer()).patch(`/api/v1/issuers/${slug}/risk-flags`)
       .set('Authorization', `Bearer ${token}`).send({ flag: 'contract-fill' });
     expect(CONTRACT_REGISTRY['PATCH /api/v1/issuers/:slug/risk-flags'].safeParse(flag.body).success).toBe(true);
+
+    // The checks preview: read-only, and the same shape the console
+    // renders before an operator promotes anything.
+    const preview = await request(app.getHttpServer())
+      .get(`/api/v1/issuers/${slug}/verification-checks?custodian=Fill%20Vault`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(preview.status, JSON.stringify(preview.body)).toBe(200);
+    expect(CONTRACT_REGISTRY['GET /api/v1/issuers/:slug/verification-checks'].safeParse(preview.body).success).toBe(true);
+
+    // A flag detaches: a registry that can only get scarier stops meaning
+    // anything.
+    const unflag = await request(app.getHttpServer()).delete(`/api/v1/issuers/${slug}/risk-flags/contract-fill`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(unflag.status, JSON.stringify(unflag.body)).toBe(200);
+    expect(CONTRACT_REGISTRY['DELETE /api/v1/issuers/:slug/risk-flags/:flag'].safeParse(unflag.body).success).toBe(true);
 
     await prisma.issuer.deleteMany({ where: { slug } });
   });

@@ -204,6 +204,29 @@ export const issuerListSchema = z.array(issuerSchema);
 
 export const issuerWriteSchema = issuerSchema.omit({ _count: true });
 
+/**
+ * What the machine can check about an issuer's verification claim.
+ *
+ * Read-only and side-effect free: the same evaluation the tier change
+ * enforces, without enforcing it. The console renders this before the
+ * operator decides, so "promote" is never the first time anyone looked.
+ */
+export const verificationPreviewSchema = z.object({
+  passed: z.boolean(),
+  checks: z.array(
+    z.object({
+      name: z.string(),
+      passed: z.boolean(),
+      detail: z.string(),
+      checkedUrls: z.array(z.string()).optional(),
+    }),
+  ),
+  checkedUrls: z.array(z.string()),
+  assetResults: z.array(
+    z.object({ assetId: z.string(), symbol: z.string(), fresh: z.boolean() }),
+  ),
+});
+
 export const issuerDetailSchema = issuerWriteSchema.extend({
   assets: z.array(z.object({
     assetId: z.string(), symbol: z.string(), name: z.string(), enabled: z.boolean(),
@@ -1309,8 +1332,10 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/issuers': issuerListSchema,
   'GET /api/v1/issuers/stats': issuerStatsSchema,
   'GET /api/v1/issuers/:slug': issuerDetailSchema,
+  'GET /api/v1/issuers/:slug/verification-checks': verificationPreviewSchema,
   'POST /api/v1/issuers': issuerWriteSchema,
   'PATCH /api/v1/issuers/:slug/verification': issuerWriteSchema,
+  'DELETE /api/v1/issuers/:slug/risk-flags/:flag': issuerWriteSchema,
   'PATCH /api/v1/issuers/:slug/licences': issuerWriteSchema,
   'PATCH /api/v1/issuers/:slug/risk-flags': issuerWriteSchema,
   'GET /api/v1/chains': chainListSchema,
