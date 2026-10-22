@@ -565,10 +565,15 @@ what the software should be built to do.
   money-transmitter analysis and CFTC-vs-SEC classification change how the buy
   flow is built. Design freeze is currently undated.
 - The metals partner's terms decide redemption mechanics and fees.
-- `verifiedTier` has a data model, a role gate and evidence requirements, but no
-  verification *workflow*. The registry can assert `issuer_verified` about itself
-  if a `compliance` operator sets it with the required evidence present and no
-  evidence ever being checked. This is recorded as a process gap, not a code gap.
+- `verifiedTier` had a data model, a role gate and evidence requirements, but no
+  verification *workflow* — until 2026-10-22. The promotion now runs the
+  machine checks (licences on record, a fresh attestation, cited proof URLs
+  answering over HTTPS) and records them with the reason behind a promotion
+  (`BE-401` → `DONE`). The judgment half stays human: whether the custodian
+  arrangement satisfies counsel, and whether the auditor's report says what
+  the tier claims, is counsel's call. The workflow checks that the evidence
+  exists, answers and is fresh — it does not decide that the evidence is
+  *good*. Counsel review is still the open half of this row.
 
 ---
 

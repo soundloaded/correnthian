@@ -49,7 +49,7 @@ These were the open items. Each is now a tracked task; none was dropped.
 | Legal counsel — required before design freeze | Same blocker table |
 | Seed account recovery | `BE-203b` |
 | Design freeze date undated | Same blocker table |
-| `verifiedTier` has no verification workflow | `BE-401` |
+| `verifiedTier` had no verification workflow — now the promotion runs the machine checks (BE-401 → `DONE`); counsel still owns whether the evidence is *good* | `BE-401` |
 | Provider due diligence unverified | Same blocker table |
 | Magic-link / passwordless auth | `BE-203` |
 | `swaps` rail binding awaits a contracted provider | `BE-701`, `BE-702` |

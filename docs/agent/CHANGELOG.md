@@ -11,6 +11,29 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ---
 
+## 2026-10-22
+
+### Issuer verification: the badge gets its machine half
+
+`BE-401` goes `PARTIAL` → `DONE`. The promotion to `issuer_verified` now
+runs three checks before it writes — licences on record, a fresh
+attestation on at least one asset, every cited proof URL answering over
+HTTPS — and records the report with the reason behind the tier change. The
+same evaluation is readable without enforcing it through
+`GET /issuers/:slug/verification-checks`, which the console renders in the
+verification card before the operator promotes. Risk flags detach
+individually. The judgment half stays human: counsel owns whether the
+evidence is *good*.
+
+- The proof-URL fetch sits behind a `VERIFICATION_FETCH` port, and the
+  HTTP suites override it rather than reaching the network. Internal
+  destinations are refused before any request is made.
+- The reason is asserted before the write, and the audit line is
+  `verifiedTier.changed` via `recordChange` with before and after — the
+  name the destructiveness registry already gave this operation.
+- Sixty-three new or extended tests; typecheck, six API suites and the
+  admin build green at the commit.
+
 ## 2026-10-21
 
 ### System settings: a store whose every key is read by code

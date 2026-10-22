@@ -53,7 +53,7 @@ table already demonstrated.
 
 ---
 
-## 2. The registry — 109 entries
+## 2. The registry — 114 entries
 
 | Key | Schema | Min role |
 |---|---|---|
@@ -80,7 +80,7 @@ table already demonstrated.
 `apiErrorSchema` is the standard envelope every failure path produces:
 `{ error: { code, message, detail? }, path, timestamp }`.
 
-**109 entries, covering 39 mutating routes as well as the reads.** The table
+**114 entries, covering 41 mutating routes as well as the reads.** The table
 above is the part of the registry this section is about; the full map is
 `CONTRACT_REGISTRY` in `packages/contracts/src/schemas.ts`, and every entry
 in it is parsed by a live response in `services/api/src/contracts.spec.ts`.
@@ -115,9 +115,11 @@ not a warning, it is silence.
 | `/assets/:assetId/enabled` | PATCH | **the response drove an incident** |
 | `/assets/:assetId/attestation` | PATCH | |
 | `/issuers` | POST | |
-| `/issuers/:slug/verification` | PATCH | |
+| `/issuers/:slug/verification` | PATCH | tier change needs a reason; `issuer_verified` additionally needs custodian + proof URL, and runs the machine checks |
 | `/issuers/:slug/licences` | PATCH | |
 | `/issuers/:slug/risk-flags` | PATCH | |
+| `/issuers/:slug/risk-flags/:flag` | DELETE | detaches the flag from the issuer and every asset carrying it |
+| `/issuers/:slug/verification-checks` | GET (query: `custodian`, `proofOfReserves`, `auditRefs`) | read-only: the same evaluation the tier change enforces, without enforcing it |
 | `/providers/:slug/status` | PATCH | |
 | `/chains/:id/enabled` | PATCH | |
 | `/users/:id/role` | PATCH | |

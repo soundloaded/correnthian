@@ -1044,26 +1044,53 @@ Raised by the owner's 2026-10-07 product document; never tracked before.
 - **Tests:** 7 + 5, plus contract-suite coverage.
 - **Status:** `DONE`
 
-### BE-401 — Issuer registry and verification · `PARTIAL`
+### BE-401 — Issuer registry and verification · `DONE`
 - **What exists:** `services/api/src/issuers/`. Create always starts
   `unverified`. Promotion to `issuer_verified` is refused without custodian,
   proof of reserves and recorded licences. The tier propagates to every asset
   from that issuer. Removing evidence downgrades the tier everywhere.
   `PATCH /:slug/licences` exists so evidence can be recorded after creation.
-- **What does not exist:** the **verification workflow**. Nothing checks that
-  the evidence is real. A `compliance` operator with the right fields filled in
-  can assert `issuer_verified` about an issuer that was never checked.
-- **This is a process gap recorded as a blocker in the root `TASK.md`, and it is
-  the one place the registry can lie to a customer.**
-- **Dependencies:** counsel-reviewed criteria.
+- **The machine half (2026-10-22):** the promotion now runs three checks
+  before it writes — licences on record (`licences-recorded`), a fresh
+  attestation on at least one asset from the issuer
+  (`attestation-fresh`, 90-day window from `attestationStale`), and every
+  cited proof URL answering over HTTPS (`proof-urls-reachable`). A check
+  that cannot run fails the promotion with the failing check named, rather
+  than waving it through. The fetch sits behind a `VERIFICATION_FETCH`
+  port (HTTP suites override it, never the network); non-HTTPS and
+  internal destinations are refused before any request is made.
+- **Read before deciding:** `GET /:slug/verification-checks` runs the same
+  evaluation without enforcing it — custodian, proof URL and audit refs as
+  query params — so the console renders what the tier change will check.
+  The console previews the checks in the verification card before the
+  operator promotes, and the dialog cites the evidence plus the audit
+  reason with the change.
+- **The audit line is `verifiedTier.changed`, via `recordChange` with
+  before and after.** The destructiveness registry
+  (`destructive-actions.ts`, tracking plan §55's audit requirements) names
+  this operation as destructive in both directions, and the service asserts
+  the reason before the write. The trail records the cited due diligence
+  plus the machine report — the checks, their detail, the URLs fetched and
+  per-asset freshness — behind a promotion.
+- **The judgment half stays human:** whether the custodian arrangement
+  satisfies counsel, and whether the auditor's report says what the tier
+  claims, is counsel's call. The workflow checks that the evidence the
+  operator cited exists, answers and is fresh — it does not decide that
+  the evidence is *good*.
+- **Risk flags go both ways:** `DELETE /:slug/risk-flags/:flag` removes a
+  flag from the issuer and every asset that carries it. Adding without
+  removing would be a ratchet — a registry that can only get scarier stops
+  meaning anything.
 - **Freshness sweep (2026-10-10):** `assets.attestation-freshness` runs
   daily and reports enabled assets past their own cadence (never-attested
-  under a real cadence counts as stale). Read-only verification, not
-  validation — the workflow gap above stands.
-- **Security requirement:** evidence changes are audit events. They are.
-- **Tests:** 12 in `issuers.service.spec.ts`, including four pinning
-  omitted-versus-empty-array semantics.
-- **Status:** `PARTIAL`
+  under a real cadence counts as stale). Read-only reporting, still.
+- **Tests:** unit (service with a scripted fetch, checks, SSRF guard,
+  reason-before-write), HTTP (`test/issuers.spec.ts` with an overridden
+  port: evidence flow, dead-URL refusal, preview, detach), contract
+  (flow test extended with preview + removal; `ENDPOINTS` covers both new
+  routes), roles (both new routes pinned). Typecheck, six API suites and
+  the admin build all green at the commit.
+- **Status:** `DONE`
 
 ---
 
@@ -1736,7 +1763,7 @@ Re-derivation reports 98 routes, 99 keys, zero uncovered.
 | **Metals issuer / LP contract** | **Critical path.** Multi-month lead time. Blocks BE-802, and through it BE-803, BE-804, BE-805, BE-1602. | In discussion: XAUT/TG Commodities via existing owner account; diligence pack at `docs/operations/xaut-diligence-pack.md` |
 | Legal counsel | Entity structure, money-transmitter analysis, CFTC vs SEC for metals. Required **before design freeze**, not before launch. | Briefing memo + interview scorecard ready at `docs/compliance/`; firm not yet selected |
 | Design freeze date | Undated. Counsel answers change how the buy flow is built. | Unset |
-| `verifiedTier` verification workflow | The registry can assert `issuer_verified` about itself with nothing checking the evidence. | No workflow |
+| `verifiedTier` verification workflow | The registry could assert `issuer_verified` about itself with nothing checking the evidence. Now the promotion runs the machine checks (licences, attestation freshness, proof-URL reachability) and records them with the reason. | Built 2026-10-22 (`BE-401` → `DONE`); the judgment half — whether counsel accepts the evidence — stays human |
 | Provider due diligence | XAUT terms verified 2026-10-12 against `tether.to/en/fees` ($100k min, 0.1% acquire, max($1000, 0.1%) redeem, $150 verify — re-verify at signing). Kinesis/PAXG still unverified. | XAUT partial; rest open |
 | Chain-node RPC (Alchemy + Infura) | Eth mainnet failover pair + Base + Sepolia wired in dev 2026-10-12; pool health green on all real chains; Sepolia assemble proven live (real nonce/gas/fee caps, ERC-20 calldata). Relay/signing held for funded-key approval. | Accounts exist; acceptance partial |
 | Seed-account recovery | Guardians have no BTC/SOL equivalent. | Decision required |
@@ -1760,14 +1787,14 @@ lived in its body rather than its heading, and nothing reads both.
 
 | Status | Tasks | Defects |
 |---|---|---|
-| `DONE` | 21 | 24 |
-| `PARTIAL` | 16 | 1 |
+| `DONE` | 22 | 24 |
+| `PARTIAL` | 15 | 1 |
 | `BACKLOG` | 12 | 0 |
 | `BLOCKED` | 2 | 0 |
 | `OPEN` | 0 | 0 |
 | **Total** | **51** | **25** |
 
-**21 of 51 tasks are complete and 16 partially built; 24 of 25 defects are done and 1 (`DEF-009`) is
+**22 of 51 tasks are complete and 15 partially built; 24 of 25 defects are done and 1 (`DEF-009`) is
 half fixed — no defect is left in `BACKLOG`.** The plan's §68 dependency chain
 is most of the way built at the infrastructure layer and not started at the
 layer that moves money.

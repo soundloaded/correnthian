@@ -197,6 +197,14 @@ The evidence is the page, not the badge. Licence types and references sit
 behind a left rule that turns destructive when an `issuer_verified` issuer
 has nothing behind the tier.
 
+The verification card runs the machine checks before the operator promotes:
+the custodian and proof-of-reserves URL the tier would cite are typed into
+the preview, which is the read-only version of the same evaluation the tier
+change enforces — licences on record, a fresh attestation, cited proof URLs
+answering over HTTPS. The promotion itself carries the evidence plus an audit
+reason, both recorded with the change. A risk flag detaches from the issuer
+and its assets individually.
+
 ### Providers
 
 `degraded` takes the **destructive** tone, not grey: a degraded rail is still
