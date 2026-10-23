@@ -19,6 +19,7 @@
     "@correnthian/types": "workspace:*",
     "@correnthian/ui": "workspace:*",
     "@correnthian/wallet-core": "workspace:*",
+    "@tanstack/react-query": "5.90.2",
     "next": "16.3.8",
     "react": "19.2.8",
     "react-dom": "19.2.8"
