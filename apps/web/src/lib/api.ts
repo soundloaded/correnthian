@@ -85,6 +85,9 @@ export async function register(
 
 /**
  * Best-effort server revoke, then the local session goes regardless.
+ * The query cache is cleared too: it holds the last holder's balances,
+ * and on a shared device the next sign-in must not render them from
+ * cache before its own refetch lands.
  */
 export async function logout(): Promise<void> {
   const session = getSession()
@@ -97,6 +100,12 @@ export async function logout(): Promise<void> {
     } catch {
       // Revocation is best-effort; the local session goes either way.
     }
+  }
+  try {
+    const { getQueryClient } = await import("./query-client")
+    getQueryClient().clear()
+  } catch {
+    // Cache clear is hygiene, not correctness; the session still goes.
   }
   signOutAndLeave()
 }
