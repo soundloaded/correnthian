@@ -37,8 +37,11 @@ function emailTransport(config: ConfigService) {
   providers: [
     NotificationsService,
     DeliveryService,
-    ConsoleEmailTransport,
-    SmtpEmailTransport,
+    // The two transports are built by the EMAIL_TRANSPORT factory below, not
+    // by the container: their constructors take a sender string and a mail
+    // client, which carry no DI tokens. Listing a class here makes Nest
+    // construct it — boot dies under tsc emit while passing silently under
+    // vitest/esbuild, which is exactly how this broke (Oct 2026).
     { provide: EMAIL_TRANSPORT, useFactory: emailTransport, inject: [ConfigService] },
   ],
   exports: [NotificationsService, DeliveryService, EMAIL_TRANSPORT],

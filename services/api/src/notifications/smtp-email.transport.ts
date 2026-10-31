@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { createTransport, type Transporter } from 'nodemailer';
 import { ConfigService } from '../config/config.service.js';
 import {
@@ -44,7 +44,7 @@ export class SmtpEmailTransport extends EmailTransport {
    * *resolved* config — this transport never reads `process.env` itself,
    * because the environment is what the config package exists to own.
    */
-  static create(@Inject(ConfigService) config: ConfigService): SmtpEmailTransport {
+  static create(config: ConfigService): SmtpEmailTransport {
     const mail = config.value.notifications;
     if (!mail.configured || mail.host === undefined || mail.from === undefined) {
       throw new Error(
