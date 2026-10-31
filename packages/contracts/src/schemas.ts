@@ -1326,6 +1326,10 @@ export const CONTRACT_REGISTRY = {
   'POST /api/v1/auth/magic-link': authLinkRequestSchema,
   'POST /api/v1/auth/magic-link/consume': authSessionSchema,
   'POST /api/v1/auth/password-reset': authLinkRequestSchema,
+  'POST /api/v1/auth/password-reset/confirm': z.object({}),
+  // 204, empty body. z.void() cannot convert to JSON Schema and crashes
+  // the API's OpenAPI walk at boot; the client returns ok/undefined for
+  // 204s without parsing, so this entry exists for the key check only.
   'GET /api/v1/auth/me': authMeSchema,
   'GET /api/v1/devices/all': deviceListSchema,
   'GET /api/v1/devices/stats': deviceStatsSchema,

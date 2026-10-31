@@ -84,6 +84,74 @@ export async function register(
 }
 
 /**
+ * Ask for a sign-in link. The answer never says whether the address is
+ * known — the API's enumeration rule — so the form always reports "check
+ * your inbox" on success and a generic failure otherwise.
+ */
+export async function requestMagicLink(
+  email: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const result = await api.request("POST /api/v1/auth/magic-link", {
+    auth: false,
+    body: { email },
+  })
+  if (result.status !== "ok") return { ok: false, error: "That request was not accepted." }
+  return { ok: true }
+}
+
+/**
+ * Exchange a sign-in link token for a session, then hold it like a login.
+ */
+export async function consumeMagicLink(
+  token: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const result = await api.request("POST /api/v1/auth/magic-link/consume", {
+    auth: false,
+    body: { token },
+  })
+  if (result.status !== "ok") {
+    return { ok: false, error: "That link is no longer valid. Ask for a fresh one." }
+  }
+  const { user, token: sessionToken, expiresAt } = result.data
+  setSession({ token: sessionToken, userId: user.id, email: user.email, role: user.role, expiresAt })
+  return { ok: true }
+}
+
+/**
+ * Ask for a password-reset link. Same enumeration rule as the sign-in
+ * link: success always reads as "check your inbox".
+ */
+export async function requestPasswordReset(
+  email: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const result = await api.request("POST /api/v1/auth/password-reset", {
+    auth: false,
+    body: { email },
+  })
+  if (result.status !== "ok") return { ok: false, error: "That request was not accepted." }
+  return { ok: true }
+}
+
+/**
+ * Set a new password under a reset token. The link is single-use and every
+ * old session is revoked server-side; the caller lands back at sign-in to
+ * open a fresh one.
+ */
+export async function confirmPasswordReset(
+  token: string,
+  password: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const result = await api.request("POST /api/v1/auth/password-reset/confirm", {
+    auth: false,
+    body: { token, password },
+  })
+  if (result.status !== "ok") {
+    return { ok: false, error: "That link is no longer valid. Ask for a fresh one." }
+  }
+  return { ok: true }
+}
+
+/**
  * Best-effort server revoke, then the local session goes regardless.
  * The query cache is cleared too: it holds the last holder's balances,
  * and on a shared device the next sign-in must not render them from
