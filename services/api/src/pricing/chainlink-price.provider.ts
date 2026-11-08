@@ -5,7 +5,13 @@ import {
   PriceUnavailableError,
   type SpotPrice,
 } from './price-provider.js';
-import { PricingService } from './pricing.service.js';
+
+/**
+ * Heartbeat Chainlink publishes for Ethereum XAU/USD and XAG/USD: 86400
+ * seconds. A round older than that is not a reference price. The 300-second
+ * manual-price window is a different limit and does not apply here.
+ */
+const CHAINLINK_HEARTBEAT_SECONDS = 86_400;
 
 /**
  * A Chainlink round, already decoded. `null` means the feed could not be
@@ -160,7 +166,8 @@ export class EvmChainlinkFeedReader implements FeedReader {
  *
  * XAU/USD prices every such metal except one whose symbol is `XAG`, which
  * reads the silver feed when that feed is configured. A stablecoin is not
- * gold, and a round that is stale or not a positive number is not a price.
+ * gold, and a round older than the Chainlink heartbeat or not a positive
+ * number is not a price.
  *
  * Nothing in this class is a buy. The recording job stores the result on
  * `AssetPrice`. It must never be copied into a swap's `toAmountRaw`.
@@ -227,7 +234,7 @@ export class ChainlinkPriceProvider extends PriceProvider {
     const updatedAtSeconds = Number(round.updatedAt);
     if (!Number.isFinite(updatedAtSeconds)) return null;
     const ageSeconds = now.getTime() / 1000 - updatedAtSeconds;
-    if (ageSeconds > PricingService.MAX_AGE_SECONDS) return null;
+    if (ageSeconds > CHAINLINK_HEARTBEAT_SECONDS) return null;
 
     if (!Number.isInteger(round.decimals) || round.decimals < 0) return null;
     const priceUsd = Number(round.answer) / 10 ** round.decimals;

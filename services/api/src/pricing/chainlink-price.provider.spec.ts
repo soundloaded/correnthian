@@ -130,24 +130,14 @@ describe('ChainlinkPriceProvider', () => {
     expect(read.latestRound).not.toHaveBeenCalledWith(XAG_FEED);
   });
 
-  it('omits a round older than 300 seconds without throwing', async () => {
+  it('keeps a round older than 300 seconds while it is inside the heartbeat', async () => {
+    // 300 seconds is the manual-price window. Chainlink's published heartbeat
+    // is 86400 seconds, so a round at 301 seconds is still a reference price.
     const { prices } = provider({
       rows: [PAXG],
       round: { answer: 4100_00000000n, updatedAt: updatedAt(301), decimals: 8 },
       xauUsd: XAU_FEED,
       xagUsd: XAG_FEED,
-    });
-
-    await expect(prices.spotPrices()).resolves.toEqual([]);
-  });
-
-  it('keeps a round that is exactly 300 seconds old', async () => {
-    // "Older than 300" is the staleness window the API already uses. A round
-    // sitting on the boundary is still a price; the next second is not.
-    const { prices } = provider({
-      rows: [PAXG],
-      round: { answer: 4100_00000000n, updatedAt: updatedAt(300), decimals: 8 },
-      xauUsd: XAU_FEED,
     });
 
     await expect(prices.spotPrices()).resolves.toEqual([
@@ -157,6 +147,20 @@ describe('ChainlinkPriceProvider', () => {
         source: 'chainlink:xau-usd',
       },
     ]);
+  });
+
+  it('omits a round older than 86400 seconds without throwing', async () => {
+    const { prices } = provider({
+      rows: [PAXG],
+      round: {
+        answer: 4100_00000000n,
+        updatedAt: updatedAt(86_401),
+        decimals: 8,
+      },
+      xauUsd: XAU_FEED,
+    });
+
+    await expect(prices.spotPrices()).resolves.toEqual([]);
   });
 
   it.each([0n, -1n])(
