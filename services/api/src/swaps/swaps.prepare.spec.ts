@@ -98,6 +98,7 @@ function quote(over: Record<string, unknown> = {}) {
     minReceivedRaw: '49',
     executionQuality: 'thin',
     poolFee: 3000,
+    expiresAt: new Date(Date.now() + 60_000),
     fromAsset: USDC,
     toAsset: GOLD,
     ...over,
@@ -270,6 +271,18 @@ describe('prepare a device-signed swap', () => {
       value: '0',
       data: swap.unsigned.data,
     });
+  });
+
+  it('refuses a quote that has already expired and writes no transaction', async () => {
+    const { swaps, prisma } = harness({
+      router: ROUTER,
+      rows: [quote({ expiresAt: new Date(Date.now() - 1_000) })],
+    });
+    const err = await swaps.prepare('q1', 'u1', 'w1').catch((caught: unknown) => caught);
+    expect(err).toBeInstanceOf(AppError);
+    expect(err).toMatchObject({ status: 400, message: 'This quote is not executable' });
+    expect(prisma.transaction.create).not.toHaveBeenCalled();
+    expect(prisma.txs.size).toBe(0);
   });
 
   it('does not write a transaction when the quote is not executable', async () => {

@@ -323,7 +323,8 @@ export class SwapsService {
       include: { fromAsset: true, toAsset: true },
     });
     if (!quote || quote.userId !== actorId) throw AppError.notFound('Quote not found');
-    if (!isPreparable(quote) || !isFeeTier(quote.poolFee)) {
+    // `>` and not `>=`: a quote that expires at this instant is already expired.
+    if (!isPreparable(quote) || !isFeeTier(quote.poolFee) || !(quote.expiresAt.getTime() > Date.now())) {
       throw AppError.badRequest('This quote is not executable');
     }
 
