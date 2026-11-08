@@ -351,6 +351,29 @@ export class EvmAdapter implements BlockchainAdapter {
     return transfers;
   }
 
+  /**
+   * A public contract read. Used for reference data such as a price feed.
+   *
+   * This does not sign and cannot: the adapter holds RPC endpoints, not a
+   * key. A failure is the caller's to handle — this method does not turn an
+   * unreachable node into a zero.
+   */
+  async readContract(parameters: {
+    address: `0x${string}`;
+    abi: readonly unknown[];
+    functionName: string;
+    args?: readonly unknown[];
+  }): Promise<unknown> {
+    return this.read((client) =>
+      client.readContract({
+        address: parameters.address,
+        abi: parameters.abi as never,
+        functionName: parameters.functionName as never,
+        args: parameters.args as never,
+      }),
+    );
+  }
+
   async getBlockNumber(): Promise<bigint> {
     return this.read((c) => c.getBlockNumber());
   }

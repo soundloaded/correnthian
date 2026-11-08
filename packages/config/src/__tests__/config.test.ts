@@ -193,6 +193,35 @@ describe('config parsing', () => {
     }
   });
 
+  it('rejects a malformed Chainlink feed and leaves an absent feed unset', () => {
+    // A feed address is a proxy contract. Anything else must fail at boot,
+    // and leaving the variable out must stay "no feed", not a default proxy.
+    const malformed = parseConfig({ ...valid, CHAINLINK_XAU_USD_FEED: '0xnot-an-address' });
+    expect(malformed.ok).toBe(false);
+    if (!malformed.ok) expect(malformed.issues.join(' ')).toContain('CHAINLINK_XAU_USD_FEED');
+
+    const absent = parseConfig(valid);
+    expect(absent.ok).toBe(true);
+    if (absent.ok) expect(absent.config.chainlink.xauUsd).toBeUndefined();
+
+    const xau = `0x${'Ab'.repeat(20)}`;
+    const xag = `0x${'cd'.repeat(20)}`;
+    const present = parseConfig({
+      ...valid,
+      CHAINLINK_XAU_USD_FEED: xau,
+      CHAINLINK_XAG_USD_FEED: xag,
+    });
+    expect(present.ok).toBe(true);
+    if (present.ok) {
+      expect(present.config.chainlink.xauUsd).toBe(xau);
+      expect(present.config.chainlink.xagUsd).toBe(xag);
+    }
+
+    const badSilver = parseConfig({ ...valid, CHAINLINK_XAG_USD_FEED: '0x1234' });
+    expect(badSilver.ok).toBe(false);
+    if (!badSilver.ok) expect(badSilver.issues.join(' ')).toContain('CHAINLINK_XAG_USD_FEED');
+  });
+
   it('refuses an smtp transport that cannot send', () => {
     // A transport that boots unconfigured discovers it at 3am, from a
     // user's complaint. Refuse at boot instead.

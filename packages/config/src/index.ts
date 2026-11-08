@@ -40,6 +40,23 @@ const boolish = (def: 'true' | 'false') =>
 const boolishOptional = () =>
   z.enum(['true', 'false', '1', '0']).optional().transform((v) => (v === undefined ? undefined : toBool(v)));
 
+/**
+ * A Chainlink proxy: `0x` and 40 hex characters, or absent.
+ *
+ * Absent is a real configuration — the price module then keeps the scripted
+ * provider. A value that is present but not an address is a typo, and booting
+ * with it would record nothing while looking configured. Empty is not absent:
+ * a blank assignment is the typo, not the choice to leave the feed off.
+ */
+const optionalFeed = (name: string) =>
+  z
+    .string()
+    .regex(/^0x[0-9a-fA-F]{40}$/, `${name} must be 0x followed by 40 hex characters`)
+    .optional()
+    .transform((value): `0x${string}` | undefined =>
+      value === undefined ? undefined : (value as `0x${string}`),
+    );
+
 const schema = z.object({
   env: z.enum(['development', 'test', 'production']).default('development'),
 
@@ -157,6 +174,17 @@ const schema = z.object({
       configured: v.provider === 'console' || (v.host !== undefined && v.from !== undefined),
     })),
 
+  /**
+   * Chainlink reference feeds. Optional, and never a buy price: a recorded
+   * number from here is what the metal is notionally worth, not what a swap
+   * delivers. No address is defaulted — an operator sets the proxy, or the
+   * feed stays off.
+   */
+  chainlink: z.object({
+    xauUsd: optionalFeed('CHAINLINK_XAU_USD_FEED'),
+    xagUsd: optionalFeed('CHAINLINK_XAG_USD_FEED'),
+  }),
+
   rateLimit: z.object({
     windowSeconds: z.coerce.number().int().min(1).default(60),
     /** The general API budget. */
@@ -224,6 +252,10 @@ export function parseConfig(source: NodeJS.ProcessEnv = process.env): ParseResul
       secure: source['MAIL_SECURE'],
       user: source['MAIL_USER'],
       pass: source['MAIL_PASS'],
+    },
+    chainlink: {
+      xauUsd: source['CHAINLINK_XAU_USD_FEED'],
+      xagUsd: source['CHAINLINK_XAG_USD_FEED'],
     },
     rateLimit: {
       windowSeconds: source['RATE_LIMIT_WINDOW_SECONDS'],
