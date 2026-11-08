@@ -567,6 +567,11 @@ export const quoteDetailSchema = z.object({
   toAmountRaw: z.string(),
   slippageBps: z.number().int(),
   priceImpactBps: z.number().int(),
+  /**
+   * False when `priceImpactBps` was stored as a placeholder. A zero is not
+   * a measured impact: dex quotes and the unassigned refusal both say so.
+   */
+  priceImpactMeasured: z.boolean(),
   minReceivedRaw: z.string(),
   /**
    * The itemised breakdown, not a blended number and not a bare list.

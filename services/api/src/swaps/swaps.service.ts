@@ -13,6 +13,7 @@ import {
   sumUsd,
 } from '../fees/money.js';
 import type { ListQuotesDto } from './dto/list-quotes.dto.js';
+import { UniswapV3Quoter, type DexQuoteResult } from './uniswap-v3-quoter.js';
 
 export interface QuoteRequestInput {
   userId?: string;
@@ -117,6 +118,17 @@ function labelFor(kind: 'network' | 'provider' | 'correnthian'): string {
   return kind === 'network' ? 'Network fee' : kind === 'provider' ? 'Provider fee' : 'Correnthian fee';
 }
 
+/** Integer base units. A decimal point is a display amount, and the quoter cannot encode one. */
+const BASE_UNITS = /^[1-9]\d*$/;
+
+function listsDex(rails: readonly string[] | undefined): boolean {
+  return Array.isArray(rails) && rails.includes('dex');
+}
+
+function isTokenAddress(value: string): value is `0x${string}` {
+  return /^0x[0-9a-fA-F]{40}$/.test(value);
+}
+
 @Injectable()
 export class SwapsService {
   private readonly logger = new Logger(SwapsService.name);
@@ -125,6 +137,7 @@ export class SwapsService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(FeesService) private readonly fees: FeesService,
     @Inject(SystemSettingsService) private readonly settings: SystemSettingsService,
+    @Inject(UniswapV3Quoter) private readonly uniswap: UniswapV3Quoter,
   ) {
     // `ProvidersService` used to be injected here and was never read. It is
     // gone rather than left as a hint: the rail binding it implied is `BE-702`,
@@ -197,27 +210,32 @@ export class SwapsService {
       notionalUsd: await this.notionalString(from, input.fromAmountRaw),
     });
 
+    const slippageBps = input.slippageBps ?? 50;
+    const dex = await this.dexFill(from, to, input.fromAmountRaw, slippageBps);
+
     const quote = await this.prisma.swapQuote.create({
       data: {
         userId: input.userId ?? null,
-        railKind: 'provider',
-        railId: 'unassigned',
+        railKind: dex?.railKind ?? 'provider',
+        railId: dex?.railId ?? 'unassigned',
         fromAssetId: from.id,
         toAssetId: to.id,
         chainId: from.chainId,
         fromAmountRaw: input.fromAmountRaw,
-        // Placeholder until a provider rail is contracted. Never a fabricated
-        // executable price — see the design spec: honest failure is the point.
-        toAmountRaw: '0',
+        // A dex quote records the quoter's amountOut. Anything else — no
+        // pool, a revert, a non-integer amount — stays zero. A reference
+        // price is not a received amount.
+        toAmountRaw: dex?.toAmountRaw ?? '0',
         // The caller's stated notional, kept as a display field. The fees
         // above were computed from `breakdown.notionalUsd`, which is derived
         // and is not this.
         notionalUsd: input.notionalUsd ?? null,
         priceImpactBps: 0,
-        slippageBps: input.slippageBps ?? 50,
-        minReceivedRaw: '0',
+        slippageBps,
+        minReceivedRaw: dex?.minReceivedRaw ?? '0',
         fees: breakdown as object,
-        executionQuality: 'none',
+        executionQuality: dex?.executionQuality ?? 'none',
+        poolFee: dex?.poolFee ?? null,
         sizeCapUsd: null,
         state: 'quoted',
         expiresAt,
@@ -416,6 +434,53 @@ export class SwapsService {
     }
   }
 
+  /**
+   * A Uniswap v3 fill, or null when the request stays the unassigned refusal.
+   *
+   * Both assets must list `dex`, both must be on Ethereum, the quoter must
+   * be configured, and `fromAmountRaw` must be a positive integer in base
+   * units. A fractional amount never reaches the quoter. A null answer is
+   * the same refusal: received amount zero, no fee tier. `toAmountRaw` is
+   * the quoter's `amountOut` — a Chainlink reference price is not copied in.
+   * A positive answer is `thin`. This path does not write `deep`.
+   */
+  private async dexFill(
+    from: { chainId: string; rails: readonly string[]; contractAddress: string },
+    to: { chainId: string; rails: readonly string[]; contractAddress: string },
+    fromAmountRaw: string,
+    slippageBps: number,
+  ): Promise<{
+    railKind: 'dex';
+    railId: 'uniswap-v3';
+    executionQuality: 'thin';
+    poolFee: DexQuoteResult['poolFee'];
+    toAmountRaw: string;
+    minReceivedRaw: string;
+  } | null> {
+    if (!this.uniswap?.configured) return null;
+    if (!BASE_UNITS.test(fromAmountRaw)) return null;
+    if (from.chainId !== '1' || to.chainId !== '1') return null;
+    if (!listsDex(from.rails) || !listsDex(to.rails)) return null;
+    if (!isTokenAddress(from.contractAddress) || !isTokenAddress(to.contractAddress)) return null;
+
+    const quoted = await this.uniswap.quote({
+      tokenIn: from.contractAddress,
+      tokenOut: to.contractAddress,
+      amountIn: BigInt(fromAmountRaw),
+    });
+    if (quoted === null || quoted.amountOut <= 0n) return null;
+
+    const minReceived = (quoted.amountOut * BigInt(10_000 - slippageBps)) / 10_000n;
+    return {
+      railKind: 'dex',
+      railId: 'uniswap-v3',
+      executionQuality: 'thin',
+      poolFee: quoted.poolFee,
+      toAmountRaw: quoted.amountOut.toString(),
+      minReceivedRaw: minReceived.toString(),
+    };
+  }
+
   /** The shape a client needs to render a quote honestly. */
   private present(quote: {
     id: string; railKind: string; railId: string; fromAmountRaw: string;
@@ -430,6 +495,8 @@ export class SwapsService {
       toAmountRaw: quote.toAmountRaw,
       slippageBps: quote.slippageBps,
       priceImpactBps: quote.priceImpactBps,
+      // Zero bps on this path is a placeholder, not a measurement of the pool.
+      priceImpactMeasured: false,
       minReceivedRaw: quote.minReceivedRaw,
       /**
        * The itemised breakdown: one line per fee, a total only when every line

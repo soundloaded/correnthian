@@ -30,6 +30,7 @@ export type SwapQuoteAvgAggregateOutputType = {
   notionalUsd: runtime.Decimal | null
   priceImpactBps: number | null
   slippageBps: number | null
+  poolFee: number | null
   sizeCapUsd: runtime.Decimal | null
 }
 
@@ -37,6 +38,7 @@ export type SwapQuoteSumAggregateOutputType = {
   notionalUsd: runtime.Decimal | null
   priceImpactBps: number | null
   slippageBps: number | null
+  poolFee: number | null
   sizeCapUsd: runtime.Decimal | null
 }
 
@@ -57,6 +59,7 @@ export type SwapQuoteMinAggregateOutputType = {
   slippageBps: number | null
   minReceivedRaw: string | null
   executionQuality: $Enums.ExecutionQuality | null
+  poolFee: number | null
   sizeCapUsd: runtime.Decimal | null
   state: $Enums.QuoteState | null
   txHash: string | null
@@ -83,6 +86,7 @@ export type SwapQuoteMaxAggregateOutputType = {
   slippageBps: number | null
   minReceivedRaw: string | null
   executionQuality: $Enums.ExecutionQuality | null
+  poolFee: number | null
   sizeCapUsd: runtime.Decimal | null
   state: $Enums.QuoteState | null
   txHash: string | null
@@ -110,6 +114,7 @@ export type SwapQuoteCountAggregateOutputType = {
   minReceivedRaw: number
   fees: number
   executionQuality: number
+  poolFee: number
   sizeCapUsd: number
   state: number
   txHash: number
@@ -125,6 +130,7 @@ export type SwapQuoteAvgAggregateInputType = {
   notionalUsd?: true
   priceImpactBps?: true
   slippageBps?: true
+  poolFee?: true
   sizeCapUsd?: true
 }
 
@@ -132,6 +138,7 @@ export type SwapQuoteSumAggregateInputType = {
   notionalUsd?: true
   priceImpactBps?: true
   slippageBps?: true
+  poolFee?: true
   sizeCapUsd?: true
 }
 
@@ -152,6 +159,7 @@ export type SwapQuoteMinAggregateInputType = {
   slippageBps?: true
   minReceivedRaw?: true
   executionQuality?: true
+  poolFee?: true
   sizeCapUsd?: true
   state?: true
   txHash?: true
@@ -178,6 +186,7 @@ export type SwapQuoteMaxAggregateInputType = {
   slippageBps?: true
   minReceivedRaw?: true
   executionQuality?: true
+  poolFee?: true
   sizeCapUsd?: true
   state?: true
   txHash?: true
@@ -205,6 +214,7 @@ export type SwapQuoteCountAggregateInputType = {
   minReceivedRaw?: true
   fees?: true
   executionQuality?: true
+  poolFee?: true
   sizeCapUsd?: true
   state?: true
   txHash?: true
@@ -319,6 +329,7 @@ export type SwapQuoteGroupByOutputType = {
   minReceivedRaw: string
   fees: runtime.JsonValue
   executionQuality: $Enums.ExecutionQuality
+  poolFee: number | null
   sizeCapUsd: runtime.Decimal | null
   state: $Enums.QuoteState
   txHash: string | null
@@ -369,6 +380,7 @@ export type SwapQuoteWhereInput = {
   minReceivedRaw?: Prisma.StringFilter<"SwapQuote"> | string
   fees?: Prisma.JsonFilter<"SwapQuote">
   executionQuality?: Prisma.EnumExecutionQualityFilter<"SwapQuote"> | $Enums.ExecutionQuality
+  poolFee?: Prisma.IntNullableFilter<"SwapQuote"> | number | null
   sizeCapUsd?: Prisma.DecimalNullableFilter<"SwapQuote"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: Prisma.EnumQuoteStateFilter<"SwapQuote"> | $Enums.QuoteState
   txHash?: Prisma.StringNullableFilter<"SwapQuote"> | string | null
@@ -400,6 +412,7 @@ export type SwapQuoteOrderByWithRelationInput = {
   minReceivedRaw?: Prisma.SortOrder
   fees?: Prisma.SortOrder
   executionQuality?: Prisma.SortOrder
+  poolFee?: Prisma.SortOrderInput | Prisma.SortOrder
   sizeCapUsd?: Prisma.SortOrderInput | Prisma.SortOrder
   state?: Prisma.SortOrder
   txHash?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -434,6 +447,7 @@ export type SwapQuoteWhereUniqueInput = Prisma.AtLeast<{
   minReceivedRaw?: Prisma.StringFilter<"SwapQuote"> | string
   fees?: Prisma.JsonFilter<"SwapQuote">
   executionQuality?: Prisma.EnumExecutionQualityFilter<"SwapQuote"> | $Enums.ExecutionQuality
+  poolFee?: Prisma.IntNullableFilter<"SwapQuote"> | number | null
   sizeCapUsd?: Prisma.DecimalNullableFilter<"SwapQuote"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: Prisma.EnumQuoteStateFilter<"SwapQuote"> | $Enums.QuoteState
   txHash?: Prisma.StringNullableFilter<"SwapQuote"> | string | null
@@ -465,6 +479,7 @@ export type SwapQuoteOrderByWithAggregationInput = {
   minReceivedRaw?: Prisma.SortOrder
   fees?: Prisma.SortOrder
   executionQuality?: Prisma.SortOrder
+  poolFee?: Prisma.SortOrderInput | Prisma.SortOrder
   sizeCapUsd?: Prisma.SortOrderInput | Prisma.SortOrder
   state?: Prisma.SortOrder
   txHash?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -500,6 +515,7 @@ export type SwapQuoteScalarWhereWithAggregatesInput = {
   minReceivedRaw?: Prisma.StringWithAggregatesFilter<"SwapQuote"> | string
   fees?: Prisma.JsonWithAggregatesFilter<"SwapQuote">
   executionQuality?: Prisma.EnumExecutionQualityWithAggregatesFilter<"SwapQuote"> | $Enums.ExecutionQuality
+  poolFee?: Prisma.IntNullableWithAggregatesFilter<"SwapQuote"> | number | null
   sizeCapUsd?: Prisma.DecimalNullableWithAggregatesFilter<"SwapQuote"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: Prisma.EnumQuoteStateWithAggregatesFilter<"SwapQuote"> | $Enums.QuoteState
   txHash?: Prisma.StringNullableWithAggregatesFilter<"SwapQuote"> | string | null
@@ -523,6 +539,7 @@ export type SwapQuoteCreateInput = {
   minReceivedRaw: string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: $Enums.ExecutionQuality
+  poolFee?: number | null
   sizeCapUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: $Enums.QuoteState
   txHash?: string | null
@@ -554,6 +571,7 @@ export type SwapQuoteUncheckedCreateInput = {
   minReceivedRaw: string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: $Enums.ExecutionQuality
+  poolFee?: number | null
   sizeCapUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: $Enums.QuoteState
   txHash?: string | null
@@ -577,6 +595,7 @@ export type SwapQuoteUpdateInput = {
   minReceivedRaw?: Prisma.StringFieldUpdateOperationsInput | string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: Prisma.EnumExecutionQualityFieldUpdateOperationsInput | $Enums.ExecutionQuality
+  poolFee?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sizeCapUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: Prisma.EnumQuoteStateFieldUpdateOperationsInput | $Enums.QuoteState
   txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -608,6 +627,7 @@ export type SwapQuoteUncheckedUpdateInput = {
   minReceivedRaw?: Prisma.StringFieldUpdateOperationsInput | string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: Prisma.EnumExecutionQualityFieldUpdateOperationsInput | $Enums.ExecutionQuality
+  poolFee?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sizeCapUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: Prisma.EnumQuoteStateFieldUpdateOperationsInput | $Enums.QuoteState
   txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -635,6 +655,7 @@ export type SwapQuoteCreateManyInput = {
   minReceivedRaw: string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: $Enums.ExecutionQuality
+  poolFee?: number | null
   sizeCapUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: $Enums.QuoteState
   txHash?: string | null
@@ -658,6 +679,7 @@ export type SwapQuoteUpdateManyMutationInput = {
   minReceivedRaw?: Prisma.StringFieldUpdateOperationsInput | string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: Prisma.EnumExecutionQualityFieldUpdateOperationsInput | $Enums.ExecutionQuality
+  poolFee?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sizeCapUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: Prisma.EnumQuoteStateFieldUpdateOperationsInput | $Enums.QuoteState
   txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -685,6 +707,7 @@ export type SwapQuoteUncheckedUpdateManyInput = {
   minReceivedRaw?: Prisma.StringFieldUpdateOperationsInput | string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: Prisma.EnumExecutionQualityFieldUpdateOperationsInput | $Enums.ExecutionQuality
+  poolFee?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sizeCapUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: Prisma.EnumQuoteStateFieldUpdateOperationsInput | $Enums.QuoteState
   txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -722,6 +745,7 @@ export type SwapQuoteCountOrderByAggregateInput = {
   minReceivedRaw?: Prisma.SortOrder
   fees?: Prisma.SortOrder
   executionQuality?: Prisma.SortOrder
+  poolFee?: Prisma.SortOrder
   sizeCapUsd?: Prisma.SortOrder
   state?: Prisma.SortOrder
   txHash?: Prisma.SortOrder
@@ -735,6 +759,7 @@ export type SwapQuoteAvgOrderByAggregateInput = {
   notionalUsd?: Prisma.SortOrder
   priceImpactBps?: Prisma.SortOrder
   slippageBps?: Prisma.SortOrder
+  poolFee?: Prisma.SortOrder
   sizeCapUsd?: Prisma.SortOrder
 }
 
@@ -755,6 +780,7 @@ export type SwapQuoteMaxOrderByAggregateInput = {
   slippageBps?: Prisma.SortOrder
   minReceivedRaw?: Prisma.SortOrder
   executionQuality?: Prisma.SortOrder
+  poolFee?: Prisma.SortOrder
   sizeCapUsd?: Prisma.SortOrder
   state?: Prisma.SortOrder
   txHash?: Prisma.SortOrder
@@ -781,6 +807,7 @@ export type SwapQuoteMinOrderByAggregateInput = {
   slippageBps?: Prisma.SortOrder
   minReceivedRaw?: Prisma.SortOrder
   executionQuality?: Prisma.SortOrder
+  poolFee?: Prisma.SortOrder
   sizeCapUsd?: Prisma.SortOrder
   state?: Prisma.SortOrder
   txHash?: Prisma.SortOrder
@@ -794,6 +821,7 @@ export type SwapQuoteSumOrderByAggregateInput = {
   notionalUsd?: Prisma.SortOrder
   priceImpactBps?: Prisma.SortOrder
   slippageBps?: Prisma.SortOrder
+  poolFee?: Prisma.SortOrder
   sizeCapUsd?: Prisma.SortOrder
 }
 
@@ -973,6 +1001,14 @@ export type EnumExecutionQualityFieldUpdateOperationsInput = {
   set?: $Enums.ExecutionQuality
 }
 
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
 export type EnumQuoteStateFieldUpdateOperationsInput = {
   set?: $Enums.QuoteState
 }
@@ -991,6 +1027,7 @@ export type SwapQuoteCreateWithoutFromAssetInput = {
   minReceivedRaw: string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: $Enums.ExecutionQuality
+  poolFee?: number | null
   sizeCapUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: $Enums.QuoteState
   txHash?: string | null
@@ -1020,6 +1057,7 @@ export type SwapQuoteUncheckedCreateWithoutFromAssetInput = {
   minReceivedRaw: string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: $Enums.ExecutionQuality
+  poolFee?: number | null
   sizeCapUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: $Enums.QuoteState
   txHash?: string | null
@@ -1053,6 +1091,7 @@ export type SwapQuoteCreateWithoutToAssetInput = {
   minReceivedRaw: string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: $Enums.ExecutionQuality
+  poolFee?: number | null
   sizeCapUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: $Enums.QuoteState
   txHash?: string | null
@@ -1082,6 +1121,7 @@ export type SwapQuoteUncheckedCreateWithoutToAssetInput = {
   minReceivedRaw: string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: $Enums.ExecutionQuality
+  poolFee?: number | null
   sizeCapUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: $Enums.QuoteState
   txHash?: string | null
@@ -1138,6 +1178,7 @@ export type SwapQuoteScalarWhereInput = {
   minReceivedRaw?: Prisma.StringFilter<"SwapQuote"> | string
   fees?: Prisma.JsonFilter<"SwapQuote">
   executionQuality?: Prisma.EnumExecutionQualityFilter<"SwapQuote"> | $Enums.ExecutionQuality
+  poolFee?: Prisma.IntNullableFilter<"SwapQuote"> | number | null
   sizeCapUsd?: Prisma.DecimalNullableFilter<"SwapQuote"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: Prisma.EnumQuoteStateFilter<"SwapQuote"> | $Enums.QuoteState
   txHash?: Prisma.StringNullableFilter<"SwapQuote"> | string | null
@@ -1177,6 +1218,7 @@ export type SwapQuoteCreateWithoutChainInput = {
   minReceivedRaw: string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: $Enums.ExecutionQuality
+  poolFee?: number | null
   sizeCapUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: $Enums.QuoteState
   txHash?: string | null
@@ -1206,6 +1248,7 @@ export type SwapQuoteUncheckedCreateWithoutChainInput = {
   minReceivedRaw: string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: $Enums.ExecutionQuality
+  poolFee?: number | null
   sizeCapUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: $Enums.QuoteState
   txHash?: string | null
@@ -1255,6 +1298,7 @@ export type SwapQuoteCreateWithoutProviderInput = {
   minReceivedRaw: string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: $Enums.ExecutionQuality
+  poolFee?: number | null
   sizeCapUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: $Enums.QuoteState
   txHash?: string | null
@@ -1284,6 +1328,7 @@ export type SwapQuoteUncheckedCreateWithoutProviderInput = {
   minReceivedRaw: string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: $Enums.ExecutionQuality
+  poolFee?: number | null
   sizeCapUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: $Enums.QuoteState
   txHash?: string | null
@@ -1336,6 +1381,7 @@ export type SwapQuoteCreateManyFromAssetInput = {
   minReceivedRaw: string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: $Enums.ExecutionQuality
+  poolFee?: number | null
   sizeCapUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: $Enums.QuoteState
   txHash?: string | null
@@ -1362,6 +1408,7 @@ export type SwapQuoteCreateManyToAssetInput = {
   minReceivedRaw: string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: $Enums.ExecutionQuality
+  poolFee?: number | null
   sizeCapUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: $Enums.QuoteState
   txHash?: string | null
@@ -1385,6 +1432,7 @@ export type SwapQuoteUpdateWithoutFromAssetInput = {
   minReceivedRaw?: Prisma.StringFieldUpdateOperationsInput | string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: Prisma.EnumExecutionQualityFieldUpdateOperationsInput | $Enums.ExecutionQuality
+  poolFee?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sizeCapUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: Prisma.EnumQuoteStateFieldUpdateOperationsInput | $Enums.QuoteState
   txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1414,6 +1462,7 @@ export type SwapQuoteUncheckedUpdateWithoutFromAssetInput = {
   minReceivedRaw?: Prisma.StringFieldUpdateOperationsInput | string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: Prisma.EnumExecutionQualityFieldUpdateOperationsInput | $Enums.ExecutionQuality
+  poolFee?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sizeCapUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: Prisma.EnumQuoteStateFieldUpdateOperationsInput | $Enums.QuoteState
   txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1440,6 +1489,7 @@ export type SwapQuoteUncheckedUpdateManyWithoutFromAssetInput = {
   minReceivedRaw?: Prisma.StringFieldUpdateOperationsInput | string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: Prisma.EnumExecutionQualityFieldUpdateOperationsInput | $Enums.ExecutionQuality
+  poolFee?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sizeCapUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: Prisma.EnumQuoteStateFieldUpdateOperationsInput | $Enums.QuoteState
   txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1463,6 +1513,7 @@ export type SwapQuoteUpdateWithoutToAssetInput = {
   minReceivedRaw?: Prisma.StringFieldUpdateOperationsInput | string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: Prisma.EnumExecutionQualityFieldUpdateOperationsInput | $Enums.ExecutionQuality
+  poolFee?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sizeCapUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: Prisma.EnumQuoteStateFieldUpdateOperationsInput | $Enums.QuoteState
   txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1492,6 +1543,7 @@ export type SwapQuoteUncheckedUpdateWithoutToAssetInput = {
   minReceivedRaw?: Prisma.StringFieldUpdateOperationsInput | string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: Prisma.EnumExecutionQualityFieldUpdateOperationsInput | $Enums.ExecutionQuality
+  poolFee?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sizeCapUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: Prisma.EnumQuoteStateFieldUpdateOperationsInput | $Enums.QuoteState
   txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1518,6 +1570,7 @@ export type SwapQuoteUncheckedUpdateManyWithoutToAssetInput = {
   minReceivedRaw?: Prisma.StringFieldUpdateOperationsInput | string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: Prisma.EnumExecutionQualityFieldUpdateOperationsInput | $Enums.ExecutionQuality
+  poolFee?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sizeCapUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: Prisma.EnumQuoteStateFieldUpdateOperationsInput | $Enums.QuoteState
   txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1544,6 +1597,7 @@ export type SwapQuoteCreateManyChainInput = {
   minReceivedRaw: string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: $Enums.ExecutionQuality
+  poolFee?: number | null
   sizeCapUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: $Enums.QuoteState
   txHash?: string | null
@@ -1567,6 +1621,7 @@ export type SwapQuoteUpdateWithoutChainInput = {
   minReceivedRaw?: Prisma.StringFieldUpdateOperationsInput | string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: Prisma.EnumExecutionQualityFieldUpdateOperationsInput | $Enums.ExecutionQuality
+  poolFee?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sizeCapUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: Prisma.EnumQuoteStateFieldUpdateOperationsInput | $Enums.QuoteState
   txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1596,6 +1651,7 @@ export type SwapQuoteUncheckedUpdateWithoutChainInput = {
   minReceivedRaw?: Prisma.StringFieldUpdateOperationsInput | string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: Prisma.EnumExecutionQualityFieldUpdateOperationsInput | $Enums.ExecutionQuality
+  poolFee?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sizeCapUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: Prisma.EnumQuoteStateFieldUpdateOperationsInput | $Enums.QuoteState
   txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1622,6 +1678,7 @@ export type SwapQuoteUncheckedUpdateManyWithoutChainInput = {
   minReceivedRaw?: Prisma.StringFieldUpdateOperationsInput | string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: Prisma.EnumExecutionQualityFieldUpdateOperationsInput | $Enums.ExecutionQuality
+  poolFee?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sizeCapUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: Prisma.EnumQuoteStateFieldUpdateOperationsInput | $Enums.QuoteState
   txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1648,6 +1705,7 @@ export type SwapQuoteCreateManyProviderInput = {
   minReceivedRaw: string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: $Enums.ExecutionQuality
+  poolFee?: number | null
   sizeCapUsd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: $Enums.QuoteState
   txHash?: string | null
@@ -1671,6 +1729,7 @@ export type SwapQuoteUpdateWithoutProviderInput = {
   minReceivedRaw?: Prisma.StringFieldUpdateOperationsInput | string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: Prisma.EnumExecutionQualityFieldUpdateOperationsInput | $Enums.ExecutionQuality
+  poolFee?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sizeCapUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: Prisma.EnumQuoteStateFieldUpdateOperationsInput | $Enums.QuoteState
   txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1700,6 +1759,7 @@ export type SwapQuoteUncheckedUpdateWithoutProviderInput = {
   minReceivedRaw?: Prisma.StringFieldUpdateOperationsInput | string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: Prisma.EnumExecutionQualityFieldUpdateOperationsInput | $Enums.ExecutionQuality
+  poolFee?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sizeCapUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: Prisma.EnumQuoteStateFieldUpdateOperationsInput | $Enums.QuoteState
   txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1726,6 +1786,7 @@ export type SwapQuoteUncheckedUpdateManyWithoutProviderInput = {
   minReceivedRaw?: Prisma.StringFieldUpdateOperationsInput | string
   fees?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   executionQuality?: Prisma.EnumExecutionQualityFieldUpdateOperationsInput | $Enums.ExecutionQuality
+  poolFee?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sizeCapUsd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   state?: Prisma.EnumQuoteStateFieldUpdateOperationsInput | $Enums.QuoteState
   txHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1755,6 +1816,7 @@ export type SwapQuoteSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   minReceivedRaw?: boolean
   fees?: boolean
   executionQuality?: boolean
+  poolFee?: boolean
   sizeCapUsd?: boolean
   state?: boolean
   txHash?: boolean
@@ -1786,6 +1848,7 @@ export type SwapQuoteSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   minReceivedRaw?: boolean
   fees?: boolean
   executionQuality?: boolean
+  poolFee?: boolean
   sizeCapUsd?: boolean
   state?: boolean
   txHash?: boolean
@@ -1817,6 +1880,7 @@ export type SwapQuoteSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   minReceivedRaw?: boolean
   fees?: boolean
   executionQuality?: boolean
+  poolFee?: boolean
   sizeCapUsd?: boolean
   state?: boolean
   txHash?: boolean
@@ -1848,6 +1912,7 @@ export type SwapQuoteSelectScalar = {
   minReceivedRaw?: boolean
   fees?: boolean
   executionQuality?: boolean
+  poolFee?: boolean
   sizeCapUsd?: boolean
   state?: boolean
   txHash?: boolean
@@ -1857,7 +1922,7 @@ export type SwapQuoteSelectScalar = {
   updatedAt?: boolean
 }
 
-export type SwapQuoteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "walletId" | "railKind" | "railId" | "fromAssetId" | "toAssetId" | "chainId" | "providerId" | "fromAmountRaw" | "toAmountRaw" | "notionalUsd" | "priceImpactBps" | "slippageBps" | "minReceivedRaw" | "fees" | "executionQuality" | "sizeCapUsd" | "state" | "txHash" | "expiresAt" | "settledAt" | "createdAt" | "updatedAt", ExtArgs["result"]["swapQuote"]>
+export type SwapQuoteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "walletId" | "railKind" | "railId" | "fromAssetId" | "toAssetId" | "chainId" | "providerId" | "fromAmountRaw" | "toAmountRaw" | "notionalUsd" | "priceImpactBps" | "slippageBps" | "minReceivedRaw" | "fees" | "executionQuality" | "poolFee" | "sizeCapUsd" | "state" | "txHash" | "expiresAt" | "settledAt" | "createdAt" | "updatedAt", ExtArgs["result"]["swapQuote"]>
 export type SwapQuoteInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   fromAsset?: boolean | Prisma.AssetDefaultArgs<ExtArgs>
   toAsset?: boolean | Prisma.AssetDefaultArgs<ExtArgs>
@@ -1913,6 +1978,11 @@ export type $SwapQuotePayload<ExtArgs extends runtime.Types.Extensions.InternalA
      * How honestly this quote can be filled. Forces the UI to disclose.
      */
     executionQuality: $Enums.ExecutionQuality
+    /**
+     * Uniswap v3 fee tier that produced a dex quote: 500, 3000, or 10000.
+     * Null on a refusal, so a later step does not invent a pool. Not key material.
+     */
+    poolFee: number | null
     /**
      * Largest notional fillable at this price, in USD. Null = uncapped.
      */
@@ -2367,6 +2437,7 @@ export interface SwapQuoteFieldRefs {
   readonly minReceivedRaw: Prisma.FieldRef<"SwapQuote", 'String'>
   readonly fees: Prisma.FieldRef<"SwapQuote", 'Json'>
   readonly executionQuality: Prisma.FieldRef<"SwapQuote", 'ExecutionQuality'>
+  readonly poolFee: Prisma.FieldRef<"SwapQuote", 'Int'>
   readonly sizeCapUsd: Prisma.FieldRef<"SwapQuote", 'Decimal'>
   readonly state: Prisma.FieldRef<"SwapQuote", 'QuoteState'>
   readonly txHash: Prisma.FieldRef<"SwapQuote", 'String'>

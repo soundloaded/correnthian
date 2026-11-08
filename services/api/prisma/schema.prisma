@@ -633,6 +633,9 @@ model SwapQuote {
 
   /// How honestly this quote can be filled. Forces the UI to disclose.
   executionQuality ExecutionQuality @default(thin)
+  /// Uniswap v3 fee tier that produced a dex quote: 500, 3000, or 10000.
+  /// Null on a refusal, so a later step does not invent a pool. Not key material.
+  poolFee          Int?
   /// Largest notional fillable at this price, in USD. Null = uncapped.
   sizeCapUsd       Decimal?         @db.Decimal(36, 2)
 

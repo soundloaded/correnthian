@@ -222,6 +222,28 @@ describe('config parsing', () => {
     if (!badSilver.ok) expect(badSilver.issues.join(' ')).toContain('CHAINLINK_XAG_USD_FEED');
   });
 
+  it('rejects a malformed Uniswap quoter and leaves an absent quoter unset', () => {
+    // Same rule as a Chainlink feed: 0x and 40 hex, or absent. A blank or
+    // truncated assignment is a typo and must fail boot. No address is
+    // defaulted — unset keeps swap quotes on the unassigned refusal.
+    const malformed = parseConfig({ ...valid, UNISWAP_V3_QUOTER_ETHEREUM: '0xnot-an-address' });
+    expect(malformed.ok).toBe(false);
+    if (!malformed.ok) expect(malformed.issues.join(' ')).toContain('UNISWAP_V3_QUOTER_ETHEREUM');
+
+    const blank = parseConfig({ ...valid, UNISWAP_V3_QUOTER_ETHEREUM: '' });
+    expect(blank.ok).toBe(false);
+    if (!blank.ok) expect(blank.issues.join(' ')).toContain('UNISWAP_V3_QUOTER_ETHEREUM');
+
+    const absent = parseConfig(valid);
+    expect(absent.ok).toBe(true);
+    if (absent.ok) expect(absent.config.uniswap.quoterEthereum).toBeUndefined();
+
+    const quoter = `0x${'ab'.repeat(20)}`;
+    const present = parseConfig({ ...valid, UNISWAP_V3_QUOTER_ETHEREUM: quoter });
+    expect(present.ok).toBe(true);
+    if (present.ok) expect(present.config.uniswap.quoterEthereum).toBe(quoter);
+  });
+
   it('refuses an smtp transport that cannot send', () => {
     // A transport that boots unconfigured discovers it at 3am, from a
     // user's complaint. Refuse at boot instead.

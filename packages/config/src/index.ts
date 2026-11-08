@@ -185,6 +185,16 @@ const schema = z.object({
     xagUsd: optionalFeed('CHAINLINK_XAG_USD_FEED'),
   }),
 
+  /**
+   * Uniswap v3 on Ethereum. Optional, and never defaulted to a deployment.
+   * The operator sets QuoterV2; unset leaves `createQuote` on the unassigned
+   * refusal. A present value that is not `0x` plus 40 hex fails boot. The
+   * router is not this field.
+   */
+  uniswap: z.object({
+    quoterEthereum: optionalFeed('UNISWAP_V3_QUOTER_ETHEREUM'),
+  }),
+
   rateLimit: z.object({
     windowSeconds: z.coerce.number().int().min(1).default(60),
     /** The general API budget. */
@@ -256,6 +266,9 @@ export function parseConfig(source: NodeJS.ProcessEnv = process.env): ParseResul
     chainlink: {
       xauUsd: source['CHAINLINK_XAU_USD_FEED'],
       xagUsd: source['CHAINLINK_XAG_USD_FEED'],
+    },
+    uniswap: {
+      quoterEthereum: source['UNISWAP_V3_QUOTER_ETHEREUM'],
     },
     rateLimit: {
       windowSeconds: source['RATE_LIMIT_WINDOW_SECONDS'],

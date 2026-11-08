@@ -64,8 +64,33 @@ beforeEach(() => {
   fees.breakdown.mockClear();
 });
 
-const svc = (p: ReturnType<typeof makePrisma>) =>
-  new SwapsService(p as never, fees as never, settings);
+const idleQuoter = { configured: false, quote: vi.fn(async () => null) };
+
+const svc = (
+  p: ReturnType<typeof makePrisma>,
+  uniswap: { configured: boolean; quote: ReturnType<typeof vi.fn> } = idleQuoter,
+) => new SwapsService(p as never, fees as never, settings, uniswap as never);
+
+const USDC = {
+  id: 'surr-usdc',
+  assetId: '1:0x1111111111111111111111111111111111111111:circle',
+  symbol: 'USDC',
+  chainId: '1',
+  decimals: 6,
+  enabled: true,
+  rails: ['dex'],
+  contractAddress: '0x1111111111111111111111111111111111111111',
+};
+const GOLD = {
+  id: 'surr-gold',
+  assetId: '1:0x2222222222222222222222222222222222222222:paxos',
+  symbol: 'PAXG',
+  chainId: '1',
+  decimals: 18,
+  enabled: true,
+  rails: ['dex'],
+  contractAddress: '0x2222222222222222222222222222222222222222',
+};
 
 describe('createQuote refusals', () => {
   it('refuses a conversion to the same asset', async () => {
@@ -112,6 +137,7 @@ describe('createQuote refusals', () => {
         get: async (key: string) =>
           key === 'swaps.quote-ttl-minutes' ? 7 : settingDefinition(key)!.default,
       } as never,
+      idleQuoter as never,
     );
     const before = Date.now();
     await longer.createQuote({
@@ -131,6 +157,56 @@ describe('createQuote refusals', () => {
     expect(p.created[0]?.['toAmountRaw']).toBe('0');
     expect(p.created[0]?.['state']).toBe('quoted');
     expect(quote.id).toBe('q1');
+  });
+});
+
+describe('Uniswap v3 quotes', () => {
+  const request = {
+    userId: 'u1',
+    fromAssetId: USDC.assetId,
+    toAssetId: GOLD.assetId,
+    fromAmountRaw: '1000000',
+    slippageBps: 50,
+  };
+
+  it('stores none with a zero received amount when every tier fails', async () => {
+    const quoteFn = vi.fn(async () => null);
+    const p = makePrisma({ assets: [USDC, GOLD] });
+    const quote = await svc(p, { configured: true, quote: quoteFn }).createQuote(request);
+    expect(quote.executionQuality).toBe('none');
+    expect(quote.toAmountRaw).toBe('0');
+    expect(quote.priceImpactMeasured).toBe(false);
+    expect(p.created[0]?.['poolFee']).toBeNull();
+    expect(quoteFn).toHaveBeenCalledOnce();
+  });
+
+  it('stores a thin quote at the winning fee without claiming a measured impact', async () => {
+    const quoteFn = vi.fn(async () => ({ amountOut: 50n, poolFee: 3000 }));
+    const p = makePrisma({ assets: [USDC, GOLD] });
+    const quote = await svc(p, { configured: true, quote: quoteFn }).createQuote(request);
+    expect(quote.executionQuality).toBe('thin');
+    expect(quote.priceImpactMeasured).toBe(false);
+    expect(quote.priceImpactBps).toBe(0);
+    expect(quote.toAmountRaw).toBe('50');
+    expect(quote.minReceivedRaw).toBe('49');
+    expect(p.created[0]?.['poolFee']).toBe(3000);
+    expect(p.created[0]?.['railKind']).toBe('dex');
+    expect(p.created[0]?.['railId']).toBe('uniswap-v3');
+    expect(quote.executable).toBe(true);
+  });
+
+  it('does not call the quoter for a fractional fromAmountRaw', async () => {
+    const quoteFn = vi.fn(async () => ({ amountOut: 50n, poolFee: 3000 }));
+    const p = makePrisma({ assets: [USDC, GOLD] });
+    const quote = await svc(p, { configured: true, quote: quoteFn }).createQuote({
+      ...request,
+      fromAmountRaw: '1.5',
+    });
+    expect(quoteFn).not.toHaveBeenCalled();
+    expect(quote.executionQuality).toBe('none');
+    expect(quote.toAmountRaw).toBe('0');
+    expect(quote.priceImpactMeasured).toBe(false);
+    expect(p.created[0]?.['poolFee']).toBeNull();
   });
 });
 
