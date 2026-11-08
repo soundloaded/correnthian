@@ -20,6 +20,10 @@ const listSchema = z.object({
   state: quoteStateSchema.optional(),
 });
 
+const prepareSchema = z.object({
+  walletId: z.string().min(1),
+});
+
 @ApiTags('swaps')
 @Controller('swaps')
 export class SwapsController {
@@ -61,5 +65,16 @@ export class SwapsController {
   @ApiOperation({ summary: 'Quote detail' })
   findOne(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.swaps.findById(id, user);
+  }
+
+  @Post('quotes/:id/prepare')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Assemble the unsigned approve and swap. The device signs; the server does not.' })
+  prepare(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body(zodPipe(prepareSchema)) dto: z.infer<typeof prepareSchema>,
+  ) {
+    return this.swaps.prepare(id, user.id, dto.walletId);
   }
 }

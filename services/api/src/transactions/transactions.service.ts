@@ -117,6 +117,20 @@ export interface ObservedTransactionInput {
 
 const POSITIVE_DECIMAL = /^\d+(\.\d+)?$/;
 
+function metadataRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
+
+/** `{ to, value, data }` and nothing else is a call this server assembled. */
+function asCall(value: unknown): { to: string; value: string; data: string } | null {
+  const record = metadataRecord(value);
+  if (typeof record.to !== 'string' || typeof record.value !== 'string' || typeof record.data !== 'string') {
+    return null;
+  }
+  return { to: record.to, value: record.value, data: record.data };
+}
+
 /**
  * The relations every read projection resolves.
  *
@@ -362,7 +376,7 @@ export class TransactionsService {
     if (!asset || !tx.destination) throw AppError.notFound('Transaction not found');
 
     const adapter = await this.blockchain.forChain(tx.chainId);
-    const request = this.intentRequest(tx, wallet.address, asset.contractAddress);
+    const request = this.assemblyRequest(tx, wallet.address, asset.contractAddress);
 
     let unsigned: UnsignedTransaction;
     try {
@@ -389,6 +403,14 @@ export class TransactionsService {
             maxFeePerGas: unsigned.maxFeePerGas ?? null,
             maxPriorityFeePerGas: unsigned.maxPriorityFeePerGas ?? null,
             builtAt: new Date().toISOString(),
+            // The bytes the device is asked to sign. Relay compares a later
+            // signature to this, so a router call is not re-derived as a
+            // token transfer.
+            payload: {
+              to: unsigned.to,
+              value: unsigned.value,
+              data: unsigned.data,
+            },
           },
         },
       },
@@ -432,8 +454,10 @@ export class TransactionsService {
    * So three facts are checked against the intent before anything reaches
    * the network — who signed (recovered from the signature, so a payload
    * edited after signing recovers someone else), which chain, and whether
-   * `to`/`value`/`data` equal the payload `assemblePayload` derives from
-   * this same intent. The node gets the last word on validity; this is the
+   * `to`/`value`/`data` equal the payload stored when this row was
+   * assembled. A row assembled before that payload was stored still falls
+   * back to `assemblePayload` on the intent, which is the ERC-20 transfer
+   * those rows were. The node gets the last word on validity; this is the
    * server's word on *identity*.
    *
    * A failed relay leaves the row in `signed`, so the device can retry.
@@ -477,7 +501,7 @@ export class TransactionsService {
       );
     }
 
-    const expected = adapter.assemblePayload(this.intentRequest(tx, wallet.address, asset.contractAddress));
+    const expected = this.expectedPayload(tx, adapter, wallet.address, asset.contractAddress);
     if (
       facts.to?.toLowerCase() !== expected.to.toLowerCase() ||
       facts.value !== expected.value ||
@@ -500,6 +524,52 @@ export class TransactionsService {
       to: 'broadcast',
       txHash: hash,
     });
+  }
+
+  /**
+   * A router call filed on the row, or the ERC-20 / native transfer the
+   * intent already described.
+   *
+   * `preparedCall` is `{ to, value, data }`. The value sent with that call
+   * is `0`: a swap moves the token through calldata, and a prepared call
+   * that attached native value would be a different transaction from the
+   * one the quote described.
+   */
+  private assemblyRequest(
+    tx: TransactionRow,
+    from: string,
+    contractAddress: string,
+  ): BuildTransactionRequest {
+    const prepared = asCall(metadataRecord(tx.metadata).preparedCall);
+    if (prepared) {
+      return {
+        chainId: tx.chainId,
+        from,
+        to: prepared.to,
+        value: '0',
+        data: prepared.data,
+      };
+    }
+    return this.intentRequest(tx, from, contractAddress);
+  }
+
+  /**
+   * The payload a signature must match.
+   *
+   * Present `metadata.build.payload` wins. Absent means the row was
+   * assembled before that field existed, and the check stays the transfer
+   * `assemblePayload` derives from the intent.
+   */
+  private expectedPayload(
+    tx: TransactionRow,
+    adapter: { assemblePayload(req: BuildTransactionRequest): { to: string; value: string; data: string } },
+    from: string,
+    contractAddress: string,
+  ): { to: string; value: string; data: string } {
+    const build = metadataRecord(tx.metadata).build;
+    const stored = asCall(metadataRecord(build).payload);
+    if (stored) return stored;
+    return adapter.assemblePayload(this.intentRequest(tx, from, contractAddress));
   }
 
   /** The chain-neutral request this intent assembles to. */

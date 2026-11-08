@@ -1,4 +1,4 @@
-import { encodeFunctionData } from 'viem';
+import { encodeFunctionData, erc20Abi } from 'viem';
 
 /**
  * Uniswap v3 fee tiers, in the order they are tried. A quote keeps the
@@ -98,6 +98,70 @@ export async function bestAmountOut(
 ): Promise<bigint | null> {
   const best = await bestQuote(quoter, input);
   return best === null ? null : best.amountOut;
+}
+
+/**
+ * SwapRouter02 `exactInputSingle`. The struct has no deadline; that field
+ * belongs to the older SwapRouter. The deployment address is configuration
+ * (`UNISWAP_V3_ROUTER_ETHEREUM`), not a literal in this package.
+ */
+export const SWAP_ROUTER_02_EXACT_INPUT_ABI = [
+  {
+    name: 'exactInputSingle',
+    type: 'function',
+    stateMutability: 'payable',
+    inputs: [
+      {
+        name: 'params',
+        type: 'tuple',
+        components: [
+          { name: 'tokenIn', type: 'address' },
+          { name: 'tokenOut', type: 'address' },
+          { name: 'fee', type: 'uint24' },
+          { name: 'recipient', type: 'address' },
+          { name: 'amountIn', type: 'uint256' },
+          { name: 'amountOutMinimum', type: 'uint256' },
+          { name: 'sqrtPriceLimitX96', type: 'uint160' },
+        ],
+      },
+    ],
+    outputs: [{ name: 'amountOut', type: 'uint256' }],
+  },
+] as const;
+
+export function encodeExactInputSingle(args: {
+  tokenIn: `0x${string}`;
+  tokenOut: `0x${string}`;
+  fee: UniswapV3FeeTier;
+  recipient: `0x${string}`;
+  amountIn: bigint;
+  amountOutMinimum: bigint;
+  sqrtPriceLimitX96: 0n;
+}): `0x${string}` {
+  return encodeFunctionData({
+    abi: SWAP_ROUTER_02_EXACT_INPUT_ABI,
+    functionName: 'exactInputSingle',
+    args: [
+      {
+        tokenIn: args.tokenIn,
+        tokenOut: args.tokenOut,
+        fee: args.fee,
+        recipient: args.recipient,
+        amountIn: args.amountIn,
+        amountOutMinimum: args.amountOutMinimum,
+        sqrtPriceLimitX96: args.sqrtPriceLimitX96,
+      },
+    ],
+  });
+}
+
+/** ERC-20 `approve`. The spender for a swap is the router, from configuration. */
+export function encodeErc20Approve(spender: `0x${string}`, amount: bigint): `0x${string}` {
+  return encodeFunctionData({
+    abi: erc20Abi,
+    functionName: 'approve',
+    args: [spender, amount],
+  });
 }
 
 /**

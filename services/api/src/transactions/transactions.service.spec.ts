@@ -492,6 +492,111 @@ describe('TransactionsService — the lifecycle', () => {
       });
     });
 
+    it('stores the payload the unsigned transaction returned', async () => {
+      seed();
+      const out = await svc.assemble('tx1', 'u1');
+      const metadata = store.rows.get('tx1')?.['metadata'] as {
+        build?: { payload?: { to: string; value: string; data: string } };
+      };
+      expect(metadata.build?.payload).toEqual({
+        to: out.unsigned.to,
+        value: out.unsigned.value,
+        data: out.unsigned.data,
+      });
+    });
+
+    it('stores the ERC-20 transfer encoding and relays a signature that matches it', async () => {
+      seed();
+      adapter.buildTransaction.mockImplementation(async (req: { to: string; value?: string; token?: string }) => {
+        const assemble = adapter.assemblePayload as (input: typeof req) => {
+          to: string;
+          value: string;
+          data: string;
+        };
+        const payload = assemble(req);
+        return {
+          ...payload,
+          chainId: 1,
+          gas: '21000',
+          nonce: 3,
+          maxFeePerGas: '2000000000',
+          maxPriorityFeePerGas: '100000000',
+        };
+      });
+
+      await svc.assemble('tx1', 'u1');
+      const payload = (
+        store.rows.get('tx1')?.['metadata'] as {
+          build: { payload: { to: string; value: string; data: string } };
+        }
+      ).build.payload;
+      // The transfer encoding assemblePayload already produces: the token
+      // contract, no value, and the transfer selector the stub returns.
+      expect(payload).toEqual({ to: '0xgold', value: '0', data: '0xa9059cbb' });
+
+      await svc.markSigned('tx1', OWNER);
+      adapter.decodeSignedTransaction.mockResolvedValue({
+        chainId: 1,
+        from: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        to: payload.to,
+        value: payload.value,
+        nonce: 3,
+        data: payload.data,
+      });
+      await svc.relay('tx1', 'u1', '0x' + 'ab'.repeat(80));
+      expect(adapter.broadcastTransaction).toHaveBeenCalledTimes(1);
+    });
+
+    it('assembles a prepared call instead of an ERC-20 transfer, and the value is 0', async () => {
+      seed({
+        metadata: {
+          preparedCall: {
+            to: '0x1111111111111111111111111111111111111111',
+            value: '5',
+            data: '0xexact',
+          },
+        },
+      });
+      adapter.buildTransaction.mockImplementation(
+        async (req: { to: string; value?: string; data?: string; token?: string; amount?: string }) => ({
+          to: req.to,
+          value: req.value ?? '0',
+          data: req.data ?? '0x',
+          chainId: 1,
+          gas: '21000',
+          nonce: 4,
+          maxFeePerGas: '2',
+          maxPriorityFeePerGas: '1',
+        }),
+      );
+
+      await svc.assemble('tx1', 'u1');
+      const request = adapter.buildTransaction.mock.calls[0]?.[0] as {
+        to: string;
+        value?: string;
+        data?: string;
+        token?: string;
+        amount?: string;
+      };
+      expect(request).toMatchObject({
+        to: '0x1111111111111111111111111111111111111111',
+        value: '0',
+        data: '0xexact',
+      });
+      expect(request.token).toBeUndefined();
+      expect(request.amount).toBeUndefined();
+      const payload = (
+        store.rows.get('tx1')?.['metadata'] as {
+          build: { payload: { to: string; value: string; data: string } };
+        }
+      ).build.payload;
+      expect(payload).toEqual({
+        to: '0x1111111111111111111111111111111111111111',
+        value: '0',
+        data: '0xexact',
+      });
+    });
+
     it('assembles a native transfer as value to the destination', async () => {
       // The row's `assetId` is the foreign key, not the derived registry key.
       seed({ assetId: 'native1' });
@@ -626,6 +731,62 @@ describe('TransactionsService — the lifecycle', () => {
       await svc.markSigned('tx1', OWNER);
       await expect(svc.relay('tx1', 'u2', SIGNED)).rejects.toThrow(/not found/i);
       expect(adapter.decodeSignedTransaction).not.toHaveBeenCalled();
+    });
+
+    it('rejects a signature whose data differs from the stored payload and does not broadcast', async () => {
+      // The decoded bytes match the ERC-20 transfer assemblePayload would
+      // re-derive. The stored payload is a different call. Relay must use
+      // the stored one.
+      seed({
+        state: 'signed',
+        metadata: {
+          build: {
+            payload: {
+              to: '0x1111111111111111111111111111111111111111',
+              value: '0',
+              data: '0xstored',
+            },
+          },
+        },
+      });
+      adapter.decodeSignedTransaction.mockResolvedValue({
+        chainId: 1,
+        from: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        to: '0xgold',
+        value: '0',
+        data: '0xa9059cbb',
+      });
+
+      await expect(svc.relay('tx1', 'u1', SIGNED)).rejects.toThrow(/does not match/i);
+      expect(adapter.broadcastTransaction).not.toHaveBeenCalled();
+      expect(store.rows.get('tx1')?.['state']).toBe('signed');
+    });
+
+    it('relays when the signed payload matches the stored payload', async () => {
+      seed({
+        state: 'signed',
+        metadata: {
+          build: {
+            payload: {
+              to: '0x1111111111111111111111111111111111111111',
+              value: '0',
+              data: '0xexactinput',
+            },
+          },
+        },
+      });
+      adapter.decodeSignedTransaction.mockResolvedValue({
+        chainId: 1,
+        from: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        to: '0x1111111111111111111111111111111111111111',
+        value: '0',
+        data: '0xexactinput',
+      });
+      adapter.broadcastTransaction.mockResolvedValue('0x' + '9'.repeat(64));
+
+      await svc.relay('tx1', 'u1', SIGNED);
+      expect(adapter.broadcastTransaction).toHaveBeenCalledWith(SIGNED);
+      expect(store.rows.get('tx1')?.['state']).toBe('broadcast');
     });
 
     it('leaves the row in signed when the network refuses the payload', async () => {

@@ -244,6 +244,28 @@ describe('config parsing', () => {
     if (present.ok) expect(present.config.uniswap.quoterEthereum).toBe(quoter);
   });
 
+  it('rejects a malformed Uniswap router and leaves an absent router unset', () => {
+    // Same shape as the quoter. Preparing a signature needs SwapRouter02.
+    // No address is defaulted — unset is "not configured", not a guessed
+    // deployment.
+    const malformed = parseConfig({ ...valid, UNISWAP_V3_ROUTER_ETHEREUM: '0xnot-an-address' });
+    expect(malformed.ok).toBe(false);
+    if (!malformed.ok) expect(malformed.issues.join(' ')).toContain('UNISWAP_V3_ROUTER_ETHEREUM');
+
+    const blank = parseConfig({ ...valid, UNISWAP_V3_ROUTER_ETHEREUM: '' });
+    expect(blank.ok).toBe(false);
+    if (!blank.ok) expect(blank.issues.join(' ')).toContain('UNISWAP_V3_ROUTER_ETHEREUM');
+
+    const absent = parseConfig(valid);
+    expect(absent.ok).toBe(true);
+    if (absent.ok) expect(absent.config.uniswap.routerEthereum).toBeUndefined();
+
+    const router = `0x${'cd'.repeat(20)}`;
+    const present = parseConfig({ ...valid, UNISWAP_V3_ROUTER_ETHEREUM: router });
+    expect(present.ok).toBe(true);
+    if (present.ok) expect(present.config.uniswap.routerEthereum).toBe(router);
+  });
+
   it('refuses an smtp transport that cannot send', () => {
     // A transport that boots unconfigured discovers it at 3am, from a
     // user's complaint. Refuse at boot instead.

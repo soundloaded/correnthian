@@ -66,10 +66,17 @@ beforeEach(() => {
 
 const idleQuoter = { configured: false, quote: vi.fn(async () => null) };
 
+/** prepare's dependencies. These tests never call it. */
+const prepareDeps = [
+  { value: { uniswap: {} } } as never,
+  { allowance: async () => 0n } as never,
+  {} as never,
+] as const;
+
 const svc = (
   p: ReturnType<typeof makePrisma>,
   uniswap: { configured: boolean; quote: ReturnType<typeof vi.fn> } = idleQuoter,
-) => new SwapsService(p as never, fees as never, settings, uniswap as never);
+) => new SwapsService(p as never, fees as never, settings, uniswap as never, ...prepareDeps);
 
 const USDC = {
   id: 'surr-usdc',
@@ -138,6 +145,7 @@ describe('createQuote refusals', () => {
           key === 'swaps.quote-ttl-minutes' ? 7 : settingDefinition(key)!.default,
       } as never,
       idleQuoter as never,
+      ...prepareDeps,
     );
     const before = Date.now();
     await longer.createQuote({

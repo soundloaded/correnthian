@@ -1,11 +1,19 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { deriveAssetId } from '@correnthian/assets';
+import {
+  encodeErc20Approve,
+  encodeExactInputSingle,
+  type UniswapV3FeeTier,
+  type UnsignedTransaction,
+} from '@correnthian/blockchain';
 import { AppError } from '../common/errors.js';
 import { isOperatorRole } from '../common/roles.js';
 import { decodeCursor, encodeCursor, KEYSET_ORDER, keysetAfter } from '../common/keyset.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { ConfigService } from '../config/config.service.js';
 import { FeesService } from '../fees/fees.service.js';
 import { SystemSettingsService } from '../settings/system-settings.service.js';
+import { TransactionsService } from '../transactions/transactions.service.js';
 import type { PublicFeeBreakdown, PublicFeeLine } from '../fees/fee-breakdown.js';
 import {
   isWithinStoreRange, MoneyError, notionalUsd as notionalFromRaw, parseUsd, type Usd,
@@ -13,6 +21,7 @@ import {
   sumUsd,
 } from '../fees/money.js';
 import type { ListQuotesDto } from './dto/list-quotes.dto.js';
+import { TOKEN_ALLOWANCE, type TokenAllowance } from './token-allowance.js';
 import { UniswapV3Quoter, type DexQuoteResult } from './uniswap-v3-quoter.js';
 
 export interface QuoteRequestInput {
@@ -129,6 +138,39 @@ function isTokenAddress(value: string): value is `0x${string}` {
   return /^0x[0-9a-fA-F]{40}$/.test(value);
 }
 
+function asAddress(value: string): `0x${string}` | null {
+  return isTokenAddress(value) ? value : null;
+}
+
+function isFeeTier(fee: number | null): fee is UniswapV3FeeTier {
+  return fee === 500 || fee === 3000 || fee === 10000;
+}
+
+/**
+ * A quote that can be turned into a router call. `executionQuality: 'none'`
+ * is the refusal already stored when the quoter did not fill, and preparing
+ * it would invent a swap the quote said it does not have.
+ */
+function isPreparable(quote: {
+  executionQuality: string;
+  railId: string;
+  chainId: string;
+  poolFee: number | null;
+  fromAmountRaw: string;
+  toAmountRaw: string;
+  minReceivedRaw: string;
+}): boolean {
+  return (
+    quote.executionQuality !== 'none' &&
+    quote.railId === 'uniswap-v3' &&
+    quote.chainId === '1' &&
+    isFeeTier(quote.poolFee) &&
+    BASE_UNITS.test(quote.fromAmountRaw) &&
+    BASE_UNITS.test(quote.toAmountRaw) &&
+    /^\d+$/.test(quote.minReceivedRaw)
+  );
+}
+
 @Injectable()
 export class SwapsService {
   private readonly logger = new Logger(SwapsService.name);
@@ -138,6 +180,9 @@ export class SwapsService {
     @Inject(FeesService) private readonly fees: FeesService,
     @Inject(SystemSettingsService) private readonly settings: SystemSettingsService,
     @Inject(UniswapV3Quoter) private readonly uniswap: UniswapV3Quoter,
+    @Inject(ConfigService) private readonly config: ConfigService,
+    @Inject(TOKEN_ALLOWANCE) private readonly allowances: TokenAllowance,
+    @Inject(TransactionsService) private readonly transactions: TransactionsService,
   ) {
     // `ProvidersService` used to be injected here and was never read. It is
     // gone rather than left as a hint: the rail binding it implied is `BE-702`,
@@ -258,6 +303,99 @@ export class SwapsService {
       throw AppError.notFound('Quote not found');
     }
     return this.present(quote);
+  }
+
+  /**
+   * File the unsigned calls a device signs for this quote.
+   *
+   * The server does not sign. Each row is a normal outbound transaction
+   * whose calldata is the router `exactInputSingle`, plus an ERC-20
+   * `approve` of that router when the wallet's allowance is lower than
+   * `fromAmountRaw`. Assembly stores `{ to, value, data }` so relay can
+   * check the signature against that payload rather than a token transfer.
+   */
+  async prepare(quoteId: string, actorId: string, walletId: string): Promise<{
+    quoteId: string;
+    transactions: Array<{ id: string; kind: 'approve' | 'swap'; unsigned: UnsignedTransaction }>;
+  }> {
+    const quote = await this.prisma.swapQuote.findUnique({
+      where: { id: quoteId },
+      include: { fromAsset: true, toAsset: true },
+    });
+    if (!quote || quote.userId !== actorId) throw AppError.notFound('Quote not found');
+    if (!isPreparable(quote) || !isFeeTier(quote.poolFee)) {
+      throw AppError.badRequest('This quote is not executable');
+    }
+
+    const router = this.config.value.uniswap.routerEthereum;
+    if (router === undefined) {
+      throw AppError.providerUnavailable('The swap router is not configured');
+    }
+
+    const wallet = await this.prisma.wallet.findUnique({ where: { id: walletId } });
+    if (!wallet || wallet.userId !== actorId) throw AppError.notFound('Wallet not found');
+    if (wallet.chainId !== quote.chainId) {
+      throw AppError.badRequest('This quote is not executable');
+    }
+
+    const tokenIn = asAddress(quote.fromAsset.contractAddress);
+    const tokenOut = asAddress(quote.toAsset.contractAddress);
+    const recipient = asAddress(wallet.address);
+    if (!tokenIn || !tokenOut || !recipient) {
+      throw AppError.badRequest('This quote is not executable');
+    }
+
+    const amountIn = BigInt(quote.fromAmountRaw);
+    const amountOutMinimum = BigInt(quote.minReceivedRaw);
+    const allowance = await this.allowances.allowance(tokenIn, recipient, router);
+
+    const calls: Array<{
+      kind: 'approve' | 'swap';
+      to: `0x${string}`;
+      data: `0x${string}`;
+    }> = [];
+    if (allowance < amountIn) {
+      calls.push({
+        kind: 'approve',
+        to: tokenIn,
+        data: encodeErc20Approve(router, amountIn),
+      });
+    }
+    calls.push({
+      kind: 'swap',
+      to: router,
+      data: encodeExactInputSingle({
+        tokenIn,
+        tokenOut,
+        fee: quote.poolFee,
+        recipient,
+        amountIn,
+        amountOutMinimum,
+        sqrtPriceLimitX96: 0n,
+      }),
+    });
+
+    const transactions: Array<{ id: string; kind: 'approve' | 'swap'; unsigned: UnsignedTransaction }> = [];
+    for (const call of calls) {
+      const created = await this.transactions.create(
+        {
+          walletId,
+          assetId: quote.fromAsset.assetId,
+          direction: 'out',
+          amountRaw: quote.fromAmountRaw,
+          destination: call.to,
+          metadata: {
+            quoteId,
+            preparedCall: { to: call.to, value: '0', data: call.data },
+          },
+        },
+        actorId,
+      );
+      const assembled = await this.transactions.assemble(created.id, actorId);
+      transactions.push({ id: created.id, kind: call.kind, unsigned: assembled.unsigned });
+    }
+
+    return { quoteId, transactions };
   }
 
   list(userId?: string, state?: string) {

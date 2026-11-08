@@ -8,6 +8,8 @@ import {
   QUOTER_V2_ABI,
   amountOutOf,
   bestAmountOut,
+  encodeErc20Approve,
+  encodeExactInputSingle,
   encodeQuoteExactInputSingle,
   type QuoteExactInput,
 } from '../uniswap-v3.js';
@@ -132,5 +134,93 @@ describe('bestAmountOut', () => {
       quote: async ({ fee }) => (fee === 3000 ? 0n : fee === 10000 ? 4n : null),
     };
     expect(await bestAmountOut(quoter, INPUT)).toBe(4n);
+  });
+});
+
+/**
+ * SwapRouter02 `exactInputSingle` takes one struct and has no deadline.
+ * That field belongs to the older SwapRouter. Decoding with this struct is
+ * what fails if the fee and the minimum are swapped.
+ */
+const EXACT_INPUT_SINGLE = [
+  {
+    name: 'exactInputSingle',
+    type: 'function',
+    stateMutability: 'payable',
+    inputs: [
+      {
+        name: 'params',
+        type: 'tuple',
+        components: [
+          { name: 'tokenIn', type: 'address' },
+          { name: 'tokenOut', type: 'address' },
+          { name: 'fee', type: 'uint24' },
+          { name: 'recipient', type: 'address' },
+          { name: 'amountIn', type: 'uint256' },
+          { name: 'amountOutMinimum', type: 'uint256' },
+          { name: 'sqrtPriceLimitX96', type: 'uint160' },
+        ],
+      },
+    ],
+    outputs: [{ name: 'amountOut', type: 'uint256' }],
+  },
+] as const;
+
+const APPROVE = [
+  {
+    name: 'approve',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+] as const;
+
+const ROUTER = '0x3333333333333333333333333333333333333333' as const;
+const RECIPIENT = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as const;
+
+describe('encodeExactInputSingle', () => {
+  it('encodes SwapRouter02 exactInputSingle for the quote fee and minimum', () => {
+    const data = encodeExactInputSingle({
+      tokenIn: TOKEN_IN,
+      tokenOut: TOKEN_OUT,
+      fee: 3000,
+      recipient: RECIPIENT,
+      amountIn: 1_000_000n,
+      amountOutMinimum: 49n,
+      sqrtPriceLimitX96: 0n,
+    });
+    expect(data).toBe(encodeExactInputSingle({
+      tokenIn: TOKEN_IN,
+      tokenOut: TOKEN_OUT,
+      fee: 3000,
+      recipient: RECIPIENT,
+      amountIn: 1_000_000n,
+      amountOutMinimum: 49n,
+      sqrtPriceLimitX96: 0n,
+    }));
+    const decoded = decodeFunctionData({ abi: EXACT_INPUT_SINGLE, data });
+    expect(decoded.functionName).toBe('exactInputSingle');
+    const params = decoded.args[0];
+    expect(params.tokenIn.toLowerCase()).toBe(TOKEN_IN);
+    expect(params.tokenOut.toLowerCase()).toBe(TOKEN_OUT);
+    expect(params.recipient.toLowerCase()).toBe(RECIPIENT);
+    expect(params.fee).toBe(3000);
+    expect(params.amountIn).toBe(1_000_000n);
+    expect(params.amountOutMinimum).toBe(49n);
+    expect(params.sqrtPriceLimitX96).toBe(0n);
+  });
+});
+
+describe('encodeErc20Approve', () => {
+  it('encodes approve for the router and the amount', () => {
+    const data = encodeErc20Approve(ROUTER, 1_000_000n);
+    const decoded = decodeFunctionData({ abi: APPROVE, data });
+    expect(decoded.functionName).toBe('approve');
+    expect(decoded.args[0].toLowerCase()).toBe(ROUTER);
+    expect(decoded.args[1]).toBe(1_000_000n);
   });
 });

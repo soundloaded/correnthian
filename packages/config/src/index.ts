@@ -187,12 +187,13 @@ const schema = z.object({
 
   /**
    * Uniswap v3 on Ethereum. Optional, and never defaulted to a deployment.
-   * The operator sets QuoterV2; unset leaves `createQuote` on the unassigned
-   * refusal. A present value that is not `0x` plus 40 hex fails boot. The
-   * router is not this field.
+   * The operator sets QuoterV2 and, separately, SwapRouter02. Unset leaves
+   * quoting on the unassigned refusal and leaves preparing a signature
+   * unavailable. A present value that is not `0x` plus 40 hex fails boot.
    */
   uniswap: z.object({
     quoterEthereum: optionalFeed('UNISWAP_V3_QUOTER_ETHEREUM'),
+    routerEthereum: optionalFeed('UNISWAP_V3_ROUTER_ETHEREUM'),
   }),
 
   rateLimit: z.object({
@@ -269,6 +270,7 @@ export function parseConfig(source: NodeJS.ProcessEnv = process.env): ParseResul
     },
     uniswap: {
       quoterEthereum: source['UNISWAP_V3_QUOTER_ETHEREUM'],
+      routerEthereum: source['UNISWAP_V3_ROUTER_ETHEREUM'],
     },
     rateLimit: {
       windowSeconds: source['RATE_LIMIT_WINDOW_SECONDS'],
