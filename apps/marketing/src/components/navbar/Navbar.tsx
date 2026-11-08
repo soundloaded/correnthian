@@ -15,10 +15,10 @@ export type NavItem = {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Features', href: '/home#features' },
-  { label: 'Usecase', href: '/home#usecase' },
-  { label: 'Metrics', href: '/home#metrics' },
-  { label: 'Smart Assist', href: '/home#smart-assist' },
+  { label: 'Holding', href: '/home#features' },
+  { label: 'Holders', href: '/home#usecase' },
+  { label: 'Facts', href: '/home#facts' },
+  { label: 'Record', href: '/home#smart-assist' },
 ]
 
 const dropdownItems: NavItem[] = [
@@ -82,7 +82,7 @@ const Navbar = () => {
     if (normalizedPathname !== '/home') return
 
     const handleScrollSpy = () => {
-      const sections = ['features', 'usecase', 'metrics', 'smart-assist']
+      const sections = ['features', 'usecase', 'metrics', 'facts', 'smart-assist']
       const scrollPosition = window.scrollY + window.innerHeight / 3
 
       if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 50) {
@@ -209,24 +209,23 @@ const Navbar = () => {
             <div className="hidden h-2.5 w-full transition-all duration-500 ease-in-out in-[.nav-sticky-on]:w-2.5 lg:flex"></div>
 
             <div className="flex items-center gap-1.25 rounded-[20px] bg-white p-1.5 shadow-lg lg:shadow-lg">
-              <a href="https://www.apple.com/in/app-store/" target="_blank" aria-label="App Store" className="bg-default-200 group relative flex size-8.75 items-center justify-center overflow-hidden rounded-lg transition-all duration-300 md:h-12.5 md:w-12.5 md:rounded-2xl">
+              <Link href="/waitlist" aria-label="Request access" className="bg-default-200 group relative flex size-8.75 items-center justify-center overflow-hidden rounded-lg transition-all duration-300 md:h-12.5 md:w-12.5 md:rounded-2xl">
                 <div className="relative flex items-center justify-center overflow-hidden">
                   <Image src={appStoreIcon} alt="Icon" className="size-4.5 transition-transform duration-300 group-hover:-translate-y-6 md:size-6" />
                   <Image src={appStoreIcon} alt="Icon" className="absolute size-4.5 translate-y-6 transition-transform duration-300 group-hover:translate-y-0 md:size-6" />
                 </div>
-              </a>
+              </Link>
 
-              <a
-                href="https://play.google.com/store/games?device=windows"
-                target="_blank"
-                aria-label="App Store"
+              <Link
+                href="/waitlist"
+                aria-label="Request access"
                 className="bg-default-200 group relative flex size-8.75 items-center justify-center overflow-hidden rounded-lg transition-all duration-300 md:h-12.5 md:w-12.5 md:rounded-2xl"
               >
                 <div className="relative flex items-center justify-center overflow-hidden">
                   <Image src={playStoreIcon} alt="Icon" className="size-4.5 transition-transform duration-300 group-hover:-translate-y-6 md:size-6" />
                   <Image src={playStoreIcon} alt="Icon" className="absolute size-4.5 translate-y-6 transition-transform duration-300 group-hover:translate-y-0 md:size-6" />
                 </div>
-              </a>
+              </Link>
 
               <div className="flex items-center lg:hidden">
                 <button

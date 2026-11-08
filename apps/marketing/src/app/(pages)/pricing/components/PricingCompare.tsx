@@ -54,16 +54,16 @@ const PricingCompare = () => {
               <tr>
                 <th className="text-default-900 rounded-s-lg px-2 py-2.5 text-start text-sm font-medium md:p-5 md:text-xl lg:text-2xl">Features</th>
                 <th className="px-2 py-2.5 text-center md:p-5">
-                  <div className="text-default-900 text-sm font-medium md:text-xl lg:text-2xl">Free plan</div>
+                  <div className="text-default-900 text-sm font-medium md:text-xl lg:text-2xl">Network</div>
                   <div className="text-default-600 mt-1 text-xs font-medium md:text-lg">$0</div>
                 </th>
                 <th className="px-2 py-2.5 text-center md:p-5">
                   <div className="text-default-900 text-sm font-medium md:text-xl lg:text-2xl">Pro plan</div>
-                  <div className="text-default-600 mt-1 text-xs font-medium md:text-lg">$20/month</div>
+                  <div className="text-default-600 mt-1 text-xs font-medium md:text-lg">Issuer, unpriced</div>
                 </th>
                 <th className="rounded-r-2xl px-2 py-2.5 text-center md:p-5">
                   <div className="text-default-900 text-sm font-medium md:text-xl lg:text-2xl">Premium plan</div>
-                  <div className="text-default-600 mt-1 text-xs font-medium md:text-lg">$150/month</div>
+                  <div className="text-default-600 mt-1 text-xs font-medium md:text-lg">Correnthian, unpriced</div>
                 </th>
               </tr>
             </thead>

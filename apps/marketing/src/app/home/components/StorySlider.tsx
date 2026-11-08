@@ -34,8 +34,8 @@ const storySlidesData: StorySlideType[] = [
     poster: poster01,
     bgGradientClass: 'absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40',
     avatar: avatar09,
-    name: 'Marcus Reed',
-    role: 'Fitness Instructor',
+    name: 'What is it?',
+    role: 'The metal, named',
     youtubeUrl: 'https://www.youtube.com/embed/elgqxmdVms8?si=yYfzbunShGP15tde',
   },
   {
@@ -43,8 +43,8 @@ const storySlidesData: StorySlideType[] = [
     poster: poster02,
     bgGradientClass: 'absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent',
     avatar: avatar08,
-    name: 'Aisha Khan',
-    role: 'Digital Marketer',
+    name: 'Who backs it?',
+    role: 'The issuer, named',
     youtubeUrl: 'https://www.youtube.com/embed/elgqxmdVms8?si=yYfzbunShGP15tde',
   },
   {
@@ -52,8 +52,8 @@ const storySlidesData: StorySlideType[] = [
     poster: poster03,
     bgGradientClass: 'absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent',
     avatar: avatar07,
-    name: 'Daniel',
-    role: 'Remote Engineer',
+    name: 'Can it leave?',
+    role: 'Not open yet',
     youtubeUrl: 'https://www.youtube.com/embed/elgqxmdVms8?si=yYfzbunShGP15tde',
   },
   {
@@ -61,8 +61,8 @@ const storySlidesData: StorySlideType[] = [
     poster: poster01,
     bgGradientClass: 'absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent',
     avatar: avatar04,
-    name: 'Olivia Park',
-    role: 'Project Manager',
+    name: 'Where are the keys?',
+    role: 'On your device',
     youtubeUrl: 'https://www.youtube.com/embed/elgqxmdVms8?si=yYfzbunShGP15tde',
   },
   {
@@ -70,8 +70,8 @@ const storySlidesData: StorySlideType[] = [
     poster: poster02,
     bgGradientClass: 'absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent',
     avatar: avatar05,
-    name: 'Ryan Cooper',
-    role: 'Software Developer',
+    name: 'What are the fees?',
+    role: 'Three lines, unpriced',
     youtubeUrl: 'https://www.youtube.com/embed/elgqxmdVms8?si=yYfzbunShGP15tde',
   },
 ]
@@ -107,13 +107,13 @@ const StorySlider = () => {
           <span className="inline-block px-5 py-1.5 text-sm font-medium bg-white border border-default-200 text-default-800 rounded-full mb-2.5">A closer look</span>
 
           <h2 className="lg:text-5xl md:text-4xl text-2xl font-semibold tracking-normal mb-2.5">
-            How people use
+            Four questions,
             <br />
-            Habitline every day
+            asked of every holding
           </h2>
 
           <div className="mt-5 inline-flex flex-wrap items-center justify-center gap-2 rounded-full text-sm md:gap-2.5">
-            <span className="text-lg font-semibold text-default-800">4.5/5.0</span>
+            <span className="text-lg font-semibold text-default-800">No rating</span>
 
             <div className="flex items-center gap-2">
               <Icon icon="tabler:star-filled" className="size-4 text-primary-1" />
@@ -123,7 +123,7 @@ const StorySlider = () => {
               <Icon icon="tabler:star-filled" className="size-4 text-primary-1" />
             </div>
 
-            <span className="md:text-lg text-base text-default-600">(Trusted by 1582+ users)</span>
+            <span className="md:text-lg text-base text-default-600">(No users to count yet)</span>
           </div>
         </div>
 
@@ -167,7 +167,7 @@ const StorySlider = () => {
                     </div>
 
                     <div className="absolute right-5 bottom-5 z-20">
-                      <a href={slide.youtubeUrl} data-toggle="video" className="flex items-center gap-2 rounded-sm bg-white/20 px-2 py-1 text-default-950 backdrop-blur-md transition duration-300 hover:bg-white/30">
+                      <a href="/home#features" className="flex items-center gap-2 rounded-sm bg-white/20 px-2 py-1 text-default-950 backdrop-blur-md transition duration-300 hover:bg-white/30">
                         <span className="flex items-center justify-center">
                           <Icon icon="tabler:player-play-filled" className="size-3.5" />
                         </span>

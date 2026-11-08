@@ -42,12 +42,12 @@ const Footer = () => {
         <div className="grid grid-cols-1 justify-between gap-7.5 md:grid-cols-4 md:gap-12.5 lg:gap-32">
           <div className="lg:col-span-2">
             <Link href="/" className="mb-10 inline-block">
-              <Image src={logo} alt="Habitline Logo" height={44} className="h-11" />
+              <Image src={logo} alt="Correnthian" height={44} className="h-11" />
             </Link>
 
             <div className="lg:max-w-md">
-              <h2 className="mb-2.5 text-xl font-medium md:text-2xl">Stay on top of your habits</h2>
-              <p className="text-default-500 mb-5 text-lg">No spam. Just simple advice for staying consistent.</p>
+              <h2 className="mb-2.5 text-xl font-medium md:text-2xl">Hear when access opens</h2>
+              <p className="text-default-500 mb-5 text-lg">A note when there is something real to try. No invented offers.</p>
 
               <form className="flex flex-col items-start gap-4 lg:flex-row lg:items-center">
                 <input type="email" placeholder="Enter your email" required className="border-default-200 bg-default-200 text-default-900 placeholder:text-default-400 rounded-full border px-5 py-3 text-base transition-all focus:outline-none lg:w-lg!" />
@@ -80,7 +80,7 @@ const Footer = () => {
 
         <div className="border-default-200 mt-6 flex flex-col items-center justify-start gap-5 border-t pt-5 md:mt-8 md:flex-row md:justify-between md:gap-6 md:pt-7.5 lg:mt-16">
           <p className="text-default-600 text-base md:text-lg">
-            Develop by{' '}
+            Interface template by{' '}
             <a href="https://unifato.com/" target="_blank" className="text-default-900 font-medium hover:underline">
               Unifato
             </a>

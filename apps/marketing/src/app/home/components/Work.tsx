@@ -24,51 +24,51 @@ const usecaseTabsData: UsecaseTabType[] = [
   {
     id: 'tabs-item-1',
     targetId: '#tabs-1',
-    label: 'Professionals',
+    label: 'Owners',
     icon: 'lucide:briefcase-business',
     image: stepImage01,
-    alt: 'Professionals',
-    description: 'For people balancing classes, projects, and long study sessions.',
-    statValue: '14',
-    statLabel: 'Study sessions logged each week',
+    alt: 'Owners',
+    description: 'For someone who wants gold exposure and will not hand the keys to a broker.',
+    statValue: 'Keys',
+    statLabel: 'Stay on the holder’s device',
     isActive: true,
   },
   {
     id: 'tabs-item-2',
     targetId: '#tabs-2',
-    label: 'Students',
+    label: 'Readers',
     icon: 'lucide:graduation-cap',
     image: stepImage02,
-    alt: 'Students',
-    description: 'For people juggling work, family routines, and personal goals.',
-    statValue: '12',
-    statLabel: 'Routines completed weekly',
+    alt: 'Readers',
+    description: 'For someone who wants the issuer and the backing named before they buy.',
+    statValue: 'Name',
+    statLabel: 'Who stands behind the token',
   },
   {
     id: 'tabs-item-3',
     targetId: '#tabs-3',
-    label: 'Remote Workers',
+    label: 'Exits',
     icon: 'lucide:briefcase-business',
     image: stepImage03,
-    alt: 'Remote Workers',
-    description: 'Focus blocks, breaks, and shutdown routines help keep momentum.',
-    statValue: '40',
-    statLabel: 'Sessions completed monthly',
+    alt: 'Exits',
+    description: 'The record has to say whether the holding can be moved or redeemed. That path is not open yet.',
+    statValue: 'Exit',
+    statLabel: 'Stated before you commit',
   },
   {
     id: 'tabs-item-4',
     targetId: '#tabs-4',
-    label: 'Busy Parents',
+    label: 'Fees',
     icon: 'lucide:users',
     image: stepImage04,
-    alt: 'Professionals',
-    description: 'For anyone handling long workdays, shifting priorities, and tight deadlines.',
-    statValue: '87%',
-    statLabel: 'Weekly consistency',
+    alt: 'Fees',
+    description: 'Three lines, itemised. No rate is published until a provider is contracted.',
+    statValue: '3',
+    statLabel: 'Fee lines, none priced yet',
   },
 ]
 
-const hashtagsData: string[] = ['#fitness enthusiasts', '#creatives', '#entrepreneurs', '#freelancers', '#new habit builders', '#deep-work lovers']
+const hashtagsData: string[] = ['#gold owners', '#self custody', '#named issuer', '#itemised fees', '#no broker hold', '#your keys']
 
 const Work = () => {
   return (
@@ -82,12 +82,12 @@ const Work = () => {
       ></div>
 
       <div className="relative z-10 container rounded-2xl bg-white object-cover p-8.5 text-center lg:mx-auto lg:p-25" style={{ backgroundImage: `url(${vector10.src})` }}>
-        <span className="border-default-200 text-default-800 mb-3.5 inline-block rounded-full border bg-white px-5 py-1.5 text-sm font-medium">Fits every lifestyle</span>
+        <span className="border-default-200 text-default-800 mb-3.5 inline-block rounded-full border bg-white px-5 py-1.5 text-sm font-medium">Who it is for</span>
 
         <h2 className="text-default-900 mb-8 text-2xl leading-[1.1] font-medium tracking-normal md:mb-12.5 md:text-4xl lg:text-5xl">
-          Adapted for the way
+          Built for someone
           <br className="hidden md:block" />
-          you live and work
+          who will not hand over the keys
         </h2>
 
         <nav className="mb-7.5 flex flex-wrap justify-center gap-2.5 md:gap-5" aria-label="Tabs" role="tablist">

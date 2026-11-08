@@ -16,21 +16,21 @@ const SmartAssist = () => {
       <div className="container">
         <div className="mb-20 grid grid-cols-1 items-center gap-7.5 md:grid-cols-2">
           <div>
-            <span className="border-default-200 text-default-800 mb-2.5 inline-block rounded-full border bg-white px-5 py-1.5 text-sm font-medium">Smarter habits, less thinking</span>
+            <span className="border-default-200 text-default-800 mb-2.5 inline-block rounded-full border bg-white px-5 py-1.5 text-sm font-medium">The record, not a coach</span>
             <h3 className="text-default-900 mb-2.5 text-3xl leading-tight font-medium tracking-tight md:text-4xl lg:text-5xl">
-              AI suggestions that
+              What the holding
               <br className="hidden md:block" />
-              adjust to your day
+              is able to say
             </h3>
-            <p className="text-default-500 mb-6 max-w-lg text-base leading-normal md:text-lg md:leading-relaxed">Habitline learns your patterns and offers small, useful suggestions that help you stay consistent without guessing what to do next.</p>
+            <p className="text-default-500 mb-6 max-w-lg text-base leading-normal md:text-lg md:leading-relaxed">Correnthian does not guess a routine for you. A holding should say what it is, who backs it, and whether you can take it out.</p>
             <div>
-              <Link href="" className="group relative inline-flex items-center justify-center overflow-hidden rounded-full bg-black px-8.5 text-white shadow-xl transition-all duration-300 hover:scale-95">
+              <Link href="/faqs" className="group relative inline-flex items-center justify-center overflow-hidden rounded-full bg-black px-8.5 text-white shadow-xl transition-all duration-300 hover:scale-95">
                 <span className="relative inline-flex flex-col items-center transition-transform duration-300 group-hover:-translate-y-full">
                   <span className="flex h-14 items-center gap-3">
-                    <span className="font-medium">See how suggestions work</span>
+                    <span className="font-medium">Read the questions</span>
                   </span>
                   <span className="absolute top-full flex h-14 items-center gap-3">
-                    <span className="font-medium">See how suggestions work</span>
+                    <span className="font-medium">Read the questions</span>
                   </span>
                 </span>
               </Link>
@@ -70,8 +70,8 @@ const SmartAssist = () => {
               <Icon icon="lucide:bell-dot" className="text-xl text-white" />
             </div>
             <div>
-              <h4 className="text-default-900 mb-2.5 text-xl font-medium md:text-2xl">Reminder Timing</h4>
-              <p className="text-default-700 text-sm leading-normal md:text-lg">Suggests the best time to remind you.</p>
+              <h4 className="text-default-900 mb-2.5 text-xl font-medium md:text-2xl">The metal</h4>
+              <p className="text-default-700 text-sm leading-normal md:text-lg">What the token claims to be, in a unit you can check.</p>
             </div>
           </div>
 
@@ -80,8 +80,8 @@ const SmartAssist = () => {
               <Image src={icon32} alt="" />
             </div>
             <div>
-              <h4 className="text-default-900 mb-2.5 text-xl font-medium md:text-2xl">Habit Priorities</h4>
-              <p className="text-default-700 text-sm leading-normal md:text-lg">Reorders habits on busy days.</p>
+              <h4 className="text-default-900 mb-2.5 text-xl font-medium md:text-2xl">The issuer</h4>
+              <p className="text-default-700 text-sm leading-normal md:text-lg">Who backs the token. Named, not implied.</p>
             </div>
           </div>
 
@@ -90,8 +90,8 @@ const SmartAssist = () => {
               <Icon icon="lucide:eye" className="text-xl text-white" />
             </div>
             <div>
-              <h4 className="text-default-900 mb-2.5 text-xl font-medium md:text-2xl">Routine Insights</h4>
-              <p className="text-default-700 text-sm leading-normal md:text-lg">Highlights what’s working and what’s slipping.</p>
+              <h4 className="text-default-900 mb-2.5 text-xl font-medium md:text-2xl">The exit</h4>
+              <p className="text-default-700 text-sm leading-normal md:text-lg">Whether you can move it or take delivery. Not open yet.</p>
             </div>
           </div>
 
@@ -100,8 +100,8 @@ const SmartAssist = () => {
               <Icon icon="lucide:lightbulb" className="text-xl text-white" />
             </div>
             <div>
-              <h4 className="text-default-900 mb-2.5 text-xl font-medium md:text-[21px]">Recovery suggestion</h4>
-              <p className="text-default-700 text-sm leading-normal md:text-lg">Helps you recover when you miss a day.</p>
+              <h4 className="text-default-900 mb-2.5 text-xl font-medium md:text-[21px]">The fees</h4>
+              <p className="text-default-700 text-sm leading-normal md:text-lg">Three lines. No rate until a provider is contracted.</p>
             </div>
           </div>
         </div>

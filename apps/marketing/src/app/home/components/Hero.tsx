@@ -67,67 +67,46 @@ const Hero = () => {
 
       <div className="relative z-10 container mx-auto px-4" ref={videoRef}>
         <div className="flex flex-col items-center text-center">
-          <motion.div
-            initial={{ opacity: 0, y: -18, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
-            className="mb-4.5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 p-1.5 pe-2 backdrop-blur-md lg:w-70"
-          >
-            <span className="rounded-full bg-black px-2 py-px text-base font-medium text-white">New</span>
-            <span className="text-sm text-white">A calmer way to build habits</span>
-          </motion.div>
+          <div className="hero-rise mb-4.5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 p-1.5 pe-2 backdrop-blur-md lg:w-70">
+            <span className="rounded-full bg-black px-2 py-px text-base font-medium text-white">Now</span>
+            <span className="text-sm text-white">A holding you can account for</span>
+          </div>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 28, filter: 'blur(8px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-            className="mb-5 text-4xl leading-tight font-medium tracking-tight text-white md:text-5xl lg:mb-7.5 lg:text-[90px]"
-          >
-            Build habits that&nbsp;
+          <h1 className="hero-rise hero-rise-2 mb-5 text-4xl leading-tight font-medium tracking-tight text-white md:text-5xl lg:mb-7.5 lg:text-[90px]">
+            Hold gold that&nbsp;
             <br className="hidden lg:block" />
-            actually stick
-          </motion.h1>
+            you can check
+          </h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 22 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.75, delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className="mb-6 max-w-sm text-lg leading-normal text-white md:text-xl lg:mb-10"
-          >
-            You see the right habits at the right time, so your day never feels crowded.
-          </motion.p>
+          <p className="hero-rise hero-rise-3 mb-6 max-w-sm text-lg leading-normal text-white md:text-xl lg:mb-10">
+            See what the metal is, who backs it, and whether you can take it out.
+          </p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.75, delay: 0.32, ease: [0.16, 1, 0.3, 1] }}
-            className="flex items-center justify-center gap-2 md:gap-5"
-          >
-            <Link href="/contact" className="group relative overflow-hidden rounded-full bg-white px-3.5 py-3 text-sm font-medium text-black transition-all duration-300 hover:scale-95 md:px-8.5 md:py-4 md:text-lg">
+          <div className="hero-rise hero-rise-4 flex items-center justify-center gap-2 md:gap-5">
+            <Link href="/waitlist" className="group relative overflow-hidden rounded-full bg-white px-3.5 py-3 text-sm font-medium text-black transition-all duration-300 hover:scale-95 md:px-8.5 md:py-4 md:text-lg">
               <span className="relative block overflow-hidden">
-                <span className="block transition-transform duration-300 group-hover:-translate-y-full">Start Tracking Free</span>
-                <span className="absolute top-full left-0 block transition-transform duration-300 group-hover:-translate-y-full">Start Tracking Free</span>
+                <span className="block transition-transform duration-300 group-hover:-translate-y-full">Request access</span>
+                <span className="absolute top-full left-0 block transition-transform duration-300 group-hover:-translate-y-full">Request access</span>
               </span>
             </Link>
 
-            <a
-              href="https://www.youtube.com/embed/elgqxmdVms8?si=yYfzbunShGP15tde"
-              data-toggle="video"
+            <Link
+              href="/home#features"
               className="group relative overflow-hidden rounded-full border border-white/20 bg-white/5 px-3.5 py-3 text-sm text-white backdrop-blur-md transition-all duration-300 hover:scale-95 hover:bg-white/10 md:px-8.5 md:py-4 md:text-lg"
             >
               <div className="relative flex items-center gap-3 overflow-hidden">
                 <div className="flex items-center gap-3 transition-transform duration-300 group-hover:-translate-y-full">
                   <Icon icon="tabler:player-play-filled" className="size-4 text-white md:size-6" />
-                  <span className="font-medium">Watch Demo</span>
+                  <span className="font-medium">See the record</span>
                 </div>
 
                 <div className="absolute top-full left-0 flex items-center gap-3 transition-transform duration-300 group-hover:-translate-y-full">
                   <Icon icon="tabler:player-play-filled" className="size-4 text-white md:size-6" />
-                  <span className="font-medium">Watch Demo</span>
+                  <span className="font-medium">See the record</span>
                 </div>
               </div>
-            </a>
-          </motion.div>
+            </Link>
+          </div>
 
           <div
             style={{ perspective: 1200 }}
@@ -135,33 +114,21 @@ const Hero = () => {
           >
             <motion.div
               style={{ x: floatXLeft, y: floatYLeft }}
-              initial={{ opacity: 0, x: -40, scale: 0.9 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              transition={{ duration: 0.85, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
-              data-gsap-parallax="-35"
-              className="absolute inset-s-0 top-8 z-20 md:inset-s-6 lg:inset-s-32"
+              className="hero-fade absolute inset-s-0 top-8 z-20 md:inset-s-6 lg:inset-s-32"
             >
               <Image src={dashboard01} alt="Dashboard" className="size-35 lg:size-40" />
             </motion.div>
 
             <motion.div
               style={{ rotateX: centerRotateX, rotateY: centerRotateY }}
-              initial={{ opacity: 0, y: 48, scale: 0.94 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.9, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              data-gsap-parallax="22"
-              className="relative -z-20!"
+              className="hero-fade relative -z-20!"
             >
               <Image src={dashboard03} alt="Dashboard" className="mt-34 h-144 w-75 md:mt-0 lg:w-90" />
             </motion.div>
 
             <motion.div
               style={{ x: floatXRight, y: floatYRight }}
-              initial={{ opacity: 0, x: 40, scale: 0.9 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              transition={{ duration: 0.85, delay: 0.52, ease: [0.16, 1, 0.3, 1] }}
-              data-gsap-parallax="-42"
-              className="absolute inset-e-0 top-8 z-20 md:bottom-60 lg:inset-e-14"
+              className="hero-fade absolute inset-e-0 top-8 z-20 md:bottom-60 lg:inset-e-14"
             >
               <Image src={dashboard02} alt="Dashboard" className="w-50 lg:w-60" />
             </motion.div>

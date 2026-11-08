@@ -19,33 +19,29 @@ type PricingPlanType = {
 
 const pricingPlansData: PricingPlanType[] = [
   {
-    badge: 'Free',
+    badge: 'Network',
     badgeBgClass: 'bg-primary-8',
     badgeShadowClass: 'shadow-[0_0_20px_rgba(0,139,183,0.4)]',
-    description: 'Build habits effortlessly and stay consistent every day.',
-    features: ['Unlimited habit tracking', 'Daily reminders', 'Basic streaks & progress', 'Morning and evening routines', 'Simple progress view'],
-    buttonText: 'Get started',
-    buttonLink: '',
+    description: 'The chain fee for moving the holding. Shown on its own line when a quote exists.',
+    features: ['Named on the quote', 'Not set by Correnthian', 'No rate published yet', 'Not bundled into a spread', 'Visible before you confirm'],
+    buttonText: 'Ask about access',
+    buttonLink: '/waitlist',
   },
   {
-    badge: 'Pro plan',
+    badge: 'Issuer',
     badgeBgClass: 'bg-primary-2',
-    description: 'Stay consistent with smarter tools that help you track progress.',
-    monthlyPrice: 50,
-    yearlyPrice: 20,
-    features: ['Advanced habit insights', 'Weekly progress reports', 'Focus & time blocks', 'Custom reminders'],
-    buttonText: 'Get started',
-    buttonLink: '',
+    description: 'The fee charged by whoever issues or redeems the token. Their line, not ours.',
+    features: ['Named issuer', 'Separate from our fee', 'No contracted rate yet', 'Not estimated here'],
+    buttonText: 'Ask about access',
+    buttonLink: '/waitlist',
   },
   {
-    badge: 'Premium plan',
+    badge: 'Correnthian',
     badgeBgClass: 'bg-primary-1',
-    description: 'Transform habits long-term with personalized insights.',
-    monthlyPrice: 299,
-    yearlyPrice: 150,
-    features: ['Personalized habit insights', 'Unlimited routines & stacks', 'Priority support', 'Early access to new features'],
-    buttonText: 'Get started',
-    buttonLink: '',
+    description: 'Our fee for the record and the execution. Itemised. Not a hidden spread.',
+    features: ['One stated line', 'No principal risk', 'No rate until contracted', 'Early access is a waitlist'],
+    buttonText: 'Join the waitlist',
+    buttonLink: '/waitlist',
     colSpanClass: 'lg:col-span-1 md:col-span-2',
   },
 ]
@@ -58,10 +54,10 @@ const PricingPlans = () => {
       <div className="container">
         <div className="mb-7.5 text-center">
           <span className="border-default-200 text-default-800 inline-block rounded-full border bg-white px-5 py-1 text-sm font-medium md:py-1.5">Pricing plan</span>
-          <h1 className="text-default-900 mt-2.5 text-3xl font-medium tracking-tight md:text-5xl lg:text-[68px]">Clear Plans for everyone</h1>
+          <h1 className="text-default-900 mt-2.5 text-3xl font-medium tracking-tight md:text-5xl lg:text-[68px]">Three lines. No rate yet.</h1>
 
           <div className="mt-5 flex items-center justify-center gap-4 lg:mt-10">
-            <span className="text-default-800 text-base font-medium md:text-lg">Monthly</span>
+            <span className="text-default-800 text-base font-medium md:text-lg">Before</span>
 
             <input
               type="checkbox"
@@ -71,7 +67,7 @@ const PricingPlans = () => {
               className="peer before:bg-default-900 relative h-9 w-15 cursor-pointer appearance-none rounded-full border-2 border-transparent bg-white p-1 shadow-xl transition-colors duration-200 ease-in-out before:inline-block before:h-6 before:w-6 before:translate-x-0 before:transform before:rounded-full before:shadow before:transition before:duration-200 before:ease-in-out checked:bg-none checked:before:translate-x-full focus:ring-0 focus:ring-offset-0"
             />
 
-            <span className="text-default-800 text-base font-medium md:text-lg">Yearly</span>
+            <span className="text-default-800 text-base font-medium md:text-lg">After</span>
           </div>
         </div>
 

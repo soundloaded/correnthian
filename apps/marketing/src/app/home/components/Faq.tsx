@@ -13,28 +13,28 @@ type AccordionItemType = {
 const faqItemsData: AccordionItemType[] = [
   {
     id: 'hs-collapse-one',
-    question: 'How many habits can I track?',
-    answer: 'You can track unlimited habits, giving you complete freedom to create and organize.',
+    question: 'Does Correnthian hold my gold?',
+    answer: 'No. Correnthian does not issue the token, does not hold the metal, and does not take principal risk. It keeps a record and charges stated fees.',
   },
   {
     id: 'hs-collapse-two',
-    question: 'Do reminders work across all devices?',
-    answer: 'Yes. Your reminders sync automatically and trigger on any device where Habitline is installed.',
+    question: 'Where do the keys live?',
+    answer: 'On your device. A private key or seed is not sent to Correnthian’s servers. An account login is not the same thing as ownership of the holding.',
   },
   {
     id: 'hs-collapse-three',
-    question: 'What happens if I miss a day?',
-    answer: 'If you miss a day, nothing drastic happens your progress is still saved, and you can pick up right where you left off.',
+    question: 'Can I buy with a card today?',
+    answer: 'Not yet. Card and bank buying wait on a contracted provider. Until then the site will not quote a purchase.',
   },
   {
     id: 'hs-collapse-four',
-    question: 'Can I create routines for different times of day?',
-    answer: 'Yes, you can create routines for different times of the day. Organize your habits into morning, afternoon, or evening blocks.',
+    question: 'Can I redeem the metal in person?',
+    answer: 'Not from this product today. Physical redemption depends on the issuer and on legal approval that is not in place.',
   },
   {
     id: 'hs-collapse-five',
-    question: 'Is Habitline free to use?',
-    answer: 'Habitline is free to use with essential features available at no cost. You can track habits, create routines, and set basic reminders.',
+    question: 'What will the fees look like?',
+    answer: 'Three named lines: network, issuer, and Correnthian. No rate is published, because none is contracted. There is no hidden spread to estimate.',
   },
 ]
 

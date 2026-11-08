@@ -26,9 +26,9 @@ export const metadata: Metadata = {
     default: DEFAULT_PAGE_TITLE,
   },
   icons: { icon: favicon.src },
-  description: 'Habitline is a modern and fully responsive mobile app and SaaS landing page template built with Tailwind CSS 4. Perfect for AI startups, productivity apps, software products, digital platforms, and modern web applications.',
-  keywords: ['mobile app template', 'saas landing page', 'tailwind css template', 'ai startup website', 'app landing page', 'productivity app template', 'software website template', 'startup landing page', 'web app template', 'saas html template'],
-  authors: [{ name: 'Unifato' }],
+  description: 'Correnthian is a self-custodial place to hold and buy tokenized precious metal. You keep the keys. The record says what the metal is, who backs it, and whether you can take it out.',
+  keywords: ['tokenized gold', 'self custody', 'precious metals', 'gold token', 'Correnthian'],
+  authors: [{ name: 'Correnthian' }],
   robots: 'index, follow',
 }
 

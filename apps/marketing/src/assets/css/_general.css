@@ -257,6 +257,50 @@ textarea {
     width: max-content;
 }
 
+@keyframes hero-rise {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+        filter: blur(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+        filter: none;
+    }
+}
+
+.hero-rise {
+    animation: hero-rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hero-rise-2 {
+    animation-delay: 0.12s;
+}
+
+.hero-rise-3 {
+    animation-delay: 0.24s;
+}
+
+.hero-rise-4 {
+    animation-delay: 0.36s;
+}
+
+@keyframes hero-fade {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.hero-fade {
+    animation: hero-fade 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 .animate-marquee:hover {
     animation-play-state: paused;
 }

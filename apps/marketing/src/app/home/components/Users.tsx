@@ -16,7 +16,7 @@ const Users = () => {
     <section className="py-25 lg:py-50" id="metrics">
       <div className="container">
         <div className="mb-8 flex flex-col items-end justify-between gap-4 md:mb-12.5 md:flex-row md:gap-8">
-          <h2 className="text-default-900 text-3xl leading-tight font-medium tracking-tight md:w-lg md:text-4xl lg:text-5xl">What users are achieving with Habitline</h2>
+          <h2 className="text-default-900 text-3xl leading-tight font-medium tracking-tight md:w-lg md:text-4xl lg:text-5xl">Questions a holder should be able to ask</h2>
 
           <div className="flex flex-col items-start justify-start space-y-2.5 text-start md:items-end md:justify-end">
             <div className="flex items-center justify-start md:justify-end">
@@ -34,7 +34,7 @@ const Users = () => {
               <Icon icon="tabler:star-filled" className="size-4" />
               <Icon icon="tabler:star-filled" className="size-4" />
             </div>
-            <div className="text-default-600 text-lg font-medium">Trusted worldwide</div>
+            <div className="text-default-600 text-lg font-medium">No customer count yet</div>
           </div>
         </div>
       </div>
@@ -46,11 +46,11 @@ const Users = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
             <div className="relative z-10">
               <p className="text-lg font-medium text-white">
-                <span>Maya</span> <span className="text-sm font-medium opacity-50">— Student</span>
+                <span>What</span> <span className="text-sm font-medium opacity-50">— the metal</span>
               </p>
             </div>
             <div className="relative z-10">
-              <p className="text-lg leading-tight font-medium whitespace-normal text-white">Completed 21-day streak using Habitline</p>
+              <p className="text-lg leading-tight font-medium whitespace-normal text-white">Name the metal and the unit before anyone calls it gold</p>
             </div>
           </div>
 
@@ -73,11 +73,11 @@ const Users = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
             <div className="relative z-10">
               <p className="text-lg font-medium text-white">
-                Aaron Lee - <span className="font-normal opacity-50">Remote Engineer</span>
+                Who backs it - <span className="font-normal opacity-50">the issuer</span>
               </p>
             </div>
             <div className="relative z-10 text-white">
-              <p className="text-lg font-medium text-white">Stopped breaking habits on weekends after switching to Habitline</p>
+              <p className="text-lg font-medium text-white">The issuer is named. Correnthian does not stand in for them.</p>
             </div>
           </div>
 
@@ -86,11 +86,11 @@ const Users = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
             <div className="relative z-10">
               <p className="text-lg font-medium text-white">
-                <span>Priya</span> <span className="text-sm font-medium opacity-50">— Busy Parent</span>
+                <span>Exit</span> <span className="text-sm font-medium opacity-50">— not open yet</span>
               </p>
             </div>
             <div className="relative z-10">
-              <p className="text-lg leading-tight font-medium whitespace-normal text-white">Logged 40 focus sessions this month with Routine Stacks</p>
+              <p className="text-lg leading-tight font-medium whitespace-normal text-white">The keys stay on the device. This site never receives them.</p>
             </div>
           </div>
 
@@ -99,12 +99,12 @@ const Users = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
             <div className="relative z-10">
               <p className="text-lg font-medium text-white">
-                <span>Leo</span> <span className="text-sm font-medium opacity-50">— Creative Professional</span>
+                <span>Keys</span> <span className="text-sm font-medium opacity-50">— on your device</span>
               </p>
             </div>
             <div className="relative z-10">
-              <h3 className="mb-1 text-4xl font-black text-white">10 days</h3>
-              <p className="font-medium text-white">Hit hydration goals</p>
+              <h3 className="mb-1 text-4xl font-black text-white">0 keys</h3>
+              <p className="font-medium text-white">Held by Correnthian</p>
             </div>
           </div>
 
@@ -113,11 +113,11 @@ const Users = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
             <div className="relative z-10">
               <p className="text-lg font-medium text-white">
-                <span>Ravi</span> <span className="text-sm font-medium opacity-50">— Software Developer</span>
+                <span>Fees</span> <span className="text-sm font-medium opacity-50">— three lines</span>
               </p>
             </div>
             <div className="relative z-10">
-              <p className="text-lg leading-tight font-medium whitespace-normal text-white">Finally keeps his day organized with routine-based habit groups</p>
+              <p className="text-lg leading-tight font-medium whitespace-normal text-white">Ask if it can leave. The answer today is not yet.</p>
             </div>
           </div>
         </div>
@@ -128,11 +128,11 @@ const Users = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
             <div className="relative z-10">
               <p className="text-lg font-medium text-white">
-                <span>Maya</span> <span className="text-sm font-medium opacity-50">— Student</span>
+                <span>What</span> <span className="text-sm font-medium opacity-50">— the metal</span>
               </p>
             </div>
             <div className="relative z-10">
-              <p className="text-lg leading-tight font-medium whitespace-normal text-white">Completed 21-day streak using Habitline</p>
+              <p className="text-lg leading-tight font-medium whitespace-normal text-white">Name the metal and the unit before anyone calls it gold</p>
             </div>
           </div>
 
@@ -155,11 +155,11 @@ const Users = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
             <div className="relative z-10">
               <p className="text-lg font-medium text-white">
-                Aaron Lee - <span className="font-normal opacity-50">Remote Engineer</span>
+                Who backs it - <span className="font-normal opacity-50">the issuer</span>
               </p>
             </div>
             <div className="relative z-10 text-white">
-              <p className="text-lg font-medium text-white">Stopped breaking habits on weekends after switching to Habitline</p>
+              <p className="text-lg font-medium text-white">The issuer is named. Correnthian does not stand in for them.</p>
             </div>
           </div>
 
@@ -168,11 +168,11 @@ const Users = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
             <div className="relative z-10">
               <p className="text-lg font-medium text-white">
-                <span>Priya</span> <span className="text-sm font-medium opacity-50">— Busy Parent</span>
+                <span>Exit</span> <span className="text-sm font-medium opacity-50">— not open yet</span>
               </p>
             </div>
             <div className="relative z-10">
-              <p className="text-lg leading-tight font-medium whitespace-normal text-white">Logged 40 focus sessions this month with Routine Stacks</p>
+              <p className="text-lg leading-tight font-medium whitespace-normal text-white">The keys stay on the device. This site never receives them.</p>
             </div>
           </div>
 
@@ -181,12 +181,12 @@ const Users = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
             <div className="relative z-10">
               <p className="text-lg font-medium text-white">
-                <span>Leo</span> <span className="text-sm font-medium opacity-50">— Creative Professional</span>
+                <span>Keys</span> <span className="text-sm font-medium opacity-50">— on your device</span>
               </p>
             </div>
             <div className="relative z-10">
-              <h3 className="mb-1 text-4xl font-black text-white">10 days</h3>
-              <p className="font-medium text-white">Hit hydration goals</p>
+              <h3 className="mb-1 text-4xl font-black text-white">0 keys</h3>
+              <p className="font-medium text-white">Held by Correnthian</p>
             </div>
           </div>
 
@@ -195,11 +195,11 @@ const Users = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
             <div className="relative z-10">
               <p className="text-lg font-medium text-white">
-                <span>Ravi</span> <span className="text-sm font-medium opacity-50">— Software Developer</span>
+                <span>Fees</span> <span className="text-sm font-medium opacity-50">— three lines</span>
               </p>
             </div>
             <div className="relative z-10">
-              <p className="text-lg leading-tight font-medium whitespace-normal text-white">Finally keeps his day organized with routine-based habit groups</p>
+              <p className="text-lg leading-tight font-medium whitespace-normal text-white">Ask if it can leave. The answer today is not yet.</p>
             </div>
           </div>
         </div>

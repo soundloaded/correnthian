@@ -158,20 +158,20 @@ const Features = () => {
         <div className="mb-12.5 grid grid-cols-1 items-center gap-3.5 md:grid-cols-2 lg:gap-8">
           <div>
             <div className="mb-3.5 inline-flex">
-              <span className="border-default-200 text-default-800 inline-block rounded-full border bg-white px-5 py-1.5 text-sm font-medium">Habits with structure</span>
+              <span className="border-default-200 text-default-800 inline-block rounded-full border bg-white px-5 py-1.5 text-sm font-medium">The holding, in parts</span>
             </div>
-            <h2 className="text-3xl leading-tight font-medium md:text-4xl lg:w-lg lg:text-5xl">A layout that keeps your day clear.</h2>
+            <h2 className="text-3xl leading-tight font-medium md:text-4xl lg:w-lg lg:text-5xl">A record that keeps the gold clear.</h2>
           </div>
           <div>
-            <p className="text-default-600 float-end text-lg leading-normal lg:w-md">Habitline brings clarity to your routines with clean cards, realistic progress tracking, and guidance that adapts to your day.</p>
+            <p className="text-default-600 float-end text-lg leading-normal lg:w-md">Each card is one question a holding has to answer. The pictures are still the template until product screens exist.</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-7.5 lg:grid-cols-2">
           <div className="bg-default-200 overflow-hidden rounded-3xl">
             <div className="px-3.5 py-3.5 md:px-5 md:py-5 lg:px-10 lg:pt-10 lg:pb-12.5">
-              <h3 className="text-default-800 mb-2.5 text-xl font-semibold md:text-2xl">Flexible Streak Rules</h3>
-              <p className="text-default-600 max-w-md text-lg">Traditional habit trackers are too rigid. Miss one day and your 50-day streak is gone forever.</p>
+              <h3 className="text-default-800 mb-2.5 text-xl font-semibold md:text-2xl">What the metal is</h3>
+              <p className="text-default-600 max-w-md text-lg">A token is not the bar. The record names the metal, the unit, and the issuer who stands behind it.</p>
             </div>
 
             <div className="relative mb-7.5 overflow-hidden">
@@ -195,7 +195,7 @@ const Features = () => {
           <div className="flex flex-col gap-y-5 rounded-3xl p-3.5 md:p-5 lg:gap-y-12.5 lg:p-10" style={{ backgroundImage: `url(${featureBg1.src})` }}>
             <div>
               <h3 className="mb-2.5 text-xl font-semibold text-white md:text-2xl">Smart Daily Planner</h3>
-              <p className="text-lg text-gray-400 lg:w-md">A simple view that shows only the habits that match your current time of day.</p>
+              <p className="text-lg text-gray-400 lg:w-md">A simple view of the questions, not a schedule of habits.</p>
             </div>
 
             <div className="w-full rounded-3xl border border-white/30 bg-transparent text-white backdrop-blur-xl lg:max-w-xl">
@@ -248,7 +248,7 @@ const Features = () => {
                 <div className="flex h-full flex-col justify-between">
                   <div className="lg:max-w-md">
                     <h3 className="md:text-2xl text-xl font-semibold leading-tight text-white mb-2.5">Routine Stacks</h3>
-                    <p className="md:text-lg text-base leading-relaxed text-default-400 md:mb-7.5 mb-5">Group habits into simple blocks so your day feels organized instead of scattered.</p>
+                    <p className="md:text-lg text-base leading-relaxed text-default-400 md:mb-7.5 mb-5">Group the record into the metal, the issuer, and the way out.</p>
                     <Link href="/contact" className="group inline-flex relative overflow-hidden rounded-full bg-white md:px-8.5 px-3.5 py-3 md:py-3 md:text-lg text-sm font-medium text-black transition-all duration-300 hover:scale-95">
                       <span className="relative block overflow-hidden">
                         <span className="block transition-transform duration-300 group-hover:-translate-y-full">Start your routine now</span>
