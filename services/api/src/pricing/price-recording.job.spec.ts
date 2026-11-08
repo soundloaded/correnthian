@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { PriceRecordingJob } from './price-recording.job.js';
+import { ChainlinkPriceProvider } from './chainlink-price.provider.js';
 import { FakePriceProvider } from './fake-price.provider.js';
 import type { JobContext } from '../jobs/job.js';
 
@@ -86,6 +87,43 @@ describe('PriceRecordingJob', () => {
     expect(outcome.affected).toBe(0);
     expect(prisma.created).toHaveLength(0);
     expect(outcome.detail).toMatchObject({ reason: expect.stringContaining('fake') });
+  });
+
+  it('stores a Chainlink round updated 301 seconds ago at that time', async () => {
+    const roundTime = new Date(T0.getTime() - 301_000);
+    const prices = new ChainlinkPriceProvider(
+      { xauUsd: `0x${'a'.repeat(40)}` },
+      {
+        latestRound: async () => ({
+          answer: 4100_00000000n,
+          updatedAt: BigInt(Math.floor(roundTime.getTime() / 1000)),
+          decimals: 8,
+        }),
+      },
+      {
+        listEnabled: async () => [
+          {
+            assetId: '1:0xpaxg:paxos',
+            symbol: 'PAXG',
+            category: 'metal',
+            ouncesPerToken: 1,
+          },
+        ],
+      },
+      () => T0,
+    );
+    const prisma = makePrisma([{ assetId: '1:0xpaxg:paxos', id: 'surr-1' }]);
+    const job = new PriceRecordingJob(prisma as never, prices);
+
+    const outcome = await job.run(ctx());
+
+    expect(outcome.affected).toBe(1);
+    expect(prisma.created[0]).toMatchObject({
+      assetId: 'surr-1',
+      priceUsd: 4100,
+      source: 'chainlink:xau-usd',
+      capturedAt: roundTime,
+    });
   });
 
   it('skips a malformed vendor price rather than writing it', async () => {

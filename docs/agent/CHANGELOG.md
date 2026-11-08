@@ -11,6 +11,15 @@ abbreviated. Read the full message with `git show <hash>`.
 
 ---
 
+## 2026-11-08
+
+### Open-market gold: a reference, a Uniswap quote, a device-signed swap
+
+Reference prices come from Chainlink when the feed is configured. Dex quotes
+come from Uniswap v3. Relay now checks the stored payload before it
+broadcasts, so a signed swap has to be the call the server assembled.
+On-ramp and redemption are unchanged.
+
 ## 2026-10-22
 
 ### Issuer verification: the badge gets its machine half

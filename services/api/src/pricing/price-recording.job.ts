@@ -91,7 +91,9 @@ export class PriceRecordingJob implements ScheduledJob {
           assetId: asset.id,
           priceUsd: quote.priceUsd,
           source: quote.source.slice(0, 80),
-          capturedAt: ctx.now,
+          // A Chainlink round's time is `updatedAt`. The job clock would
+          // make a print from this morning look like it was just observed.
+          capturedAt: quote.observedAt ?? ctx.now,
         },
       });
       recorded += 1;

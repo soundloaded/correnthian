@@ -1,11 +1,19 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { deriveAssetId } from '@correnthian/assets';
+import {
+  encodeErc20Approve,
+  encodeExactInputSingle,
+  type UniswapV3FeeTier,
+  type UnsignedTransaction,
+} from '@correnthian/blockchain';
 import { AppError } from '../common/errors.js';
 import { isOperatorRole } from '../common/roles.js';
 import { decodeCursor, encodeCursor, KEYSET_ORDER, keysetAfter } from '../common/keyset.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { ConfigService } from '../config/config.service.js';
 import { FeesService } from '../fees/fees.service.js';
 import { SystemSettingsService } from '../settings/system-settings.service.js';
+import { TransactionsService } from '../transactions/transactions.service.js';
 import type { PublicFeeBreakdown, PublicFeeLine } from '../fees/fee-breakdown.js';
 import {
   isWithinStoreRange, MoneyError, notionalUsd as notionalFromRaw, parseUsd, type Usd,
@@ -13,6 +21,8 @@ import {
   sumUsd,
 } from '../fees/money.js';
 import type { ListQuotesDto } from './dto/list-quotes.dto.js';
+import { TOKEN_ALLOWANCE, type TokenAllowance } from './token-allowance.js';
+import { UniswapV3Quoter, type DexQuoteResult } from './uniswap-v3-quoter.js';
 
 export interface QuoteRequestInput {
   userId?: string;
@@ -117,6 +127,50 @@ function labelFor(kind: 'network' | 'provider' | 'correnthian'): string {
   return kind === 'network' ? 'Network fee' : kind === 'provider' ? 'Provider fee' : 'Correnthian fee';
 }
 
+/** Integer base units. A decimal point is a display amount, and the quoter cannot encode one. */
+const BASE_UNITS = /^[1-9]\d*$/;
+
+function listsDex(rails: readonly string[] | undefined): boolean {
+  return Array.isArray(rails) && rails.includes('dex');
+}
+
+function isTokenAddress(value: string): value is `0x${string}` {
+  return /^0x[0-9a-fA-F]{40}$/.test(value);
+}
+
+function asAddress(value: string): `0x${string}` | null {
+  return isTokenAddress(value) ? value : null;
+}
+
+function isFeeTier(fee: number | null): fee is UniswapV3FeeTier {
+  return fee === 500 || fee === 3000 || fee === 10000;
+}
+
+/**
+ * A quote that can be turned into a router call. `executionQuality: 'none'`
+ * is the refusal already stored when the quoter did not fill, and preparing
+ * it would invent a swap the quote said it does not have.
+ */
+function isPreparable(quote: {
+  executionQuality: string;
+  railId: string;
+  chainId: string;
+  poolFee: number | null;
+  fromAmountRaw: string;
+  toAmountRaw: string;
+  minReceivedRaw: string;
+}): boolean {
+  return (
+    quote.executionQuality !== 'none' &&
+    quote.railId === 'uniswap-v3' &&
+    quote.chainId === '1' &&
+    isFeeTier(quote.poolFee) &&
+    BASE_UNITS.test(quote.fromAmountRaw) &&
+    BASE_UNITS.test(quote.toAmountRaw) &&
+    /^\d+$/.test(quote.minReceivedRaw)
+  );
+}
+
 @Injectable()
 export class SwapsService {
   private readonly logger = new Logger(SwapsService.name);
@@ -125,6 +179,10 @@ export class SwapsService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(FeesService) private readonly fees: FeesService,
     @Inject(SystemSettingsService) private readonly settings: SystemSettingsService,
+    @Inject(UniswapV3Quoter) private readonly uniswap: UniswapV3Quoter,
+    @Inject(ConfigService) private readonly config: ConfigService,
+    @Inject(TOKEN_ALLOWANCE) private readonly allowances: TokenAllowance,
+    @Inject(TransactionsService) private readonly transactions: TransactionsService,
   ) {
     // `ProvidersService` used to be injected here and was never read. It is
     // gone rather than left as a hint: the rail binding it implied is `BE-702`,
@@ -197,27 +255,32 @@ export class SwapsService {
       notionalUsd: await this.notionalString(from, input.fromAmountRaw),
     });
 
+    const slippageBps = input.slippageBps ?? 50;
+    const dex = await this.dexFill(from, to, input.fromAmountRaw, slippageBps);
+
     const quote = await this.prisma.swapQuote.create({
       data: {
         userId: input.userId ?? null,
-        railKind: 'provider',
-        railId: 'unassigned',
+        railKind: dex?.railKind ?? 'provider',
+        railId: dex?.railId ?? 'unassigned',
         fromAssetId: from.id,
         toAssetId: to.id,
         chainId: from.chainId,
         fromAmountRaw: input.fromAmountRaw,
-        // Placeholder until a provider rail is contracted. Never a fabricated
-        // executable price — see the design spec: honest failure is the point.
-        toAmountRaw: '0',
+        // A dex quote records the quoter's amountOut. Anything else — no
+        // pool, a revert, a non-integer amount — stays zero. A reference
+        // price is not a received amount.
+        toAmountRaw: dex?.toAmountRaw ?? '0',
         // The caller's stated notional, kept as a display field. The fees
         // above were computed from `breakdown.notionalUsd`, which is derived
         // and is not this.
         notionalUsd: input.notionalUsd ?? null,
         priceImpactBps: 0,
-        slippageBps: input.slippageBps ?? 50,
-        minReceivedRaw: '0',
+        slippageBps,
+        minReceivedRaw: dex?.minReceivedRaw ?? '0',
         fees: breakdown as object,
-        executionQuality: 'none',
+        executionQuality: dex?.executionQuality ?? 'none',
+        poolFee: dex?.poolFee ?? null,
         sizeCapUsd: null,
         state: 'quoted',
         expiresAt,
@@ -242,8 +305,145 @@ export class SwapsService {
     return this.present(quote);
   }
 
-  list(userId?: string, state?: string) {
-    return this.prisma.swapQuote.findMany({
+  /**
+   * File the unsigned calls a device signs for this quote.
+   *
+   * The server does not sign. Each row is a normal outbound transaction
+   * whose calldata is the router `exactInputSingle`, plus an ERC-20
+   * `approve` of that router when the wallet's allowance is lower than
+   * `fromAmountRaw`. Assembly stores `{ to, value, data }` so relay can
+   * check the signature against that payload rather than a token transfer.
+   */
+  async prepare(quoteId: string, actorId: string, walletId: string): Promise<{
+    quoteId: string;
+    transactions: Array<{ id: string; kind: 'approve' | 'swap'; unsigned: UnsignedTransaction }>;
+  }> {
+    const quote = await this.prisma.swapQuote.findUnique({
+      where: { id: quoteId },
+      include: { fromAsset: true, toAsset: true },
+    });
+    if (!quote || quote.userId !== actorId) throw AppError.notFound('Quote not found');
+    // `>` and not `>=`: a quote that expires at this instant is already expired.
+    if (!isPreparable(quote) || !isFeeTier(quote.poolFee) || !(quote.expiresAt.getTime() > Date.now())) {
+      throw AppError.badRequest('This quote is not executable');
+    }
+
+    const router = this.config.value.uniswap.routerEthereum;
+    if (router === undefined) {
+      throw AppError.providerUnavailable('The swap router is not configured');
+    }
+
+    const wallet = await this.prisma.wallet.findUnique({ where: { id: walletId } });
+    if (!wallet || wallet.userId !== actorId) throw AppError.notFound('Wallet not found');
+    if (wallet.chainId !== quote.chainId) {
+      throw AppError.badRequest('This quote is not executable');
+    }
+
+    const tokenIn = asAddress(quote.fromAsset.contractAddress);
+    const tokenOut = asAddress(quote.toAsset.contractAddress);
+    const recipient = asAddress(wallet.address);
+    if (!tokenIn || !tokenOut || !recipient) {
+      throw AppError.badRequest('This quote is not executable');
+    }
+
+    const amountIn = BigInt(quote.fromAmountRaw);
+    const amountOutMinimum = BigInt(quote.minReceivedRaw);
+    const allowance = await this.allowances.allowance(tokenIn, recipient, router);
+
+    const calls: Array<{
+      kind: 'approve' | 'swap';
+      to: `0x${string}`;
+      data: `0x${string}`;
+    }> = [];
+    if (allowance < amountIn) {
+      calls.push({
+        kind: 'approve',
+        to: tokenIn,
+        data: encodeErc20Approve(router, amountIn),
+      });
+    }
+    calls.push({
+      kind: 'swap',
+      to: router,
+      data: encodeExactInputSingle({
+        tokenIn,
+        tokenOut,
+        fee: quote.poolFee,
+        recipient,
+        amountIn,
+        amountOutMinimum,
+        sqrtPriceLimitX96: 0n,
+      }),
+    });
+
+    // Estimate both calls before filing either row. The approve is still
+    // unsigned when the swap is estimated, so the swap's gas is taken
+    // against state that already includes that approve — SwapRouter02 pulls
+    // the token with transferFrom. The node has not seen the approve, so
+    // the swap also takes the next nonce rather than asking again and
+    // receiving the same one. A failure writes nothing: a retry must not
+    // find an approve row this attempt left behind.
+    const approve = calls.find((call) => call.kind === 'approve');
+    const drafted: Array<{
+      kind: 'approve' | 'swap';
+      to: `0x${string}`;
+      data: `0x${string}`;
+      unsigned: UnsignedTransaction;
+    }> = [];
+    let nextNonce: number | undefined;
+    for (const call of calls) {
+      const unsigned = await this.transactions.buildUnsigned({
+        chainId: wallet.chainId,
+        from: wallet.address,
+        to: call.to,
+        value: '0',
+        data: call.data,
+        ...(nextNonce === undefined ? {} : { nonce: nextNonce }),
+        ...(call.kind === 'swap' && approve
+          ? { priorCalls: [{ to: approve.to, data: approve.data, value: '0' }] }
+          : {}),
+      });
+      if (typeof unsigned.nonce === 'number') nextNonce = unsigned.nonce + 1;
+      drafted.push({ kind: call.kind, to: call.to, data: call.data, unsigned });
+    }
+
+    const transactions: Array<{ id: string; kind: 'approve' | 'swap'; unsigned: UnsignedTransaction }> = [];
+    const written: string[] = [];
+    try {
+      for (const draft of drafted) {
+        const created = await this.transactions.create(
+          {
+            walletId,
+            assetId: quote.fromAsset.assetId,
+            direction: 'out',
+            amountRaw: quote.fromAmountRaw,
+            destination: draft.to,
+            metadata: { quoteId },
+          },
+          actorId,
+          { preparedCall: { to: draft.to, value: '0', data: draft.data } },
+        );
+        written.push(created.id);
+        await this.transactions.recordAssembly(created.id, actorId, draft.unsigned);
+        transactions.push({ id: created.id, kind: draft.kind, unsigned: draft.unsigned });
+      }
+    } catch (err) {
+      try {
+        await this.transactions.discardCreated(written);
+      } catch (discardErr) {
+        this.logger.error(
+          `Could not remove transactions filed before a failed prepare (${written.join(', ')})`,
+        );
+        this.logger.debug(discardErr instanceof Error ? discardErr.message : String(discardErr));
+      }
+      throw err;
+    }
+
+    return { quoteId, transactions };
+  }
+
+  async list(userId?: string, state?: string) {
+    const rows = await this.prisma.swapQuote.findMany({
       where: {
         ...(userId ? { userId } : {}),
         ...(state ? { state: state as never } : {}),
@@ -256,6 +456,10 @@ export class SwapsService {
         provider: { select: { slug: true, name: true, status: true } },
       },
     });
+    // The same flag quote detail returns. `priceImpactBps` on this path is
+    // a stored placeholder, and a list that omits the flag is how a client
+    // reads that zero as a measurement.
+    return rows.map((row) => ({ ...row, priceImpactMeasured: false }));
   }
 
   /**
@@ -323,6 +527,8 @@ export class SwapsService {
         // can format without a decimal library.
         notionalUsd: row.notionalUsd === null ? null : Number(row.notionalUsd),
         priceImpactBps: row.priceImpactBps,
+        // Zero bps on this path is a placeholder, not a measurement of the pool.
+        priceImpactMeasured: false,
         slippageBps: row.slippageBps,
         sizeCapUsd: row.sizeCapUsd === null ? null : Number(row.sizeCapUsd),
         executionQuality: row.executionQuality,
@@ -416,6 +622,53 @@ export class SwapsService {
     }
   }
 
+  /**
+   * A Uniswap v3 fill, or null when the request stays the unassigned refusal.
+   *
+   * Both assets must list `dex`, both must be on Ethereum, the quoter must
+   * be configured, and `fromAmountRaw` must be a positive integer in base
+   * units. A fractional amount never reaches the quoter. A null answer is
+   * the same refusal: received amount zero, no fee tier. `toAmountRaw` is
+   * the quoter's `amountOut` — a Chainlink reference price is not copied in.
+   * A positive answer is `thin`. This path does not write `deep`.
+   */
+  private async dexFill(
+    from: { chainId: string; rails: readonly string[]; contractAddress: string },
+    to: { chainId: string; rails: readonly string[]; contractAddress: string },
+    fromAmountRaw: string,
+    slippageBps: number,
+  ): Promise<{
+    railKind: 'dex';
+    railId: 'uniswap-v3';
+    executionQuality: 'thin';
+    poolFee: DexQuoteResult['poolFee'];
+    toAmountRaw: string;
+    minReceivedRaw: string;
+  } | null> {
+    if (!this.uniswap?.configured) return null;
+    if (!BASE_UNITS.test(fromAmountRaw)) return null;
+    if (from.chainId !== '1' || to.chainId !== '1') return null;
+    if (!listsDex(from.rails) || !listsDex(to.rails)) return null;
+    if (!isTokenAddress(from.contractAddress) || !isTokenAddress(to.contractAddress)) return null;
+
+    const quoted = await this.uniswap.quote({
+      tokenIn: from.contractAddress,
+      tokenOut: to.contractAddress,
+      amountIn: BigInt(fromAmountRaw),
+    });
+    if (quoted === null || quoted.amountOut <= 0n) return null;
+
+    const minReceived = (quoted.amountOut * BigInt(10_000 - slippageBps)) / 10_000n;
+    return {
+      railKind: 'dex',
+      railId: 'uniswap-v3',
+      executionQuality: 'thin',
+      poolFee: quoted.poolFee,
+      toAmountRaw: quoted.amountOut.toString(),
+      minReceivedRaw: minReceived.toString(),
+    };
+  }
+
   /** The shape a client needs to render a quote honestly. */
   private present(quote: {
     id: string; railKind: string; railId: string; fromAmountRaw: string;
@@ -430,6 +683,8 @@ export class SwapsService {
       toAmountRaw: quote.toAmountRaw,
       slippageBps: quote.slippageBps,
       priceImpactBps: quote.priceImpactBps,
+      // Zero bps on this path is a placeholder, not a measurement of the pool.
+      priceImpactMeasured: false,
       minReceivedRaw: quote.minReceivedRaw,
       /**
        * The itemised breakdown: one line per fee, a total only when every line

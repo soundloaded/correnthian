@@ -458,6 +458,11 @@ export const quoteRowSchema = z.object({
   toAmountRaw: z.string(),
   notionalUsd: z.number().nullable(),
   priceImpactBps: z.number().int(),
+  /**
+   * False when `priceImpactBps` was stored as a placeholder. The operator
+   * list says the same thing quote detail says: a zero is not a measured impact.
+   */
+  priceImpactMeasured: z.boolean(),
   slippageBps: z.number().int(),
   /**
    * These two are why a quote is or is not fillable. A thin-market quote that
@@ -549,6 +554,11 @@ export const swapMineRowSchema = z.object({
   toAmountRaw: z.string(),
   notionalUsd: z.union([z.string(), z.number()]).nullable(),
   priceImpactBps: z.number().int(),
+  /**
+   * False when `priceImpactBps` was stored as a placeholder. Account lists
+   * say the same thing quote detail says: a zero is not a measured impact.
+   */
+  priceImpactMeasured: z.boolean(),
   slippageBps: z.number().int(),
   minReceivedRaw: z.string(),
   fees: z.unknown(),
@@ -567,6 +577,11 @@ export const quoteDetailSchema = z.object({
   toAmountRaw: z.string(),
   slippageBps: z.number().int(),
   priceImpactBps: z.number().int(),
+  /**
+   * False when `priceImpactBps` was stored as a placeholder. A zero is not
+   * a measured impact: dex quotes and the unassigned refusal both say so.
+   */
+  priceImpactMeasured: z.boolean(),
   minReceivedRaw: z.string(),
   /**
    * The itemised breakdown, not a blended number and not a bare list.

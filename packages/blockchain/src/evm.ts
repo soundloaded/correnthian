@@ -1,7 +1,8 @@
 import {
-  createPublicClient, defineChain, formatUnits, http, parseTransaction,
-  recoverTransactionAddress, TransactionNotFoundError,
-  type Address, type Hex, type PublicClient, type TransactionSerialized,
+  BaseError, createPublicClient, decodeFunctionData, defineChain, encodeAbiParameters,
+  ExecutionRevertedError, formatUnits, getAddress, hexToBigInt, http, keccak256,
+  parseTransaction, recoverTransactionAddress, toHex, TransactionNotFoundError,
+  type Address, type Hex, type PublicClient, type StateOverride, type TransactionSerialized,
 } from 'viem';
 import { encodeFunctionData, erc20Abi, getAbiItem } from 'viem';
 import type {
@@ -9,7 +10,7 @@ import type {
   FeeEstimate, ObservedTokenTransfer, SignedTransactionFacts, TransactionRecord,
   UnsignedTransaction,
 } from './adapter.js';
-import { RpcAbsent, RpcPool, type RpcEndpoint } from './rpc.js';
+import { RpcAbsent, RpcPool, RpcReverted, type RpcEndpoint } from './rpc.js';
 import type { AddressFamily } from './address.js';
 
 /**
@@ -32,6 +33,76 @@ function isTransactionAbsent(err: unknown): boolean {
 }
 
 /**
+ * Did the node answer with a contract revert?
+ *
+ * `viem` wraps an `eth_call` that reverts (JSON-RPC code 3, or a message the
+ * node marks as execution reverted) in `ExecutionRevertedError`. That is the
+ * contract's reply. A transport error, an HTTP failure, and a node that
+ * returns an internal error are not in that chain and must stay with the
+ * pool so it can fail over.
+ */
+function isContractRevert(err: unknown): boolean {
+  if (!(err instanceof BaseError)) return false;
+  // `estimateGas` and a raw `eth_call` do not share one error class. viem wraps
+  // the former in `ExecutionRevertedError`. A request that has not been wrapped
+  // still carries JSON-RPC code 3, which is the same reply: the node executed
+  // the call and the contract refused it.
+  return (
+    err.walk((cause) => {
+      if (cause instanceof ExecutionRevertedError) return true;
+      return (
+        typeof cause === 'object' &&
+        cause !== null &&
+        'code' in cause &&
+        (cause as { code?: unknown }).code === 3
+      );
+    }) !== null
+  );
+}
+
+/**
+ * A value `allowance` cannot already be holding. The probe writes it into a
+ * candidate slot and asks `allowance` whether that slot is the one it reads.
+ */
+const ALLOWANCE_PROBE = (1n << 128n) - 1n;
+
+/** How many mapping bases to try. USDC's `allowed` sits at 11; this covers it. */
+const ALLOWANCE_SLOT_SEARCH = 32;
+
+/**
+ * Storage key of `allowed[owner][spender]` when that nested mapping lives at
+ * `base`. Standard ERC-20 layout, including FiatToken: outer key is the
+ * owner, inner key is the spender.
+ */
+function erc20AllowanceSlot(owner: Address, spender: Address, base: number): Hex {
+  const inner = keccak256(
+    encodeAbiParameters(
+      [{ type: 'address' }, { type: 'uint256' }],
+      [owner, BigInt(base)],
+    ),
+  );
+  return keccak256(
+    encodeAbiParameters(
+      [{ type: 'address' }, { type: 'bytes32' }],
+      [spender, inner],
+    ),
+  );
+}
+
+/**
+ * A nonce the server already chose for a second unsigned call. Anything
+ * else is refused: falling through to `getTransactionCount` would hand
+ * the second call the same nonce as the first.
+ */
+function assignedNonceOf(value: number | undefined): number | undefined {
+  if (value === undefined) return undefined;
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new Error('nonce must be a non-negative integer');
+  }
+  return value;
+}
+
+/**
  * EVM adapter.
  *
  * Reads are public chain state and belong here. Signing does not: this returns
@@ -49,6 +120,13 @@ export class EvmAdapter implements BlockchainAdapter {
   private readonly pool: RpcPool;
   private readonly descriptor: ChainDescriptor;
   private readonly clients = new Map<string, PublicClient>();
+  /**
+   * Allowance mapping base slot, per token. The first successful probe
+   * fills it. Layouts differ — USDC is not an OpenZeppelin ERC-20 — and
+   * guessing one slot would estimate the swap against state that still
+   * refuses `transferFrom`.
+   */
+  private readonly allowanceSlots = new Map<string, number>();
 
   constructor(descriptor: ChainDescriptor, endpoints: readonly RpcEndpoint[]) {
     this.descriptor = descriptor;
@@ -162,8 +240,99 @@ export class EvmAdapter implements BlockchainAdapter {
     };
   }
 
+  /**
+   * State in which every prior call has already landed.
+   *
+   * Today that is an ERC-20 `approve`. SwapRouter02 pulls the token with
+   * `transferFrom`, and the approve is still unsigned, so estimating the
+   * swap against the chain as it is reverts. The allowance slot is found
+   * rather than hardcoded: one wrong slot leaves the real allowance at
+   * zero and the estimate reverts the same way.
+   *
+   * A prior call this cannot apply is `RpcReverted`. Estimating without it
+   * would ask the node a question we already know fails, and a plain error
+   * would quarantine the endpoint for a call every URL refuses.
+   */
+  private async priorCallState(
+    client: PublicClient,
+    req: BuildTransactionRequest,
+  ): Promise<StateOverride> {
+    if (!req.from || !req.priorCalls?.length) throw new RpcReverted();
+    const owner = getAddress(req.from);
+    const byToken = new Map<Address, Array<{ slot: Hex; value: Hex }>>();
+
+    for (const call of req.priorCalls) {
+      let decoded;
+      try {
+        decoded = decodeFunctionData({ abi: erc20Abi, data: call.data as Hex });
+      } catch {
+        throw new RpcReverted();
+      }
+      if (decoded.functionName !== 'approve') throw new RpcReverted();
+      const spender = getAddress(decoded.args[0]);
+      const amount = decoded.args[1];
+      const token = getAddress(call.to);
+      const base = await this.allowanceBaseSlot(client, token, owner, spender);
+      const slots = byToken.get(token) ?? [];
+      slots.push({
+        slot: erc20AllowanceSlot(owner, spender, base),
+        value: toHex(amount, { size: 32 }),
+      });
+      byToken.set(token, slots);
+    }
+
+    return [...byToken.entries()].map(([address, stateDiff]) => ({ address, stateDiff }));
+  }
+
+  /** The mapping base `allowance(owner, spender)` actually reads for `token`. */
+  private async allowanceBaseSlot(
+    client: PublicClient,
+    token: Address,
+    owner: Address,
+    spender: Address,
+  ): Promise<number> {
+    const cached = this.allowanceSlots.get(token.toLowerCase());
+    if (cached !== undefined) return cached;
+
+    const data = encodeFunctionData({
+      abi: erc20Abi,
+      functionName: 'allowance',
+      args: [owner, spender],
+    });
+    const word = toHex(ALLOWANCE_PROBE, { size: 32 });
+
+    for (let slot = 0; slot < ALLOWANCE_SLOT_SEARCH; slot += 1) {
+      const storageKey = erc20AllowanceSlot(owner, spender, slot);
+      let raw: unknown;
+      try {
+        raw = await client.request({
+          method: 'eth_call',
+          params: [
+            { to: token, data },
+            'latest',
+            { [token]: { stateDiff: { [storageKey]: word } } },
+          ],
+        });
+      } catch (err) {
+        if (isContractRevert(err)) continue;
+        throw err;
+      }
+      if (typeof raw !== 'string' || raw === '0x') continue;
+      try {
+        if (hexToBigInt(raw as Hex) !== ALLOWANCE_PROBE) continue;
+      } catch {
+        continue;
+      }
+      this.allowanceSlots.set(token.toLowerCase(), slot);
+      return slot;
+    }
+
+    throw new RpcReverted();
+  }
+
   async buildTransaction(req: BuildTransactionRequest): Promise<UnsignedTransaction> {
     const { to, value, data } = this.assemblePayload(req);
+    const assignedNonce = assignedNonceOf(req.nonce);
 
     // All three in one `read`, so failover retries the assembly as a unit —
     // a nonce from one endpoint and gas from a quarantined one is how a
@@ -173,33 +342,50 @@ export class EvmAdapter implements BlockchainAdapter {
     // where it cannot be answered, building fails rather than returning a
     // payload with an invented ceiling. A device signing a fee nobody
     // calculated is worse than a request that errored.
+    //
+    // An execution revert from `estimateGas` is the contract's reply. It is
+    // thrown as `RpcReverted` before the pool can quarantine the endpoint
+    // or ask the next URL: every node reverts the same call.
     const { gas, nonce, fees } = await this.read(async (c) => {
-      const [gasEstimate, nonceEstimate, feeEstimate] = await Promise.all([
-        // estimateGas is the raw-transaction estimator; estimateContractGas is
-        // typed for ABI calls and rejects a plain value transfer.
-        c.estimateGas({
-          ...(req.from ? { account: req.from as `0x${string}` } : {}),
-          to: to as `0x${string}` as Address,
-          value: BigInt(value),
-          data: data as Hex,
-        }),
-        // `pending`, not `latest`: two sends from one wallet in flight would
-        // otherwise be handed the same nonce, and the second would replace
-        // the first.
-        req.from
-          ? c.getTransactionCount({
-              address: req.from as `0x${string}`,
-              blockTag: 'pending',
-            })
-          : Promise.resolve(undefined),
-        c.estimateFeesPerGas(),
-      ]);
+      const stateOverride = req.priorCalls?.length
+        ? await this.priorCallState(c, req)
+        : undefined;
+      try {
+        const [gasEstimate, nonceEstimate, feeEstimate] = await Promise.all([
+          // estimateGas is the raw-transaction estimator; estimateContractGas is
+          // typed for ABI calls and rejects a plain value transfer.
+          c.estimateGas({
+            ...(req.from ? { account: req.from as `0x${string}` } : {}),
+            to: to as `0x${string}` as Address,
+            value: BigInt(value),
+            data: data as Hex,
+            ...(stateOverride ? { stateOverride } : {}),
+          }),
+          // `pending`, not `latest`: two sends from one wallet in flight would
+          // otherwise be handed the same nonce, and the second would replace
+          // the first. A server-assigned nonce skips that read: the node has
+          // not seen the earlier unsigned transaction, so its count is the
+          // first call's nonce and the next call must take the one after it.
+          assignedNonce !== undefined
+            ? Promise.resolve(assignedNonce)
+            : req.from
+              ? c.getTransactionCount({
+                  address: req.from as `0x${string}`,
+                  blockTag: 'pending',
+                })
+              : Promise.resolve(undefined),
+          c.estimateFeesPerGas(),
+        ]);
 
-      return {
-        gas: gasEstimate,
-        nonce: nonceEstimate,
-        fees: feeEstimate,
-      };
+        return {
+          gas: gasEstimate,
+          nonce: nonceEstimate,
+          fees: feeEstimate,
+        };
+      } catch (err) {
+        if (isContractRevert(err)) throw new RpcReverted();
+        throw err;
+      }
     });
 
     return {
@@ -349,6 +535,38 @@ export class EvmAdapter implements BlockchainAdapter {
         : Number(a.blockNumber - b.blockNumber),
     );
     return transfers;
+  }
+
+  /**
+   * A public contract read. Used for reference data such as a price feed.
+   *
+   * This does not sign and cannot: the adapter holds RPC endpoints, not a
+   * key. A failure is the caller's to handle — this method does not turn an
+   * unreachable node into a zero.
+   *
+   * A contract revert is that failure, and it is thrown as `RpcReverted`
+   * before the pool can treat the node as dead. The node answered. Retrying
+   * the same call on the next URL would only revert again.
+   */
+  async readContract(parameters: {
+    address: `0x${string}`;
+    abi: readonly unknown[];
+    functionName: string;
+    args?: readonly unknown[];
+  }): Promise<unknown> {
+    return this.read(async (client) => {
+      try {
+        return await client.readContract({
+          address: parameters.address,
+          abi: parameters.abi as never,
+          functionName: parameters.functionName as never,
+          args: parameters.args as never,
+        });
+      } catch (err) {
+        if (isContractRevert(err)) throw new RpcReverted();
+        throw err;
+      }
+    });
   }
 
   async getBlockNumber(): Promise<bigint> {

@@ -324,6 +324,7 @@ export const SwapQuoteScalarFieldEnum = {
   minReceivedRaw: 'minReceivedRaw',
   fees: 'fees',
   executionQuality: 'executionQuality',
+  poolFee: 'poolFee',
   sizeCapUsd: 'sizeCapUsd',
   state: 'state',
   txHash: 'txHash',

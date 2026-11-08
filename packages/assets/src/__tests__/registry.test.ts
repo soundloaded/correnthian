@@ -68,4 +68,20 @@ describe('backing disclosure', () => {
     expect(describeBacking({ ...paxg, backing: { ...paxg.backing, lastAttestation: null } }))
       .toMatch(/never attested/i);
   });
+
+  it('keeps the unallocated sentence for metal', () => {
+    expect(describeBacking({ ...paxg, backing: { ...paxg.backing, custodyModel: 'unallocated' } }))
+      .toBe('Backed in aggregate. No specific metal is reserved for the holder.');
+  });
+
+  it('does not describe a non-metal unallocated asset as metal', () => {
+    const disclosure = describeBacking({
+      ...paxg,
+      symbol: 'USDC',
+      display: { ...paxg.display, category: 'stablecoin' },
+      backing: { ...paxg.backing, custodyModel: 'unallocated', gramsPerToken: null, ouncesPerToken: null },
+    });
+    expect(disclosure).toBe('Backed in aggregate. No specific asset is reserved for the holder.');
+    expect(disclosure).not.toMatch(/metal/i);
+  });
 });

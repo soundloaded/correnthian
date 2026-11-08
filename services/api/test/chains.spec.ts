@@ -91,6 +91,34 @@ describe.skipIf(!HAS_DB && !CI)('chains hide endpoints and gate writes over HTTP
     expect(one.body).not.toHaveProperty('rpcUrls');
   });
 
+  it('reads omit stored failover rpc urls without leaking them in the body', async () => {
+    const failoverA = 'https://failover-a.example/rpc';
+    const failoverB = 'https://failover-b.example/rpc';
+    const row = await prisma.chain.findUniqueOrThrow({ where: { id: '1' }, select: { rpcUrls: true } });
+    const originalRpcUrls = row.rpcUrls;
+    await prisma.chain.update({
+      where: { id: '1' },
+      data: { rpcUrls: [failoverA, failoverB] },
+    });
+    try {
+      const list = await get('/chains', customerToken);
+      expect(list.status).toBe(200);
+      const listJson = JSON.stringify(list.body);
+      expect(listJson).not.toContain('rpcUrls');
+      expect(listJson).not.toContain(failoverA);
+      expect(listJson).not.toContain(failoverB);
+
+      const one = await get('/chains/1', customerToken);
+      expect(one.status).toBe(200);
+      expect(one.body).not.toHaveProperty('rpcUrls');
+      const oneJson = JSON.stringify(one.body);
+      expect(oneJson).not.toContain(failoverA);
+      expect(oneJson).not.toContain(failoverB);
+    } finally {
+      await prisma.chain.update({ where: { id: '1' }, data: { rpcUrls: originalRpcUrls } });
+    }
+  });
+
   it('unknown chains are 404', async () => {
     expect((await get('/chains/999', customerToken)).status).toBe(404);
     expect((await patch('/chains/999/enabled', { enabled: true }, adminToken)).status).toBe(404);

@@ -1,18 +1,21 @@
 /**
  * Development seed.
  *
- * Scope is deliberately small and factual. It does NOT seed invented metals
- * with real issuer, custodian or vault names — an unverified row in the
- * registry is indistinguishable from a verified one once it reaches a user,
- * and that is exactly the failure this product exists to prevent.
+ * Public mainnet assets are registered unverified, with redemption off.
+ * Re-seeding upserts issuers by slug and assets by catalog id. The update
+ * payload never includes `verifiedTier` or `redeemSupported`, so a second
+ * run cannot promote either field. No fee percentage, proof URL, or
+ * custodian claim is written.
  *
- * Real metals assets get added through the API, by a human, from due diligence.
+ * The synthetic fixtures further down are named as fixtures. They are not
+ * metals that arrived through due diligence.
  */
 
 import 'dotenv/config';
 import { hash } from '@node-rs/argon2';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client.js';
+import { catalogAssetId, PUBLIC_CATALOG } from '../src/assets/public-catalog.js';
 import { resolveSeedRpcUrls } from '../src/chains/chain-rpc.js';
 
 const prisma = new PrismaClient({
@@ -147,6 +150,62 @@ async function main() {
     });
   }
   console.log(`  fixtures: ${fixtures.length} assets (synthetic, unverified, clearly named)`);
+
+  // --- public catalog ----------------------------------------------------
+  // After the fixture issuer upsert above, so issuer rows can be upserted
+  // before the assets that reference them. `update` omits verifiedTier and
+  // redeemSupported on purpose: a second seed must leave both unchanged,
+  // including when an operator has since promoted them.
+  for (const entry of PUBLIC_CATALOG) {
+    const issuer = await prisma.issuer.upsert({
+      where: { slug: entry.issuer.slug },
+      update: {},
+      create: {
+        slug: entry.issuer.slug,
+        name: entry.issuer.name,
+        // Required column. The public-facts table does not name a home,
+        // and this seed does not invent one.
+        jurisdiction: 'XX',
+        licenseTypes: [],
+        licenseRefs: [],
+        verifiedTier: 'unverified',
+      },
+    });
+
+    const asset = entry.asset;
+    await prisma.asset.upsert({
+      where: { assetId: catalogAssetId(entry) },
+      update: { enabled: true },
+      create: {
+        assetId: catalogAssetId(entry),
+        chainId: asset.chainId,
+        contractAddress: asset.contractAddress?.toLowerCase() ?? '',
+        tokenStandard: asset.tokenStandard,
+        symbol: asset.symbol,
+        name: asset.name,
+        decimals: asset.decimals,
+        category: asset.category,
+        issuerId: issuer.id,
+        custodyModel: asset.custodyModel,
+        custodian: asset.custodian,
+        vaultLocations: [...asset.vaultLocations],
+        proofOfReserveUrl: null,
+        attestationCadence: asset.attestationCadence,
+        lastAttestedAt: asset.lastAttestedAt,
+        ouncesPerToken: asset.ouncesPerToken,
+        // String, not the catalog's JS number. 31.1034768 is not a binary
+        // float, and Decimal(18, 7) stores that literal exactly.
+        gramsPerToken: asset.gramsPerToken == null ? null : '31.1034768',
+        rails: [...asset.rails],
+        swapSupported: asset.swapSupported,
+        transferSupported: true,
+        redeemSupported: false,
+        verifiedTier: 'unverified',
+        enabled: true,
+      },
+    });
+  }
+  console.log(`  public catalog: ${PUBLIC_CATALOG.length} assets (unverified, not redeemable)`);
 
   // --- first admin -------------------------------------------------------
   const email = (process.env.ADMIN_EMAIL ?? '').trim().toLowerCase();

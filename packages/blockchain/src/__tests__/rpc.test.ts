@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RpcPool } from '../rpc.js';
+import { RpcPool, RpcReverted } from '../rpc.js';
 
 /** Resolves to `v`. */
 const ok = <T>(v: T) => Promise.resolve(v);
@@ -19,6 +19,23 @@ describe('RpcPool', () => {
   it('fails over to the next endpoint on error', async () => {
     const pool = new RpcPool([{ url: 'a' }, { url: 'b' }]);
     expect(await pool.withFailover((u) => (u === 'a' ? fail() : ok('from-b')))).toBe('from-b');
+  });
+
+  it('stops on a contract revert without quarantining or trying the next endpoint', async () => {
+    const pool = new RpcPool([{ url: 'a' }, { url: 'b' }]);
+    const attempted: string[] = [];
+    await expect(
+      pool.withFailover(async (u) => {
+        attempted.push(u);
+        throw new RpcReverted();
+      }),
+    ).rejects.toBeInstanceOf(RpcReverted);
+    expect(attempted).toEqual(['a']);
+    expect(pool.recentFailures).toEqual([]);
+
+    const next: string[] = [];
+    await pool.withFailover(async (u) => { next.push(u); return ok(1); });
+    expect(next).toEqual(['a']);
   });
 
   it('tries every endpoint before giving up', async () => {

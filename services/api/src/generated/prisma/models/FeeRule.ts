@@ -767,14 +767,6 @@ export type EnumFeeBasisFieldUpdateOperationsInput = {
   set?: $Enums.FeeBasis
 }
 
-export type NullableIntFieldUpdateOperationsInput = {
-  set?: number | null
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type NullableEnumFeeAssetCategoryFieldUpdateOperationsInput = {
   set?: $Enums.FeeAssetCategory | null
 }

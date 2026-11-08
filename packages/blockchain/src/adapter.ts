@@ -239,6 +239,22 @@ export interface BuildTransactionRequest {
   token?: string;
   /** Base units as a positive integer string. Required with `token`. */
   amount?: string;
+  /**
+   * Nonce this server already assigned. Set when an earlier unsigned
+   * transaction from the same account is not on the network yet, so
+   * `getTransactionCount` at `pending` cannot see it. Absent means ask
+   * the node. A client request has no field that sets this.
+   */
+  nonce?: number;
+  /**
+   * Calls from this account that are not on the network yet.
+   *
+   * Gas for this transaction is estimated against state that already
+   * includes them. A swap that pulls a token with `transferFrom` reverts
+   * on today's allowance when the approve that would raise it is still
+   * unsigned. Absent means the chain as it is.
+   */
+  priorCalls?: ReadonlyArray<{ to: string; data: string; value?: string }>;
 }
 
 /** Narrowing helper so callers cannot pass an EVM adapter where Bitcoin is meant. */

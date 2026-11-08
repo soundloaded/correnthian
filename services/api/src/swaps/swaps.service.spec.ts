@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { deriveAssetId } from '@correnthian/assets';
+import { CONTRACT_REGISTRY } from '@correnthian/contracts';
 import { AppError } from '../common/errors.js';
 import { SwapsService } from './swaps.service.js';
 import { settingDefinition } from '../settings/registry.js';
@@ -64,8 +65,40 @@ beforeEach(() => {
   fees.breakdown.mockClear();
 });
 
-const svc = (p: ReturnType<typeof makePrisma>) =>
-  new SwapsService(p as never, fees as never, settings);
+const idleQuoter = { configured: false, quote: vi.fn(async () => null) };
+
+/** prepare's dependencies. These tests never call it. */
+const prepareDeps = [
+  { value: { uniswap: {} } } as never,
+  { allowance: async () => 0n } as never,
+  {} as never,
+] as const;
+
+const svc = (
+  p: ReturnType<typeof makePrisma>,
+  uniswap: { configured: boolean; quote: ReturnType<typeof vi.fn> } = idleQuoter,
+) => new SwapsService(p as never, fees as never, settings, uniswap as never, ...prepareDeps);
+
+const USDC = {
+  id: 'surr-usdc',
+  assetId: '1:0x1111111111111111111111111111111111111111:circle',
+  symbol: 'USDC',
+  chainId: '1',
+  decimals: 6,
+  enabled: true,
+  rails: ['dex'],
+  contractAddress: '0x1111111111111111111111111111111111111111',
+};
+const GOLD = {
+  id: 'surr-gold',
+  assetId: '1:0x2222222222222222222222222222222222222222:paxos',
+  symbol: 'PAXG',
+  chainId: '1',
+  decimals: 18,
+  enabled: true,
+  rails: ['dex'],
+  contractAddress: '0x2222222222222222222222222222222222222222',
+};
 
 describe('createQuote refusals', () => {
   it('refuses a conversion to the same asset', async () => {
@@ -112,6 +145,8 @@ describe('createQuote refusals', () => {
         get: async (key: string) =>
           key === 'swaps.quote-ttl-minutes' ? 7 : settingDefinition(key)!.default,
       } as never,
+      idleQuoter as never,
+      ...prepareDeps,
     );
     const before = Date.now();
     await longer.createQuote({
@@ -131,6 +166,56 @@ describe('createQuote refusals', () => {
     expect(p.created[0]?.['toAmountRaw']).toBe('0');
     expect(p.created[0]?.['state']).toBe('quoted');
     expect(quote.id).toBe('q1');
+  });
+});
+
+describe('Uniswap v3 quotes', () => {
+  const request = {
+    userId: 'u1',
+    fromAssetId: USDC.assetId,
+    toAssetId: GOLD.assetId,
+    fromAmountRaw: '1000000',
+    slippageBps: 50,
+  };
+
+  it('stores none with a zero received amount when every tier fails', async () => {
+    const quoteFn = vi.fn(async () => null);
+    const p = makePrisma({ assets: [USDC, GOLD] });
+    const quote = await svc(p, { configured: true, quote: quoteFn }).createQuote(request);
+    expect(quote.executionQuality).toBe('none');
+    expect(quote.toAmountRaw).toBe('0');
+    expect(quote.priceImpactMeasured).toBe(false);
+    expect(p.created[0]?.['poolFee']).toBeNull();
+    expect(quoteFn).toHaveBeenCalledOnce();
+  });
+
+  it('stores a thin quote at the winning fee without claiming a measured impact', async () => {
+    const quoteFn = vi.fn(async () => ({ amountOut: 50n, poolFee: 3000 }));
+    const p = makePrisma({ assets: [USDC, GOLD] });
+    const quote = await svc(p, { configured: true, quote: quoteFn }).createQuote(request);
+    expect(quote.executionQuality).toBe('thin');
+    expect(quote.priceImpactMeasured).toBe(false);
+    expect(quote.priceImpactBps).toBe(0);
+    expect(quote.toAmountRaw).toBe('50');
+    expect(quote.minReceivedRaw).toBe('49');
+    expect(p.created[0]?.['poolFee']).toBe(3000);
+    expect(p.created[0]?.['railKind']).toBe('dex');
+    expect(p.created[0]?.['railId']).toBe('uniswap-v3');
+    expect(quote.executable).toBe(true);
+  });
+
+  it('does not call the quoter for a fractional fromAmountRaw', async () => {
+    const quoteFn = vi.fn(async () => ({ amountOut: 50n, poolFee: 3000 }));
+    const p = makePrisma({ assets: [USDC, GOLD] });
+    const quote = await svc(p, { configured: true, quote: quoteFn }).createQuote({
+      ...request,
+      fromAmountRaw: '1.5',
+    });
+    expect(quoteFn).not.toHaveBeenCalled();
+    expect(quote.executionQuality).toBe('none');
+    expect(quote.toAmountRaw).toBe('0');
+    expect(quote.priceImpactMeasured).toBe(false);
+    expect(p.created[0]?.['poolFee']).toBeNull();
   });
 });
 
@@ -161,5 +246,56 @@ describe('findById scoping', () => {
     // A canary that the suite means the same assetId the service derives:
     // if deriveAssetId changes shape, fixtures must change with it.
     expect(deriveAssetId({ chainId: '1', contractAddress: '0xABC', issuerId: 'mint' })).toBe('1:0xabc:mint');
+  });
+});
+
+describe('quote lists', () => {
+  it('include priceImpactMeasured, and the contracts accept it', async () => {
+    const at = new Date('2026-11-08T06:00:00.000Z');
+    const row = {
+      id: 'q1',
+      userId: 'u1',
+      createdAt: at,
+      updatedAt: at,
+      state: 'quoted',
+      railKind: 'dex',
+      railId: 'uniswap-v3',
+      provider: { slug: 'uniswap', name: 'Uniswap', status: 'active' },
+      fromAsset: { assetId: '1:0x1:circle', symbol: 'USDC', name: 'USD Coin' },
+      toAsset: { assetId: '1:0x2:paxos', symbol: 'PAXG', name: 'Pax Gold' },
+      fromAmountRaw: '1000000',
+      toAmountRaw: '50',
+      notionalUsd: null,
+      priceImpactBps: 0,
+      slippageBps: 50,
+      minReceivedRaw: '49',
+      fees: {},
+      executionQuality: 'thin',
+      sizeCapUsd: null,
+      expiresAt: at,
+    };
+    const prisma = { swapQuote: { findMany: vi.fn(async () => [row]) } };
+    const swaps = new SwapsService(
+      prisma as never,
+      fees as never,
+      settings,
+      idleQuoter as never,
+      ...prepareDeps,
+    );
+
+    const mine = await swaps.list('u1');
+    expect(mine[0]?.priceImpactMeasured).toBe(false);
+    expect(mine[0]?.priceImpactBps).toBe(0);
+    const mineBody = JSON.parse(JSON.stringify(mine));
+    const mineParsed = CONTRACT_REGISTRY['GET /api/v1/swaps/quotes/mine'].safeParse(mineBody);
+    expect(mineParsed.success).toBe(true);
+    if (mineParsed.success) expect(mineParsed.data[0]?.priceImpactMeasured).toBe(false);
+
+    const page = await swaps.listAll({ limit: 25 });
+    expect(page.items[0]?.priceImpactMeasured).toBe(false);
+    expect(page.items[0]?.priceImpactBps).toBe(0);
+    const listParsed = CONTRACT_REGISTRY['GET /api/v1/swaps/quotes'].safeParse(page);
+    expect(listParsed.success).toBe(true);
+    if (listParsed.success) expect(listParsed.data.items[0]?.priceImpactMeasured).toBe(false);
   });
 });

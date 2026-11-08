@@ -28,14 +28,22 @@ export function findAsset(registry: readonly Asset[], ref: AssetRef): Asset | un
  */
 export function describeBacking(asset: Asset): string | null {
   const { backing } = asset;
+  const metal = asset.display.category === 'metal';
   if (backing.custodyModel === 'synthetic') {
-    return `Price exposure only. No physical metal is held for this token.`;
+    // Metal keeps the existing sentence. A non-metal must not be called metal.
+    return metal
+      ? `Price exposure only. No physical metal is held for this token.`
+      : `Price exposure only. No physical asset is held for this token.`;
   }
   if (backing.custodyModel === 'unallocated') {
-    return 'Backed in aggregate. No specific metal is reserved for the holder.';
+    return metal
+      ? 'Backed in aggregate. No specific metal is reserved for the holder.'
+      : 'Backed in aggregate. No specific asset is reserved for the holder.';
   }
   const parts: string[] = ['Allocated'];
-  if (backing.gramsPerToken) parts.push(`${backing.gramsPerToken}g of metal per token`);
+  if (backing.gramsPerToken) {
+    parts.push(metal ? `${backing.gramsPerToken}g of metal per token` : `${backing.gramsPerToken}g per token`);
+  }
   if (backing.ouncesPerToken) parts.push(`${backing.ouncesPerToken} troy oz per token`);
   if (backing.custodian) parts.push(`custodied by ${backing.custodian}`);
   if (backing.vaultLocation.length) parts.push(`vaults: ${backing.vaultLocation.join(', ')}`);

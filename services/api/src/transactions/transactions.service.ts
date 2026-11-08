@@ -117,6 +117,57 @@ export interface ObservedTransactionInput {
 
 const POSITIVE_DECIMAL = /^\d+(\.\d+)?$/;
 
+function metadataRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
+
+/** `{ to, value, data }` and nothing else is a call this server assembled. */
+function asCall(value: unknown): { to: string; value: string; data: string } | null {
+  const record = metadataRecord(value);
+  if (typeof record.to !== 'string' || typeof record.value !== 'string' || typeof record.data !== 'string') {
+    return null;
+  }
+  return { to: record.to, value: record.value, data: record.data };
+}
+
+/**
+ * `preparedCall` and `build` are written by this service. A caller can send
+ * the same names inside metadata; they are not that write.
+ */
+const SERVER_METADATA_KEYS = ['preparedCall', 'build'] as const;
+
+function withoutServerKeys(value: unknown): Record<string, unknown> {
+  const copy: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(metadataRecord(value))) {
+    if ((SERVER_METADATA_KEYS as readonly string[]).includes(key)) continue;
+    copy[key] = entry;
+  }
+  return copy;
+}
+
+/**
+ * Client keys merge. Stored `preparedCall` and `build` stay, including when
+ * the report omits them — dropping them would send relay back to the ERC-20
+ * re-derivation.
+ */
+function mergeKeepingServerKeys(stored: unknown, incoming: unknown): Record<string, unknown> {
+  const previous = metadataRecord(stored);
+  const merged: Record<string, unknown> = { ...previous, ...withoutServerKeys(incoming) };
+  if ('preparedCall' in previous) merged.preparedCall = previous.preparedCall;
+  if ('build' in previous) merged.build = previous.build;
+  return merged;
+}
+
+/**
+ * A call this process is filing. Not a field of the public create body:
+ * `POST /transactions` cannot pass it, and the same keys inside caller
+ * metadata are dropped.
+ */
+export interface ServerWrittenCall {
+  preparedCall: { to: string; value: string; data: string };
+}
+
 /**
  * The relations every read projection resolves.
  *
@@ -173,7 +224,7 @@ export class TransactionsService {
    * transaction is a property of the request, whose money moves is a property
    * of the wallet, and only the second one may go in the column.
    */
-  async create(input: CreateTransactionDto, userId: string) {
+  async create(input: CreateTransactionDto, userId: string, server?: ServerWrittenCall) {
     if (!POSITIVE_DECIMAL.test(input.amountRaw) || /^0+(\.0+)?$/.test(input.amountRaw)) {
       throw AppError.badRequest('amountRaw must be a positive decimal string');
     }
@@ -219,6 +270,13 @@ export class TransactionsService {
     const familyDefault = DEFAULT_CONFIRMATIONS[wallet.chain.family] ?? 1;
     const requiredConfirmations = Math.max(input.requiredConfirmations ?? familyDefault, familyDefault);
 
+    // Caller metadata is kept, minus the two keys only this server writes.
+    // `server` is the in-process channel prepare uses; the public DTO has
+    // no field that reaches it.
+    const metadata = withoutServerKeys(input.metadata);
+    const prepared = asCall(server?.preparedCall);
+    if (prepared) metadata.preparedCall = prepared;
+
     const created = await this.prisma.transaction.create({
       data: {
         userId: wallet.userId,
@@ -234,7 +292,7 @@ export class TransactionsService {
         feeRaw: input.feeRaw ?? null,
         feeUsd: input.feeUsd ?? null,
         requiredConfirmations,
-        ...(input.metadata ? { metadata: input.metadata as object } : {}),
+        ...(Object.keys(metadata).length > 0 ? { metadata: metadata as object } : {}),
         // The lifetime is a setting, so an operator can change it without a
         // release. A caller that names its own lifetime still wins: the
         // setting is the default, not a cap.
@@ -305,7 +363,7 @@ export class TransactionsService {
     if (to === 'created') {
       throw AppError.badRequest('`created` is only reachable by creating a transaction');
     }
-    return this.apply(id, to, actor, {
+    const patch: Record<string, unknown> = {
       ...this.moneyPatch(input),
       ...this.stateTimestamps(to),
       ...(to === 'failed'
@@ -316,7 +374,8 @@ export class TransactionsService {
           }
         : {}),
       ...(input.txHash ? { txHash: input.txHash } : {}),
-    }, input.reason);
+    };
+    return this.apply(id, to, actor, patch, input.reason);
   }
 
   // --- BE-602: the server assembles, the device signs ----------------------
@@ -335,7 +394,55 @@ export class TransactionsService {
    * calldata would have reached past `BlockchainAdapter` and picked up
    * knowledge that belongs to a chain family.
    */
-  async assemble(id: string, userId: string) {
+  /**
+   * Gas, nonce and fees for a call that is not a row yet.
+   *
+   * Prepare estimates the approve and the swap before it files either.
+   * The swap carries the approve as `priorCalls`, because that approve is
+   * still unsigned and `transferFrom` reverts without it. A failure here
+   * writes nothing: the caller must not find an approve row left behind.
+   */
+  async buildUnsigned(request: BuildTransactionRequest): Promise<UnsignedTransaction> {
+    const adapter = await this.blockchain.forChain(request.chainId);
+    try {
+      return await adapter.buildTransaction(request);
+    } catch (err) {
+      throw this.assemblyFailure(err);
+    }
+  }
+
+  /**
+   * Store an unsigned payload that was already estimated.
+   *
+   * The row stays in `created`. This is the write half of `assemble`, for
+   * a prepare that estimated first and only files the row once the pair
+   * could be built.
+   */
+  async recordAssembly(id: string, userId: string, unsigned: UnsignedTransaction): Promise<void> {
+    const tx = await this.load(id);
+    if (tx.userId !== userId) throw AppError.notFound('Transaction not found');
+    if (tx.state !== 'created') {
+      throw AppError.conflict(
+        `This transaction is "${tx.state}"; only an unsigned intent can be assembled`,
+      );
+    }
+    await this.persistAssembly(tx, userId, unsigned);
+  }
+
+  /**
+   * Remove rows a prepare filed and then could not finish.
+   *
+   * Only `created` rows with no hash. A broadcast is someone else's
+   * transaction and is not this method's to delete.
+   */
+  async discardCreated(ids: readonly string[]): Promise<void> {
+    if (ids.length === 0) return;
+    await this.prisma.transaction.deleteMany({
+      where: { id: { in: [...ids] }, state: 'created', txHash: null },
+    });
+  }
+
+  async assemble(id: string, userId: string, server?: { nonce?: number }) {
     const tx = await this.load(id);
     if (tx.state !== 'created') {
       throw AppError.conflict(
@@ -362,7 +469,12 @@ export class TransactionsService {
     if (!asset || !tx.destination) throw AppError.notFound('Transaction not found');
 
     const adapter = await this.blockchain.forChain(tx.chainId);
-    const request = this.intentRequest(tx, wallet.address, asset.contractAddress);
+    const request = this.assemblyRequest(
+      tx,
+      wallet.address,
+      asset.contractAddress,
+      server?.nonce,
+    );
 
     let unsigned: UnsignedTransaction;
     try {
@@ -371,6 +483,27 @@ export class TransactionsService {
       throw this.assemblyFailure(err);
     }
 
+    const feeRaw = await this.persistAssembly(tx, userId, unsigned);
+
+    return {
+      id: tx.id,
+      state: tx.state,
+      chainId: tx.chainId,
+      walletAddress: wallet.address,
+      assetId: asset.assetId,
+      destination: tx.destination,
+      amountRaw: tx.amountRaw,
+      unsigned,
+      fee: feeRaw ? { raw: feeRaw, nativeSymbol: wallet.chain.nativeSymbol } : null,
+    };
+  }
+
+  /** The fee and the bytes the device is asked to sign. The row stays `created`. */
+  private async persistAssembly(
+    tx: TransactionRow,
+    userId: string,
+    unsigned: UnsignedTransaction,
+  ): Promise<string | null> {
     const feeRaw =
       unsigned.gas && unsigned.maxFeePerGas
         ? (BigInt(unsigned.gas) * BigInt(unsigned.maxFeePerGas)).toString()
@@ -389,6 +522,14 @@ export class TransactionsService {
             maxFeePerGas: unsigned.maxFeePerGas ?? null,
             maxPriorityFeePerGas: unsigned.maxPriorityFeePerGas ?? null,
             builtAt: new Date().toISOString(),
+            // The bytes the device is asked to sign. Relay compares a later
+            // signature to this, so a router call is not re-derived as a
+            // token transfer.
+            payload: {
+              to: unsigned.to,
+              value: unsigned.value,
+              data: unsigned.data,
+            },
           },
         },
       },
@@ -406,17 +547,7 @@ export class TransactionsService {
       },
     });
 
-    return {
-      id: tx.id,
-      state: tx.state,
-      chainId: tx.chainId,
-      walletAddress: wallet.address,
-      assetId: asset.assetId,
-      destination: tx.destination,
-      amountRaw: tx.amountRaw,
-      unsigned,
-      fee: feeRaw ? { raw: feeRaw, nativeSymbol: wallet.chain.nativeSymbol } : null,
-    };
+    return feeRaw;
   }
 
   /**
@@ -432,8 +563,10 @@ export class TransactionsService {
    * So three facts are checked against the intent before anything reaches
    * the network — who signed (recovered from the signature, so a payload
    * edited after signing recovers someone else), which chain, and whether
-   * `to`/`value`/`data` equal the payload `assemblePayload` derives from
-   * this same intent. The node gets the last word on validity; this is the
+   * `to`/`value`/`data` equal the payload stored when this row was
+   * assembled. A row assembled before that payload was stored still falls
+   * back to `assemblePayload` on the intent, which is the ERC-20 transfer
+   * those rows were. The node gets the last word on validity; this is the
    * server's word on *identity*.
    *
    * A failed relay leaves the row in `signed`, so the device can retry.
@@ -477,7 +610,7 @@ export class TransactionsService {
       );
     }
 
-    const expected = adapter.assemblePayload(this.intentRequest(tx, wallet.address, asset.contractAddress));
+    const expected = this.expectedPayload(tx, adapter, wallet.address, asset.contractAddress);
     if (
       facts.to?.toLowerCase() !== expected.to.toLowerCase() ||
       facts.value !== expected.value ||
@@ -500,6 +633,59 @@ export class TransactionsService {
       to: 'broadcast',
       txHash: hash,
     });
+  }
+
+  /**
+   * A router call filed on the row, or the ERC-20 / native transfer the
+   * intent already described.
+   *
+   * `preparedCall` is `{ to, value, data }`. The value sent with that call
+   * is `0`: a swap moves the token through calldata, and a prepared call
+   * that attached native value would be a different transaction from the
+   * one the quote described.
+   */
+  private assemblyRequest(
+    tx: TransactionRow,
+    from: string,
+    contractAddress: string,
+    /**
+     * Set by prepare for the second unsigned call. Never read from
+     * metadata: a client can file a nonce there, and the node is the
+     * one that counts unless this server already assigned the next one.
+     */
+    nonce?: number,
+  ): BuildTransactionRequest {
+    const prepared = asCall(metadataRecord(tx.metadata).preparedCall);
+    const request: BuildTransactionRequest = prepared
+      ? {
+          chainId: tx.chainId,
+          from,
+          to: prepared.to,
+          value: '0',
+          data: prepared.data,
+        }
+      : this.intentRequest(tx, from, contractAddress);
+    if (nonce === undefined) return request;
+    return { ...request, nonce };
+  }
+
+  /**
+   * The payload a signature must match.
+   *
+   * Present `metadata.build.payload` wins. Absent means the row was
+   * assembled before that field existed, and the check stays the transfer
+   * `assemblePayload` derives from the intent.
+   */
+  private expectedPayload(
+    tx: TransactionRow,
+    adapter: { assemblePayload(req: BuildTransactionRequest): { to: string; value: string; data: string } },
+    from: string,
+    contractAddress: string,
+  ): { to: string; value: string; data: string } {
+    const build = metadataRecord(tx.metadata).build;
+    const stored = asCall(metadataRecord(build).payload);
+    if (stored) return stored;
+    return adapter.assemblePayload(this.intentRequest(tx, from, contractAddress));
   }
 
   /** The chain-neutral request this intent assembles to. */
@@ -1040,6 +1226,14 @@ export class TransactionsService {
     }
 
     const data: Record<string, unknown> = { state: to, ...patch };
+
+    // `signed` is the owner's report, and it is the last write before relay
+    // reads `build.payload`. Replacing that object would let the report
+    // name a different call than the one assemble stored. Other client keys
+    // still merge; the stored server keys win.
+    if (to === 'signed' && data['metadata'] !== undefined) {
+      data['metadata'] = mergeKeepingServerKeys(current.metadata, data['metadata']);
+    }
 
     // A re-broadcast is this same transaction coming back after a drop. Counted
     // here rather than at the call site so the reporting path and the

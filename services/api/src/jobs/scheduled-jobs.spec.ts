@@ -423,10 +423,33 @@ describe('StalePriceFlagJob', () => {
     });
   });
 
+  it('does not flag a Chainlink round that is still inside the heartbeat', async () => {
+    const store = makePriceStore(
+      [asset('a1', 'XAU')],
+      [{ assetId: 'a1', source: 'chainlink:xau-usd', capturedAt: at(-301_000) }],
+    );
+    const sweep = new StalePriceFlagJob(store.prisma as never);
+    expect((await sweep.run(ctx(T0))).affected).toBe(0);
+  });
+
+  it('flags a Chainlink round older than the 86400-second heartbeat', async () => {
+    const store = makePriceStore(
+      [asset('a1', 'XAU')],
+      [{ assetId: 'a1', source: 'chainlink:xau-usd', capturedAt: at(-86_401_000) }],
+    );
+    const sweep = new StalePriceFlagJob(store.prisma as never);
+    const outcome = await sweep.run(ctx(T0));
+    expect(outcome.affected).toBe(1);
+    expect((outcome.detail?.['staleness'] as Row[])[0]).toMatchObject({
+      symbol: 'XAU',
+      reason: 'stale',
+      source: 'chainlink:xau-usd',
+    });
+  });
+
   it('treats a price exactly on the threshold as fresh', async () => {
-    // The API's own `latest()` uses `age <= MAX_AGE_SECONDS`. Two thresholds
-    // would drift, and the drift would be invisible: an operator told prices
-    // are fresh, a user told there is no price.
+    // Non-Chainlink sources use `age <= MAX_AGE_SECONDS`, the same line as
+    // `latest()`. A Chainlink row uses the 86400-second heartbeat instead.
     const store = makePriceStore(
       [asset('a1', 'XAU')],
       [{ assetId: 'a1', source: 'test', capturedAt: at(-PricingService.MAX_AGE_SECONDS * 1000) }],
