@@ -249,6 +249,30 @@ export function SwapRequestForm() {
   }
 
   if (quote) {
+    // The live engine answers 201 with `executionQuality: none` when no
+    // provider is contracted. A fresh detail carries `executable`, so the
+    // same refusal rule the mine list uses applies here directly: a quote
+    // the engine cannot fill renders as a constraint, never as an offer.
+    if (!quote.executable) {
+      return (
+        <div className="space-y-3">
+          <Refusal
+            text={`Quoted ${quote.state} with ${quote.executionQuality} execution quality — the engine cannot fill it right now. No money moved.`}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setQuote(null)
+              setAmount("")
+              setServerError(null)
+            }}
+            className="text-sm text-muted underline-offset-4 transition hover:text-foreground hover:underline"
+          >
+            Request another
+          </button>
+        </div>
+      )
+    }
     const toAsset = byId.get(toId)
     const minReceived =
       toAsset != null ? `${formatBaseUnits(quote.minReceivedRaw, toAsset.asset.decimals)} ${toAsset.asset.symbol}` : null
@@ -260,11 +284,6 @@ export function SwapRequestForm() {
           {minReceived ? ` · at least ${minReceived}` : ""}
           {` · expires ${new Date(quote.expiresAt).toLocaleString()}`}
         </p>
-        {!quote.executable && (
-          <p className="mt-2 text-sm text-muted">
-            The engine cannot fill this quote right now — your latest quote below says why.
-          </p>
-        )}
         <button
           type="button"
           onClick={() => {
