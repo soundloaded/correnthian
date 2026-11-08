@@ -193,7 +193,9 @@ async function main() {
         attestationCadence: asset.attestationCadence,
         lastAttestedAt: asset.lastAttestedAt,
         ouncesPerToken: asset.ouncesPerToken,
-        gramsPerToken: asset.gramsPerToken,
+        // String, not the catalog's JS number. 31.1034768 is not a binary
+        // float, and Decimal(18, 7) stores that literal exactly.
+        gramsPerToken: asset.gramsPerToken == null ? null : '31.1034768',
         rails: [...asset.rails],
         swapSupported: asset.swapSupported,
         transferSupported: true,
