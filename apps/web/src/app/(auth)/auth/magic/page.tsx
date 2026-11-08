@@ -39,14 +39,19 @@ function MagicConsume() {
   if (state === "failed") {
     return (
       <>
-        <h1 className="mb-1 text-xl font-semibold tracking-tight">That link has expired</h1>
-        <p className="mb-6 text-sm text-muted">
+        <h1
+          className="mb-1 text-[22px] font-semibold tracking-wide text-gold-soft"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          That link has expired
+        </h1>
+        <p className="mb-6 text-sm leading-relaxed text-muted">
           Sign-in links last fifteen minutes and work once. Ask for a fresh
           one and it will land in your inbox.
         </p>
         <Link
           href="/signin"
-          className="block w-full rounded-lg bg-gold-accent px-3 py-2 text-center text-sm font-semibold text-black transition hover:brightness-110"
+          className="block w-full rounded-xl bg-[linear-gradient(180deg,#f0d67c,#d8ab2e_55%,#a37f22)] px-3 py-3 text-center text-[15px] font-semibold text-[#1d1404] shadow-[0_6px_24px_rgba(216,171,46,0.35),inset_0_1px_0_rgba(255,255,255,0.45)] transition hover:brightness-110"
         >
           Back to sign in
         </Link>
@@ -56,8 +61,15 @@ function MagicConsume() {
 
   return (
     <>
-      <h1 className="mb-1 text-xl font-semibold tracking-tight">Signing you in…</h1>
-      <p className="mb-6 text-sm text-muted">Checking the link from your email.</p>
+      <h1
+        className="mb-1 text-[22px] font-semibold tracking-wide text-gold-soft"
+        style={{ fontFamily: "var(--font-display)" }}
+      >
+        Signing you in…
+      </h1>
+      <p className="mb-6 text-sm leading-relaxed text-muted">
+        Checking the link from your email.
+      </p>
       <div aria-hidden className="h-1 w-full overflow-hidden rounded-full bg-border">
         <div className="h-full w-1/2 animate-pulse rounded-full bg-gold-accent" />
       </div>
