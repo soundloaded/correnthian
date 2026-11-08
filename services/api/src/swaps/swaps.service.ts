@@ -24,6 +24,35 @@ import type { ListQuotesDto } from './dto/list-quotes.dto.js';
 import { TOKEN_ALLOWANCE, type TokenAllowance } from './token-allowance.js';
 import { UniswapV3Quoter, type DexQuoteResult } from './uniswap-v3-quoter.js';
 
+function storedCall(value: unknown): { to: string; value: string; data: string } | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  if (typeof record.to !== 'string' || typeof record.value !== 'string' || typeof record.data !== 'string') {
+    return null;
+  }
+  return { to: record.to, value: record.value, data: record.data };
+}
+
+/** The unsigned payload `recordAssembly` stored, or null when the row was never finished. */
+function replayUnsigned(chainId: string, metadata: unknown): UnsignedTransaction | null {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+  const build = (metadata as Record<string, unknown>).build;
+  if (!build || typeof build !== 'object' || Array.isArray(build)) return null;
+  const payload = storedCall((build as Record<string, unknown>).payload);
+  if (!payload) return null;
+  const chain = Number(chainId);
+  if (!Number.isInteger(chain)) return null;
+  const record = build as Record<string, unknown>;
+  const unsigned: UnsignedTransaction = { ...payload, chainId: chain };
+  if (typeof record.nonce === 'number') unsigned.nonce = record.nonce;
+  if (typeof record.gas === 'string') unsigned.gas = record.gas;
+  if (typeof record.maxFeePerGas === 'string') unsigned.maxFeePerGas = record.maxFeePerGas;
+  if (typeof record.maxPriorityFeePerGas === 'string') {
+    unsigned.maxPriorityFeePerGas = record.maxPriorityFeePerGas;
+  }
+  return unsigned;
+}
+
 export interface QuoteRequestInput {
   userId?: string;
   fromAssetId: string;
@@ -348,6 +377,34 @@ export class SwapsService {
 
     const amountIn = BigInt(quote.fromAmountRaw);
     const amountOutMinimum = BigInt(quote.minReceivedRaw);
+
+    // A repeated prepare, while the quote is still live, returns the pair
+    // already filed. Estimating again would ask the node for the same nonce
+    // and then write a second approve the first one has not spent.
+    const filed = await this.prisma.transaction.findMany({
+      where: {
+        userId: actorId,
+        walletId,
+        metadata: { path: ['quoteId'], equals: quoteId },
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+    if (filed.some((row) => row.state !== 'created')) {
+      throw AppError.conflict('This quote has already been prepared');
+    }
+    const replayed = filed.flatMap((row) => {
+      const unsigned = replayUnsigned(row.chainId, row.metadata);
+      if (!unsigned || !row.destination) return [];
+      const kind = row.destination.toLowerCase() === tokenIn.toLowerCase() ? 'approve' as const : 'swap' as const;
+      return [{ id: row.id, kind, unsigned }];
+    });
+    if (filed.length > 0 && replayed.length === filed.length) {
+      return { quoteId, transactions: replayed };
+    }
+    if (filed.length > 0) {
+      await this.transactions.discardCreated(filed.map((row) => row.id));
+    }
+
     const allowance = await this.allowances.allowance(tokenIn, recipient, router);
 
     const calls: Array<{

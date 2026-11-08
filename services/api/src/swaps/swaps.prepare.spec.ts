@@ -159,6 +159,19 @@ function makePrisma(rows: Record<string, unknown>[]) {
         for (const id of where.id.in) txs.delete(id);
         return { count: where.id.in.length };
       }),
+      findMany: vi.fn(async (args?: {
+        where?: { userId?: string; walletId?: string; state?: string; metadata?: { equals?: string } };
+      }) => {
+        const quoteId = args?.where?.metadata?.equals;
+        return [...txs.values()].filter((row) => {
+          const meta = row['metadata'] as { quoteId?: string } | undefined;
+          if (args?.where?.userId && row['userId'] !== args.where.userId) return false;
+          if (args?.where?.walletId && row['walletId'] !== args.where.walletId) return false;
+          if (args?.where?.state && row['state'] !== args.where.state) return false;
+          if (quoteId && meta?.quoteId !== quoteId) return false;
+          return true;
+        });
+      }),
     },
   };
 }
@@ -372,6 +385,38 @@ describe('prepare a device-signed swap', () => {
     expect(err).toMatchObject({ status: 503, code: 'provider_unavailable' });
     expect((err as AppError).message).not.toMatch(/https?:|www\./i);
     expect(prisma.txs.size).toBe(0);
+  });
+
+  it('returns the same unsigned pair when prepare is repeated, and does not estimate again', async () => {
+    const { swaps, adapter, prisma } = harness({ allowance: 0n, router: ROUTER });
+    const first = await swaps.prepare('q1', 'u1', 'w1');
+    const estimates = adapter.buildTransaction.mock.calls.length;
+    const writes = prisma.transaction.create.mock.calls.length;
+
+    const second = await swaps.prepare('q1', 'u1', 'w1');
+
+    expect(second.transactions.map((tx) => tx.id)).toEqual(first.transactions.map((tx) => tx.id));
+    expect(second.transactions.map((tx) => tx.kind)).toEqual(['approve', 'swap']);
+    expect(second.transactions.map((tx) => tx.unsigned)).toEqual(first.transactions.map((tx) => tx.unsigned));
+    expect(adapter.buildTransaction.mock.calls.length).toBe(estimates);
+    expect(prisma.transaction.create.mock.calls.length).toBe(writes);
+    expect(prisma.txs.size).toBe(2);
+  });
+
+  it('refuses a second prepare after the pair has been signed, and files nothing new', async () => {
+    const { swaps, prisma } = harness({ allowance: 0n, router: ROUTER });
+    const first = await swaps.prepare('q1', 'u1', 'w1');
+    for (const tx of first.transactions) {
+      const row = prisma.txs.get(tx.id);
+      if (row) row['state'] = 'signed';
+    }
+    const writes = prisma.transaction.create.mock.calls.length;
+
+    const err = await swaps.prepare('q1', 'u1', 'w1').catch((caught: unknown) => caught);
+    expect(err).toBeInstanceOf(AppError);
+    expect(err).toMatchObject({ status: 409, code: 'conflict' });
+    expect(prisma.transaction.create.mock.calls.length).toBe(writes);
+    expect(prisma.txs.size).toBe(2);
   });
 
   it('returns only the swap when the wallet already allowed the router', async () => {

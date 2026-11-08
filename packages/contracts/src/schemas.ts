@@ -656,6 +656,44 @@ export const txStateSchema = z.enum([
 export const txDirectionSchema = z.enum(['in', 'out', 'internal']);
 
 /**
+ * The bytes a device is asked to sign. Gas fields are absent when the
+ * assembler could not price them; a missing fee is not a zero fee.
+ */
+export const unsignedTransactionSchema = z.object({
+  to: z.string(),
+  value: z.string(),
+  data: z.string(),
+  chainId: z.number().int(),
+  nonce: z.number().int().optional(),
+  maxFeePerGas: z.string().optional(),
+  maxPriorityFeePerGas: z.string().optional(),
+  gas: z.string().optional(),
+});
+
+/** `POST /transactions/:id/build`. The row stays `created`; this is not a signature. */
+export const assemblyResultSchema = z.object({
+  id: z.string(),
+  state: txStateSchema,
+  chainId: z.string(),
+  walletAddress: z.string(),
+  assetId: z.string(),
+  destination: z.string(),
+  amountRaw: z.string(),
+  unsigned: unsignedTransactionSchema,
+  fee: z.object({ raw: z.string(), nativeSymbol: z.string() }).nullable(),
+});
+
+/** `POST /swaps/quotes/:id/prepare`. One or two unsigned calls, approve first. */
+export const prepareResultSchema = z.object({
+  quoteId: z.string(),
+  transactions: z.array(z.object({
+    id: z.string(),
+    kind: z.enum(['approve', 'swap']),
+    unsigned: unsignedTransactionSchema,
+  })),
+});
+
+/**
  * A freshly created intent: every scalar, no relations. `blockNumber` is a
  * BigInt at storage and crosses as a string when present; Decimals cross as
  * string-or-number; datetimes cross as ISO strings.
@@ -1368,6 +1406,7 @@ export const CONTRACT_REGISTRY = {
   'GET /api/v1/swaps/quotes': quoteListSchema,
   'GET /api/v1/swaps/quotes/:id': quoteDetailSchema,
   'POST /api/v1/swaps/quotes': quoteDetailSchema,
+  'POST /api/v1/swaps/quotes/:id/prepare': prepareResultSchema,
   'GET /api/v1/swaps/quotes/mine': z.array(swapMineRowSchema),
   'PATCH /api/v1/wallets/:id/guardians': walletDetailSchema,
   'GET /api/v1/wallets': z.array(walletListRowSchema),
@@ -1399,6 +1438,8 @@ export const CONTRACT_REGISTRY = {
   'POST /api/v1/transactions': transactionRawRowSchema,
   'POST /api/v1/transactions/:id/transitions': transactionRawRowSchema,
   'POST /api/v1/transactions/:id/observations': transactionRawRowSchema,
+  'POST /api/v1/transactions/:id/build': assemblyResultSchema,
+  'POST /api/v1/transactions/:id/broadcast': transactionRawRowSchema,
   'ERROR POST /api/v1/transactions/:id/build': errorSchema,
   'ERROR POST /api/v1/transactions/:id/broadcast': errorSchema,
   'POST /api/v1/redemptions': redemptionRequestSchema,
