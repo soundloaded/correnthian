@@ -72,6 +72,10 @@ function updatedAt(ageSeconds: number): bigint {
   return BigInt(Math.floor(NOW.getTime() / 1000) - ageSeconds);
 }
 
+function observedAt(ageSeconds: number): Date {
+  return new Date(NOW.getTime() - ageSeconds * 1000);
+}
+
 function assetsOf(rows: readonly PricedAsset[]): PricedAssetSource {
   return { listEnabled: async () => rows };
 }
@@ -124,6 +128,7 @@ describe('ChainlinkPriceProvider', () => {
         assetId: '1:0xpaxg:paxos',
         priceUsd: 4100,
         source: 'chainlink:xau-usd',
+        observedAt: observedAt(0),
       },
     ]);
     expect(read.latestRound).toHaveBeenCalledWith(XAU_FEED);
@@ -140,13 +145,16 @@ describe('ChainlinkPriceProvider', () => {
       xagUsd: XAG_FEED,
     });
 
-    await expect(prices.spotPrices()).resolves.toEqual([
+    const rows = await prices.spotPrices();
+    expect(rows).toEqual([
       {
         assetId: '1:0xpaxg:paxos',
         priceUsd: 4100,
         source: 'chainlink:xau-usd',
+        observedAt: observedAt(301),
       },
     ]);
+    expect(rows[0]?.observedAt).toEqual(new Date(Number(updatedAt(301)) * 1000));
   });
 
   it('omits a round older than 86400 seconds without throwing', async () => {
@@ -191,6 +199,7 @@ describe('ChainlinkPriceProvider', () => {
         assetId: '1:0xpaxg:paxos',
         priceUsd: 4100,
         source: 'chainlink:xau-usd',
+        observedAt: observedAt(0),
       },
     ]);
     expect(rows.map((row) => row.assetId)).not.toContain(USDC.assetId);
@@ -212,6 +221,7 @@ describe('ChainlinkPriceProvider', () => {
       assetId: '1:0xsilver:iss',
       priceUsd: 30,
       source: 'chainlink:xag-usd',
+      observedAt: observedAt(0),
     });
     expect(rows.find((row) => row.assetId === XAG.assetId)?.source).not.toBe(
       'chainlink:xau-usd',

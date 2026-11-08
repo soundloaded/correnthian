@@ -155,6 +155,10 @@ function makePrisma(rows: Record<string, unknown>[]) {
         Object.assign(row, data);
         return { ...row };
       }),
+      deleteMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) => {
+        for (const id of where.id.in) txs.delete(id);
+        return { count: where.id.in.length };
+      }),
     },
   };
 }
@@ -289,6 +293,52 @@ describe('prepare a device-signed swap', () => {
     );
     expect(calls[0]?.nonce).toBeUndefined();
     expect(calls[1]?.nonce).toBe(approve.unsigned.nonce! + 1);
+  });
+
+  it('estimates the swap against the approve, and writes nothing when that estimate fails', async () => {
+    const { swaps, adapter, prisma } = harness({ allowance: 0n, router: ROUTER });
+    const prepared = await swaps.prepare('q1', 'u1', 'w1');
+    const approve = prepared.transactions[0]!;
+    const swap = prepared.transactions[1]!;
+
+    expect(approve.unsigned.nonce).toBe(7);
+    expect(swap.unsigned.nonce).toBe(approve.unsigned.nonce! + 1);
+
+    const calls = adapter.buildTransaction.mock.calls.map(
+      (call) => call[0] as { to: string; data: string; nonce?: number; priorCalls?: Array<{ to: string; data: string; value?: string }> },
+    );
+    expect(calls[0]?.nonce).toBeUndefined();
+    expect(calls[1]?.nonce).toBe(8);
+    expect(calls[1]?.priorCalls).toEqual([
+      { to: calls[0]?.to, data: calls[0]?.data, value: '0' },
+    ]);
+    const approved = decodeFunctionData({
+      abi: APPROVE,
+      data: calls[1]!.priorCalls![0]!.data as `0x${string}`,
+    });
+    expect(approved.functionName).toBe('approve');
+    expect(approved.args[1]).toBe(1_000_000n);
+
+    adapter.buildTransaction.mockImplementation(async (req: { priorCalls?: unknown; nonce?: number; to: string; value?: string; data?: string }) => {
+      if (req.priorCalls) throw new Error('execution reverted');
+      return {
+        to: req.to,
+        value: req.value ?? '0',
+        data: req.data ?? '0x',
+        chainId: 1,
+        gas: '100000',
+        nonce: req.nonce ?? 7,
+        maxFeePerGas: '2',
+        maxPriorityFeePerGas: '1',
+      };
+    });
+    prisma.txs.clear();
+    prisma.transaction.create.mockClear();
+
+    const err = await swaps.prepare('q1', 'u1', 'w1').catch((caught: unknown) => caught);
+    expect(err).toBeInstanceOf(AppError);
+    expect(prisma.transaction.create).not.toHaveBeenCalled();
+    expect(prisma.txs.size).toBe(0);
   });
 
   it('refuses a quote that has already expired and writes no transaction', async () => {

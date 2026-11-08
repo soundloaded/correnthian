@@ -376,40 +376,74 @@ export class SwapsService {
       }),
     });
 
-    const transactions: Array<{ id: string; kind: 'approve' | 'swap'; unsigned: UnsignedTransaction }> = [];
-    // The node counts transactions it has seen. The approve is still unsigned
-    // when the swap is assembled, so the swap takes the next nonce rather
-    // than asking again and receiving the same one.
+    // Estimate both calls before filing either row. The approve is still
+    // unsigned when the swap is estimated, so the swap's gas is taken
+    // against state that already includes that approve — SwapRouter02 pulls
+    // the token with transferFrom. The node has not seen the approve, so
+    // the swap also takes the next nonce rather than asking again and
+    // receiving the same one. A failure writes nothing: a retry must not
+    // find an approve row this attempt left behind.
+    const approve = calls.find((call) => call.kind === 'approve');
+    const drafted: Array<{
+      kind: 'approve' | 'swap';
+      to: `0x${string}`;
+      data: `0x${string}`;
+      unsigned: UnsignedTransaction;
+    }> = [];
     let nextNonce: number | undefined;
     for (const call of calls) {
-      const created = await this.transactions.create(
-        {
-          walletId,
-          assetId: quote.fromAsset.assetId,
-          direction: 'out',
-          amountRaw: quote.fromAmountRaw,
-          destination: call.to,
-          metadata: { quoteId },
-        },
-        actorId,
-        { preparedCall: { to: call.to, value: '0', data: call.data } },
-      );
-      const assembled = await this.transactions.assemble(
-        created.id,
-        actorId,
-        nextNonce === undefined ? undefined : { nonce: nextNonce },
-      );
-      if (typeof assembled.unsigned.nonce === 'number') {
-        nextNonce = assembled.unsigned.nonce + 1;
+      const unsigned = await this.transactions.buildUnsigned({
+        chainId: wallet.chainId,
+        from: wallet.address,
+        to: call.to,
+        value: '0',
+        data: call.data,
+        ...(nextNonce === undefined ? {} : { nonce: nextNonce }),
+        ...(call.kind === 'swap' && approve
+          ? { priorCalls: [{ to: approve.to, data: approve.data, value: '0' }] }
+          : {}),
+      });
+      if (typeof unsigned.nonce === 'number') nextNonce = unsigned.nonce + 1;
+      drafted.push({ kind: call.kind, to: call.to, data: call.data, unsigned });
+    }
+
+    const transactions: Array<{ id: string; kind: 'approve' | 'swap'; unsigned: UnsignedTransaction }> = [];
+    const written: string[] = [];
+    try {
+      for (const draft of drafted) {
+        const created = await this.transactions.create(
+          {
+            walletId,
+            assetId: quote.fromAsset.assetId,
+            direction: 'out',
+            amountRaw: quote.fromAmountRaw,
+            destination: draft.to,
+            metadata: { quoteId },
+          },
+          actorId,
+          { preparedCall: { to: draft.to, value: '0', data: draft.data } },
+        );
+        written.push(created.id);
+        await this.transactions.recordAssembly(created.id, actorId, draft.unsigned);
+        transactions.push({ id: created.id, kind: draft.kind, unsigned: draft.unsigned });
       }
-      transactions.push({ id: created.id, kind: call.kind, unsigned: assembled.unsigned });
+    } catch (err) {
+      try {
+        await this.transactions.discardCreated(written);
+      } catch (discardErr) {
+        this.logger.error(
+          `Could not remove transactions filed before a failed prepare (${written.join(', ')})`,
+        );
+        this.logger.debug(discardErr instanceof Error ? discardErr.message : String(discardErr));
+      }
+      throw err;
     }
 
     return { quoteId, transactions };
   }
 
-  list(userId?: string, state?: string) {
-    return this.prisma.swapQuote.findMany({
+  async list(userId?: string, state?: string) {
+    const rows = await this.prisma.swapQuote.findMany({
       where: {
         ...(userId ? { userId } : {}),
         ...(state ? { state: state as never } : {}),
@@ -422,6 +456,10 @@ export class SwapsService {
         provider: { select: { slug: true, name: true, status: true } },
       },
     });
+    // The same flag quote detail returns. `priceImpactBps` on this path is
+    // a stored placeholder, and a list that omits the flag is how a client
+    // reads that zero as a measurement.
+    return rows.map((row) => ({ ...row, priceImpactMeasured: false }));
   }
 
   /**
@@ -489,6 +527,8 @@ export class SwapsService {
         // can format without a decimal library.
         notionalUsd: row.notionalUsd === null ? null : Number(row.notionalUsd),
         priceImpactBps: row.priceImpactBps,
+        // Zero bps on this path is a placeholder, not a measurement of the pool.
+        priceImpactMeasured: false,
         slippageBps: row.slippageBps,
         sizeCapUsd: row.sizeCapUsd === null ? null : Number(row.sizeCapUsd),
         executionQuality: row.executionQuality,

@@ -11,7 +11,7 @@ import {
  * seconds. A round older than that is not a reference price. The 300-second
  * manual-price window is a different limit and does not apply here.
  */
-const CHAINLINK_HEARTBEAT_SECONDS = 86_400;
+export const CHAINLINK_HEARTBEAT_SECONDS = 86_400;
 
 /**
  * A Chainlink round, already decoded. `null` means the feed could not be
@@ -197,7 +197,10 @@ export class ChainlinkPriceProvider extends PriceProvider {
 
     const assets = await this.assets.listEnabled();
     const now = this.now();
-    const byFeed = new Map<`0x${string}`, Promise<number | null>>();
+    const byFeed = new Map<
+      `0x${string}`,
+      Promise<{ priceUsd: number; observedAt: Date } | null>
+    >();
     const out: SpotPrice[] = [];
 
     for (const asset of assets) {
@@ -211,23 +214,28 @@ export class ChainlinkPriceProvider extends PriceProvider {
         pending = this.reference(feed, now);
         byFeed.set(feed, pending);
       }
-      const priceUsd = await pending;
-      if (priceUsd === null) continue;
+      const quoted = await pending;
+      if (quoted === null) continue;
       out.push({
         assetId: asset.assetId,
-        priceUsd,
+        priceUsd: quoted.priceUsd,
         source: silver ? 'chainlink:xag-usd' : 'chainlink:xau-usd',
+        observedAt: quoted.observedAt,
       });
     }
 
     return out;
   }
 
-  /** Dollars per ounce, or null when the round must not be recorded. */
+  /**
+   * Dollars per ounce and the round's `updatedAt`, or null when the round
+   * must not be recorded. The timestamp is the observation, not this
+   * process's clock — the recording job stores it as `capturedAt`.
+   */
   private async reference(
     feed: `0x${string}`,
     now: Date,
-  ): Promise<number | null> {
+  ): Promise<{ priceUsd: number; observedAt: Date } | null> {
     const round = await this.read.latestRound(feed);
     if (round === null || round.answer <= 0n) return null;
 
@@ -239,6 +247,8 @@ export class ChainlinkPriceProvider extends PriceProvider {
     if (!Number.isInteger(round.decimals) || round.decimals < 0) return null;
     const priceUsd = Number(round.answer) / 10 ** round.decimals;
     if (!Number.isFinite(priceUsd) || priceUsd <= 0) return null;
-    return priceUsd;
+    const observedAt = new Date(updatedAtSeconds * 1000);
+    if (Number.isNaN(observedAt.getTime())) return null;
+    return { priceUsd, observedAt };
   }
 }

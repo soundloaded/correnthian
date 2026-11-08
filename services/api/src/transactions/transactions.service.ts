@@ -394,6 +394,54 @@ export class TransactionsService {
    * calldata would have reached past `BlockchainAdapter` and picked up
    * knowledge that belongs to a chain family.
    */
+  /**
+   * Gas, nonce and fees for a call that is not a row yet.
+   *
+   * Prepare estimates the approve and the swap before it files either.
+   * The swap carries the approve as `priorCalls`, because that approve is
+   * still unsigned and `transferFrom` reverts without it. A failure here
+   * writes nothing: the caller must not find an approve row left behind.
+   */
+  async buildUnsigned(request: BuildTransactionRequest): Promise<UnsignedTransaction> {
+    const adapter = await this.blockchain.forChain(request.chainId);
+    try {
+      return await adapter.buildTransaction(request);
+    } catch (err) {
+      throw this.assemblyFailure(err);
+    }
+  }
+
+  /**
+   * Store an unsigned payload that was already estimated.
+   *
+   * The row stays in `created`. This is the write half of `assemble`, for
+   * a prepare that estimated first and only files the row once the pair
+   * could be built.
+   */
+  async recordAssembly(id: string, userId: string, unsigned: UnsignedTransaction): Promise<void> {
+    const tx = await this.load(id);
+    if (tx.userId !== userId) throw AppError.notFound('Transaction not found');
+    if (tx.state !== 'created') {
+      throw AppError.conflict(
+        `This transaction is "${tx.state}"; only an unsigned intent can be assembled`,
+      );
+    }
+    await this.persistAssembly(tx, userId, unsigned);
+  }
+
+  /**
+   * Remove rows a prepare filed and then could not finish.
+   *
+   * Only `created` rows with no hash. A broadcast is someone else's
+   * transaction and is not this method's to delete.
+   */
+  async discardCreated(ids: readonly string[]): Promise<void> {
+    if (ids.length === 0) return;
+    await this.prisma.transaction.deleteMany({
+      where: { id: { in: [...ids] }, state: 'created', txHash: null },
+    });
+  }
+
   async assemble(id: string, userId: string, server?: { nonce?: number }) {
     const tx = await this.load(id);
     if (tx.state !== 'created') {
@@ -435,6 +483,27 @@ export class TransactionsService {
       throw this.assemblyFailure(err);
     }
 
+    const feeRaw = await this.persistAssembly(tx, userId, unsigned);
+
+    return {
+      id: tx.id,
+      state: tx.state,
+      chainId: tx.chainId,
+      walletAddress: wallet.address,
+      assetId: asset.assetId,
+      destination: tx.destination,
+      amountRaw: tx.amountRaw,
+      unsigned,
+      fee: feeRaw ? { raw: feeRaw, nativeSymbol: wallet.chain.nativeSymbol } : null,
+    };
+  }
+
+  /** The fee and the bytes the device is asked to sign. The row stays `created`. */
+  private async persistAssembly(
+    tx: TransactionRow,
+    userId: string,
+    unsigned: UnsignedTransaction,
+  ): Promise<string | null> {
     const feeRaw =
       unsigned.gas && unsigned.maxFeePerGas
         ? (BigInt(unsigned.gas) * BigInt(unsigned.maxFeePerGas)).toString()
@@ -478,17 +547,7 @@ export class TransactionsService {
       },
     });
 
-    return {
-      id: tx.id,
-      state: tx.state,
-      chainId: tx.chainId,
-      walletAddress: wallet.address,
-      assetId: asset.assetId,
-      destination: tx.destination,
-      amountRaw: tx.amountRaw,
-      unsigned,
-      fee: feeRaw ? { raw: feeRaw, nativeSymbol: wallet.chain.nativeSymbol } : null,
-    };
+    return feeRaw;
   }
 
   /**

@@ -24,11 +24,10 @@ import type { JobContext, JobOutcome, ScheduledJob } from './job.js';
  *
  * ## What "stale" means, and why it is the same definition the API uses
  *
- * `PricingService.MAX_AGE_SECONDS` is the threshold `latest()` and `latestMap()`
- * already apply when they decide whether a price is showable. This job imports
- * that constant rather than declaring its own, because two thresholds would
- * drift and the drift would be invisible: an operator told prices are fresh,
- * and a user told there is no price.
+ * `PricingService.isStale` is the check `latest()` and `latestMap()` already
+ * apply. A `chainlink:` row is stale only past the 86400-second heartbeat.
+ * Every other source uses `MAX_AGE_SECONDS`. This job does not keep a second
+ * copy: two thresholds would drift, and the drift would be invisible.
  *
  * ## Why it exists at all, given staleness is computed on read
  *
@@ -98,7 +97,7 @@ export class StalePriceFlagJob implements ScheduledJob {
         continue;
       }
       const ageSeconds = Math.max(0, Math.round((ctx.now.getTime() - row.capturedAt.getTime()) / 1000));
-      if (ageSeconds <= PricingService.MAX_AGE_SECONDS) continue;
+      if (!PricingService.isStale(row.source, ageSeconds)) continue;
       staleness.push({
         symbol: asset.symbol,
         reason: 'stale',
@@ -116,7 +115,7 @@ export class StalePriceFlagJob implements ScheduledJob {
 
     if (staleness.length > 0) {
       this.logger.warn(
-        `Price freshness: ${staleCount} asset(s) stale beyond ${PricingService.MAX_AGE_SECONDS}s, ` +
+        `Price freshness: ${staleCount} asset(s) stale, ` +
           `${neverPriced.length} never priced. Nothing was pruned; the price history is intact.`,
       );
     }

@@ -38,6 +38,13 @@ export interface SpotPrice {
   priceUsd: number;
   /** Where the number came from. Recorded beside it, always. */
   source: string;
+  /**
+   * When the source observed this price, if it knows.
+   *
+   * The recording job stores this as `capturedAt`. Absent means the job's
+   * own clock: a provider with no observation time has nothing else to give.
+   */
+  observedAt?: Date;
 }
 
 /** The vendor could not be reached or refused. The recording job treats

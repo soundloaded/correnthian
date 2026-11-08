@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { AppError } from '../common/errors.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { CHAINLINK_HEARTBEAT_SECONDS } from './chainlink-price.provider.js';
 
 export interface PriceRecord {
   assetId: string;
@@ -24,8 +25,20 @@ export interface PriceRecord {
  */
 @Injectable()
 export class PricingService {
-  /** Stale beyond this, a price is not shown at all rather than shown as current. */
+  /** Stale beyond this, a non-Chainlink price is not shown as current. */
   static readonly MAX_AGE_SECONDS = 300;
+
+  /**
+   * Whether this print is too old to show.
+   *
+   * A `chainlink:` source is stale only past the feed's published
+   * 86400-second heartbeat. Every other source uses `MAX_AGE_SECONDS`.
+   * Fees do not call this: a fee base stays on the 300-second window.
+   */
+  static isStale(source: string, ageSeconds: number): boolean {
+    if (source.startsWith('chainlink:')) return ageSeconds > CHAINLINK_HEARTBEAT_SECONDS;
+    return ageSeconds > PricingService.MAX_AGE_SECONDS;
+  }
 
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
@@ -51,9 +64,11 @@ export class PricingService {
   /**
    * The most recent price, plus whether it is fresh enough to display.
    *
-   * Staleness is reported rather than silently smoothed over. A price from
-   * six hours ago is not a current price, and presenting it as one is how a
-   * user ends up transacting against a number that no longer exists.
+   * Staleness is reported rather than silently smoothed over. A non-Chainlink
+   * price from six hours ago is not a current price. A Chainlink round stays
+   * current until it passes the feed's 86400-second heartbeat. Presenting a
+   * stale print as current is how a user transacts against a number that no
+   * longer exists.
    */
   async latest(assetId: string): Promise<
     | { found: false; assetId: string; reason: string }
@@ -79,7 +94,7 @@ export class PricingService {
       source: row.source,
       capturedAt: row.capturedAt.toISOString(),
       ageSeconds,
-      stale: ageSeconds > PricingService.MAX_AGE_SECONDS,
+      stale: PricingService.isStale(row.source, ageSeconds),
     };
   }
 
@@ -123,12 +138,12 @@ export class PricingService {
       where: { assetId: { in: assetIds } },
       orderBy: { capturedAt: 'desc' },
       distinct: ['assetId'],
-      select: { assetId: true, priceUsd: true, capturedAt: true },
+      select: { assetId: true, priceUsd: true, source: true, capturedAt: true },
     });
     const out: Record<string, number> = {};
     for (const r of rows) {
       const age = (Date.now() - r.capturedAt.getTime()) / 1000;
-      if (age <= PricingService.MAX_AGE_SECONDS) out[r.assetId] = Number(r.priceUsd);
+      if (!PricingService.isStale(r.source, age)) out[r.assetId] = Number(r.priceUsd);
     }
     return out;
   }

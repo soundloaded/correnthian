@@ -40,6 +40,51 @@ describe('PricingService', () => {
     expect(r.found && r.ageSeconds).toBeGreaterThan(300);
   });
 
+  it('does not mark a Chainlink round stale 301 seconds after its updatedAt', async () => {
+    const capturedAt = new Date(Date.now() - 301_000);
+    price.findFirst.mockResolvedValue({
+      assetId: 'a1',
+      priceUsd: 4100,
+      source: 'chainlink:xau-usd',
+      capturedAt,
+    });
+    const r = await svc.latest('1:0xabc:iss');
+    expect(r).toMatchObject({
+      found: true,
+      stale: false,
+      source: 'chainlink:xau-usd',
+      capturedAt: capturedAt.toISOString(),
+    });
+    if (!r.found) return;
+    expect(r.ageSeconds).toBeGreaterThanOrEqual(301);
+    expect(r.ageSeconds).toBeLessThan(86_400);
+  });
+
+  it('marks a Chainlink round stale once it is older than the 86400-second heartbeat', async () => {
+    const capturedAt = new Date(Date.now() - 86_401_000);
+    price.findFirst.mockResolvedValue({
+      assetId: 'a1',
+      priceUsd: 4100,
+      source: 'chainlink:xau-usd',
+      capturedAt,
+    });
+    const r = await svc.latest('1:0xabc:iss');
+    expect(r).toMatchObject({ found: true, stale: true, source: 'chainlink:xau-usd' });
+    if (!r.found) return;
+    expect(r.ageSeconds).toBeGreaterThan(86_400);
+  });
+
+  it('still marks a non-Chainlink price stale after 300 seconds', async () => {
+    price.findFirst.mockResolvedValue({
+      assetId: 'a1',
+      priceUsd: 2000,
+      source: 'lbma',
+      capturedAt: new Date(Date.now() - 301_000),
+    });
+    const r = await svc.latest('1:0xabc:iss');
+    expect(r).toMatchObject({ found: true, stale: true, source: 'lbma' });
+  });
+
   it('does not present a reference price as an executable one', async () => {
     price.findFirst.mockResolvedValue({
       assetId: 'a1', priceUsd: 2000, source: 'lbma', capturedAt: new Date(),
@@ -55,7 +100,7 @@ describe('PricingService', () => {
 
   it('keys the valuation map by the surrogate id it was given', async () => {
     price.findMany.mockResolvedValue([
-      { assetId: 'a1', priceUsd: 2000, capturedAt: new Date() },
+      { assetId: 'a1', priceUsd: 2000, source: 'lbma', capturedAt: new Date() },
     ]);
     const map = await svc.latestMap(['a1']);
     expect(map).toEqual({ a1: 2000 });
@@ -63,7 +108,31 @@ describe('PricingService', () => {
 
   it('omits stale prices from valuation rather than valuing on them', async () => {
     price.findMany.mockResolvedValue([
-      { assetId: 'a1', priceUsd: 2000, capturedAt: new Date(Date.now() - 3_600_000) },
+      { assetId: 'a1', priceUsd: 2000, source: 'lbma', capturedAt: new Date(Date.now() - 3_600_000) },
+    ]);
+    expect(await svc.latestMap(['a1'])).toEqual({});
+  });
+
+  it('keeps a Chainlink round in valuation 301 seconds after its updatedAt', async () => {
+    price.findMany.mockResolvedValue([
+      {
+        assetId: 'a1',
+        priceUsd: 4100,
+        source: 'chainlink:xau-usd',
+        capturedAt: new Date(Date.now() - 301_000),
+      },
+    ]);
+    expect(await svc.latestMap(['a1'])).toEqual({ a1: 4100 });
+  });
+
+  it('omits a Chainlink round from valuation once it is older than the heartbeat', async () => {
+    price.findMany.mockResolvedValue([
+      {
+        assetId: 'a1',
+        priceUsd: 4100,
+        source: 'chainlink:xau-usd',
+        capturedAt: new Date(Date.now() - 86_401_000),
+      },
     ]);
     expect(await svc.latestMap(['a1'])).toEqual({});
   });

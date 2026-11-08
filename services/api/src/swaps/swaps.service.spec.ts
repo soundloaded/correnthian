@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { deriveAssetId } from '@correnthian/assets';
+import { CONTRACT_REGISTRY } from '@correnthian/contracts';
 import { AppError } from '../common/errors.js';
 import { SwapsService } from './swaps.service.js';
 import { settingDefinition } from '../settings/registry.js';
@@ -245,5 +246,56 @@ describe('findById scoping', () => {
     // A canary that the suite means the same assetId the service derives:
     // if deriveAssetId changes shape, fixtures must change with it.
     expect(deriveAssetId({ chainId: '1', contractAddress: '0xABC', issuerId: 'mint' })).toBe('1:0xabc:mint');
+  });
+});
+
+describe('quote lists', () => {
+  it('include priceImpactMeasured, and the contracts accept it', async () => {
+    const at = new Date('2026-11-08T06:00:00.000Z');
+    const row = {
+      id: 'q1',
+      userId: 'u1',
+      createdAt: at,
+      updatedAt: at,
+      state: 'quoted',
+      railKind: 'dex',
+      railId: 'uniswap-v3',
+      provider: { slug: 'uniswap', name: 'Uniswap', status: 'active' },
+      fromAsset: { assetId: '1:0x1:circle', symbol: 'USDC', name: 'USD Coin' },
+      toAsset: { assetId: '1:0x2:paxos', symbol: 'PAXG', name: 'Pax Gold' },
+      fromAmountRaw: '1000000',
+      toAmountRaw: '50',
+      notionalUsd: null,
+      priceImpactBps: 0,
+      slippageBps: 50,
+      minReceivedRaw: '49',
+      fees: {},
+      executionQuality: 'thin',
+      sizeCapUsd: null,
+      expiresAt: at,
+    };
+    const prisma = { swapQuote: { findMany: vi.fn(async () => [row]) } };
+    const swaps = new SwapsService(
+      prisma as never,
+      fees as never,
+      settings,
+      idleQuoter as never,
+      ...prepareDeps,
+    );
+
+    const mine = await swaps.list('u1');
+    expect(mine[0]?.priceImpactMeasured).toBe(false);
+    expect(mine[0]?.priceImpactBps).toBe(0);
+    const mineBody = JSON.parse(JSON.stringify(mine));
+    const mineParsed = CONTRACT_REGISTRY['GET /api/v1/swaps/quotes/mine'].safeParse(mineBody);
+    expect(mineParsed.success).toBe(true);
+    if (mineParsed.success) expect(mineParsed.data[0]?.priceImpactMeasured).toBe(false);
+
+    const page = await swaps.listAll({ limit: 25 });
+    expect(page.items[0]?.priceImpactMeasured).toBe(false);
+    expect(page.items[0]?.priceImpactBps).toBe(0);
+    const listParsed = CONTRACT_REGISTRY['GET /api/v1/swaps/quotes'].safeParse(page);
+    expect(listParsed.success).toBe(true);
+    if (listParsed.success) expect(listParsed.data.items[0]?.priceImpactMeasured).toBe(false);
   });
 });
