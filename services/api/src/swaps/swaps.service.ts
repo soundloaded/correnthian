@@ -377,6 +377,10 @@ export class SwapsService {
     });
 
     const transactions: Array<{ id: string; kind: 'approve' | 'swap'; unsigned: UnsignedTransaction }> = [];
+    // The node counts transactions it has seen. The approve is still unsigned
+    // when the swap is assembled, so the swap takes the next nonce rather
+    // than asking again and receiving the same one.
+    let nextNonce: number | undefined;
     for (const call of calls) {
       const created = await this.transactions.create(
         {
@@ -385,14 +389,19 @@ export class SwapsService {
           direction: 'out',
           amountRaw: quote.fromAmountRaw,
           destination: call.to,
-          metadata: {
-            quoteId,
-            preparedCall: { to: call.to, value: '0', data: call.data },
-          },
+          metadata: { quoteId },
         },
         actorId,
+        { preparedCall: { to: call.to, value: '0', data: call.data } },
       );
-      const assembled = await this.transactions.assemble(created.id, actorId);
+      const assembled = await this.transactions.assemble(
+        created.id,
+        actorId,
+        nextNonce === undefined ? undefined : { nonce: nextNonce },
+      );
+      if (typeof assembled.unsigned.nonce === 'number') {
+        nextNonce = assembled.unsigned.nonce + 1;
+      }
       transactions.push({ id: created.id, kind: call.kind, unsigned: assembled.unsigned });
     }
 

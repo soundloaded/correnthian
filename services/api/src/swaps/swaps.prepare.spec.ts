@@ -179,13 +179,15 @@ function harness(options: {
   };
   const adapter = {
     assemblePayload: vi.fn(),
-    buildTransaction: vi.fn(async (req: { to: string; value?: string; data?: string }) => ({
+    buildTransaction: vi.fn(async (req: { to: string; value?: string; data?: string; nonce?: number }) => ({
       to: req.to,
       value: req.value ?? '0',
       data: req.data ?? '0x',
       chainId: 1,
       gas: '100000',
-      nonce: 7,
+      // Pending count when the server does not assign one. A supplied nonce
+      // is the next call in the same prepare, which the node has not seen.
+      nonce: req.nonce ?? 7,
       maxFeePerGas: '2',
       maxPriorityFeePerGas: '1',
     })),
@@ -271,6 +273,22 @@ describe('prepare a device-signed swap', () => {
       value: '0',
       data: swap.unsigned.data,
     });
+  });
+
+  it('the approve nonce and the swap nonce differ by one, and the client does not supply the nonce', async () => {
+    const { swaps, adapter } = harness({ allowance: 0n, router: ROUTER });
+    const prepared = await swaps.prepare('q1', 'u1', 'w1');
+    const approve = prepared.transactions[0]!;
+    const swap = prepared.transactions[1]!;
+
+    expect(approve.unsigned.nonce).toBe(7);
+    expect(swap.unsigned.nonce).toBe(approve.unsigned.nonce! + 1);
+
+    const calls = adapter.buildTransaction.mock.calls.map(
+      (call) => call[0] as { nonce?: number },
+    );
+    expect(calls[0]?.nonce).toBeUndefined();
+    expect(calls[1]?.nonce).toBe(approve.unsigned.nonce! + 1);
   });
 
   it('refuses a quote that has already expired and writes no transaction', async () => {

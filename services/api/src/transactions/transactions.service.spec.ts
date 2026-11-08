@@ -1162,5 +1162,142 @@ describe('TransactionsService — the lifecycle', () => {
       expect(created.state).toBe('created');
       expect(created.txHash).toBeNull();
     });
+
+    it('drops a caller-filed preparedCall and build, and assembles the ordinary transfer', async () => {
+      const created = await svc.create({
+        ...good,
+        metadata: {
+          note: 'keep',
+          nonce: 11,
+          preparedCall: {
+            to: '0x1111111111111111111111111111111111111111',
+            value: '9',
+            data: '0xdead',
+          },
+          build: {
+            payload: {
+              to: '0x1111111111111111111111111111111111111111',
+              value: '0',
+              data: '0xdead',
+            },
+          },
+        },
+      } as never, 'u1');
+
+      const stored = store.rows.get(created.id)?.['metadata'] as Record<string, unknown>;
+      expect(stored).toEqual({ note: 'keep', nonce: 11 });
+
+      await svc.assemble(created.id, 'u1');
+      const request = adapter.buildTransaction.mock.calls.at(-1)?.[0] as {
+        to: string;
+        token?: string;
+        amount?: string;
+        data?: string;
+        nonce?: number;
+      };
+      expect(request).toMatchObject({
+        to: '0xdac17f958d2ee523a2206206994597c13d831ec7',
+        token: '0xgold',
+        amount: '100000000',
+      });
+      expect(request.data).toBeUndefined();
+      expect(request.nonce).toBeUndefined();
+    });
+  });
+
+  describe('a signed report cannot replace the payload relay checks', () => {
+    const STORED = {
+      to: '0x1111111111111111111111111111111111111111',
+      value: '0',
+      data: '0xstored',
+    };
+    const REPLACEMENT = {
+      to: '0x2222222222222222222222222222222222222222',
+      value: '0',
+      data: '0xreplaced',
+    };
+    const SIGNED = '0x' + 'ab'.repeat(80);
+    const WALLET = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+    it('a signed report that supplies a different build.payload does not change the payload relay checks', async () => {
+      seed({
+        metadata: {
+          quoteId: 'q1',
+          preparedCall: {
+            to: STORED.to,
+            value: '0',
+            data: '0xstoredcall',
+          },
+          build: { nonce: 4, payload: STORED },
+        },
+      });
+
+      await svc.transition('tx1', 'signed', OWNER, {
+        to: 'signed',
+        metadata: {
+          note: 'client',
+          preparedCall: { to: REPLACEMENT.to, value: '1', data: '0xattacker' },
+          build: { payload: REPLACEMENT },
+        },
+      });
+
+      const metadata = store.rows.get('tx1')?.['metadata'] as {
+        note?: string;
+        quoteId?: string;
+        preparedCall?: { data: string };
+        build?: { payload?: { to: string; value: string; data: string } };
+      };
+      expect(metadata.note).toBe('client');
+      expect(metadata.quoteId).toBe('q1');
+      expect(metadata.preparedCall?.data).toBe('0xstoredcall');
+      expect(metadata.build?.payload).toEqual(STORED);
+
+      adapter.decodeSignedTransaction.mockResolvedValue({
+        chainId: 1,
+        from: WALLET,
+        ...REPLACEMENT,
+      });
+      await expect(svc.relay('tx1', 'u1', SIGNED)).rejects.toThrow(/does not match/i);
+      expect(adapter.broadcastTransaction).not.toHaveBeenCalled();
+
+      adapter.decodeSignedTransaction.mockResolvedValue({
+        chainId: 1,
+        from: WALLET,
+        ...STORED,
+      });
+      adapter.broadcastTransaction.mockResolvedValue('0x' + '9'.repeat(64));
+      await svc.relay('tx1', 'u1', SIGNED);
+      expect(adapter.broadcastTransaction).toHaveBeenCalledTimes(1);
+    });
+
+    it('a signed report without a payload still checks the stored call, not an ERC-20 re-derivation', async () => {
+      seed({
+        metadata: {
+          build: { payload: STORED },
+        },
+      });
+
+      await svc.transition('tx1', 'signed', OWNER, {
+        to: 'signed',
+        metadata: { note: 'no payload here' },
+      });
+
+      const metadata = store.rows.get('tx1')?.['metadata'] as {
+        note?: string;
+        build?: { payload?: typeof STORED };
+      };
+      expect(metadata.note).toBe('no payload here');
+      expect(metadata.build?.payload).toEqual(STORED);
+
+      adapter.decodeSignedTransaction.mockResolvedValue({
+        chainId: 1,
+        from: WALLET,
+        to: '0xgold',
+        value: '0',
+        data: '0xa9059cbb',
+      });
+      await expect(svc.relay('tx1', 'u1', SIGNED)).rejects.toThrow(/does not match/i);
+      expect(adapter.broadcastTransaction).not.toHaveBeenCalled();
+    });
   });
 });

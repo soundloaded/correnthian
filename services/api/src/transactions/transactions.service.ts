@@ -132,6 +132,43 @@ function asCall(value: unknown): { to: string; value: string; data: string } | n
 }
 
 /**
+ * `preparedCall` and `build` are written by this service. A caller can send
+ * the same names inside metadata; they are not that write.
+ */
+const SERVER_METADATA_KEYS = ['preparedCall', 'build'] as const;
+
+function withoutServerKeys(value: unknown): Record<string, unknown> {
+  const copy: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(metadataRecord(value))) {
+    if ((SERVER_METADATA_KEYS as readonly string[]).includes(key)) continue;
+    copy[key] = entry;
+  }
+  return copy;
+}
+
+/**
+ * Client keys merge. Stored `preparedCall` and `build` stay, including when
+ * the report omits them — dropping them would send relay back to the ERC-20
+ * re-derivation.
+ */
+function mergeKeepingServerKeys(stored: unknown, incoming: unknown): Record<string, unknown> {
+  const previous = metadataRecord(stored);
+  const merged: Record<string, unknown> = { ...previous, ...withoutServerKeys(incoming) };
+  if ('preparedCall' in previous) merged.preparedCall = previous.preparedCall;
+  if ('build' in previous) merged.build = previous.build;
+  return merged;
+}
+
+/**
+ * A call this process is filing. Not a field of the public create body:
+ * `POST /transactions` cannot pass it, and the same keys inside caller
+ * metadata are dropped.
+ */
+export interface ServerWrittenCall {
+  preparedCall: { to: string; value: string; data: string };
+}
+
+/**
  * The relations every read projection resolves.
  *
  * Shared on purpose: the console renders one row shape, so the list, the
@@ -187,7 +224,7 @@ export class TransactionsService {
    * transaction is a property of the request, whose money moves is a property
    * of the wallet, and only the second one may go in the column.
    */
-  async create(input: CreateTransactionDto, userId: string) {
+  async create(input: CreateTransactionDto, userId: string, server?: ServerWrittenCall) {
     if (!POSITIVE_DECIMAL.test(input.amountRaw) || /^0+(\.0+)?$/.test(input.amountRaw)) {
       throw AppError.badRequest('amountRaw must be a positive decimal string');
     }
@@ -233,6 +270,13 @@ export class TransactionsService {
     const familyDefault = DEFAULT_CONFIRMATIONS[wallet.chain.family] ?? 1;
     const requiredConfirmations = Math.max(input.requiredConfirmations ?? familyDefault, familyDefault);
 
+    // Caller metadata is kept, minus the two keys only this server writes.
+    // `server` is the in-process channel prepare uses; the public DTO has
+    // no field that reaches it.
+    const metadata = withoutServerKeys(input.metadata);
+    const prepared = asCall(server?.preparedCall);
+    if (prepared) metadata.preparedCall = prepared;
+
     const created = await this.prisma.transaction.create({
       data: {
         userId: wallet.userId,
@@ -248,7 +292,7 @@ export class TransactionsService {
         feeRaw: input.feeRaw ?? null,
         feeUsd: input.feeUsd ?? null,
         requiredConfirmations,
-        ...(input.metadata ? { metadata: input.metadata as object } : {}),
+        ...(Object.keys(metadata).length > 0 ? { metadata: metadata as object } : {}),
         // The lifetime is a setting, so an operator can change it without a
         // release. A caller that names its own lifetime still wins: the
         // setting is the default, not a cap.
@@ -319,7 +363,7 @@ export class TransactionsService {
     if (to === 'created') {
       throw AppError.badRequest('`created` is only reachable by creating a transaction');
     }
-    return this.apply(id, to, actor, {
+    const patch: Record<string, unknown> = {
       ...this.moneyPatch(input),
       ...this.stateTimestamps(to),
       ...(to === 'failed'
@@ -330,7 +374,8 @@ export class TransactionsService {
           }
         : {}),
       ...(input.txHash ? { txHash: input.txHash } : {}),
-    }, input.reason);
+    };
+    return this.apply(id, to, actor, patch, input.reason);
   }
 
   // --- BE-602: the server assembles, the device signs ----------------------
@@ -349,7 +394,7 @@ export class TransactionsService {
    * calldata would have reached past `BlockchainAdapter` and picked up
    * knowledge that belongs to a chain family.
    */
-  async assemble(id: string, userId: string) {
+  async assemble(id: string, userId: string, server?: { nonce?: number }) {
     const tx = await this.load(id);
     if (tx.state !== 'created') {
       throw AppError.conflict(
@@ -376,7 +421,12 @@ export class TransactionsService {
     if (!asset || !tx.destination) throw AppError.notFound('Transaction not found');
 
     const adapter = await this.blockchain.forChain(tx.chainId);
-    const request = this.assemblyRequest(tx, wallet.address, asset.contractAddress);
+    const request = this.assemblyRequest(
+      tx,
+      wallet.address,
+      asset.contractAddress,
+      server?.nonce,
+    );
 
     let unsigned: UnsignedTransaction;
     try {
@@ -539,18 +589,25 @@ export class TransactionsService {
     tx: TransactionRow,
     from: string,
     contractAddress: string,
+    /**
+     * Set by prepare for the second unsigned call. Never read from
+     * metadata: a client can file a nonce there, and the node is the
+     * one that counts unless this server already assigned the next one.
+     */
+    nonce?: number,
   ): BuildTransactionRequest {
     const prepared = asCall(metadataRecord(tx.metadata).preparedCall);
-    if (prepared) {
-      return {
-        chainId: tx.chainId,
-        from,
-        to: prepared.to,
-        value: '0',
-        data: prepared.data,
-      };
-    }
-    return this.intentRequest(tx, from, contractAddress);
+    const request: BuildTransactionRequest = prepared
+      ? {
+          chainId: tx.chainId,
+          from,
+          to: prepared.to,
+          value: '0',
+          data: prepared.data,
+        }
+      : this.intentRequest(tx, from, contractAddress);
+    if (nonce === undefined) return request;
+    return { ...request, nonce };
   }
 
   /**
@@ -1110,6 +1167,14 @@ export class TransactionsService {
     }
 
     const data: Record<string, unknown> = { state: to, ...patch };
+
+    // `signed` is the owner's report, and it is the last write before relay
+    // reads `build.payload`. Replacing that object would let the report
+    // name a different call than the one assemble stored. Other client keys
+    // still merge; the stored server keys win.
+    if (to === 'signed' && data['metadata'] !== undefined) {
+      data['metadata'] = mergeKeepingServerKeys(current.metadata, data['metadata']);
+    }
 
     // A re-broadcast is this same transaction coming back after a drop. Counted
     // here rather than at the call site so the reporting path and the

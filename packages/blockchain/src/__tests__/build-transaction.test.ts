@@ -123,6 +123,23 @@ describe('buildTransaction — a native transfer', () => {
     }
   });
 
+  it('uses a server-supplied nonce and does not ask the node for one', async () => {
+    const node = serveNode();
+    try {
+      const tx = await adapter().buildTransaction({
+        chainId: '1',
+        from: ALICE,
+        to: BOB,
+        value: '1',
+        nonce: 8,
+      });
+      expect(tx.nonce).toBe(8);
+      expect(node.asked.some((a) => a.method === 'eth_getTransactionCount')).toBe(false);
+    } finally {
+      node.restore();
+    }
+  });
+
   it('asks for no nonce when the sender is unknown', async () => {
     const node = serveNode();
     try {

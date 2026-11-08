@@ -48,6 +48,19 @@ function isContractRevert(err: unknown): boolean {
 }
 
 /**
+ * A nonce the server already chose for a second unsigned call. Anything
+ * else is refused: falling through to `getTransactionCount` would hand
+ * the second call the same nonce as the first.
+ */
+function assignedNonceOf(value: number | undefined): number | undefined {
+  if (value === undefined) return undefined;
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new Error('nonce must be a non-negative integer');
+  }
+  return value;
+}
+
+/**
  * EVM adapter.
  *
  * Reads are public chain state and belong here. Signing does not: this returns
@@ -180,6 +193,7 @@ export class EvmAdapter implements BlockchainAdapter {
 
   async buildTransaction(req: BuildTransactionRequest): Promise<UnsignedTransaction> {
     const { to, value, data } = this.assemblePayload(req);
+    const assignedNonce = assignedNonceOf(req.nonce);
 
     // All three in one `read`, so failover retries the assembly as a unit —
     // a nonce from one endpoint and gas from a quarantined one is how a
@@ -201,13 +215,17 @@ export class EvmAdapter implements BlockchainAdapter {
         }),
         // `pending`, not `latest`: two sends from one wallet in flight would
         // otherwise be handed the same nonce, and the second would replace
-        // the first.
-        req.from
-          ? c.getTransactionCount({
-              address: req.from as `0x${string}`,
-              blockTag: 'pending',
-            })
-          : Promise.resolve(undefined),
+        // the first. A server-assigned nonce skips that read: the node has
+        // not seen the earlier unsigned transaction, so its count is the
+        // first call's nonce and the next call must take the one after it.
+        assignedNonce !== undefined
+          ? Promise.resolve(assignedNonce)
+          : req.from
+            ? c.getTransactionCount({
+                address: req.from as `0x${string}`,
+                blockTag: 'pending',
+              })
+            : Promise.resolve(undefined),
         c.estimateFeesPerGas(),
       ]);
 

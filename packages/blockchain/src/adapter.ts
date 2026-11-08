@@ -239,6 +239,13 @@ export interface BuildTransactionRequest {
   token?: string;
   /** Base units as a positive integer string. Required with `token`. */
   amount?: string;
+  /**
+   * Nonce this server already assigned. Set when an earlier unsigned
+   * transaction from the same account is not on the network yet, so
+   * `getTransactionCount` at `pending` cannot see it. Absent means ask
+   * the node. A client request has no field that sets this.
+   */
+  nonce?: number;
 }
 
 /** Narrowing helper so callers cannot pass an EVM adapter where Bitcoin is meant. */
