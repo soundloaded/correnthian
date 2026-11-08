@@ -14,5 +14,6 @@ export function resolveSeedRpcUrls(chainId: string, existing: string[], env: Nod
   if (existing.length > 0) return existing;
   const name = CHAIN_ENV[chainId];
   const url = name ? env[name] : undefined;
-  return typeof url === 'string' && url.length > 0 ? [url] : [];
+  if (typeof url !== 'string' || url.length === 0) return [];
+  return url.split(',').map((piece) => piece.trim()).filter((piece) => piece.length > 0);
 }
