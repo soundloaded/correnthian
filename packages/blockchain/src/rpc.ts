@@ -46,6 +46,24 @@ export class RpcAbsent extends Error {
   }
 }
 
+/**
+ * The node executed the call and the contract reverted.
+ *
+ * This is a reply from a healthy node. Every other endpoint reverts the same
+ * call, so asking the next one only repeats it, and quarantining this one
+ * takes the chain's other reads offline for 30 seconds. `withFailover`
+ * rethrows it at once: no quarantine, no second URL.
+ *
+ * This is not `RpcAbsent`. Absence means the next node might have it. A
+ * revert means the call itself failed, and the pool must stop.
+ */
+export class RpcReverted extends Error {
+  constructor(message = 'execution reverted') {
+    super(message);
+    this.name = 'RpcReverted';
+  }
+}
+
 export class RpcPool {
   private readonly endpoints: RpcEndpoint[];
   private readonly quarantined = new Map<string, number>();
@@ -78,9 +96,11 @@ export class RpcPool {
   /**
    * Run `fn` against each endpoint in turn until one succeeds.
    *
-   * Every failure is recorded. If all endpoints fail the last error is thrown,
-   * with the count attached so the caller can distinguish "the chain is down"
-   * from "our configuration is wrong".
+   * A transport failure is recorded and the endpoint is quarantined, then the
+   * next URL is tried. If all endpoints fail, the last error is thrown with
+   * the count attached, so the caller can distinguish "the chain is down"
+   * from "our configuration is wrong". A contract revert (`RpcReverted`) is
+   * not a failure: it is rethrown at once.
    */
   async withFailover<T>(fn: (url: string) => Promise<T>): Promise<T> {
     const candidates = this.available();
@@ -96,6 +116,11 @@ export class RpcPool {
         this.failures = this.failures.filter((f) => f.url !== endpoint.url);
         return result;
       } catch (err) {
+        if (err instanceof RpcReverted) {
+          // The endpoint worked and the contract reverted. Do not quarantine
+          // it, and do not ask the next URL — see `RpcReverted`.
+          throw err;
+        }
         if (err instanceof RpcAbsent) {
           // The endpoint worked. It simply does not have what was asked for,
           // which is a different fact from being unable to answer — see

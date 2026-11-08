@@ -1,6 +1,6 @@
 import {
-  createPublicClient, defineChain, formatUnits, http, parseTransaction,
-  recoverTransactionAddress, TransactionNotFoundError,
+  BaseError, createPublicClient, defineChain, ExecutionRevertedError, formatUnits, http,
+  parseTransaction, recoverTransactionAddress, TransactionNotFoundError,
   type Address, type Hex, type PublicClient, type TransactionSerialized,
 } from 'viem';
 import { encodeFunctionData, erc20Abi, getAbiItem } from 'viem';
@@ -9,7 +9,7 @@ import type {
   FeeEstimate, ObservedTokenTransfer, SignedTransactionFacts, TransactionRecord,
   UnsignedTransaction,
 } from './adapter.js';
-import { RpcAbsent, RpcPool, type RpcEndpoint } from './rpc.js';
+import { RpcAbsent, RpcPool, RpcReverted, type RpcEndpoint } from './rpc.js';
 import type { AddressFamily } from './address.js';
 
 /**
@@ -28,6 +28,22 @@ function isTransactionAbsent(err: unknown): boolean {
   return (
     err instanceof Error &&
     /transaction[^.]{0,80}(could not be found|not found)/i.test(err.message)
+  );
+}
+
+/**
+ * Did the node answer with a contract revert?
+ *
+ * `viem` wraps an `eth_call` that reverts (JSON-RPC code 3, or a message the
+ * node marks as execution reverted) in `ExecutionRevertedError`. That is the
+ * contract's reply. A transport error, an HTTP failure, and a node that
+ * returns an internal error are not in that chain and must stay with the
+ * pool so it can fail over.
+ */
+function isContractRevert(err: unknown): boolean {
+  return (
+    err instanceof BaseError &&
+    err.walk((cause) => cause instanceof ExecutionRevertedError) !== null
   );
 }
 
@@ -357,6 +373,10 @@ export class EvmAdapter implements BlockchainAdapter {
    * This does not sign and cannot: the adapter holds RPC endpoints, not a
    * key. A failure is the caller's to handle — this method does not turn an
    * unreachable node into a zero.
+   *
+   * A contract revert is that failure, and it is thrown as `RpcReverted`
+   * before the pool can treat the node as dead. The node answered. Retrying
+   * the same call on the next URL would only revert again.
    */
   async readContract(parameters: {
     address: `0x${string}`;
@@ -364,14 +384,19 @@ export class EvmAdapter implements BlockchainAdapter {
     functionName: string;
     args?: readonly unknown[];
   }): Promise<unknown> {
-    return this.read((client) =>
-      client.readContract({
-        address: parameters.address,
-        abi: parameters.abi as never,
-        functionName: parameters.functionName as never,
-        args: parameters.args as never,
-      }),
-    );
+    return this.read(async (client) => {
+      try {
+        return await client.readContract({
+          address: parameters.address,
+          abi: parameters.abi as never,
+          functionName: parameters.functionName as never,
+          args: parameters.args as never,
+        });
+      } catch (err) {
+        if (isContractRevert(err)) throw new RpcReverted();
+        throw err;
+      }
+    });
   }
 
   async getBlockNumber(): Promise<bigint> {
