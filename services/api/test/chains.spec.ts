@@ -91,23 +91,29 @@ describe.skipIf(!HAS_DB && !CI)('chains hide endpoints and gate writes over HTTP
     expect(one.body).not.toHaveProperty('rpcUrls');
   });
 
-  it('reads omit stored failover rpc urls and never leak https', async () => {
+  it('reads omit stored failover rpc urls without leaking them in the body', async () => {
+    const failoverA = 'https://failover-a.example/rpc';
+    const failoverB = 'https://failover-b.example/rpc';
     const row = await prisma.chain.findUniqueOrThrow({ where: { id: '1' }, select: { rpcUrls: true } });
     const originalRpcUrls = row.rpcUrls;
     await prisma.chain.update({
       where: { id: '1' },
-      data: { rpcUrls: ['https://failover-a.example/rpc', 'https://failover-b.example/rpc'] },
+      data: { rpcUrls: [failoverA, failoverB] },
     });
     try {
       const list = await get('/chains', customerToken);
       expect(list.status).toBe(200);
-      expect(JSON.stringify(list.body)).not.toContain('rpcUrls');
-      expect(JSON.stringify(list.body)).not.toContain('https://');
+      const listJson = JSON.stringify(list.body);
+      expect(listJson).not.toContain('rpcUrls');
+      expect(listJson).not.toContain(failoverA);
+      expect(listJson).not.toContain(failoverB);
 
       const one = await get('/chains/1', customerToken);
       expect(one.status).toBe(200);
       expect(one.body).not.toHaveProperty('rpcUrls');
-      expect(JSON.stringify(one.body)).not.toContain('https://');
+      const oneJson = JSON.stringify(one.body);
+      expect(oneJson).not.toContain(failoverA);
+      expect(oneJson).not.toContain(failoverB);
     } finally {
       await prisma.chain.update({ where: { id: '1' }, data: { rpcUrls: originalRpcUrls } });
     }
