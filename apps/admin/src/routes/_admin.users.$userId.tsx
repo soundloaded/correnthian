@@ -4,15 +4,20 @@ import { Button } from "@correnthian/ui/components/button"
 import { useApiQuery } from "@/lib/use-api-query"
 import { UserAccessCard } from "@/components/users/user-access-card"
 import { UserActivityCard } from "@/components/users/user-activity-card"
+import { UserDeviceHistoryCard } from "@/components/users/user-device-history-card"
 import { UserDevicesCard } from "@/components/users/user-devices-card"
 import {
   UserDetailsHeader,
   UserNotFound,
 } from "@/components/users/user-details-header"
+import { UserFlowChart } from "@/components/users/user-flow-chart"
 import { UserInformationCard } from "@/components/users/user-information-card"
+import { UserLedgerTable } from "@/components/users/user-ledger-table"
+import { UserRelatedCard } from "@/components/users/user-related-card"
 import { UserStatsStrip } from "@/components/users/user-stats-strip"
 import { UserTransactionsCard } from "@/components/users/user-transactions-card"
 import { UserWalletsCard } from "@/components/users/user-wallets-card"
+import { UserWidgetsCard } from "@/components/users/user-widgets-card"
 
 export const Route = createFileRoute("/_admin/users/$userId")({
   component: UserDetailsPage,
@@ -74,7 +79,7 @@ function UserDetailsPage() {
         auditCount={audit.data ? audit.data.length : null}
       />
 
-      {/* Details Layout */}
+      {/* Details Layout: info left, widgets center, other info right */}
       <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(220px,0.85fr)_minmax(320px,1.45fr)_minmax(220px,0.85fr)]">
         {/* Left Column — who this is */}
         <div className="space-y-4">
@@ -82,16 +87,29 @@ function UserDetailsPage() {
           <UserDevicesCard user={user} />
         </div>
 
-        {/* Center Column — what moved and what happened */}
+        {/* Center Column — widgets */}
         <div className="space-y-4">
+          <UserWidgetsCard user={user} />
           <UserTransactionsCard userId={user.id} />
-          <UserActivityCard userId={user.id} />
         </div>
 
-        {/* Right Column — what the console may do */}
+        {/* Right Column — what the console may do, plus where else to look */}
         <div className="space-y-4">
           <UserAccessCard user={user} onChanged={() => refetch()} />
           <UserWalletsCard user={user} />
+          <UserRelatedCard />
+        </div>
+      </div>
+
+      {/* Below fold: the account's record — ledger, flow, devices, activity */}
+      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
+        <div className="space-y-4">
+          <UserLedgerTable userId={user.id} />
+          <UserFlowChart userId={user.id} />
+        </div>
+        <div className="space-y-4">
+          <UserDeviceHistoryCard user={user} />
+          <UserActivityCard userId={user.id} />
         </div>
       </div>
     </div>
