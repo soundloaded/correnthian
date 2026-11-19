@@ -86,7 +86,7 @@ const Features = () => {
           </div>
 
           <div className="lg:col-span-2">
-            <div className="relative overflow-hidden rounded-2xl bg-black p-3.5 md:p-5 lg:p-10" style={{ backgroundImage: `url(${featureBg2.src})` }}>
+            <div className="relative overflow-hidden rounded-2xl bg-black bg-cover bg-top p-3.5 md:p-5 lg:p-10" style={{ backgroundImage: `url(${featureBg2.src})` }}>
               <div className="absolute inset-0 bg-black/40"></div>
               <div className="relative z-10 grid grid-cols-1 items-center gap-6 md:grid-cols-2 md:gap-10">
                 <div className="flex h-full flex-col justify-between">
@@ -110,8 +110,8 @@ const Features = () => {
             <div className="absolute inset-0 bg-linear-to-b from-black/30 via-black/50 to-black/80"></div>
             <div className="relative z-10">
               <div className="mb-6 max-w-2xl md:mb-12.5">
-                <h3 className="mb-2.5 text-xl leading-tight font-semibold text-white md:text-2xl">Checked independently</h3>
-                <p className="text-default-300 text-base leading-relaxed md:w-sm md:text-lg">Independent audits and daily settlement keep records of your holdings accurate.</p>
+                <h3 className="mb-2.5 text-xl leading-tight font-semibold text-white md:text-2xl">Stamped bars. Sealed vaults.</h3>
+                <p className="text-default-300 text-base leading-relaxed md:w-sm md:text-lg">Investment-grade gold and silver, stamped and stored behind vault doors — verified by independent checks, so your holding is always the real metal.</p>
               </div>
             </div>
           </div>
@@ -120,7 +120,7 @@ const Features = () => {
             <div className="absolute inset-0 bg-black/50"></div>
             <div className="relative z-10">
               <div className="max-w-xl">
-                <h3 className="mb-2.5 text-xl leading-tight font-extrabold text-white md:text-2xl">Own your gold. Always.</h3>
+                <h3 className="mb-2.5 text-3xl leading-tight font-extrabold text-white md:text-4xl">Own your gold. Always.</h3>
                 <p className="text-default-300 w-sm text-lg leading-relaxed">You are the legal owner of your gold, no matter what. We’ll even deliver your gold straight to your front door, any time.</p>
               </div>
             </div>
