@@ -1,6 +1,5 @@
 import Image, { StaticImageData } from 'next/image'
 import Link from 'next/link'
-import { ReactNode } from 'react'
 
 import icon42 from '@/assets/images/icons/correnthian-trust-01.svg'
 import icon43 from '@/assets/images/icons/correnthian-trust-02.svg'
@@ -20,41 +19,6 @@ export type StreakRule = {
   icon: StaticImageData
   label: string
 }
-
-export type ReflectionStat = {
-  title: ReactNode
-  value: string
-  footer: string
-}
-
-const streakRules: StreakRule[] = [
-  { bgColorClass: 'bg-primary-1', icon: icon42, label: 'Fully allocated' },
-  { bgColorClass: 'bg-primary-6', icon: icon43, label: 'In your name' },
-  { bgColorClass: 'bg-primary-8', icon: icon44, label: 'Insured vaults' },
-  { bgColorClass: 'bg-primary-2', icon: icon12, label: 'Independent audits' },
-  { bgColorClass: 'bg-primary-3', icon: icon13, label: 'Daily settlement' },
-  { bgColorClass: 'bg-primary-4', icon: icon16, label: 'Global vaults' },
-  { bgColorClass: 'bg-primary-7', icon: icon17, label: 'Physical redemption' },
-]
-
-const reflectionStats: ReflectionStat[] = [
-  {
-    title: (
-      <>
-        Vault
-        <br />
-        coverage
-      </>
-    ),
-    value: '6',
-    footer: 'Regions served worldwide',
-  },
-  {
-    title: 'Metal standard',
-    value: '100%',
-    footer: 'Fully allocated, always',
-  },
-]
 
 const Features = () => {
   return (
@@ -138,20 +102,6 @@ const Features = () => {
               <div className="mb-6 max-w-2xl md:mb-12.5">
                 <h3 className="mb-2.5 text-xl leading-tight font-semibold text-white md:text-2xl">Checked independently</h3>
                 <p className="text-default-300 text-base leading-relaxed md:w-sm md:text-lg">Independent audits and daily settlement keep records of your holdings accurate.</p>
-              </div>
-
-              <div className="mt-7.5 grid grid-cols-2 gap-2 md:gap-7.5">
-                {reflectionStats.map((stat, idx) => (
-                  <div key={idx} className="rounded-2xl border border-white/10 bg-black/40 p-5 backdrop-blur-xl">
-                    <div className="items-start gap-6 md:flex md:justify-between">
-                      <div>
-                        <p className="text-lg leading-snug text-white">{stat.title}</p>
-                      </div>
-                      <h3 className="text-2xl font-semibold text-white md:text-3xl lg:text-4xl">{stat.value}</h3>
-                    </div>
-                    <p className="text-default-400 mt-4 text-lg md:mt-7.5">{stat.footer}</p>
-                  </div>
-                ))}
               </div>
             </div>
           </div>
