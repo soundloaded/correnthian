@@ -1,50 +1,23 @@
-import { Icon } from '@iconify/react'
 import Image, { StaticImageData } from 'next/image'
 import Link from 'next/link'
 import { ReactNode } from 'react'
 
-import bellImage from '@/assets/images/icons/bell-image.png'
-import icon12 from '@/assets/images/icons/icon-12.svg'
-import icon13 from '@/assets/images/icons/icon-13.svg'
-import icon16 from '@/assets/images/icons/icon-16.svg'
-import icon17 from '@/assets/images/icons/icon-17.svg'
-import icon42 from '@/assets/images/icons/icon-42.svg'
-import icon43 from '@/assets/images/icons/icon-43.svg'
-import icon44 from '@/assets/images/icons/icon-44.svg'
-import icon46 from '@/assets/images/icons/icon-46.svg'
-import icon47 from '@/assets/images/icons/icon-47.svg'
-import icon48 from '@/assets/images/icons/icon-48.svg'
-import featureBg1 from '@/assets/images/locations/feature-01.webp'
-import featureBg2 from '@/assets/images/locations/feature-02.webp'
-import featureBg3 from '@/assets/images/locations/feature-03.webp'
-import dashboard09 from '@/assets/images/workspace/dashboard-09.png'
-import dashboard11 from '@/assets/images/workspace/dashboard-11.svg'
-import dashboard12 from '@/assets/images/workspace/dashboard-12.svg'
-import dashboard13 from '@/assets/images/workspace/dashboard-13.svg'
+import icon42 from '@/assets/images/icons/correnthian-trust-01.svg'
+import icon43 from '@/assets/images/icons/correnthian-trust-02.svg'
+import icon44 from '@/assets/images/icons/correnthian-trust-03.svg'
+import icon12 from '@/assets/images/icons/correnthian-trust-04.svg'
+import icon13 from '@/assets/images/icons/correnthian-trust-05.svg'
+import icon16 from '@/assets/images/icons/correnthian-trust-06.svg'
+import icon17 from '@/assets/images/icons/correnthian-trust-07.svg'
+import featureBg3 from '@/assets/images/locations/correnthian-audit-bg.webp'
+import featureBg1 from '@/assets/images/locations/correnthian-faq-bg.webp'
+import featureBg4 from '@/assets/images/locations/correnthian-ownership-bg.webp'
+import featureBg2 from '@/assets/images/locations/correnthian-vaults-bg.webp'
+import dashboard09 from '@/assets/images/workspace/correnthian-allocated-bars.png'
 
 export type StreakRule = {
   bgColorClass: string
   icon: StaticImageData
-  label: string
-}
-
-export type PlannedHabit = {
-  time: string
-  timeSuffix: string
-  timeTextClass?: string
-  cardBgClass: string
-  isChecked: boolean
-  label: string
-  rightText: string
-  rightTextClass: string
-}
-
-export type ReflectionMetric = {
-  icon: StaticImageData
-  alt: string
-  imgClass: string
-  value: string
-  percentClass: string
   label: string
 }
 
@@ -62,74 +35,6 @@ const streakRules: StreakRule[] = [
   { bgColorClass: 'bg-primary-3', icon: icon13, label: 'Daily settlement' },
   { bgColorClass: 'bg-primary-4', icon: icon16, label: 'Global vaults' },
   { bgColorClass: 'bg-primary-7', icon: icon17, label: 'Physical redemption' },
-]
-
-const plannedHabits: PlannedHabit[] = [
-  {
-    time: '01',
-    timeSuffix: 'Step',
-    cardBgClass: 'bg-primary-2/30 border border-primary-2/20',
-    isChecked: true,
-    label: 'Who can open a Holding?',
-    rightText: 'Individuals, companies, trusts',
-    rightTextClass: 'text-default-200',
-  },
-  {
-    time: '02',
-    timeSuffix: 'Step',
-    cardBgClass: 'bg-primary-2/30 border border-primary-2/20',
-    isChecked: true,
-    label: 'Is it physical metal that I own?',
-    rightText: 'Yes — allocated in your name',
-    rightTextClass: 'text-default-200',
-  },
-  {
-    time: '03',
-    timeSuffix: 'Step',
-    timeTextClass: 'text-white',
-    cardBgClass: 'bg-default-900 border border-default-700',
-    isChecked: false,
-    label: 'Can I take delivery?',
-    rightText: 'Arrangeable for full bars',
-    rightTextClass: 'text-white',
-  },
-  {
-    time: '04',
-    timeSuffix: 'Step',
-    timeTextClass: 'text-white',
-    cardBgClass: 'bg-default-900 border border-default-700',
-    isChecked: false,
-    label: 'Need help with your circumstances?',
-    rightText: 'Contact our team',
-    rightTextClass: 'text-white',
-  },
-]
-
-const reflectionMetrics: ReflectionMetric[] = [
-  {
-    icon: icon46,
-    alt: 'Allocated',
-    imgClass: 'size-20',
-    value: '100',
-    percentClass: 'text-lg',
-    label: 'Allocated',
-  },
-  {
-    icon: icon47,
-    alt: 'Insured',
-    imgClass: 'md:size-30 size-20',
-    value: '100',
-    percentClass: 'text-xl',
-    label: 'Insured',
-  },
-  {
-    icon: icon48,
-    alt: 'Audited',
-    imgClass: 'size-20',
-    value: '100',
-    percentClass: 'text-lg',
-    label: 'Audited',
-  },
 ]
 
 const reflectionStats: ReflectionStat[] = [
@@ -175,7 +80,7 @@ const Features = () => {
             </div>
 
             <div className="relative mb-7.5 overflow-hidden">
-              <Image src={dashboard09} alt="Dashboard Image" className="mx-auto w-62 rounded-lg object-cover md:h-75 md:w-100" />
+              <Image src={dashboard09} alt="Allocated gold bars" className="mx-auto w-62 rounded-lg object-cover md:h-75 md:w-100" />
             </div>
 
             <div className="relative overflow-hidden">
@@ -197,47 +102,12 @@ const Features = () => {
               <h3 className="mb-2.5 text-xl font-semibold text-white md:text-2xl">Before you begin</h3>
               <p className="text-lg text-gray-400 lg:w-md">Three answers worth knowing before you open a Holding.</p>
             </div>
-
-            <div className="w-full rounded-3xl border border-white/30 bg-transparent text-white backdrop-blur-xl lg:max-w-xl">
-              <div className="mb-7.5 flex items-start justify-between border-b border-white/30 p-5">
-                <div>
-                  <h2 className="text-lg font-medium tracking-normal text-white">Your Holding</h2>
-                  <p className="text-default-400 text-sm">An account for what you own</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="border-default-800 rounded-full border bg-black/60 px-3 py-1 text-sm font-bold">3 steps</span>
-                  <span className="text-default-300 text-sm font-medium">To open</span>
-                </div>
-              </div>
-
-              <div className="space-y-4 pe-4 pb-5 md:pe-10">
-                {plannedHabits.map((habit, idx) => (
-                  <div key={idx} className="group flex items-stretch gap-4">
-                    <div className="relative flex w-16 flex-col items-end justify-center">
-                      <div className={`text-default-300 text-right text-sm leading-none font-bold ${habit.timeTextClass || ''}`}>
-                        {habit.time}
-                        <br />
-                        {habit.timeSuffix}
-                      </div>
-                    </div>
-                    <div className={`grow ${habit.cardBgClass} flex items-center justify-between rounded-xl p-3.5 transition-transform`}>
-                      <div className="flex items-center gap-2">
-                        {habit.isChecked ? (
-                          <>
-                            <div>
-                              <Icon icon="lucide:circle-check" className="text-primary-2 size-3.5" />
-                            </div>
-                            <span className="text-sm font-medium md:text-base">{habit.label}</span>
-                          </>
-                        ) : (
-                          <span className="ms-2 text-sm font-medium md:text-base">{habit.label}</span>
-                        )}
-                      </div>
-                      <span className={`text-xs md:text-sm ${habit.rightTextClass}`}>{habit.rightText}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div className="min-h-40 lg:min-h-60">
+              <p className="text-4xl leading-tight font-extrabold text-white md:text-5xl lg:text-6xl">
+                Gold you own,
+                <br />
+                vaults you trust.
+              </p>
             </div>
           </div>
 
@@ -258,41 +128,16 @@ const Features = () => {
                   </div>
                   <p className="text-default-500 mt-5 text-sm md:mt-14">*Fund by bank transfer. Buy, hold, or sell through your account.</p>
                 </div>
-
-                <div className="relative flex items-end justify-center lg:justify-end">
-                  <Image src={dashboard12} alt="Dashboard" className="z-30 -mb-68 w-60 object-contain pt-5 md:h-125 md:w-97 lg:h-160" />
-                  <Image src={dashboard11} alt="Floating Card" className="absolute inset-e-65 top-20 z-30 size-25 md:top-25 lg:inset-e-82 lg:size-45" />
-                  <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-black/40"></div>
-                </div>
               </div>
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-3xl p-3.5 md:p-5 lg:p-10" style={{ backgroundImage: `url(${featureBg3.src})` }}>
+          <div className="relative min-h-105 overflow-hidden rounded-3xl bg-cover bg-center p-3.5 md:p-5 lg:min-h-130 lg:p-10" style={{ backgroundImage: `url(${featureBg3.src})` }}>
             <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/50 to-black/80"></div>
             <div className="relative z-10">
               <div className="mb-6 max-w-2xl md:mb-12.5">
                 <h3 className="mb-2.5 text-xl leading-tight font-semibold text-white md:text-2xl">Checked independently</h3>
                 <p className="text-default-300 text-base leading-relaxed md:w-sm md:text-lg">Independent audits and daily settlement keep records of your holdings accurate.</p>
-              </div>
-
-              <div className="mx-auto max-w-5xl rounded-3xl bg-black/85 p-7.5 backdrop-blur-xl">
-                <h4 className="text-center text-base font-semibold text-white md:text-lg">Your Holding at a glance</h4>
-
-                <div className="mt-7.5 grid grid-cols-2 gap-7.5 text-center md:grid-cols-3">
-                  {reflectionMetrics.map((metric, idx) => (
-                    <div key={idx} className="flex flex-col items-center">
-                      <div className="relative flex items-center justify-center">
-                        <Image src={metric.icon} alt={metric.alt} className={metric.imgClass} />
-                        <div className="absolute flex items-center text-white">
-                          <span className="text-xl font-medium">{metric.value}</span>
-                          <span className={`mb-1 ${metric.percentClass} font-medium`}>%</span>
-                        </div>
-                      </div>
-                      <p className="text-default-300 mt-3.5 text-base md:text-lg">{metric.label}</p>
-                    </div>
-                  ))}
-                </div>
               </div>
 
               <div className="mt-7.5 grid grid-cols-2 gap-2 md:gap-7.5">
@@ -311,24 +156,12 @@ const Features = () => {
             </div>
           </div>
 
-          <div className="bg-default-900 relative overflow-hidden rounded-3xl p-5 lg:p-10">
-            <div className="bg-primary/10 absolute top-1/2 left-1/2 size-125 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"></div>
+          <div className="relative overflow-hidden rounded-3xl p-5 lg:p-10" style={{ backgroundImage: `url(${featureBg4.src})` }}>
+            <div className="absolute inset-0 bg-black/50"></div>
             <div className="relative z-10">
               <div className="max-w-xl">
-                <h3 className="mb-2.5 text-xl leading-tight font-semibold text-white md:text-2xl">Our fees — clear costs, considered decisions</h3>
-                <p className="text-default-300 w-sm text-lg leading-relaxed">Buying, selling, storage, and redemption fees set out before you begin.</p>
-              </div>
-
-              <div className="relative mt-6 flex justify-center lg:mt-14">
-                <div className="absolute top-1/2 z-20 w-full max-w-md -translate-y-1/2 rounded-2xl p-6">
-                  <div className="absolute -top-20 left-0 rotate-[-20deg] md:-top-22 md:left-4">
-                    <div className="relative">
-                      <Image src={bellImage} alt="Bell" className="size-10 object-contain md:size-18" />
-                      <div className="bg-primary-7 absolute top-2 right-2 hidden size-7 items-center justify-center rounded-full text-xs font-bold text-white md:flex">7</div>
-                    </div>
-                  </div>
-                </div>
-                <Image src={dashboard13} loading="lazy" alt="Dashboard Image" className="mt-6 h-54 w-90 md:mt-12" />
+                <h3 className="mb-2.5 text-xl leading-tight font-semibold text-white md:text-2xl">Own your gold. Always.</h3>
+                <p className="text-default-300 w-sm text-lg leading-relaxed">You are the legal owner of your gold, no matter what. We’ll even deliver your gold straight to your front door, any time.</p>
               </div>
             </div>
           </div>
