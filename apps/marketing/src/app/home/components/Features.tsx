@@ -20,6 +20,16 @@ export type StreakRule = {
   label: string
 }
 
+const streakRules: StreakRule[] = [
+  { bgColorClass: 'bg-primary-1', icon: icon42, label: 'Fully allocated' },
+  { bgColorClass: 'bg-primary-6', icon: icon43, label: 'In your name' },
+  { bgColorClass: 'bg-primary-8', icon: icon44, label: 'Insured vaults' },
+  { bgColorClass: 'bg-primary-2', icon: icon12, label: 'Independent audits' },
+  { bgColorClass: 'bg-primary-3', icon: icon13, label: 'Daily settlement' },
+  { bgColorClass: 'bg-primary-4', icon: icon16, label: 'Global vaults' },
+  { bgColorClass: 'bg-primary-7', icon: icon17, label: 'Physical redemption' },
+]
+
 const Features = () => {
   return (
     <section id="features" className="relative pb-8 md:pb-25 lg:pb-50">
