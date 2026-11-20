@@ -12,7 +12,7 @@ import featureBg3 from '@/assets/images/locations/correnthian-audit-bg.webp'
 import featureBg1 from '@/assets/images/locations/correnthian-faq-bg.webp'
 import featureBg4 from '@/assets/images/locations/correnthian-ownership-bg.webp'
 import featureBg2 from '@/assets/images/locations/correnthian-vaults-bg.webp'
-import dashboard09 from '@/assets/images/workspace/correnthian-allocated-bars.png'
+import dashboard09 from '@/assets/images/workspace/correnthian-allocated-dashboard.png'
 
 export type StreakRule = {
   bgColorClass: string
@@ -53,8 +53,12 @@ const Features = () => {
               <p className="text-default-600 max-w-md text-lg">Fully allocated metal held in your name — separate from our balance sheet, backed by independent checks.</p>
             </div>
 
-            <div className="relative mb-7.5 overflow-hidden">
-              <Image src={dashboard09} alt="Allocated gold bars" className="mx-auto w-62 rounded-lg object-cover md:h-75 md:w-100" />
+            <div className="relative mx-auto mb-7.5 h-62 w-62 md:h-75 md:w-100">
+              <Image
+                src={dashboard09}
+                alt="Correnthian allocated gold dashboard"
+                className="pointer-events-none absolute inset-x-0 -top-4 z-20 mx-auto h-auto w-62 max-w-none rounded-lg object-contain md:-top-8 md:w-100"
+              />
             </div>
 
             <div className="relative overflow-hidden">
@@ -106,11 +110,11 @@ const Features = () => {
             </div>
           </div>
 
-          <div className="relative min-h-105 overflow-hidden rounded-3xl bg-cover bg-center p-3.5 md:p-5 lg:min-h-130 lg:p-10" style={{ backgroundImage: `url(${featureBg3.src})` }}>
-            <div className="absolute inset-0 bg-linear-to-b from-black/30 via-black/50 to-black/80"></div>
+          <div className="relative flex min-h-80 items-center overflow-hidden rounded-3xl bg-cover bg-center p-5 lg:min-h-130 lg:p-10" style={{ backgroundImage: `url(${featureBg3.src})` }}>
+            <div className="absolute inset-0 bg-black/50"></div>
             <div className="relative z-10">
-              <div className="mb-6 max-w-2xl md:mb-12.5">
-                <h3 className="mb-2.5 text-xl leading-tight font-semibold text-white md:text-2xl">Stamped bars. Sealed vaults.</h3>
+              <div className="max-w-xl">
+                <h3 className="mb-2.5 text-4xl leading-tight font-semibold text-white md:text-6xl">Stamped bars. Sealed vaults.</h3>
                 <p className="text-default-300 text-base leading-relaxed md:w-sm md:text-lg">Investment-grade gold and silver, stamped and stored behind vault doors — verified by independent checks, so your holding is always the real metal.</p>
               </div>
             </div>
@@ -120,7 +124,7 @@ const Features = () => {
             <div className="absolute inset-0 bg-black/50"></div>
             <div className="relative z-10">
               <div className="max-w-xl">
-                <h3 className="mb-2.5 text-3xl leading-tight font-extrabold text-white md:text-4xl">Own your gold. Always.</h3>
+                <h3 className="mb-2.5 text-4xl leading-tight font-extrabold text-white md:text-6xl">Own your gold. Always.</h3>
                 <p className="text-default-300 w-sm text-lg leading-relaxed">You are the legal owner of your gold, no matter what. We’ll even deliver your gold straight to your front door, any time.</p>
               </div>
             </div>

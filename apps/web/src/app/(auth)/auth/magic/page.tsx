@@ -16,17 +16,18 @@ function MagicConsume() {
   const searchParams = useSearchParams()
   const [state, setState] = useState<"working" | "failed">("working")
 
+  const token = searchParams.get("token")
+
   useEffect(() => {
-    const token = searchParams.get("token")
-    if (!token) {
-      setState("failed")
-      return
-    }
+    // No token means the link was opened bare — but state is derived, not
+    // effected: the synchronous setState the effect used to hold tripped
+    // the cascading-render rule without buying anything.
+    if (!token) return
     let live = true
     consumeMagicLink(token).then((result) => {
       if (!live) return
       if (result.ok) {
-        router.replace("/portfolio")
+        router.replace("/")
       } else {
         setState("failed")
       }
@@ -34,9 +35,9 @@ function MagicConsume() {
     return () => {
       live = false
     }
-  }, [router, searchParams])
+  }, [router, searchParams, token])
 
-  if (state === "failed") {
+  if (!token || state === "failed") {
     return (
       <>
         <h1

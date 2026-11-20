@@ -1,0 +1,180 @@
+<svg width="469" height="745" viewBox="0 0 469 745" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cpTitle cpDesc">
+<title id="cpTitle">Correnthian digital vault dashboard</title>
+<desc id="cpDesc">iPhone showing gold, silver, bitcoin and ethereum holdings in one portfolio</desc>
+<defs>
+<linearGradient id="cpFrame" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="#565D66"/>
+<stop offset="0.45" stop-color="#23262B"/>
+<stop offset="1" stop-color="#101114"/>
+</linearGradient>
+<linearGradient id="cpScreen" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#14110A"/>
+<stop offset="0.55" stop-color="#08090B"/>
+<stop offset="1" stop-color="#060708"/>
+</linearGradient>
+<radialGradient id="cpGlow" cx="0.5" cy="0.5" r="0.5">
+<stop offset="0" stop-color="#C9A227" stop-opacity="0.34"/>
+<stop offset="0.6" stop-color="#C9A227" stop-opacity="0.10"/>
+<stop offset="1" stop-color="#C9A227" stop-opacity="0"/>
+</radialGradient>
+<linearGradient id="cpGoldCard" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="#E3C766" stop-opacity="0.28"/>
+<stop offset="0.45" stop-color="#C9A227" stop-opacity="0.10"/>
+<stop offset="1" stop-color="#14120C" stop-opacity="0.92"/>
+</linearGradient>
+<linearGradient id="cpSilverCard" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="#E8EAED" stop-opacity="0.22"/>
+<stop offset="0.5" stop-color="#9AA0A8" stop-opacity="0.08"/>
+<stop offset="1" stop-color="#14171B" stop-opacity="0.94"/>
+</linearGradient>
+<linearGradient id="cpBronzeCard" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="#A07828" stop-opacity="0.20"/>
+<stop offset="0.5" stop-color="#3C2D12" stop-opacity="0.10"/>
+<stop offset="1" stop-color="#100E0A" stop-opacity="0.94"/>
+</linearGradient>
+<linearGradient id="cpGoldBar" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#F2D98B"/>
+<stop offset="0.55" stop-color="#C9A227"/>
+<stop offset="1" stop-color="#7D6318"/>
+</linearGradient>
+<linearGradient id="cpSilverBar" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#F4F6F8"/>
+<stop offset="0.55" stop-color="#9BA1AA"/>
+<stop offset="1" stop-color="#43484F"/>
+</linearGradient>
+<radialGradient id="cpBtc" cx="0.35" cy="0.3" r="1">
+<stop offset="0" stop-color="#F2D98B"/>
+<stop offset="0.6" stop-color="#C9A227"/>
+<stop offset="1" stop-color="#8A6F1C"/>
+</radialGradient>
+<linearGradient id="cpEthTop" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#F2D98B"/>
+<stop offset="1" stop-color="#C9A227"/>
+</linearGradient>
+<linearGradient id="cpEthBottom" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#8A6F1C"/>
+<stop offset="1" stop-color="#5C4A12"/>
+</linearGradient>
+<linearGradient id="cpSheen" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="#FFFFFF" stop-opacity="0.07"/>
+<stop offset="0.35" stop-color="#FFFFFF" stop-opacity="0"/>
+</linearGradient>
+<linearGradient id="cpSpark" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#C9A227" stop-opacity="0.35"/>
+<stop offset="1" stop-color="#C9A227" stop-opacity="0"/>
+</linearGradient>
+<clipPath id="cpClip">
+<rect x="22" y="22" width="425" height="701" rx="52"/>
+</clipPath>
+</defs>
+
+<!-- side buttons -->
+<rect x="1.5" y="150" width="4.5" height="34" rx="2.25" fill="#2A2E34"/>
+<rect x="1.5" y="192" width="4.5" height="56" rx="2.25" fill="#2A2E34"/>
+<rect x="1.5" y="254" width="4.5" height="56" rx="2.25" fill="#2A2E34"/>
+<rect x="463" y="200" width="4.5" height="80" rx="2.25" fill="#2A2E34"/>
+
+<!-- frame + bezel + screen -->
+<rect x="6" y="6" width="457" height="733" rx="68" fill="url(#cpFrame)"/>
+<rect x="6" y="6" width="457" height="733" rx="68" fill="none" stroke="#C9A227" stroke-opacity="0.22" stroke-width="1"/>
+<rect x="13" y="13" width="443" height="719" rx="61" fill="#000000"/>
+<rect x="22" y="22" width="425" height="701" rx="52" fill="url(#cpScreen)"/>
+
+<g clip-path="url(#cpClip)">
+<rect x="22" y="22" width="425" height="701" fill="url(#cpSheen)"/>
+<ellipse cx="234.5" cy="185" rx="175" ry="75" fill="url(#cpGlow)"/>
+
+<!-- status bar -->
+<text x="54" y="57" font-family="Inter, -apple-system, 'SF Pro Display', 'Segoe UI', sans-serif" font-size="15" font-weight="600" fill="#F5F6F8">9:41</text>
+<text x="364" y="57" font-family="Inter, -apple-system, 'SF Pro Display', 'Segoe UI', sans-serif" font-size="12" font-weight="600" fill="#E8EAED">5G</text>
+<rect x="390" y="52" width="3.5" height="5" rx="1" fill="#E8EAED"/>
+<rect x="395" y="49.5" width="3.5" height="7.5" rx="1" fill="#E8EAED"/>
+<rect x="400" y="47" width="3.5" height="10" rx="1" fill="#E8EAED"/>
+<rect x="405" y="44.5" width="3.5" height="12.5" rx="1" fill="#E8EAED"/>
+<rect x="412" y="46.5" width="23" height="12" rx="3.5" fill="none" stroke="#E8EAED" stroke-opacity="0.5" stroke-width="1"/>
+<rect x="414" y="48.5" width="14" height="8" rx="2" fill="#E8EAED"/>
+<rect x="436" y="50" width="2.5" height="5" rx="1" fill="#E8EAED" fill-opacity="0.5"/>
+
+<!-- dynamic island -->
+<rect x="193" y="34" width="83" height="27" rx="13.5" fill="#000000" stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="1"/>
+<circle cx="256" cy="47.5" r="5" fill="#0A0F1E"/>
+<circle cx="256" cy="47.5" r="2" fill="#1C2A4A" fill-opacity="0.8"/>
+
+<!-- crest -->
+<text x="237" y="102" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="17" letter-spacing="5" fill="#E3C766">CORRENTHIAN</text>
+<text x="236.5" y="120" text-anchor="middle" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="9" letter-spacing="4.5" fill="#9BA1AA">DIGITAL VAULT</text>
+<line x1="204" y1="132" x2="265" y2="132" stroke="#C9A227" stroke-opacity="0.6" stroke-width="1"/>
+
+<!-- portfolio -->
+<text x="234.5" y="152" text-anchor="middle" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="10" letter-spacing="3.2" fill="#9BA1AA">MY PORTFOLIO</text>
+<text x="234.5" y="190" text-anchor="middle" font-family="Inter, -apple-system, 'SF Pro Display', 'Segoe UI', sans-serif" font-weight="700" style="font-variant-numeric: tabular-nums"><tspan font-size="37" fill="#F7F8FA">$148,250.75</tspan><tspan dx="6" font-size="13" font-weight="500" fill="#9BA1AA">USD</tspan></text>
+<rect x="159.5" y="204" width="150" height="27" rx="13.5" fill="#3FA46A" fill-opacity="0.14" stroke="#3FA46A" stroke-opacity="0.45" stroke-width="1"/>
+<text x="234.5" y="222" text-anchor="middle" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="12.5" font-weight="600" fill="#3FA46A">+2.4% · last 24h</text>
+
+<!-- sparkline -->
+<polygon points="60,258 95,252 130,255 165,247 200,250 235,242 270,245 305,238 340,241 375,234 410,236 410,268 60,268" fill="url(#cpSpark)"/>
+<polyline points="60,258 95,252 130,255 165,247 200,250 235,242 270,245 305,238 340,241 375,234 410,236" fill="none" stroke="#C9A227" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.9"/>
+
+<!-- GOLD CARD -->
+<rect x="42" y="278" width="385" height="88" rx="18" fill="url(#cpGoldCard)" stroke="#C9A227" stroke-opacity="0.55" stroke-width="1.2"/>
+<text x="62" y="303" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="10.5" letter-spacing="1.6" fill="#E3C766" fill-opacity="0.9">TOTAL GOLD · XAU</text>
+<text x="62" y="331" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="23.5" font-weight="700" fill="#EFD48A" style="font-variant-numeric: tabular-nums">$84,910.20</text>
+<text x="62" y="349" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#E8EAED" fill-opacity="0.72">31.103 g · PAXG · Brink's London</text>
+<polygon points="374,312 402,312 396,304 380,304" fill="#F2D98B"/>
+<polygon points="366,332 410,332 402,312 374,312" fill="url(#cpGoldBar)"/>
+<line x1="372" y1="326" x2="404" y2="326" stroke="#FFFFFF" stroke-opacity="0.3" stroke-width="1"/>
+<text x="388" y="328.5" text-anchor="middle" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="7.5" font-weight="700" fill="#4D3D0E">1 oz</text>
+
+<!-- BTC CARD -->
+<rect x="42" y="376" width="385" height="88" rx="18" fill="url(#cpBronzeCard)" stroke="#C9A227" stroke-opacity="0.30" stroke-width="1.2"/>
+<text x="62" y="401" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="10.5" letter-spacing="1.6" fill="#9BA1AA">BITCOIN · BTC</text>
+<text x="62" y="429" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="23.5" font-weight="700" fill="#F5F6F8" style="font-variant-numeric: tabular-nums">$42,115.55</text>
+<text x="62" y="447" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#E8EAED" fill-opacity="0.72">0.623 BTC</text>
+<circle cx="388" cy="420" r="21" fill="url(#cpBtc)" stroke="#F2D98B" stroke-opacity="0.5" stroke-width="1"/>
+<text x="388" y="428.5" text-anchor="middle" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="23" font-weight="700" fill="#231A05">₿</text>
+
+<!-- SILVER CARD -->
+<rect x="42" y="474" width="385" height="88" rx="18" fill="url(#cpSilverCard)" stroke="#C7CBD1" stroke-opacity="0.40" stroke-width="1.2"/>
+<text x="62" y="499" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="10.5" letter-spacing="1.6" fill="#E8EAED">TOTAL SILVER · XAG</text>
+<text x="62" y="527" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="23.5" font-weight="700" fill="#EDEFF2" style="font-variant-numeric: tabular-nums">$21,225.00</text>
+<text x="62" y="545" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#E8EAED" fill-opacity="0.72">750 g · Allocated</text>
+<polygon points="374,508 402,508 396,500 380,500" fill="#E8EAED"/>
+<polygon points="366,528 410,528 402,508 374,508" fill="url(#cpSilverBar)"/>
+<line x1="372" y1="522" x2="404" y2="522" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="1"/>
+<text x="388" y="524.5" text-anchor="middle" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="7.5" font-weight="700" fill="#33383E">1 oz</text>
+
+<!-- ETH CARD -->
+<rect x="42" y="572" width="385" height="88" rx="18" fill="url(#cpBronzeCard)" stroke="#C9A227" stroke-opacity="0.30" stroke-width="1.2"/>
+<text x="62" y="597" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="10.5" letter-spacing="1.6" fill="#9BA1AA">ETHEREUM · ETH</text>
+<text x="62" y="625" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="23.5" font-weight="700" fill="#F5F6F8" style="font-variant-numeric: tabular-nums">$10,000.00</text>
+<text x="62" y="643" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#E8EAED" fill-opacity="0.72">2.50 ETH</text>
+<polygon points="388,596 400,614 388,618 376,614" fill="url(#cpEthTop)"/>
+<polygon points="376,614 388,618 400,614 388,636" fill="url(#cpEthBottom)"/>
+
+<!-- tab bar -->
+<line x1="42" y1="670" x2="427" y2="670" stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="1"/>
+<g stroke="#E3C766" stroke-width="1.8" fill="none">
+<rect x="75" y="672.5" width="8" height="8" rx="2"/>
+<rect x="85.5" y="672.5" width="8" height="8" rx="2"/>
+<rect x="75" y="682.5" width="8" height="8" rx="2"/>
+<rect x="85.5" y="682.5" width="8" height="8" rx="2"/>
+</g>
+<g stroke="#6E757F" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<rect x="149" y="674" width="20" height="13" rx="3.5"/>
+<path d="M 226.5 677 H 240 M 236.5 673.5 L 241 677 L 236.5 680.5"/>
+<path d="M 242.5 685 H 229 M 232.5 681.5 L 228 685 L 232.5 688.5"/>
+<polyline points="301,682 306,682 308.5,675 312,688 314.5,679 319,679"/>
+<circle cx="385" cy="681.5" r="6.5"/>
+<path d="M 385 672 V 676 M 385 687 V 691 M 376 681.5 H 380 M 390 681.5 H 394 M 378.7 675.2 L 381.5 678 M 388.5 685 L 391.3 687.8 M 391.3 675.2 L 388.5 678 M 381.5 685 L 378.7 687.8"/>
+</g>
+<circle cx="164" cy="680.5" r="1.5" fill="#6E757F"/>
+<text x="84" y="701" text-anchor="middle" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="9" font-weight="600" fill="#E3C766">Dashboard</text>
+<text x="159" y="701" text-anchor="middle" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="9" fill="#6E757F">Assets</text>
+<text x="234.5" y="701" text-anchor="middle" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="9" fill="#6E757F">Trade</text>
+<text x="310" y="701" text-anchor="middle" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="9" fill="#6E757F">Activity</text>
+<text x="385" y="701" text-anchor="middle" font-family="Inter, -apple-system, 'Segoe UI', sans-serif" font-size="9" fill="#6E757F">Settings</text>
+<rect x="174" y="709" width="121" height="4.5" rx="2.25" fill="#EDEFF2" fill-opacity="0.9"/>
+</g>
+
+<rect x="22" y="22" width="425" height="701" rx="52" fill="none" stroke="#FFFFFF" stroke-opacity="0.09" stroke-width="1.5"/>
+</svg>

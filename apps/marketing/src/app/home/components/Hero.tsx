@@ -1,40 +1,17 @@
 'use client'
 
-import heroImage from '@/assets/images/hero-image.jpg'
+import heroImage from '@/assets/images/correnthian-hero-gradient-bg.jpg'
 import vector01 from '@/assets/images/vector-01.webp'
-import dashboard01 from '@/assets/images/workspace/dashboard-01.svg'
-import dashboard02 from '@/assets/images/workspace/dashboard-02.svg'
-import dashboard03 from '@/assets/images/workspace/dashboard-03.svg'
+import dashboardMain from '@/assets/images/workspace/correnthian-hero-phone.png'
 import { Icon } from '@iconify/react'
 import lightGallery from 'lightgallery'
 import lgVideo from 'lightgallery/plugins/video'
-import { motion, useMotionValue, useSpring, useTransform } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
-import React, { useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 
 const Hero = () => {
   const videoRef = useRef<HTMLDivElement>(null)
-  const mouseX = useMotionValue(0)
-  const mouseY = useMotionValue(0)
-
-  const floatXLeft = useSpring(useTransform(mouseX, [-0.5, 0.5], [-18, 18]), { stiffness: 120, damping: 20 })
-  const floatYLeft = useSpring(useTransform(mouseY, [-0.5, 0.5], [-14, 14]), { stiffness: 120, damping: 20 })
-  const floatXRight = useSpring(useTransform(mouseX, [-0.5, 0.5], [20, -20]), { stiffness: 120, damping: 20 })
-  const floatYRight = useSpring(useTransform(mouseY, [-0.5, 0.5], [16, -16]), { stiffness: 120, damping: 20 })
-  const centerRotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [6, -6]), { stiffness: 140, damping: 22 })
-  const centerRotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-8, 8]), { stiffness: 140, damping: 22 })
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect()
-    mouseX.set((e.clientX - rect.left) / rect.width - 0.5)
-    mouseY.set((e.clientY - rect.top) / rect.height - 0.5)
-  }
-
-  const handleMouseLeave = () => {
-    mouseX.set(0)
-    mouseY.set(0)
-  }
 
   useEffect(() => {
     let lgInstance: any
@@ -58,80 +35,55 @@ const Hero = () => {
   }, [])
 
   return (
-    <section
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-black pt-34 md:pt-40 lg:pt-52"
-    >
-      <Image src={heroImage} alt="Hero Background" className="absolute inset-0 h-full w-full object-cover object-center" />
+    <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-black pt-34 md:pt-40 lg:pt-52">
+      <Image src={heroImage} alt="Hero Background" className="absolute inset-0 h-full w-full object-cover object-center" priority />
 
       <div className="relative z-10 container mx-auto px-4" ref={videoRef}>
         <div className="flex flex-col items-center text-center">
-          <div className="hero-rise mb-4.5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 p-1.5 pe-2 backdrop-blur-md lg:w-70">
-            <span className="rounded-full bg-black px-2 py-px text-base font-medium text-white">Now</span>
-            <span className="text-sm text-white">A holding you can account for</span>
-          </div>
-
-          <h1 className="hero-rise hero-rise-2 mb-5 text-4xl leading-tight font-medium tracking-tight text-white md:text-5xl lg:mb-7.5 lg:text-[90px]">
-            Hold gold that&nbsp;
+          <h1 className="mb-5 text-4xl leading-tight font-medium tracking-tight text-white md:text-5xl lg:mb-7.5 lg:text-[90px]">
+            Own gold that moves
             <br className="hidden lg:block" />
-            you can check
+            at the speed of money
           </h1>
 
-          <p className="hero-rise hero-rise-3 mb-6 max-w-sm text-lg leading-normal text-white md:text-xl lg:mb-10">
-            See what the metal is, who backs it, and whether you can take it out.
-          </p>
+          <p className="mb-6 max-w-sm text-lg leading-normal text-white md:text-xl lg:mb-10">Buy, hold and sell physical gold and other precious metals, securely stored and accessible through your online account.</p>
 
-          <div className="hero-rise hero-rise-4 flex items-center justify-center gap-2 md:gap-5">
+          <div className="flex items-center justify-center gap-2 md:gap-5">
             <Link href="/waitlist" className="group relative overflow-hidden rounded-full bg-white px-3.5 py-3 text-sm font-medium text-black transition-all duration-300 hover:scale-95 md:px-8.5 md:py-4 md:text-lg">
               <span className="relative block overflow-hidden">
-                <span className="block transition-transform duration-300 group-hover:-translate-y-full">Request access</span>
-                <span className="absolute top-full left-0 block transition-transform duration-300 group-hover:-translate-y-full">Request access</span>
+                <span className="block transition-transform duration-300 group-hover:-translate-y-full">Register</span>
+                <span className="absolute top-full left-0 block transition-transform duration-300 group-hover:-translate-y-full">Register</span>
               </span>
             </Link>
 
-            <Link
-              href="/home#features"
+            <a
+              href="https://www.youtube.com/embed/elgqxmdVms8?si=yYfzbunShGP15tde"
+              data-toggle="video"
               className="group relative overflow-hidden rounded-full border border-white/20 bg-white/5 px-3.5 py-3 text-sm text-white backdrop-blur-md transition-all duration-300 hover:scale-95 hover:bg-white/10 md:px-8.5 md:py-4 md:text-lg"
             >
               <div className="relative flex items-center gap-3 overflow-hidden">
                 <div className="flex items-center gap-3 transition-transform duration-300 group-hover:-translate-y-full">
                   <Icon icon="tabler:player-play-filled" className="size-4 text-white md:size-6" />
-                  <span className="font-medium">See the record</span>
+                  <span className="font-medium">How it works</span>
                 </div>
 
                 <div className="absolute top-full left-0 flex items-center gap-3 transition-transform duration-300 group-hover:-translate-y-full">
                   <Icon icon="tabler:player-play-filled" className="size-4 text-white md:size-6" />
-                  <span className="font-medium">See the record</span>
+                  <span className="font-medium">How it works</span>
                 </div>
               </div>
-            </Link>
+            </a>
           </div>
 
-          <div
-            style={{ perspective: 1200 }}
-            className="relative mt-6 flex w-full max-w-5xl items-start justify-center gap-8 md:mt-16 md:gap-5 lg:mt-20 lg:gap-10"
-          >
-            <motion.div
-              style={{ x: floatXLeft, y: floatYLeft }}
-              className="hero-fade absolute inset-s-0 top-8 z-20 md:inset-s-6 lg:inset-s-32"
-            >
-              <Image src={dashboard01} alt="Dashboard" className="size-35 lg:size-40" />
-            </motion.div>
-
-            <motion.div
-              style={{ rotateX: centerRotateX, rotateY: centerRotateY }}
-              className="hero-fade relative -z-20!"
-            >
-              <Image src={dashboard03} alt="Dashboard" className="mt-34 h-144 w-75 md:mt-0 lg:w-90" />
-            </motion.div>
-
-            <motion.div
-              style={{ x: floatXRight, y: floatYRight }}
-              className="hero-fade absolute inset-e-0 top-8 z-20 md:bottom-60 lg:inset-e-14"
-            >
-              <Image src={dashboard02} alt="Dashboard" className="w-50 lg:w-60" />
-            </motion.div>
+          <div className="relative mt-6 flex justify-center md:mt-12 lg:mt-16">
+            {/* Ambient luxury gold glow behind phone */}
+            <div className="pointer-events-none absolute inset-x-0 top-1/2 mx-auto h-[60%] w-[260px] -translate-y-1/2 rounded-full bg-amber-500/15 blur-[80px] sm:w-[320px] md:w-[400px] lg:w-[460px]" />
+            <Image
+              src={dashboardMain}
+              alt="Correnthian digital vault dashboard"
+              className="relative z-20! h-auto w-90 max-w-[90vw] filter drop-shadow-[0_25px_60px_rgba(0,0,0,0.85)] sm:w-96 md:w-93 lg:w-[420px] xl:w-[460px]"
+              priority
+            />
           </div>
         </div>
       </div>

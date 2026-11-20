@@ -26,9 +26,7 @@ export const metadata: Metadata = {
     default: DEFAULT_PAGE_TITLE,
   },
   icons: { icon: favicon.src },
-  description: 'Correnthian is a self-custodial place to hold and buy tokenized precious metal. You keep the keys. The record says what the metal is, who backs it, and whether you can take it out.',
-  keywords: ['tokenized gold', 'self custody', 'precious metals', 'gold token', 'Correnthian'],
-  authors: [{ name: 'Correnthian' }],
+  description: 'Correnthian is a self-custodial way to hold and buy tokenized gold and silver that someone else issued. Keys stay on the device, and Correnthian does not custody the metal.',
   robots: 'index, follow',
 }
 

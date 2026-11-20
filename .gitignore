@@ -34,6 +34,8 @@ android/
 # megabytes, regenerated on every run.
 .playwright-mcp/
 
+# HTML theme source used to build the marketing app. Kept locally, not committed.
+/images
 # Archived work kept for reference, not part of the workspace.
 archive/**/node_modules/
 archive/**/.next/

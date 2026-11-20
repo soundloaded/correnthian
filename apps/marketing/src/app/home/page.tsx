@@ -5,11 +5,11 @@ import Faq from './components/Faq'
 import Features from './components/Features'
 import Feedback from './components/Feedback'
 import Hero from './components/Hero'
-import SmartAssist from './components/SmartAssist'
+import HowItWorks from './components/HowItWorks'
+import PlatformFeatures from './components/PlatformFeatures'
+import SilverYield from './components/SilverYield'
 import Stats from './components/Stats'
-import StorySlider from './components/StorySlider'
-import Users from './components/Users'
-import Work from './components/Work'
+import VaultStories from './components/VaultStories'
 
 export const metadata: Metadata = {
   title: 'Home',
@@ -21,11 +21,11 @@ const Page = () => {
       <Hero />
       <About />
       <Features />
-      <Work />
-      <Users />
+      <HowItWorks />
+      <PlatformFeatures />
       <Stats />
-      <SmartAssist />
-      <StorySlider />
+      <SilverYield />
+      <VaultStories />
       <Feedback />
       <Faq />
       <Download />

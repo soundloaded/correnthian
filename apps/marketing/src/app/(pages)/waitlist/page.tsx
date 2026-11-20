@@ -1,33 +1,36 @@
 import { Metadata } from 'next'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Waitlist',
+  description: 'The apps are not in the stores, and card buying is not open. This page cannot save an address yet.',
 }
+
+const routes = [
+  { href: '/contact', label: 'Contact' },
+  { href: '/products/app', label: 'Mobile app' },
+] as const
 
 const Page = () => {
   return (
-    <>
-      <section className="pt-32 pb-6 md:pt-40 md:pb-16 lg:pt-50">
-        <div className="container">
-          <div className="mx-auto text-center md:w-2xl">
-            <h1 className="text-default-900 mb-2.5 text-4xl font-medium tracking-tight md:text-5xl lg:text-[90px]">Join the Habitline waitlist</h1>
-
-            <p className="mx-auto mb-5 text-base md:mb-7.5 md:text-xl">We’re getting ready to launch a cleaner, calmer habit app built around real life.</p>
-          </div>
-
-          <div className="mx-auto md:w-2xl lg:w-lg">
-            <form className="flex flex-col items-start justify-center gap-2.5 md:flex-row md:gap-4 lg:items-center">
-              <input type="email" placeholder="Enter your email" required className="border-default-200 bg-default-200 text-default-900 placeholder:text-default-400 w-full rounded-full border px-5 py-3 text-base transition-all focus:outline-none md:w-lg!" />
-              <div className="mx-auto">
-                <button type="submit" className="bg-default-900 w-auto rounded-full px-8 py-3.5 text-center font-medium whitespace-nowrap text-white transition-all hover:scale-95">
-                  Join the waitlist
-                </button>
-              </div>
-            </form>
-          </div>
+    <section className="pt-32 pb-20 md:pb-28">
+      <div className="container">
+        <div className="mx-auto max-w-3xl text-center">
+          <h1 className="text-default-900 mb-5 text-4xl font-medium tracking-tight md:text-5xl lg:text-6xl">Ask for access</h1>
+          <p className="text-default-600 mx-auto mb-4 max-w-2xl text-base leading-relaxed md:text-lg">The apps are not in the stores, and card buying is not open.</p>
+          <p className="text-default-600 mx-auto mb-8 max-w-2xl text-base leading-relaxed md:text-lg">The email form is not connected. This page cannot save an address yet, so nothing typed here joins a list.</p>
+          <ul className="flex flex-wrap items-center justify-center gap-3">
+            {routes.map((route) => (
+              <li key={route.href}>
+                <Link href={route.href} className="border-default-200 text-default-900 inline-flex rounded-full border bg-white px-6 py-3 text-sm font-medium transition-all hover:scale-95">
+                  {route.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
-      </section>
-    </>
+      </div>
+    </section>
   )
 }
 

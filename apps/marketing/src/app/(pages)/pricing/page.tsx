@@ -1,10 +1,11 @@
-import { Metadata } from 'next'
+import type { Metadata } from 'next'
 import PricingCompare from './components/PricingCompare'
 import PricingFaq from './components/PricingFaq'
 import PricingPlans from './components/PricingPlans'
 
 export const metadata: Metadata = {
-  title: 'Pricing',
+  title: 'Fees',
+  description: 'Provider, Network, and Correnthian are three named lines on the quote. None of them has a published rate.',
 }
 
 const Page = () => {

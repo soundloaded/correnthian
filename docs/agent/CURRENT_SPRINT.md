@@ -65,18 +65,18 @@ production-`/docs` question is still undecided and is now item 4.
 
 ### Then, in order
 
-| # | Task | Why it is next |
-|---|---|---|
-| 1 | Sandbox run for the KYC vendor path + node-backed acceptance for `BE-302`, `BE-601`, `BE-602` | Persona literals verified against the docs; what remains is credentials (Persona sandbox key, secret, template id) and a live run, plus a node and funded address for the chain half. |
-| 2 | `BE-1102` — risk engine, if it is v1 | Explicitly out of the KYC scope; velocity/structuring detection is the remaining unbuilt compliance piece. |
-| 3 | `BE-102`'s open question — is `/docs` exposed in production? | Not decided. An API schema is a map of everything an attacker can call; the answer is a disclosure decision, not a technical one. |
-| 4 | ADR-022's build-time choices — account implementation, paymaster, EntryPoint | Gated on a vendor or a contract, same as `BE-802`. Recording them as decided would repeat the `claimBatch` mistake. |
-| 5 | Contract entries for every write route | The two new `BE-602` routes have no `packages/contracts` entry, matching `POST /transactions` and `:id/transitions`. Whether *every* write route gets one is a sweep, not a patch. |
+| # | Task                                                                                                | Why it is next                                                                                                                                                                               |
+| - | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 | Sandbox run for the KYC vendor path + node-backed acceptance for `BE-302`, `BE-601`, `BE-602` | Persona literals verified against the docs; what remains is credentials (Persona sandbox key, secret, template id) and a live run, plus a node and funded address for the chain half.        |
+| 2 | `BE-1102` — risk engine, if it is v1                                                             | Explicitly out of the KYC scope; velocity/structuring detection is the remaining unbuilt compliance piece.                                                                                   |
+| 3 | `BE-102`'s open question — is `/docs` exposed in production?                                   | Not decided. An API schema is a map of everything an attacker can call; the answer is a disclosure decision, not a technical one.                                                            |
+| 4 | ADR-022's build-time choices — account implementation, paymaster, EntryPoint                       | Gated on a vendor or a contract, same as `BE-802`. Recording them as decided would repeat the `claimBatch` mistake.                                                                      |
+| 5 | Contract entries for every write route                                                              | The two new `BE-602` routes have no `packages/contracts` entry, matching `POST /transactions` and `:id/transitions`. Whether *every* write route gets one is a sweep, not a patch. |
 
 **Still open, deliberately not scheduled:**
 
-| | Why it waits |
-|---|---|
+|             | Why it waits                                                                                                                                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `DEF-009` | `PARTIAL`. The comment is honest; the claim mechanism needs a column, a lease with a timeout and a requeue path — design questions belonging to ADR-020's transport decision, not a patch for a method nothing calls. |
 
 ---
@@ -89,27 +89,27 @@ into four groups, and only the first is a queue.
 
 **Not blocked. Real remaining code work (6).**
 
-| Task | What is actually left |
-|---|---|
+| Task        | What is actually left                                                                                                                                                                                                                                                                                                        |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `BE-1703` | ~~**`RolesGuard` has no test.**~~ **Done 2026-10-09** — 11 unit tests plus an HTTP suite over all 40 gated routes (customer → 403, pinned gate list, admin-admission control). Building it found `DEF-021`. Still missing: SAST, dependency audit, secret scanning beyond env files, rate-limit bypass testing. |
-| `BE-1702` | Controller/service specs. The gap `DEF-001` fell through. |
-| `BE-1701` | `QuoteState` has six states; `swaps.service.ts:215` writes `quoted` and nothing else. |
-| `BE-501` | Allocation, history charting, scheduled snapshots. `capture` is only reached by its own endpoint. |
-| `BE-105` | Metrics, traces, error reporting. `SENTRY_DSN` and `OTEL_EXPORTER_OTLP_ENDPOINT` are in `.env.example` and read by nothing — verified. |
-| `SEC-001` | The threat model document itself. Scoped to API + admin, and writable now; nothing external gates it. |
+| `BE-1702` | Controller/service specs. The gap `DEF-001` fell through.                                                                                                                                                                                                                                                                  |
+| `BE-1701` | `QuoteState` has six states; `swaps.service.ts:215` writes `quoted` and nothing else.                                                                                                                                                                                                                                  |
+| `BE-501`  | Allocation, history charting, scheduled snapshots. `capture` is only reached by its own endpoint.                                                                                                                                                                                                                          |
+| `BE-105`  | Metrics, traces, error reporting. `SENTRY_DSN` and `OTEL_EXPORTER_OTLP_ENDPOINT` are in `.env.example` and read by nothing — verified.                                                                                                                                                                                |
+| `SEC-001` | The threat model document itself. Scoped to API + admin, and writable now; nothing external gates it.                                                                                                                                                                                                                        |
 
 **Verification only — needs a node (2):** `BE-302`, `BE-601`. One run covers
 both; both were proven against a stub node speaking real JSON-RPC.
 
 **Gated by a decision outside code, or on the do-not-start list (6):**
 
-| Task | Gate |
-|---|---|
-| `DEF-009` | ADR-020 transport decision |
-| `BE-1201` | Deliberately not sending — ADR-020 |
-| `BE-1104` | "Do not write a fee number that is not in code" |
-| `BE-502` | Pricing feed — "no provider is contracted" |
-| `BE-401` | Counsel-reviewed verification criteria |
+| Task        | Gate                                                         |
+| ----------- | ------------------------------------------------------------ |
+| `DEF-009` | ADR-020 transport decision                                   |
+| `BE-1201` | Deliberately not sending — ADR-020                          |
+| `BE-1104` | "Do not write a fee number that is not in code"              |
+| `BE-502`  | Pricing feed — "no provider is contracted"                  |
+| `BE-401`  | Counsel-reviewed verification criteria                       |
 | `BE-1704` | The repository has no remote and no environment to deploy to |
 
 **Nothing waits on it (1):** `BE-004`. Its status says a queue is missing, and
@@ -139,14 +139,12 @@ into CI, so the next one fails the build instead of shipping.
   shared-fixture collision fixed with pid-unique addresses. Portfolio
   allocation and bucketed history-series built (exact arithmetic,
   documented truncation). Nine checks green, 729 API tests.
-
 - **Controller-spec batches A+B (BE-1702).** Ten new HTTP suites (60 tests)
   and six service specs (24 tests) across assets, issuers, providers,
   pricing, devices, chains, audit, jobs, blockchain, portfolio, onramp,
   fees and compliance decisions. Found and fixed the pricing-history
   surrogate-FK bug (RED→GREEN witnessed). Full suite 817 tests green,
   typecheck clean.
-
 - **Autonomous PARTIAL sweep (2026-10-10).** BE-1703 (dep + secret gates,
   both in CI with failing-proof specs), BE-105 (Sentry/OTel wired
   optionally), SEC-001 (threat model document, practice open by design),
@@ -157,7 +155,6 @@ into CI, so the next one fails the build instead of shipping.
   anything deferred by design (adapters, clients, microservices), and
   large underspecified builds (BE-1102 risk engine has no rules to
   implement — inventing scoring would be fabrication, not engineering).
-
 - **`BE-602` — send/receive backend, `DONE`.** The server assembles, the
   device signs, the server relays — and *verifies before it relays*. Three
   commits: a module restructure so `transactions → blockchain` is acyclic
@@ -176,7 +173,6 @@ into CI, so the next one fails the build instead of shipping.
   four packages, **11 mutations all killed**, one survivor found and the
   redundant guard it exposed removed rather than the test weakened.
   Receive needed nothing: a registered address is the receive side.
-
 - **`BE-1703`'s headline item — `RolesGuard`, tested at two layers.** Eleven
   unit tests pin the guard's decisions (hierarchy both ways, unknown held
   role denied, unknown *requirement* denied for everyone including `owner`,
@@ -198,7 +194,6 @@ into CI, so the next one fails the build instead of shipping.
   walk with no length limit, plus an invariant: discovery must return exactly
   as many routes as there are route decorators, counted by an independent
   looser regex. Fixed and mutation-checked the same day.
-
 - **`BE-601` — the confirmation sweep, built and measured.** `sweepByHash`
   asks the chain about the transactions no log can describe: native-coin
   sends, unregistered or disabled tokens, and anything not yet mined or never
@@ -211,11 +206,9 @@ into CI, so the next one fails the build instead of shipping.
   already-dropped rows out of scope by construction rather than by a filter.
   The run record also names its skips now, after a control case wrote nothing
   and said only `created: 0`. 8 tests, eight mutations killed.
-
 - **`DEF-020` — fixed.** `getTransaction` used to be unable to say "the node
   does not have this": a `null` result and a node failure both threw, and
-  `RpcPool.withFailover` wrapped both as `All N RPC endpoint(s) failed for this
-  read`. Drop detection built on it would have set `droppedAt` on live
+  `RpcPool.withFailover` wrapped both as `All N RPC endpoint(s) failed for this read`. Drop detection built on it would have set `droppedAt` on live
   transactions during any RPC blip. `RpcAbsent` now passes through the pool
   without quarantining the endpoint and is only propagated once **every**
   endpoint has said no, so one stale node cannot declare a transaction gone.
@@ -223,7 +216,6 @@ into CI, so the next one fails the build instead of shipping.
   from the receipt rather than asserted by inclusion, and `confirmations` and
   `blockTime` — both hard-coded and unfillable — are removed rather than
   documented. 10 tests, seven mutations, all killed.
-
 - **`BE-601` scoped by measurement.** The real job and services were booted
   through Nest against the development database with a local stub node standing
   in for `eth_*` — no third-party RPC, and chain 1's `rpcUrls` restored
@@ -239,7 +231,6 @@ into CI, so the next one fails the build instead of shipping.
   not have this" with "the node failed", because `RpcPool.withFailover` wraps
   both identically. Drop detection built on that would mark live transactions
   dropped during any RPC blip.
-
 - **No test in any `packages/*` was ever typechecked.** All thirteen
   `tsconfig.package.json` files exclude `src/**/__tests__/**` so tests stay out
   of `dist` — and `typecheck` reuses that config, so the exclusion applied to
@@ -261,7 +252,6 @@ into CI, so the next one fails the build instead of shipping.
   never past unread blocks. Native-coin transfers are deliberately absent and
   the gap is stated on the method rather than papered over. 28 tests,
   9 mutations, all killed.
-
 - `BE-603` — **ADR-022**, an investigation rather than a build. Gas sponsorship
   settles on ERC-4337 + a paymaster, scoped to first-party operations only,
   because a paymaster that sponsors any transfer is an open faucet. Two
@@ -405,23 +395,23 @@ into CI, so the next one fails the build instead of shipping.
 
 ---
 
-## Do not start
+## Do not start (but ask the user if i'm to start)
 
 These are not "later". Each has a reason, and starting one without the reason
 being resolved produces work that has to be thrown away.
 
-| Do not start | Because |
-|---|---|
-| **Any provider integration** — metals, on-ramp, pricing feed, KYC | No provider is contracted. `packages/integrations` is `export {}`. Writing an adapter against an imagined API means rewriting it against a real contract. |
-| **Smart accounts, passkeys, ERC-4337, paymaster, guardians** | **The boundary question is closed** — ADR-022 decided the mechanism (passkey-owned ERC-4337 account, paymaster-paid gas, first-party operations only) and showed why it holds. What still forbids starting is that no account implementation and no paymaster have been chosen: `packages/wallet-core` has interfaces only, there is no account contract to deploy against, and a vendor chosen in code rather than in a decision gets rewritten. **Writing the adapter, the paymaster or the contract is still not allowed** — and nothing may hold or reconstruct an owner key server-side, ever. |
-| **Bitcoin or Solana adapters** | Deferred by the design spec until after the EVM slice. Nothing in v1 needs them. |
-| **Marketing site, web wallet, mobile app** | All three are framework defaults. The API is not stable enough to build a client against, and the product decisions the client depends on (buy flow, redemption mechanics) are blocked on counsel. |
-| **A microservice split** | The decision is a modular monolith. A split is not a task; it is an ADR. |
-| **`@correnthian/api-client`** | Empty. It has no consumer, and building it before the contract registry covers more routes would produce a client that has to be rewritten. |
-| **`packages/ui`, `packages/design-tokens` consumption** | The admin currently uses shadcn defaults and a neutral palette. It does **not** consume `design-tokens`. Mapping the obsidian/silver/gold tokens into the admin is a real design decision, not a mechanical import, and it is not the sprint's work. |
-| **Fee percentages, custody terms, provider names** | Nothing in this repository is verified. Do not write a number that is not in code. |
-| **DApp browser, WalletConnect, DeFi, CEX routing** | Removed from scope by the design spec. `CexRail` is reserved and should stay reserved — it weakens the key boundary. |
-| **`pnpm migrate dev` against any shared database** | See DEF-003. `prisma migrate deploy` only. |
+| Do not start                                                             | Because                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Any provider integration** — metals, on-ramp, pricing feed, KYC | No provider is contracted. `packages/integrations` is `export {}`. Writing an adapter against an imagined API means rewriting it against a real contract.                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **Smart accounts, passkeys, ERC-4337, paymaster, guardians**       | **The boundary question is closed** — ADR-022 decided the mechanism (passkey-owned ERC-4337 account, paymaster-paid gas, first-party operations only) and showed why it holds. What still forbids starting is that no account implementation and no paymaster have been chosen: `packages/wallet-core` has interfaces only, there is no account contract to deploy against, and a vendor chosen in code rather than in a decision gets rewritten. **Writing the adapter, the paymaster or the contract is still not allowed** — and nothing may hold or reconstruct an owner key server-side, ever. |
+| **Bitcoin or Solana adapters**                                     | Deferred by the design spec until after the EVM slice. Nothing in v1 needs them.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **Marketing site, web wallet, mobile app**                         | All three are framework defaults. The API is not stable enough to build a client against, and the product decisions the client depends on (buy flow, redemption mechanics) are blocked on counsel.                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **A microservice split**                                           | The decision is a modular monolith. A split is not a task; it is an ADR.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| **`@correnthian/api-client`**                                    | Empty. It has no consumer, and building it before the contract registry covers more routes would produce a client that has to be rewritten.                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| **`packages/ui`, `packages/design-tokens` consumption**        | The admin currently uses shadcn defaults and a neutral palette. It does **not** consume `design-tokens`. Mapping the obsidian/silver/gold tokens into the admin is a real design decision, not a mechanical import, and it is not the sprint's work.                                                                                                                                                                                                                                                                                                                                                        |
+| **Fee percentages, custody terms, provider names**                 | Nothing in this repository is verified. Do not write a number that is not in code.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **DApp browser, WalletConnect, DeFi, CEX routing**                 | Removed from scope by the design spec. `CexRail` is reserved and should stay reserved — it weakens the key boundary.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **`pnpm migrate dev` against any shared database**               | See DEF-003. `prisma migrate deploy` only.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 ---
 
@@ -432,6 +422,5 @@ being resolved produces work that has to be thrown away.
   a nonexistent Prisma column typechecks cleanly.
 - Update `docs/agent/BACKEND_TASKS.md` and `docs/agent/CHANGELOG.md` in the
   same commit as the fix.
-- Before claiming anything works, verify `pnpm typecheck && pnpm test && pnpm
-  build`. A change that passes those but was not run against a live database is
+- Before claiming anything works, verify `pnpm typecheck && pnpm test && pnpm build`. A change that passes those but was not run against a live database is
   not verified — say so.

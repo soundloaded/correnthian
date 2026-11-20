@@ -1,26 +1,11 @@
-import { Metadata } from 'next'
-import AboutHero from './components/AboutHero'
-import Download from './components/Download'
-import Mission from './components/Mission'
-import Purpose from './components/Purpose'
-import Stats from './components/Stats'
-import Team from './components/Team'
+import type { Metadata } from 'next'
+import About from './About'
 
 export const metadata: Metadata = {
   title: 'About',
+  description: 'Correnthian registers third-party tokenized gold and silver. It does not issue the tokens, hold the keys, hold the fiat, or custody the metal.',
 }
 
-const Page = () => {
-  return (
-    <>
-      <AboutHero />
-      <Mission />
-      <Purpose />
-      <Stats />
-      <Team />
-      <Download />
-    </>
-  )
+export default function Page() {
+  return <About />
 }
-
-export default Page

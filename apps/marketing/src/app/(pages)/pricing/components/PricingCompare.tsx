@@ -1,85 +1,39 @@
-import { Icon } from '@iconify/react'
+import Link from 'next/link'
 
-type CompareRowType = {
-  feature: string
-  free: boolean
-  pro: boolean
-  premium: boolean
-  bgClass?: string
-}
-
-const pricingCompareData: CompareRowType[] = [
+const paths = [
   {
-    feature: 'Habit tracking',
-    free: true,
-    pro: true,
-    premium: true,
-    bgClass: 'bg-default-100',
+    title: 'Card or bank',
+    body: 'A card or bank purchase is refused until a provider is contracted, so there is no quote to show a number on today.',
+    href: '/products/buy',
+    link: 'Buy gold',
   },
   {
-    feature: 'Daily reminders',
-    free: true,
-    pro: true,
-    premium: true,
+    title: 'Swap',
+    body: 'A swap quote names the same three lines before the device signs. The server prepares the quote. Your device signs it. Until a liquidity provider is contracted, that quote is not a fill.',
+    href: '/products/swap',
+    link: 'Swap',
   },
-  {
-    feature: 'Focus & time blocks',
-    free: false,
-    pro: true,
-    premium: true,
-    bgClass: 'bg-default-100',
-  },
-  {
-    feature: 'Custom reminders',
-    free: false,
-    pro: true,
-    premium: true,
-  },
-  {
-    feature: 'Priority support',
-    free: false,
-    pro: false,
-    premium: true,
-    bgClass: 'bg-default-100',
-  },
-]
+] as const
 
 const PricingCompare = () => {
   return (
-    <section className="py-20 md:py-25 lg:py-50">
+    <section className="pb-16 md:pb-24">
       <div className="container">
-        <div>
-          <table className="w-full text-start">
-            <thead className="bg-default-200 mb-10!">
-              <tr>
-                <th className="text-default-900 rounded-s-lg px-2 py-2.5 text-start text-sm font-medium md:p-5 md:text-xl lg:text-2xl">Features</th>
-                <th className="px-2 py-2.5 text-center md:p-5">
-                  <div className="text-default-900 text-sm font-medium md:text-xl lg:text-2xl">Network</div>
-                  <div className="text-default-600 mt-1 text-xs font-medium md:text-lg">$0</div>
-                </th>
-                <th className="px-2 py-2.5 text-center md:p-5">
-                  <div className="text-default-900 text-sm font-medium md:text-xl lg:text-2xl">Pro plan</div>
-                  <div className="text-default-600 mt-1 text-xs font-medium md:text-lg">Issuer, unpriced</div>
-                </th>
-                <th className="rounded-r-2xl px-2 py-2.5 text-center md:p-5">
-                  <div className="text-default-900 text-sm font-medium md:text-xl lg:text-2xl">Premium plan</div>
-                  <div className="text-default-600 mt-1 text-xs font-medium md:text-lg">Correnthian, unpriced</div>
-                </th>
-              </tr>
-            </thead>
-
-            <tbody className="text-xs md:text-base lg:text-lg">
-              {pricingCompareData.map((row, idx) => (
-                <tr key={idx} className={row.bgClass || ''}>
-                  <td className="text-default-700 rounded-s-lg p-2.5 font-medium md:px-5 md:py-4">{row.feature}</td>
-                  <td className="text-center">{row.free ? <Icon icon="lucide:circle-check" className="text-primary-5/50 inline-block size-3.75 md:size-6" /> : <Icon icon="lucide:circle-x" className="text-default-400 inline-block size-3.75 md:size-6" />}</td>
-                  <td className="text-center">{row.pro ? <Icon icon="lucide:circle-check" className="text-primary-5/50 inline-block size-3.75 md:size-6" /> : <Icon icon="lucide:circle-x" className="text-default-400 inline-block size-3.75 md:size-6" />}</td>
-                  <td className="rounded-e-lg text-center">{row.premium ? <Icon icon="lucide:circle-check" className="text-primary-5/50 inline-block size-3.75 md:size-6" /> : <Icon icon="lucide:circle-x" className="text-default-400 inline-block size-3.75 md:size-6" />}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="text-default-900 text-3xl font-medium tracking-tight md:text-4xl">No number on this page</h2>
+          <p className="text-default-600 mt-4 text-base leading-relaxed md:text-lg">The three lines are the rule. This page does not print a percentage, and it does not compare other companies.</p>
         </div>
+        <ul className="mt-10 grid gap-5 md:grid-cols-2">
+          {paths.map((path) => (
+            <li key={path.title} className="rounded-3xl bg-white p-6 shadow-sm md:p-8">
+              <h3 className="text-default-900 text-xl font-medium">{path.title}</h3>
+              <p className="text-default-600 mt-3 text-base leading-relaxed">{path.body}</p>
+              <Link href={path.href} className="text-default-900 mt-6 inline-flex text-sm font-medium underline-offset-4 hover:underline">
+                {path.link}
+              </Link>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   )

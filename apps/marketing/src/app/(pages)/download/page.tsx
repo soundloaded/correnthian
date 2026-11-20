@@ -1,80 +1,57 @@
+import goldBar from '@/assets/images/about/vault-gold-02.webp'
+import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 
-import appStoreBox from '@/assets/images/icons/app-storebox.svg'
-import googlePlayBox from '@/assets/images/icons/google-playbox.svg'
-import icon39 from '@/assets/images/icons/icon-39.svg'
-import icon66 from '@/assets/images/icons/icon-66.svg'
-import cloud02 from '@/assets/images/locations/cloud-02.webp'
-import cloud05 from '@/assets/images/locations/cloud-05.webp'
-import decoration from '@/assets/images/workspace/decoration.webp'
-import phoneImage from '@/assets/images/workspace/phone-image.png'
-import { Metadata } from 'next'
-
 export const metadata: Metadata = {
   title: 'Download',
+  description: 'The Correnthian mobile apps are not in the App Store or Google Play.',
 }
 
-const Page = () => {
+const points = [
+  {
+    title: 'No store listing',
+    body: 'There is no Correnthian app in the App Store or on Google Play. This page does not install one.',
+  },
+  {
+    title: 'The key stays on the device',
+    body: 'A key would stay on the phone. It is not sent to Correnthian, and the account would be one only you can move.',
+  },
+  {
+    title: 'Buy and swap are separate screens',
+    body: 'The phone would show the same screens as the account: portfolio, buy, swap, and activity. A card or bank purchase is not a swap. Buy stays refused until a provider is contracted.',
+  },
+] as const
+
+export default function Page() {
   return (
-    <>
-      <section className="relative overflow-hidden pt-32 md:pb-14 lg:pt-38">
-        <div className="pointer-events-none absolute inset-0 z-0">
-          <Image src={decoration} className="absolute inset-s-0 top-25 bottom-20 w-1/2 blur-sm" alt="" />
-          <Image src={cloud02} className="absolute inset-e-0 bottom-0 h-74 w-1/3" alt="" />
-          <Image src={cloud05} className="absolute inset-e-10 top-10 w-1/4" alt="" />
-        </div>
-
-        <div className="relative z-10 container mx-auto px-6 lg:px-12">
-          <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-2">
-            <div className="max-w-2xl">
-              <h1 className="text-default-900 mb-5 text-3xl font-medium tracking-tight md:text-5xl lg:text-[68px]">Start building better habits today</h1>
-              <p className="text-default-600 mb-5 text-base leading-tight md:mb-7.5 md:text-xl">Download Habitline to build routines that adjust to your day. Track habits get smart suggestions that help you stay consistent without pressure.</p>
-
-              <div className="mb-5 flex gap-7.5 md:mb-7.5 lg:gap-20">
-                <div>
-                  <div className="flex items-baseline gap-1">
-                    <h2 className="text-default-900 text-2xl font-medium md:text-3xl lg:text-4xl">32</h2>
-                    <span className="text-default-900 text-2xl font-medium md:text-3xl lg:text-4xl">+</span>
-                  </div>
-                  <p className="text-default-600 mt-2 text-lg font-medium">Countries using Habitline</p>
-                </div>
-                <div>
-                  <h2 className="text-default-900 text-2xl font-medium md:text-3xl lg:text-4xl">46</h2>
-                  <p className="text-default-600 mt-2 text-lg font-medium">Sessions completed per user</p>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-3.5">
-                <Link href="" target="_blank" className="transition-transform hover:scale-95">
-                  <Image src={appStoreBox} alt="App Store" className="h-12.5 w-auto" />
-                </Link>
-                <Link href="" target="_blank" className="transition-transform hover:scale-95">
-                  <Image src={googlePlayBox} alt="Google Play" className="h-12.5 w-auto" />
-                </Link>
-              </div>
-
-              <div className="mt-6.5 inline-flex items-center gap-5 rounded-2xl bg-white p-2 shadow-2xl md:mt-10 lg:mt-20">
-                <div className="bg-default-200 shrink-0 rounded-2xl p-4">
-                  <Image src={icon39} alt="QR Code" className="size-25" />
-                </div>
-                <div className="relative">
-                  <Image src={icon66} className="absolute top-2 left-0 size-15 rotate-[-10deg]" alt="" />
-                  <h3 className="text-default-900 mt-15 text-2xl leading-tight font-medium">
-                    Scan here <br /> to download
-                  </h3>
-                </div>
-              </div>
-            </div>
-
-            <div className="relative flex justify-center">
-              <Image src={phoneImage} alt="App Dashboard" className="h-175 w-full max-w-87.5 transition-transform duration-500" />
+    <section className="pt-32 pb-16 md:pt-42 md:pb-24 lg:pt-50">
+      <div className="container">
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          <div className="max-w-2xl">
+            <h1 className="text-default-900 text-4xl font-medium tracking-tight md:text-5xl lg:text-6xl">The apps are not in the stores</h1>
+            <p className="text-default-600 mt-5 text-base leading-relaxed md:text-xl">The phone would be the same account: portfolio, buy, swap, and activity. There is no store listing to download.</p>
+            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
+              <Link href="/waitlist" className="rounded-full bg-default-900 inline-flex px-8 py-3.5 text-sm font-medium text-white transition-all hover:scale-95">
+                Join the waitlist
+              </Link>
+              <Link href="/products/app" className="text-default-900 text-sm font-medium underline-offset-4 hover:underline">
+                What the app will show
+              </Link>
             </div>
           </div>
+          <Image src={goldBar} alt="A single fine gold bar on dark cloth" className="h-auto max-h-[28rem] w-full rounded-3xl object-cover" />
         </div>
-      </section>
-    </>
+
+        <ul className="mt-16 grid gap-5 md:grid-cols-3">
+          {points.map((point) => (
+            <li key={point.title} className="rounded-3xl border border-zinc-100 bg-white p-6">
+              <h2 className="text-default-900 text-lg font-medium">{point.title}</h2>
+              <p className="text-default-600 mt-2 text-sm leading-relaxed md:text-base">{point.body}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
   )
 }
-
-export default Page

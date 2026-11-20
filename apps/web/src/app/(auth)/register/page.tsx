@@ -27,7 +27,7 @@ export default function RegisterPage() {
       setError("That address is already in use, or the password is too short.")
       return
     }
-    router.replace("/portfolio")
+    router.replace("/")
   }
 
   return (

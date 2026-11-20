@@ -4,7 +4,6 @@ import { preline } from '@/utils/preline'
 import React, { useEffect } from 'react'
 import Footer from '../footer/Footer'
 import Navbar from '../navbar/Navbar'
-import MotionEnhancer from './MotionEnhancer'
 
 const AppProvidersWrapper = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
@@ -13,7 +12,6 @@ const AppProvidersWrapper = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <>
-      <MotionEnhancer />
       <Navbar />
       {children}
       <Footer />

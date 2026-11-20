@@ -66,7 +66,7 @@ function SigninForm() {
       setError("Those details were not recognised. Check both and try again.")
       return
     }
-    router.replace("/portfolio")
+    router.replace("/")
   }
 
   async function onMagic(e: React.FormEvent) {
