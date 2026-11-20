@@ -1,7 +1,7 @@
 import { findProduct } from '../content'
 import Link from 'next/link'
 
-const product = findProduct('app')
+const product = findProduct('app')!
 
 if (!product) {
   throw new Error('Missing product page: app')

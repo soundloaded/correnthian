@@ -6,7 +6,7 @@ import Image, { type StaticImageData } from 'next/image'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 
-const gold = findProduct('gold')
+const gold = findProduct('gold')!
 
 if (!gold) {
   throw new Error('Gold product content is missing')

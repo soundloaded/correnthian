@@ -4,7 +4,7 @@ import { findProduct } from '../content'
 import Image, { type StaticImageData } from 'next/image'
 import Link from 'next/link'
 
-const redemption = findProduct('redemption')
+const redemption = findProduct('redemption')!
 
 if (!redemption) {
   throw new Error('Missing redemption copy')

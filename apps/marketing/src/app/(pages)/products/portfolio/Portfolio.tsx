@@ -4,7 +4,7 @@ import { findProduct } from '../content'
 import Image, { type StaticImageData } from 'next/image'
 import Link from 'next/link'
 
-const portfolio = findProduct('portfolio')
+const portfolio = findProduct('portfolio')!
 
 if (portfolio == null) {
   throw new Error('Missing portfolio product content')
