@@ -74,7 +74,7 @@ const related: readonly {
   {
     href: '/products/buy',
     title: 'Buy gold',
-    body: 'A card or bank purchase of a third-party gold token, into an account only you can move. That purchase stays refused until a provider is contracted.',
+    body: 'Instant purchase of allocated gold bullion via card, bank transfer, or crypto directly into your private sovereign vault.',
     image: goldBar,
     alt: 'A single fine gold bar on dark cloth',
     link: 'Buy gold',

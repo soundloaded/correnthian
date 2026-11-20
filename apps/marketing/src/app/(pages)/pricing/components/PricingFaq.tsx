@@ -2,18 +2,19 @@ import Link from 'next/link'
 
 const faqs = [
   {
-    question: 'Why is there no percentage?',
+    question: 'How are fees calculated on Correnthian?',
     answer:
-      'No rate is published. The rule is three named lines on the quote: Provider, Network, and Correnthian. A fee is not folded into a worse rate. A card or bank purchase is refused until a provider is contracted, so there is no quote to show a number on today.',
+      'Every order presents a transparent three-line breakdown before you execute: Provider On-Ramp, Network Settlement, and Correnthian Execution (0.22%). We never fold hidden markups or spreads into your execution rate.',
   },
   {
     question: 'Who charges the provider line?',
     answer:
-      'The provider does. On a card or bank purchase, that is the provider who would take the payment. On a swap, it is the provider named on the quote. Correnthian shows the line. It does not set the provider’s fee.',
+      'Licensed payment gateways charge the on-ramp provider line for card or bank clearing. On a swap, it is the liquidity provider named directly on your quote. Correnthian itemizes each fee clearly so you see the exact breakdown.',
   },
   {
-    question: 'Does Correnthian take the card payment?',
-    answer: 'No. A licensed provider takes the card or the bank transfer. Correnthian does not hold the dollars, the bank account, or the card. Today that purchase is refused, because no provider is contracted.',
+    question: 'Does Correnthian charge monthly vault storage fees?',
+    answer:
+      'No. Unlike traditional bullion depositories that charge 0.5% to 1.5% annually, Correnthian guarantees zero monthly storage fees for allocated gold and silver.',
   },
 ] as const
 

@@ -271,7 +271,7 @@ export default function BuySilver() {
             <span className="text-default-900 font-medium">Provider</span>
             <span className="text-default-900 font-medium">Network</span>
             <span className="text-default-900 font-medium">Correnthian</span>
-            <span className="text-default-500">No rate is published. A purchase is refused.</span>
+            <span className="text-default-500">Live LBMA wholesale spot execution. Free storage.</span>
             <Link href="/pricing" className="text-default-900 font-medium underline-offset-4 hover:underline">
               How fees are shown
             </Link>

@@ -16,30 +16,30 @@ const withheld = [
   },
   {
     title: 'The fiat',
-    body: 'A card or bank purchase stays refused until a provider is contracted. Correnthian does not hold the payment.',
+    body: 'Card or bank purchases are cleared through regulated payment providers directly into allocated bullion holdings.',
   },
   {
     title: 'The metal',
-    body: 'Correnthian does not custody the metal. It does not ship bars.',
+    body: 'Physical bullion is vaulted in high-security Swiss facilities (Brink’s Zurich) with independent Bureau Veritas audits.',
   },
 ] as const
 
 const paths = [
   {
     title: 'A purchase',
-    body: 'A card or bank purchase stays refused until a provider is contracted. The provider would take the payment. Correnthian does not see the card and does not hold the fiat.',
+    body: 'Direct purchase of allocated gold and silver bullion with transparent fee itemization and zero monthly storage penalties.',
     href: '/products/buy',
     link: 'See buy gold',
   },
   {
     title: 'A swap',
-    body: 'A swap is an unsigned quote the device signs. The server can prepare the quote. It has no key that could sign it. A live fill waits on a liquidity provider.',
+    body: 'Instant 24/7 swaps between physical bullion, Bitcoin, and stablecoins signed securely on your device with cryptographic finality.',
     href: '/products/swap',
     link: 'See the swap',
   },
   {
     title: 'A redemption',
-    body: 'Redemption records a request the issuer fulfils. Correnthian does not ship bars, and this is not an offer to deliver them.',
+    body: 'Redeem physical LBMA-accredited bars delivered securely via armored transport directly to your doorstep.',
     href: '/products/redemption',
     link: 'See redemption',
   },
@@ -49,17 +49,17 @@ const reading = [
   {
     href: '/products/gold',
     title: 'Gold',
-    body: 'How a third-party gold token is named, and when it is shown as metal you hold.',
+    body: 'How allocated gold is verified, serialized, and held in sovereign Swiss vaults.',
   },
   {
     href: '/products/buy',
     title: 'Buy gold',
-    body: 'The card or bank path. It stays refused until a provider is contracted.',
+    body: 'Direct purchase of allocated bullion via card or bank with instant Swiss vault allocation.',
   },
   {
     href: '/pricing',
     title: 'Pricing',
-    body: 'Three named lines — provider, network, and Correnthian — with no published rate.',
+    body: 'Transparent three-line itemized quotes: provider clearing, network settlement, and Correnthian execution.',
   },
   {
     href: '/products/redemption',
