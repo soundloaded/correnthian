@@ -3,7 +3,13 @@
 import { Icon } from '@iconify/react'
 import Image, { StaticImageData } from 'next/image'
 import Link from 'next/link'
-import { Fragment } from 'react'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { Fragment, useEffect, useRef } from 'react'
+
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger)
+}
 
 import cryptoBitcoin from '@/assets/images/about/crypto-bitcoin.webp'
 import metalGold from '@/assets/images/about/metal-gold.webp'
@@ -59,8 +65,38 @@ const marqueeItems: MarqueeItem[] = [
 ]
 
 const About = () => {
+  const sectionRef = useRef<HTMLElement>(null)
+  const phoneRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    const ctx = gsap.context(() => {
+      if (phoneRef.current && sectionRef.current) {
+        gsap.fromTo(
+          phoneRef.current,
+          { y: 50, scale: 0.94 },
+          {
+            y: -50,
+            scale: 1.04,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: sectionRef.current,
+              start: 'top bottom',
+              end: 'bottom top',
+              scrub: 1.2,
+            },
+          }
+        )
+      }
+    }, sectionRef)
+
+    return () => ctx.revert()
+  }, [])
+
   return (
-    <section className="relative pb-20 text-center lg:pt-6 lg:pb-50">
+    <section ref={sectionRef} className="relative pb-20 text-center lg:pt-6 lg:pb-50">
       <div className="container">
         <div className="md:mb-15">
           <h2 className="mx-auto mb-10 max-w-5xl text-center text-3xl leading-tight font-medium tracking-tight text-black md:text-5xl">
@@ -158,7 +194,7 @@ const About = () => {
             </div>
           </div>
 
-          <div data-gsap-parallax="-32" className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
+          <div ref={phoneRef} className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center will-change-transform">
             {/* Ambient gold glow */}
             <div className="pointer-events-none absolute h-[65%] w-72 rounded-full bg-amber-500/15 blur-[70px] md:w-84" />
             <Image

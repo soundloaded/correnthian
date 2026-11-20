@@ -1,15 +1,101 @@
 'use client'
 
-import Image from 'next/image'
-
 import cloud01 from '@/assets/images/locations/cloud-01.webp'
 import cloud06 from '@/assets/images/locations/cloud-06.webp'
 import glob from '@/assets/images/workspace/glob-image.png'
 import heroGlobJpg from '@/assets/images/workspace/hero-glob.jpg'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import Image from 'next/image'
+import { useEffect, useRef } from 'react'
+
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger)
+}
 
 const Stats = () => {
+  const sectionRef = useRef<HTMLElement>(null)
+  const count20Ref = useRef<HTMLSpanElement>(null)
+  const count100Ref = useRef<HTMLSpanElement>(null)
+  const count32Ref = useRef<HTMLSpanElement>(null)
+  const cloud1Ref = useRef<HTMLImageElement>(null)
+  const cloud2Ref = useRef<HTMLImageElement>(null)
+  const cloud3Ref = useRef<HTMLImageElement>(null)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    const ctx = gsap.context(() => {
+      // 1. Number roll up triggers
+      const animateCount = (el: HTMLElement | null, target: number, prefix = '', suffix = '') => {
+        if (!el) return
+        const obj = { val: 0 }
+        ScrollTrigger.create({
+          trigger: el,
+          start: 'top 85%',
+          once: true,
+          onEnter: () => {
+            gsap.to(obj, {
+              val: target,
+              duration: 2.2,
+              ease: 'power3.out',
+              onUpdate: () => {
+                el.textContent = `${prefix}${Math.round(obj.val)}${suffix}`
+              },
+            })
+          },
+        })
+      }
+
+      animateCount(count20Ref.current, 20, '$', 'M')
+      animateCount(count100Ref.current, 100)
+      animateCount(count32Ref.current, 32)
+
+      // 2. Cloud parallax on scroll
+      if (cloud1Ref.current && sectionRef.current) {
+        gsap.to(cloud1Ref.current, {
+          y: -40,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: 1.5,
+          },
+        })
+      }
+      if (cloud2Ref.current && sectionRef.current) {
+        gsap.to(cloud2Ref.current, {
+          y: -65,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: 1.8,
+          },
+        })
+      }
+      if (cloud3Ref.current && sectionRef.current) {
+        gsap.to(cloud3Ref.current, {
+          y: -50,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: 1.2,
+          },
+        })
+      }
+    }, sectionRef)
+
+    return () => ctx.revert()
+  }, [])
+
   return (
-    <section id="facts" className="relative overflow-hidden pb-20 md:pb-25 lg:pb-46">
+    <section ref={sectionRef} id="facts" className="relative overflow-hidden pb-20 md:pb-25 lg:pb-46">
       <div className="container">
         <div className="mb-2 text-center">
           <span className="border-default-200 text-default-800 mb-3.5 inline-block rounded-full border bg-white px-5 py-1.5 text-sm font-medium">Real metal, real numbers</span>
@@ -23,7 +109,7 @@ const Stats = () => {
         <div className="relative z-20 mb-7.5 flex flex-col items-center justify-center">
           <div className="relative items-center md:inline-flex">
             <h3 className="text-primary-1 ms-8 text-4xl leading-none font-black tracking-normal md:ms-0 md:text-[100px] lg:text-[120px]">
-              $20M <span className="ms-1">+</span>
+              <span ref={count20Ref}>$20M</span> <span className="ms-1">+</span>
             </h3>
 
             <div className="-inset-e-12 mt-1 rounded-2xl bg-white px-2 py-2 whitespace-nowrap shadow-xl md:absolute md:top-20 md:-right-20 md:rotate-8 md:px-5">
@@ -41,15 +127,17 @@ const Stats = () => {
                 <source src="/assets/videos/hero-glob.mp4" type="video/mp4" />
               </video>
             </div>
-            <Image data-gsap-parallax="-18" src={cloud06} alt="Decoration" className="absolute -inset-s-20 inset-e-0 top-auto bottom-40 z-20 h-40 w-full md:bottom-30 md:h-62.5 lg:bottom-2" />
-            <Image data-gsap-parallax="-28" src={cloud01} alt="Decoration Image" className="absolute -inset-s-7.5 inset-e-0 top-auto bottom-20 z-20 w-full md:-bottom-25 md:h-112 lg:-bottom-50" />
-            <Image data-gsap-parallax="-22" src={cloud01} alt="Decoration Image" className="absolute inset-s-auto -inset-e-25 top-auto bottom-3 z-20 h-75 w-full md:-bottom-5 lg:-inset-e-62.5 lg:-bottom-25 lg:h-112" />
+            <Image ref={cloud1Ref} src={cloud06} alt="Decoration" className="absolute -inset-s-20 inset-e-0 top-auto bottom-40 z-20 h-40 w-full md:bottom-30 md:h-62.5 lg:bottom-2" />
+            <Image ref={cloud2Ref} src={cloud01} alt="Decoration Image" className="absolute -inset-s-7.5 inset-e-0 top-auto bottom-20 z-20 w-full md:-bottom-25 md:h-112 lg:-bottom-50" />
+            <Image ref={cloud3Ref} src={cloud01} alt="Decoration Image" className="absolute inset-s-auto -inset-e-25 top-auto bottom-3 z-20 h-75 w-full md:-bottom-5 lg:-inset-e-62.5 lg:-bottom-25 lg:h-112" />
           </div>
 
           <div className="z-40 mx-auto -mt-50 grid grid-cols-2 items-start gap-6 text-center md:-mt-60 md:w-3xl md:grid-cols-3 lg:-mt-0 lg:gap-17.5">
             <div className="flex flex-col items-center">
               <div className="flex items-baseline gap-1">
-                <h3 className="text-default-900 text-3xl font-medium tracking-normal md:text-5xl lg:text-7xl">100</h3>
+                <h3 className="text-default-900 text-3xl font-medium tracking-normal md:text-5xl lg:text-7xl">
+                  <span ref={count100Ref}>100</span>
+                </h3>
                 <span className="text-primary-6 text-3xl font-medium md:text-5xl lg:text-6xl">%</span>
               </div>
               <p className="text-default-800 mt-2 text-sm leading-tight font-semibold md:text-lg">Allocated physical gold & silver</p>
@@ -62,7 +150,9 @@ const Stats = () => {
 
             <div className="col-span-2 flex flex-col items-center md:col-span-1">
               <div className="flex items-baseline gap-1">
-                <h3 className="text-default-900 text-3xl font-medium tracking-normal md:text-5xl lg:text-7xl">32</h3>
+                <h3 className="text-default-900 text-3xl font-medium tracking-normal md:text-5xl lg:text-7xl">
+                  <span ref={count32Ref}>32</span>
+                </h3>
                 <span className="text-primary-3 text-3xl font-medium md:text-5xl lg:text-6xl">+</span>
               </div>
               <p className="text-default-800 mt-2 text-sm leading-tight font-semibold md:text-lg">Countries with active Correnthian users</p>
